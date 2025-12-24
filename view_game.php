@@ -820,6 +820,9 @@ class Page extends PageBase
 				case DEATH_TYPE_WARNINGS:
 					echo get_label('four warnings [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
 					break;
+				case DEATH_TYPE_TECH_FOULS:
+					echo get_label('two technical fouls [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+					break;
 				case DEATH_TYPE_KICK_OUT:
 					echo get_label('kicked out [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
 					break;
@@ -871,6 +874,7 @@ class Page extends PageBase
 		$maf_alive = 3;
 		$civ_alive = 7;
 		$warnings = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		$techFouls = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		$round = -1;
 		$is_night = true;
 		$actions = $this->game->get_actions();
@@ -975,6 +979,9 @@ class Page extends PageBase
 							case DEATH_TYPE_WARNINGS:
 								echo get_label('[0] gets fourth warning and leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
 								break;
+							case DEATH_TYPE_TECH_FOULS:
+								echo get_label('[0] gets the second technical foul and leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
+								break;
 							case DEATH_TYPE_KICK_OUT:
 								echo get_label('[0] is kicked out from the game [2]. [1]', get_player_number_html($this->game, $action->player), $info, $this->game->get_gametime_text($action));
 								break;
@@ -1011,6 +1018,17 @@ class Page extends PageBase
 							break;
 						default:
 							echo get_label('[0] gets a warning [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
+							break;
+					}
+					break;
+				case GAME_ACTION_TECH_FOUL:
+					switch (++$techFouls[$action->player-1])
+					{
+						case 2:
+							echo get_label('[0] gets the second technical foul [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
+							break;
+						default:
+							echo get_label('[0] gets a technical foul [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
 							break;
 					}
 					break;
@@ -1368,6 +1386,37 @@ class Page extends PageBase
 				}
 				echo '</td></tr></table></big>';
 			}
+			if (isset($player->techFouls))
+			{
+				$prev_rounds = 0;
+				$this_round = 0;
+				if (is_numeric($player->techFouls))
+				{
+					$prev_rounds = $player->techFouls;
+				}
+				else foreach ($player->techFouls as $techFoul)
+				{
+					if ($this->game->compare_gametimes($techFoul, $start) < 0)
+					{
+						++$prev_rounds;
+					}
+					else if ($this->game->compare_gametimes($techFoul, $end) < 0)
+					{
+						++$this_round;
+					}
+				}
+				echo '<big><table class="transp" width="100%"><tr><td>';
+				for ($j = 0; $j < $prev_rounds; ++$j)
+				{
+					echo '✘';
+				}
+				echo '</td><td align="right">';
+				for ($j = 0; $j < $this_round; ++$j)
+				{
+					echo '✘';
+				}
+				echo '</td></tr></table></big>';
+			}
 			echo '</td>';
 			
 			echo '<td>';
@@ -1406,6 +1455,9 @@ class Page extends PageBase
 					break;
 				case DEATH_TYPE_WARNINGS:
 					echo get_label('four warnings [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+					break;
+				case DEATH_TYPE_TECH_FOULS:
+					echo get_label('two technical fouls [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
 					break;
 				case DEATH_TYPE_KICK_OUT:
 					echo get_label('kicked out [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
@@ -1616,6 +1668,7 @@ class Page extends PageBase
 		$maf_alive = 3;
 		$civ_alive = 7;
 		$warnings = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		$techFouls = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		$round = -1;
 		$is_night = true;
 		$actions = $this->game->get_actions();
@@ -1705,6 +1758,9 @@ class Page extends PageBase
 									break;
 								case DEATH_TYPE_WARNINGS:
 									$action_text = get_label('[0] gets fourth warning and leaves the game. [1]', $player_name, $info);
+									break;
+								case DEATH_TYPE_TECH_FOULS:
+									$action_text = get_label('[0] gets the second technical foul and leaves the game. [1]', $player_name, $info);
 									break;
 								case DEATH_TYPE_KICK_OUT:
 									$action_text = get_label('[0] is kicked out from the game [2]. [1]', $player_name, $info, $this->game->get_gametime_text($action));
@@ -1813,6 +1869,20 @@ class Page extends PageBase
 								break;
 							default:
 								$action_text = get_label('[0] gets a warning [1].', $player_name, $this->game->get_gametime_text($action));
+								break;
+						}
+					}
+					break;
+				case GAME_ACTION_TECH_FOUL:
+					if ($action->player == $this->player_num)
+					{
+						switch (++$techFouls[$action->player-1])
+						{
+							case 2:
+								$action_text = get_label('[0] gets the second technical foul [1].', $player_name, $this->game->get_gametime_text($action));
+								break;
+							default:
+								$action_text = get_label('[0] gets a technical foul [1].', $player_name, $this->game->get_gametime_text($action));
 								break;
 						}
 					}

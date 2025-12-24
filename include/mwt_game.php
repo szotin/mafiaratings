@@ -289,11 +289,11 @@ function convert_mwt_game($mwt_game)
 			case 3: // mod kill
 				if (isset($player->warnings) && $player->warnings >= 4)
 				{
-					$player->death->type = DEATH_TYPE_KICK_OUT;
+					$player->death->type = DEATH_TYPE_WARNINGS;
 				}
 				else
 				{
-					$player->death->type = DEATH_TYPE_WARNINGS;
+					$player->death->type = DEATH_TYPE_KICK_OUT;
 				}
 				if (isset($leave->nights_before_count))
 				{
@@ -514,6 +514,7 @@ function convert_game_to_mwt($game_id)
 			case DEATH_TYPE_GIVE_UP:
 			case DEATH_TYPE_KICK_OUT:
 			case DEATH_TYPE_WARNINGS:
+			case DEATH_TYPE_TECH_FOULS:
 				$penalty_disciplinary = -0.5;
 				$leave = new stdClass();
 				$leave->leave_type = 3;

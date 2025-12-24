@@ -387,6 +387,37 @@ try
 			}
 			echo '</td></tr></table></big>';
 		}
+		if (isset($player->techFouls))
+		{
+			$prev_rounds = 0;
+			$this_round = 0;
+			if (is_numeric($player->techFouls))
+			{
+				$prev_rounds = $player->techFouls;
+			}
+			else foreach ($player->techFouls as $techFoul)
+			{
+				if ($game->compare_gametimes($techFoul, $start) < 0)
+				{
+					++$prev_rounds;
+				}
+				else if ($game->compare_gametimes($techFoul, $end) < 0)
+				{
+					++$this_round;
+				}
+			}
+			echo '<big><table class="transp" width="100%"><tr><td>';
+			for ($j = 0; $j < $prev_rounds; ++$j)
+			{
+				echo '✘';
+			}
+			echo '</td><td align="right">';
+			for ($j = 0; $j < $this_round; ++$j)
+			{
+				echo '✘';
+			}
+			echo '</td></tr></table></big>';
+		}
 		echo '</td>';
 		
 		echo '<td>';
@@ -425,6 +456,9 @@ try
 				break;
 			case DEATH_TYPE_WARNINGS:
 				echo get_label('four warnings [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+				break;
+			case DEATH_TYPE_TECH_FOULS:
+				echo get_label('two technical fouls [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
 				break;
 			case DEATH_TYPE_KICK_OUT:
 				echo get_label('kicked out [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );

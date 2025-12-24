@@ -7,7 +7,7 @@ require_once __DIR__ . '/game_ratings.php';
 require_once __DIR__ . '/game_players_stats.php';
 
 // GAME_CURRENT_VERSION must exactly match to the value of version var in js/game.js
-define('GAME_CURRENT_VERSION', '1.2'); // Major version means that the format of the game has been changed. Minor version means that the game client has been changed and need to be updated.
+define('GAME_CURRENT_VERSION', '1.3'); // Major version means that the format of the game has been changed. Minor version means that the game client has been changed and need to be updated.
 
 define('GAME_YES', 1);
 define('GAME_NO', 0);
@@ -25,8 +25,8 @@ define('GAME_FEATURE_FLAG_SHOOTING',                    0x00000100); // 'h' - 25
 define('GAME_FEATURE_FLAG_VOTING',                      0x00000200); // 'v' - 512
 define('GAME_FEATURE_FLAG_VOTING_KILL_ALL',             0x00000400); // 'k' - 1024
 define('GAME_FEATURE_FLAG_NOMINATING',                  0x00000800); // 'n' - 2048
-define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 'w' - 4096
-define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 'r' - 8192
+define('GAME_FEATURE_FLAG_WARNINGS',                    0x00001000); // 'w' - 4096 // Currently warnings and tech fouls share the same flag.
+define('GAME_FEATURE_FLAG_WARNINGS_DETAILS',            0x00002000); // 'r' - 8192 // Currently warnings and tech fouls share the same flag.
 // define('GAME_FEATURE_FLAG_SPLITTING',                   0x00004000); // 'p' - 16384
 define('GAME_FEATURE_FLAG_ON_RECORD',                   0x00008000); // 'o' - 32768
 define('GAME_FEATURE_FLAG_SIMPLIFIED_LEGACY',           0x00010000); // 'i' - 65536
@@ -55,6 +55,7 @@ define('GAMETIME_END', 'end'); // day
 
 define('DEATH_TYPE_GIVE_UP', 'giveUp');
 define('DEATH_TYPE_WARNINGS', 'warnings');
+define('DEATH_TYPE_TECH_FOULS', 'techFouls');
 define('DEATH_TYPE_KICK_OUT', 'kickOut');
 define('DEATH_TYPE_TEAM_KICK_OUT', 'teamKickOut'); // Kicked out with team loose
 define('DEATH_TYPE_NIGHT', 'night');
@@ -63,6 +64,7 @@ define('DEATH_TYPE_DAY', 'day');
 define('GAME_ACTION_ARRANGEMENT', 'arrangement');
 define('GAME_ACTION_LEAVING', 'leaving');
 define('GAME_ACTION_WARNING', 'warning');
+define('GAME_ACTION_TECH_FOUL', 'techFoul');
 define('GAME_ACTION_DON', 'don');
 define('GAME_ACTION_SHERIFF', 'sheriff');
 define('GAME_ACTION_LEGACY', 'legacy');
@@ -445,6 +447,7 @@ class Game
 				{
 					case '';
 					case DEATH_TYPE_WARNINGS:
+					case DEATH_TYPE_TECH_FOULS:
 						break;
 					case DEATH_TYPE_GIVE_UP:
 					case DEATH_TYPE_KICK_OUT:
@@ -588,7 +591,7 @@ class Game
 					default:
 						throw new Exc(
 							'Player ' . ($i + 1) . ' has invalid death type "' . $death_type . '". Death type must be one of: "' . 
-							DEATH_TYPE_DAY . '", "' . DEATH_TYPE_NIGHT . '", "' . DEATH_TYPE_WARNINGS . '", "' . 
+							DEATH_TYPE_DAY . '", "' . DEATH_TYPE_NIGHT . '", "' . DEATH_TYPE_WARNINGS . '", "' . DEATH_TYPE_TECH_FOULS . '", "' . 
 							DEATH_TYPE_KICK_OUT . '", "' . DEATH_TYPE_TEAM_KICK_OUT . '", or "' . DEATH_TYPE_GIVE_UP . '".');
 				}
 			}
@@ -1127,6 +1130,178 @@ class Game
 		return true;
 	}
 	
+	function check_tech_fouls($fix = false)
+	{
+		if (($this->flags & GAME_FEATURE_FLAG_WARNINGS) == 0)
+		{
+			return true;
+		}
+		
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			$tech_fouls_count = 0;
+			if (isset($player->techFouls))
+			{
+				if ($this->flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
+				{
+					$issue = NULL;
+					if (is_array($player->techFouls))
+					{
+						if (
+							count($player->techFouls) > 2 &&
+							$this->set_issue($fix, 'Player ' . ($i + 1) . ' has ' . count($player->techFouls). ' tech fouls.', ' Tech fouls are cut to 2.'))
+						{
+							$player->techFouls = array_slice($player->techFouls, 0, 2);
+							return false;
+						}
+						
+						for ($j = 0; $j < count($player->techFouls); ++$j)
+						{
+							$techFoul = $player->techFouls[$j];
+							$issue = $this->check_gametime($techFoul);
+							if ($issue != NULL)
+							{
+								$issue = 'Player ' . ($i + 1) . ' tech foul ' . ($j + 1) . ' is incorect: ' . $issue;
+								break;
+							}
+						}
+					}
+					else 
+					{
+						$issue = 'Player ' . ($i + 1) . ' techFouls is not an array.';
+					}
+					
+					if (
+						$issue != NULL &&
+						$this->set_issue($fix, $issue, ' Tech foul details are removed.'))
+					{
+						$this->remove_flags(GAME_FEATURE_FLAG_WARNINGS_DETAILS);
+						return false;
+					}
+				}
+				else
+				{
+					if (!is_numeric($player->techFouls))
+					{
+						$tech_fouls_count = min(max(is_array($player->techFouls) ? count($player->techFouls) : 0, 0), 2);
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' tech foul is not a number.', ' Tech fouls are set to ' . $tech_fouls_count . '.'))
+						{
+							if ($tech_fouls_count > 0)
+							{
+								$player->techFouls = $tech_fouls_count;
+							}
+							else
+							{
+								unset($player->techFouls);
+							}
+							return false;
+						}
+					}
+					else if ($player->techFouls < 0 || $player->techFouls > 2)
+					{
+						$tech_fouls_count = min(max($player->techFouls, 0), 2);
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' techFouls is set to incorect number ' . $player->techFouls . '.', ' Tech fouls are set to ' . $tech_fouls_count . '.'))
+						{
+							if ($tech_fouls_count > 0)
+							{
+								$player->techFouls = $tech_fouls_count;
+							}
+							else
+							{
+								unset($player->techFouls);
+							}
+							return false;
+						}
+					}
+				}
+			}
+			
+			if ($tech_fouls_count == 2 && ($this->flags & GAME_FEATURE_FLAG_DEATH) != 0)
+			{
+				// player must be dead of tech fouls
+				if (!isset($player->death))
+				{
+					if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 2 tech fouls but they are not dead.', ' Number of tech fouls is set to 1.'))
+					{
+						if ($this->flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
+						{
+							$player->techFouls = array_slice($player->techFouls, 0, 1);
+						}
+						else
+						{
+							$player->techFouls = 1;
+						}
+						return false;
+					}
+				}
+				else 
+				{
+					$death_type = NULL;
+					$death_round = -1;
+					$death_time = NULL;
+					if (is_string($player->death))
+					{
+						$death_type = $player->death;
+					}
+					else if (is_numeric($player->death))
+					{
+					}
+					else if (is_object($player->death))
+					{
+						if (isset($player->death->type))
+						{
+							$death_type = $player->death->type;
+						}
+						if (isset($player->death->round))
+						{
+							$death_round = $player->death->round;
+						}
+						if (isset($player->death->time))
+						{
+							$death_time = $player->death->time;
+						}
+					}
+					if ($death_type != NULL && $death_type != DEATH_TYPE_TECH_FOULS)
+					{
+						if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 2 tech fouls but their death type is ' . $death_type . '.', ' Number of tech fouls is set to 1.'))
+						{
+							if ($this->flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
+							{
+								$player->techFouls = array_slice($player->techFouls, 0, 1);
+							}
+							else
+							{
+								$player->techFouls = 1;
+							}
+							return false;
+						}
+					}
+					else if ($this->flags & GAME_FEATURE_FLAG_WARNINGS_DETAILS)
+					{
+						if ($death_round >= 0 && $death_round != $player->techFouls[1]->round)
+						{
+							if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 2 tech fouls in round ' . $player->techFouls[1]->round . '. But according to death info thery were dead in round '. $death_round . '.', ' Number of tech fouls is set to 3.'))
+							{
+								$player->techFouls = array_slice($player->techFouls, 0, 1);
+								return false;
+							}
+						}
+						else if ($death_time != NULL && $this->compare_gametimes($death_time, $player->techFouls[1]) == 0)
+						{
+							if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' has 2 tech fouls but second tech foul time does not match death time.', ' Number of tech fouls is set to 1.'))
+							{
+								$player->techFouls = array_slice($player->techFouls, 0, 1);
+								return false;
+							}
+						}
+					}
+				}
+			}
+		}
+		return true;
+	}
+	
 	function check_splitting($fix)
 	{
 		// todo: implement checking splitting
@@ -1173,6 +1348,7 @@ class Game
 			$done = $done && $this->check_shooting($fix);
 			$done = $done && $this->check_voting($fix);
 			$done = $done && $this->check_warnings($fix);
+			$done = $done && $this->check_tech_fouls($fix);
 			$done = $done && $this->check_splitting($fix);
 			$done = $done && $this->check_on_record($fix);
 		}
@@ -1311,6 +1487,16 @@ class Game
 					}
 				}
 			}
+			if (isset($player->techFouls) && is_array($player->techFouls))
+			{
+				foreach ($player->techFouls as $techFoul)
+				{
+					if ($gametime == NULL || $this->compare_gametimes($gametime, $techFoul) < 0)
+					{
+						$gametime = $techFouls;
+					}
+				}
+			}
 		}
 		return $gametime;
 	}
@@ -1389,6 +1575,12 @@ class Game
 				if (isset($player->warnings) && count($player->warnings) > 3)
 				{
 					$death_time = clone $player->warnings[3];
+				}
+				break;
+			case DEATH_TYPE_TECH_FOULS:
+				if (isset($player->techFouls) && count($player->techFouls) > 1)
+				{
+					$death_time = clone $player->techFouls[1];
 				}
 				break;
 			}
@@ -1561,6 +1753,25 @@ class Game
 					else if (isset($player->warnings) && count($player->warnings) > 3)
 					{
 						$r = $player->warnings[3]->round;
+					}
+					else
+					{
+						return GAME_UNKNOWN;
+					}
+				}
+				else if ($player->death->type == DEATH_TYPE_TECH_FOULS)
+				{
+					if (isset($player->death->round))
+					{
+						$r = $player->death->round;
+					}
+					else if (isset($player->death->time) && isset($player->death->time->round))
+					{
+						$r = $player->death->time->round;
+					}
+					else if (isset($player->techFouls) && count($player->techFouls) > 1)
+					{
+						$r = $player->techFouls[1]->round;
 					}
 					else
 					{
@@ -2442,6 +2653,10 @@ class Game
 					{
 						unset($player->warnings);
 					}
+					if (isset($player->techFouls))
+					{
+						unset($player->techFouls);
+					}
 				}
 				$flag &= ~GAME_FEATURE_FLAG_WARNINGS_DETAILS;
 				break;
@@ -2451,6 +2666,10 @@ class Game
 					if (isset($player->warnings))
 					{
 						$player->warnings = count($player->warnings);
+					}
+					if (isset($player->techFouls))
+					{
+						$player->techFouls = count($player->techFouls);
 					}
 				}
 				break;
@@ -2759,6 +2978,16 @@ class Game
 				{
 					$action = clone $warning;
 					$action->action = GAME_ACTION_WARNING;
+					$action->player = $i + 1;
+					$actions[] = $action;
+				}
+			}
+			if (isset($player->techFouls) && is_array($player->techFouls))
+			{
+				foreach ($player->techFouls as $techFoul)
+				{
+					$action = clone $techFoul;
+					$action->action = GAME_ACTION_TECH_FOUL;
 					$action->player = $i + 1;
 					$actions[] = $action;
 				}

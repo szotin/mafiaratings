@@ -198,7 +198,7 @@ class GamePlayersStats
 				{
 					$player->scoring_flags |= SCORING_FLAG_SURRENDERED;
 				}
-				else if ($death_type == DEATH_TYPE_WARNINGS)
+				else if ($death_type == DEATH_TYPE_WARNINGS || $death_type == DEATH_TYPE_TECH_FOULS) // Note that warnings and tech fouls share the same scoring flag. The should be split in the future.
 				{
 					$player->scoring_flags |= SCORING_FLAG_WARNINGS_4;
 				}
@@ -391,6 +391,7 @@ class GamePlayersStats
 					$player->kill_type = KILL_TYPE_GIVE_UP;
 					break;
 				case DEATH_TYPE_WARNINGS:
+				case DEATH_TYPE_TECH_FOULS: // Note that warnings and tech fouls share the same stats counter. They should be split in the future.
 					$player->kill_type = KILL_TYPE_WARNINGS;
 					break;
 				case DEATH_TYPE_KICK_OUT:
@@ -429,6 +430,20 @@ class GamePlayersStats
 				else
 				{
 					$player->warnings = (int)$game_player->warnings;
+				}
+			}
+			
+			// not used yet
+			$player->techFouls = 0;
+			if (isset($game_player->techFouls))
+			{
+				if (is_array($game_player->techFouls))
+				{
+					$player->techFouls = count($game_player->techFouls);
+				}
+				else
+				{
+					$player->techFouls = (int)$game_player->techFouls;
 				}
 			}
 			

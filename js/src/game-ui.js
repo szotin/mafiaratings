@@ -106,16 +106,19 @@ function _uiRender(resetTimer)
 		$('#controlx' + i).html('').removeClass();
 		$('#player' + i).html(html).val(player.id ? player.id : 0);
 		
+		let btns = $('#btns-' + i);
+		let btnsHtml = '';
 		if (gameIsPlayerAtTheTable(i))
 		{
-			$('#btns-' + i).html(
-					'<button class="icon" onclick="gamePlayerWarning(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>' +
-					'<button class="icon" onclick="uiPlayerActions(' + i + ')"><img src="images/more.png" title="' + l('GiveUp') + '"></button>');
+			btnsHtml = '<button class="icon" onclick="gamePlayerWarning(' + i + ')"><img src="images/warn.png" title="' + l('Warn') + '"></button>';
+			if (gameGetRule(/*RULES_TECH_FAUL*/12) == /*RULES_TECH_FAUL_YES*/1)
+			{
+				btns.css('width', '90px');
+				btnsHtml += '<button class="icon" onclick="gamePlayerTechFoul(' + i + ')"><img src="images/tech_foul.png" title="' + l('TechFoul') + '"></button>';
+			}
+			btnsHtml += '<button class="icon" onclick="uiPlayerActions(' + i + ')"><img src="images/more.png"></button>';
 		}
-		else
-		{
-			$('#btns-' + i).html('');
-		}
+		btns.html(btnsHtml);
 	}
 	
 	let status = '';
@@ -723,26 +726,42 @@ function _uiRender(resetTimer)
 	for (let i = 0; i < 10; ++i)
 	{
 		let player = game.players[i];
-		html = '';
-		if (isSet(player.warnings) && player.warnings.length > 0)
+		html = '<font color="#808000" size="4"><b><table width="100%" class="transp"><tr><td>';
+		
+		let wLen = isSet(player.warnings) ? player.warnings.length : 0;
+		let wIndex = 0;
+		for (; wIndex < wLen; ++wIndex)
 		{
-			html = '<font color="#808000" size="4"><b><table width="100%" class="transp"><tr><td>';
-			let j = 0;
-			for (; j < player.warnings.length; ++j)
+			if (gameCompareTimes(player.warnings[wIndex], game.time, true) >= 0)
 			{
-				if (gameCompareTimes(player.warnings[j], game.time, true) >= 0)
-				{
-					break;
-				}
-				html += '✔';
+				break;
 			}
-			html += '</td><td align="right">'
-			for (; j < player.warnings.length; ++j)
-			{
-				html += '✔';
-			}
-			html += '</td></tr></table></b></font>';
+			html += '✔';
 		}
+		
+		let fLen = isSet(player.techFouls) ? player.techFouls.length : 0;
+		let fIndex = 0;
+		for (; fIndex < fLen; ++fIndex)
+		{
+			if (gameCompareTimes(player.techFouls[fIndex], game.time, true) >= 0)
+			{
+				break;
+			}
+			html += '✘';
+		}
+
+		html += '</td><td align="right">';
+		
+		for (; wIndex < wLen; ++wIndex)
+		{
+			html += '✔';
+		}
+		for (; fIndex < fLen; ++fIndex)
+		{
+			html += '✘';
+		}
+		
+		html += '</td></tr></table></b></font>';
 		$('#warn' + i).html(html);
 	}
 
@@ -1521,6 +1540,10 @@ function uiPlayerActions(num)
 	if (isSet(player.warnings) && player.warnings.length > 0)
 	{
 		html += '<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerRemoveWarning)"><table class="transp" width="100%"><tr><td width="30"><img src="images/warn-minus.png"></td><td>' + l('RemoveWarning') + '</td></tr></table></button></p>';
+	}
+	if (isSet(player.techFouls) && player.techFouls.length > 0)
+	{
+		html += '<p><button class="leave" onclick="_uiPlayerAction(' + num + ', gamePlayerRemoveTechFoul)"><table class="transp" width="100%"><tr><td width="30"><img src="images/tech-foul-minus.png"></td><td>' + l('RemoveTechFoul') + '</td></tr></table></button></p>';
 	}
 	
 	if (isSet(game.time) && game.time.time != 'end')

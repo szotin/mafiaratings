@@ -1,4 +1,4 @@
-var version = "1.2"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
+var version = "1.3"; // It must exactly match the value of GAME_CURRENT_VERSION in include/game.php
 var game; // All vars here can be used by UI code, but it is strongly recommended to use them for reading only. If changes are absolutely needed, make sure gameDirty(...) is called after that.
 var log; // array of games in the previous times - it is used to return back in time.
 var lastSaved; // index in the log array of the last record that is saved to the server.
@@ -290,6 +290,10 @@ function _gameGetPlayerDeathTime(num, includingSpeech)
 		else if (player.death.type == 'warnings')
 		{
 			deathTime = structuredClone(player.warnings[3]);
+		}
+		else if (player.death.type == 'techFouls')
+		{
+			deathTime = structuredClone(player.techFouls[1]);
 		}
 	}
 	return deathTime;
@@ -957,6 +961,29 @@ function gamePlayerWarning(num)
 	}
 }
 
+function gamePlayerTechFoul(num)
+{
+	let player = game.players[num];
+	gamePushState();
+	_gameIncTimeOrder();
+	if (!isSet(player.techFouls))
+	{
+		player.techFouls = [];
+	}
+	if (player.techFouls.length < 2)
+	{
+		player.techFouls.push(structuredClone(game.time));
+		
+		if (player.techFouls.length >= 2)
+		{
+			_gameCheckEnd(); // we need to check is game ended before the mod kill, because mod kill can change the game result
+			player.death = { round: game.time.round, type: 'techFouls' };
+			_gameCheckEnd();
+		}
+		gameDirty();
+	}
+}
+
 function gamePlayerGiveUp(num)
 {
 	let player = game.players[num];
@@ -1008,47 +1035,100 @@ function gamePlayerTeamKickOut(num)
 function gamePlayerRemoveWarning(num)
 {
 	let player = game.players[num];
-	let i = player.warnings.length - 1;
-	if (isSet(player.warnings) && i >= 0)
+	if (isSet(player.warnings))
 	{
-		let w = player.warnings[i];
-		if (gameCompareTimes(w, game.time, true) == 0 && --game.time.order == 0)
+		let i = player.warnings.length - 1;
+		if (i >= 0)
 		{
-			delete game.time.order;
-		}
-		for (let i = 0; i < 10; ++i)
-		{
-			if (i == num) continue;
-			
-			let p = game.players[i];
-			if (isSet(p.warnings))
+			let w = player.warnings[i];
+			if (gameCompareTimes(w, game.time, true) == 0 && --game.time.order == 0)
 			{
-				for (j = p.warnings.length - 1; j >= 0; --j)
+				delete game.time.order;
+			}
+			for (let i = 0; i < 10; ++i)
+			{
+				if (i == num) continue;
+				
+				let p = game.players[i];
+				if (isSet(p.warnings))
 				{
-					let w1 = p.warnings[j];
-					if (gameCompareTimes(w, w1, true) == 0 && w1.order > w.order)
+					for (j = p.warnings.length - 1; j >= 0; --j)
 					{
-						--w1.order;
-					}
-					else
-					{
-						break;
+						let w1 = p.warnings[j];
+						if (gameCompareTimes(w, w1, true) == 0 && w1.order > w.order)
+						{
+							--w1.order;
+						}
+						else
+						{
+							break;
+						}
 					}
 				}
+				if (isSet(p.death) && isSet(p.death.time) && gameCompareTimes(w, p.death.time, true) == 0 && p.death.time.order > w.order)
+				{
+					--p.death.time.order;
+				}
 			}
-			if (isSet(p.death) && isSet(p.death.time) && gameCompareTimes(w, p.death.time, true) == 0 && p.death.time.order > w.order)
+			
+			if (player.warnings.length > 1)
+				player.warnings.splice(player.warnings.length - 1, 1);
+			else if (player.warnings.length == 1)
 			{
-				--p.death.time.order;
+				delete player.warnings;
 			}
+			gameDirty();
 		}
-		
-		if (player.warnings.length > 1)
-			player.warnings.splice(player.warnings.length - 1, 1);
-		else if (player.warnings.length == 1)
+	}
+}
+
+function gamePlayerRemoveTechFoul(num)
+{
+	let player = game.players[num];
+	if (isSet(player.techFouls))
+	{
+		let i = player.techFouls.length - 1;
+		if (i >= 0)
 		{
-			delete player.warnings;
+			let w = player.techFouls[i];
+			if (gameCompareTimes(w, game.time, true) == 0 && --game.time.order == 0)
+			{
+				delete game.time.order;
+			}
+			for (let i = 0; i < 10; ++i)
+			{
+				if (i == num) continue;
+				
+				let p = game.players[i];
+				if (isSet(p.techFouls))
+				{
+					for (j = p.techFouls.length - 1; j >= 0; --j)
+					{
+						let w1 = p.techFouls[j];
+						if (gameCompareTimes(w, w1, true) == 0 && w1.order > w.order)
+						{
+							--w1.order;
+						}
+						else
+						{
+							break;
+						}
+					}
+				}
+				if (isSet(p.death) && isSet(p.death.time) && gameCompareTimes(w, p.death.time, true) == 0 && p.death.time.order > w.order)
+				{
+					--p.death.time.order;
+				}
+			}
+			
+			if (player.techFouls.length > 1)
+				player.techFouls.splice(player.techFouls.length - 1, 1);
+			else if (player.techFouls.length == 1)
+			{
+				delete player.techFouls;
+			}
+			gameDirty();
 		}
-		gameDirty();
 	}
 }
 
@@ -1240,6 +1320,10 @@ function gameIsVotingCanceled()
 			if (player.death.type == 'warnings')
 			{
 				r = player.warnings[3].round;
+			}
+			else if (player.death.type == 'techFouls')
+			{
+				r = player.techFouls[1].round;
 			}
 			else if (player.death.type == 'giveUp' || player.death.type == 'kickOut' ||  player.death.type == 'teamKickOut')
 			{
@@ -1958,7 +2042,7 @@ function gameGetNightKill(round, raw)
 	if (killedIndex >= 0 && !raw)
 	{
 		let p = game.players[killedIndex];
-		if (isSet(p.death) && (p.death.type == 'warnings' || p.death.type == 'giveUp' || p.death.type == 'kickOut'))
+		if (isSet(p.death) && p.death.type != 'day' && p.death.type != 'night')
 		{
 			return -1;
 		}
@@ -2391,7 +2475,7 @@ function gameNext()
 							let player = game.players[winners[0] - 1];
 							let r = gameGetRule(/*RULES_FIRST_DAY_VOTING*/4);
 							game.time = { time: 'day kill speaking', speaker: winners[0], round: game.time.round };
-							if (isSet(player.death) && (player.death.type == 'warnings' || player.death.type == 'giveUp' || player.death.type == 'kickOut'))
+							if (isSet(player.death) && player.death.type != 'day' && player.death.type != 'night')
 							{
 								gameNext(); // skip this speech, go next - the player is dead already
 							}
@@ -2467,7 +2551,7 @@ function gameNext()
 					let n = noms[0];
 					let player = game.players[n-1];
 					game.time = { time: 'day kill speaking', round: game.time.round, speaker: n };
-					if (player.death.type == 'warnings' || player.death.type == 'giveUp' || player.death.type == 'kickOut')
+					if (player.death.type != 'day' && player.death.type != 'night')
 					{
 						gameNext(); // skip this speech, go next - the player is dead already
 					}
@@ -2497,7 +2581,7 @@ function gameNext()
 					let num = noms[i+1];
 					let player = game.players[num-1];
 					game.time.speaker = num;
-					if (player.death.type == 'warnings' || player.death.type == 'giveUp' || player.death.type == 'kickOut')
+					if (player.death.type != 'day' && player.death.type != 'night')
 					{
 						gameNext(); // skip this speech, go next - the player is dead already
 					}

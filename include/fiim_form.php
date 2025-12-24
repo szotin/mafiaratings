@@ -253,7 +253,7 @@ class FiimForm
 						$dt = $player->death->type;
 					}
 					
-					if ($dt == DEATH_TYPE_WARNINGS)
+					if ($dt == DEATH_TYPE_WARNINGS || $dt == DEATH_TYPE_TECH_FOULS)
 					{
 						$extra_points -= 0.5;
 					}

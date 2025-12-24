@@ -169,6 +169,22 @@ class ApiPage extends GetApiPageBase
 				$player->warnings = 0;
 			}
 			
+			if (isset($p->techFouls))
+			{
+				if (is_array($p->techFouls))
+				{
+					$player->techFouls = count($p->techFouls);
+				}
+				else
+				{
+					$player->techFouls = $p->techFouls;
+				}
+			}
+			else
+			{
+				$player->techFouls = 0;
+			}
+			
 			if ($show_roles)
 			{
 				if (isset($p->don))
@@ -205,6 +221,13 @@ class ApiPage extends GetApiPageBase
 				case DEATH_TYPE_WARNINGS:
 					$player->deathType = 'warnings';
 					if (isset($player->warnings) && is_array($player->warnings) && count($player->warnings) > 0 && Game::is_night($player->warnings[count($player->warnings) - 1]))
+					{
+						$player->deathRound = $p->death->round - 1;
+					}
+					break;
+				case DEATH_TYPE_TECH_FOULS:
+					$player->deathType = 'techFouls';
+					if (isset($player->techFouls) && is_array($player->techFouls) && count($player->techFouls) > 0 && Game::is_night($player->techFouls[count($player->techFouls) - 1]))
 					{
 						$player->deathRound = $p->death->round - 1;
 					}
@@ -529,10 +552,11 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
 				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don". It is set only when the flag hideRoles is not set in the game.');
 				$players->sub_param('warnings', 'Number of warnings.');
+				$players->sub_param('techFouls', 'Number of technical fouls.');
 				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');
 				$players->sub_param('state', 'Player state - "dead" or "alive".');
 				$players->sub_param('deathRound', 'If player state is "dead" it is set to the round number when they died.');
-				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "giveUp", or "kickOut".');
+				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "techFouls", "giveUp", or "kickOut".');
 				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when the flag hideRoles is not set in the game.');
 				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened. It is set only when the flag hideRoles is not set in the game.');
 			$moderator = $param->sub_param('moderator', 'Moderator.');

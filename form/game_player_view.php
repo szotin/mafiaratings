@@ -277,6 +277,7 @@ try
 	$maf_alive = 3;
 	$civ_alive = 7;
 	$warnings = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	$techFouls = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	$round = -1;
 	$is_night = true;
 	$actions = $game->get_actions();
@@ -366,6 +367,9 @@ try
 								break;
 							case DEATH_TYPE_WARNINGS:
 								$action_text = get_label('[0] gets fourth warning and leaves the game. [1]', $player_name, $info);
+								break;
+							case DEATH_TYPE_TECH_FOULS:
+								$action_text = get_label('[0] gets the second technical foul and leaves the game. [1]', $player_name, $info);
 								break;
 							case DEATH_TYPE_KICK_OUT:
 								$action_text = get_label('[0] is kicked out from the game [2]. [1]', $player_name, $info, $game->get_gametime_text($action));
@@ -474,6 +478,20 @@ try
 							break;
 						default:
 							$action_text = get_label('[0] gets a warning [1].', $player_name, $game->get_gametime_text($action));
+							break;
+					}
+				}
+				break;
+			case GAME_ACTION_TECH_FOUL:
+				if ($action->player == $player_num)
+				{
+					switch (++$techFouls[$action->player-1])
+					{
+						case 2:
+							$action_text = get_label('[0] gets the second technical foul [1].', $player_name, $game->get_gametime_text($action));
+							break;
+						default:
+							$action_text = get_label('[0] gets a technical foul [1].', $player_name, $game->get_gametime_text($action));
 							break;
 					}
 				}
