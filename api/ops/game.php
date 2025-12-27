@@ -778,7 +778,7 @@ class ApiPage extends OpsApiPageBase
 			$game->tableNum = 0;
 			$game->gameNum = 0;
 			$game->language = get_lang_code($_lang);
-			$game->rules = default_rules_code();
+			$game->rules = DEFAULT_RULES;
 			$game->features = Game::feature_flags_to_leters($feature_flags);
 			$game->moderator = new stdClass();
 			$game->moderator->id = 0;

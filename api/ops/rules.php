@@ -55,7 +55,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('name', 'Rules name. Must be unique in the club. Must be different from the club name.');
 		
-		$rules_param = $help->request_param('rules', 'Rules. Either rules code in the form "' . default_rules_code() . '" or json object of the following format.');
+		$rules_param = $help->request_param('rules', 'Rules. Either rules code in the form "' . DEFAULT_RULES . '" or json object of the following format.');
 		api_rules_help($rules_param);
 		
 		$help->response_param('rules_id', 'Newly created rules id.');
@@ -148,7 +148,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('club_id', 'Club id.', '"rules_id" must be set.');
 		$help->request_param('league_id', 'League id. When both club_id and league_id are set, the default rules are set for this club in the league.', 'default rules for the club itself are set.');
 		$help->request_param('name', 'New rules name.', 'remains the same.');
-		$rules_param = $help->request_param('rules', 'New rules. Either rules code in the form "' . default_rules_code() . '" or json object of the following format.', 'remains the same.');
+		$rules_param = $help->request_param('rules', 'New rules. Either rules code in the form "' . DEFAULT_RULES . '" or json object of the following format.', 'remains the same.');
 		api_rules_help($rules_param);
 		return $help;
 	}

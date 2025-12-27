@@ -65,6 +65,10 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] is not a valid email address.', $email));
 		}
 		
+		$rules_code = get_optional_param('rules_code', DEFAULT_RULES);
+		$scoring_id = get_optional_param('scoring_id', SCORING_DEFAULT_ID);
+		$normalizer_id = NORMALIZER_DEFAULT_ID;
+		
 		Db::begin();
 		if ($city_id <= 0)
 		{
@@ -80,9 +84,6 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			$rules_code = default_rules_code();
-			$scoring_id = SCORING_DEFAULT_ID;
-			$normalizer_id = NORMALIZER_DEFAULT_ID;
 			$parent_id = NULL;
 		}
 		Db::exec(
@@ -155,8 +156,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_fee, $old_currency_id, $old_langs, $old_scoring_id, $old_normalizer_id, $old_city_id, $old_flags, $timezone) = Db::record(get_label('club'),
-			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.fee, c.currency_id, c.langs, c.scoring_id, c.normalizer_id, ct.id, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_fee, $old_currency_id, $old_langs, $old_scoring_id, $old_normalizer_id, $old_city_id, $old_flags, $old_rules_code, $timezone) = Db::record(get_label('club'),
+			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.fee, c.currency_id, c.langs, c.scoring_id, c.normalizer_id, ct.id, c.flags, c.rules, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 			
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -224,10 +225,12 @@ class ApiPage extends OpsApiPageBase
 			$flags = ($flags & ~CLUB_ICON_MASK) + ($icon_version << CLUB_ICON_MASK_OFFSET);
 		}
 		
+		$rules_code = get_optional_param('rules_code', $old_rules_code);
+		
 		Db::exec(
 			get_label('club'), 
-			'UPDATE clubs SET activated = UNIX_TIMESTAMP(), name = ?, web_site = ?, langs = ?, email = ?, phone = ?, fee = ?, currency_id = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, flags = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $fee, $currency_id, $city_id, $scoring_id, $normalizer_id, $flags, $club_id);
+			'UPDATE clubs SET activated = UNIX_TIMESTAMP(), name = ?, web_site = ?, langs = ?, email = ?, phone = ?, fee = ?, currency_id = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, flags = ?, rules = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $fee, $currency_id, $city_id, $scoring_id, $normalizer_id, $flags, $rules_code, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);

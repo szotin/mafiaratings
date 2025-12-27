@@ -143,7 +143,7 @@ class Game
 		{
 			return $this->data->rules;
 		}
-		return default_rules_code();
+		return DEFAULT_RULES;
 	}
 	
 	private function set_issue($fix, $text, $fix_text)
@@ -3941,7 +3941,7 @@ class Game
 		
 		if (!isset($data->rules))
 		{
-			$data->rules = default_rules_code();
+			$data->rules = DEFAULT_RULES;
 		}
 		
 		// Fix json if needed and save original json to game_issues table

@@ -6,6 +6,8 @@ require_once '../include/url.php';
 require_once '../include/email.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
+require_once '../include/rules.php';
+require_once '../include/scoring.php';
 
 initiate_session();
 
@@ -52,6 +54,27 @@ try
 	show_city_input('form-city', CITY_DETECT, 'form-country');
 	echo '</td></tr>';
 	
+	$rules_list = get_available_rules();
+	$rules_code = DEFAULT_RULES;
+	echo '<tr><td>' . get_label('Rules') . ':</td><td><select id="form-rules">';
+	foreach ($rules_list as $r)
+	{
+		if (show_option($r->rules, $rules_code, $r->name))
+		{
+			$rules_code = '';
+		}
+	}
+	echo '</select></td></tr>';
+	
+	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
+	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id IS NULL ORDER BY name');
+	while ($row = $query->next())
+	{		
+		list ($scoring_id, $scoring_name) = $row;
+		show_option($scoring_id, SCORING_DEFAULT_ID, $scoring_name);
+	} 
+	echo '</select></td></tr>';
+	
 	echo '</table>';
 ?>	
 	<script>
@@ -69,6 +92,8 @@ try
 			, country: $("#form-country").val()
 			, city: $("#form-city").val()
 			, langs: languages
+			, rules_code: $("#form-rules").val()
+			, scoring_id: $("#form-scoring").val()
 		},
 		onSuccess);
 	}

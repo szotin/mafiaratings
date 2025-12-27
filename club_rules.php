@@ -31,7 +31,7 @@ class Page extends ClubPageBase
 			if ($row = $query->next())
 			{
 				list($rules_code) = $row;
-				$this->edit_url .= 'form/rules_edit.php?league_id=' . (-$option) . '&club_id=' . $this->id;
+				$this->edit_url = 'form/rules_edit.php?league_id=' . (-$option) . '&club_id=' . $this->id;
 			}
 			else
 			{
@@ -41,7 +41,7 @@ class Page extends ClubPageBase
 		else
 		{
 			$rules_code = $this->rules_code;
-			$this->edit_url .= '&club_id=' . $this->id;
+			$this->edit_url = 'form/rules_edit.php?club_id=' . $this->id;
 		}
 		
 		$rules = get_available_rules($this->id, $this->name, $this->rules_code);

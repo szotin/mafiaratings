@@ -8,7 +8,12 @@ initiate_session();
 
 function show_rules_select($club_id, $rules_code)
 {
-	list ($club_rules_code, $club_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+	$club_rules_code = null;
+	$club_name = null;
+	if ($club_id != null)
+	{
+		list ($club_rules_code, $club_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+	}
 	
 	$found = false;
 	
@@ -18,7 +23,7 @@ function show_rules_select($club_id, $rules_code)
 	$r->name = get_label('Custom...');
 	$all_rules[] = $r;
 	
-	echo '<select id="rules" onchange="rulesChanged()">';
+	echo '<select id="form-rules" onchange="rulesChanged()">';
 	foreach ($all_rules as $r)
 	{
 		if (show_option($r->rules, $rules_code, $r->name))
@@ -96,7 +101,6 @@ try
 		dialog_title(get_label('Edit [0]', get_label('rules [0]', $rules_name)));
 ?>
 		<script>
-		var rulesCode = "<?php echo $rules_code; ?>";
 		function commit(onSuccess)
 		{
 			var params =
@@ -111,8 +115,9 @@ try
 		</script>
 <?php
 		echo '<table class="transp" width="100%"><tr><td>';
-		echo '<p><input class="longest" id="form-name" value="' . $rules_name . '"></p>';
-		echo '</td></tr>';
+		echo '<p><input class="longest" id="form-name" value="' . $rules_name . '"></p><p>';
+		show_rules_select($club_id, $rules_code);
+		echo '</p></td></tr>';
 	}
 	else if ($event_id > 0)
 	{
@@ -149,7 +154,6 @@ try
 			$rules_name .= ' ' . get_label('Table [0] / Game [1]', $table_num, $game_num);
 ?>			
 			<script>
-			var rulesCode = "<?php echo $rules_code; ?>";
 			function commit(onSuccess)
 			{
 				let text = '<p><?php echo get_label('Also use these rules:'); ?></p><table class="transp">';
@@ -206,7 +210,6 @@ try
 			
 ?>
 			<script>
-			var rulesCode = "<?php echo $rules_code; ?>";
 			function commit(onSuccess)
 			{
 				let text = '<p><?php echo get_label('Also use these rules:'); ?></p><table class="transp">';
@@ -270,7 +273,6 @@ try
 		
 ?>			
 			<script>
-			var rulesCode = "<?php echo $rules_code; ?>";
 			function commit(onSuccess)
 			{
 				var params =
@@ -298,7 +300,6 @@ try
 		
 ?>
 			<script>
-			var rulesCode = "<?php echo $rules_code; ?>";
 			function commit(onSuccess)
 			{
 				let text = '<p><?php echo get_label('Also use these rules:'); ?></p><table class="transp">';
@@ -335,7 +336,6 @@ try
 			dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
 ?>
 			<script>
-			var rulesCode = "<?php echo $rules_code; ?>";
 			function commit(onSuccess)
 			{
 				var params =
@@ -366,7 +366,6 @@ try
 		dialog_title(get_label('Create [0]', get_label('rules for [0]', $rules_name)));
 ?>
 		<script>
-		var rulesCode = "<?php echo $rules_code; ?>";
 		function commit(onSuccess)
 		{
 			var params =
@@ -381,8 +380,9 @@ try
 		</script>
 <?php
 		echo '<table class="transp" width="100%"><tr><td>';
-		echo '<p><input class="longest" id="form-name"></p>';
-		echo '</td></tr>';
+		echo '<p><input class="longest" id="form-name"></p><p>';
+		show_rules_select(null, $rules_code);
+		echo '</p></td></tr>';
 	}
 	else if ($league_id > 0)
 	{
@@ -392,7 +392,6 @@ try
 		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
 ?>
 		<script>
-		var rulesCode = "<?php echo $rules_code; ?>";
 		function commit(onSuccess)
 		{
 			var params =
@@ -418,7 +417,6 @@ try
 		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
 ?>
 		<script>
-		var rulesCode = "<?php echo $rules_code; ?>";
 		function commit(onSuccess)
 		{
 			var params =
@@ -431,12 +429,12 @@ try
 		}
 		</script>
 <?php
-		echo '<table class="transp" width="100%"><tr><td><h3>';
-		echo $rules_name;
-		echo '</h3><br></td></tr>';
+		echo '<table class="transp" width="100%"><tr><td><p>';
+		show_rules_select(null, $rules_code);
+		echo '</p></td></tr>';
 	}
 	
-	echo '<tr><td><span id="form-rules"></span></td></tr>';
+	echo '<tr><td><span id="form-rules-edit"></span></td></tr>';
 	
 	echo '</table><script>';
 	
@@ -453,13 +451,13 @@ try
 	echo "\nvar rulesOptions = " . json_encode($rules_array) . ";\n";
 	
 ?>	
+	var rulesCode = "<?php echo $rules_code; ?>";
 	var rulesFilter = <?php echo $rules_filter; ?>;
 	var currentRule = <?php echo $last_rule; ?>;
 	
 	function rulesChanged()
 	{
-		rulesCode = $('#rules').val();
-		console.log(rulesCode);
+		rulesCode = $('#form-rules').val();
 		showRule(currentRule);
 	}
 
@@ -472,10 +470,10 @@ try
 	{
 		rulesCode = rulesCode.substr(0, ruleNum) + value + rulesCode.substr(ruleNum + 1);
 		$('#form-full-text').html('<p>' + rulesOptions[ruleNum][1] + '. ' + rulesOptions[ruleNum][2][value] + '</p>');
-		if ($('#rules').length > 0)
+		if ($('#form-rules').length > 0)
 		{
-			$('#rules option:last').val(rulesCode);
-			$('#rules').val(rulesCode);
+			$('#form-rules option:last').val(rulesCode);
+			$('#form-rules').val(rulesCode);
 		}
 	}
 	
@@ -588,7 +586,7 @@ try
 			html += "<?php echo get_label('[0] does not allow custom rules.', $rules_name); ?>";
 		}
 		html += "</td></tr></table>";
-		$('#form-rules').html(html);
+		$('#form-rules-edit').html(html);
 	}
 	
 	showRule(currentRule);

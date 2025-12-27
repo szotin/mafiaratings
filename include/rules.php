@@ -222,11 +222,6 @@ function check_rules_code($rules_code)
 }
 
 
-function default_rules_code()
-{
-	return str_pad('', RULE_OPTIONS_COUNT, '0');
-}
-
 function rules_code_from_object($obj)
 {
 	global $_rules_options;
@@ -429,7 +424,7 @@ function api_rules_help($rules_param, $show_code_param = false)
 	$rules = include '../../include/languages/en/rules.php';
 	if ($show_code_param)
 	{
-		$rules_param->sub_param('code', 'Rules code in the form "' . default_rules_code() . '". It uniquiely identifies the rules. It is guaranteed that games/events/tournaments/clubs with the same code are using the same rules.');
+		$rules_param->sub_param('code', 'Rules code in the form "' . DEFAULT_RULES . '". It uniquiely identifies the rules. It is guaranteed that games/events/tournaments/clubs with the same code are using the same rules.');
 	}
 	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
 	{
@@ -663,38 +658,55 @@ function show_rules($rules_code, $view)
 	echo '</table></big>';
 }
 
-function get_available_rules($club_id, $club_name, $club_rules)
+function get_available_rules($club_id = null, $club_name = null, $club_rules = null)
 {
 	$rules = array();
-	$r = new stdClass();
-	$r->id = 0;
-	$r->name = $club_name;
-	$r->rules = $club_rules;
-	$rules[] = $r;
+	if ($club_id != null)
+	{
+		if ($club_name != null && $club_rules != null)
+		{
+			$r = new stdClass();
+			$r->id = 0;
+			$r->name = $club_name;
+			$r->rules = $club_rules;
+			$rules[] = $r;
+		}
 	
-	$query = new DbQuery('SELECT l.id, l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY name', $club_id);
-	while ($row = $query->next())
-	{
-		$r = new stdClass();
-		list($r->id, $r->name, $r->rules) = $row;
-		$r->id = -(int)$r->id;
-		$rules[] = $r;
+		$query = new DbQuery('SELECT l.id, l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY name', $club_id);
+		while ($row = $query->next())
+		{
+			$r = new stdClass();
+			list($r->id, $r->name, $r->rules) = $row;
+			$r->id = -(int)$r->id;
+			$rules[] = $r;
+		}
+		$query = new DbQuery('SELECT id, name, default_rules FROM leagues WHERE (flags & '.LEAGUE_FLAG_ELITE.') <> 0 AND id NOT IN (SELECT league_id FROM league_clubs WHERE club_id = ?) ORDER BY name', $club_id);
+		while ($row = $query->next())
+		{
+			$r = new stdClass();
+			list($r->id, $r->name, $r->rules) = $row;
+			$r->id = -(int)$r->id;
+			$rules[] = $r;
+		}
+		$query = new DbQuery('SELECT id, name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+		while ($row = $query->next())
+		{
+			$r = new stdClass();
+			list($r->id, $r->name, $r->rules) = $row;
+			$r->id = (int)$r->id;
+			$rules[] = $r;
+		}
 	}
-	$query = new DbQuery('SELECT id, name, default_rules FROM leagues WHERE (flags & '.LEAGUE_FLAG_ELITE.') <> 0 AND id NOT IN (SELECT league_id FROM league_clubs WHERE club_id = ?) ORDER BY name', $club_id);
-	while ($row = $query->next())
+	else
 	{
-		$r = new stdClass();
-		list($r->id, $r->name, $r->rules) = $row;
-		$r->id = -(int)$r->id;
-		$rules[] = $r;
-	}
-	$query = new DbQuery('SELECT id, name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
-	while ($row = $query->next())
-	{
-		$r = new stdClass();
-		list($r->id, $r->name, $r->rules) = $row;
-		$r->id = (int)$r->id;
-		$rules[] = $r;
+		$query = new DbQuery('SELECT id, name, default_rules FROM leagues WHERE (flags & '.LEAGUE_FLAG_ELITE.') <> 0 ORDER BY name');
+		while ($row = $query->next())
+		{
+			$r = new stdClass();
+			list($r->id, $r->name, $r->rules) = $row;
+			$r->id = -(int)$r->id;
+			$rules[] = $r;
+		}
 	}
 	return $rules;
 }
