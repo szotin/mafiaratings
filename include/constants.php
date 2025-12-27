@@ -399,7 +399,7 @@ define('CLUB_ICON_MAX_VERSION', 7);
 // 2 - 0x0002 -      2 - icon mask
 // 3 - 0x0004 -      4 - icon mask
 // 4 - 0x0008 -      8 - icon mask
-// 5 - 0x0010 -     16 - elite league. Elite league can have elite series. Only admin can create elite leagues or assign/remove elite status to/from the leagues.
+// 5 - 0x0010 -     16 - elite league. Elite league can have elite series. Only admin can create elite leagues or assign/remove elite status to/from the leagues. Elite flag also makes the rules of the league appear in all rules selects.
 define('LEAGUE_FLAG_RETIRED', 0x1);
 define('LEAGUE_FLAG_ELITE', 0x10);
 define('NEW_LEAGUE_FLAGS', 0);

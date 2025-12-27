@@ -3,6 +3,7 @@
 require_once __DIR__ . '/db.php';
 
 // См правила описанные в https://docs.google.com/document/d/1MTOaNVRmx0eCT-TGYAUbGy2F2WAiOcpdf0NSDsVqjCk
+define('DEFAULT_RULES', '00020000100000');
 
 // 6.3. Ротация первой речи.
 // rotation
@@ -311,6 +312,11 @@ function is_rule_allowed($rules_filter, $rule_num, $rule_value)
 		return true;
 	}
 	
+	if (is_string($rules_filter))
+	{
+		$rules_filter = json_decode($rules_filter);
+	}
+	
 	$rule = $_rules_options[$rule_num];
 	$rule_name = $rule[RULE_OPTION_NAME];
 	if (!isset($rules_filter->$rule_name))
@@ -342,11 +348,15 @@ function is_rule_allowed($rules_filter, $rule_num, $rule_value)
 	return false;
 }
 
-// return the closes rules_code that matches the filter
+// return the closest rules_code that matches the filter
 function correct_rules($rules_code, $rules_filter)
 {
 	global $_rules_options;
 	
+	if (is_string($rules_filter))
+	{
+		$rules_filter = json_decode($rules_filter);
+	}
 	$rules_code = upgrade_rules_code($rules_code);
 	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
 	{
@@ -371,6 +381,10 @@ function are_rules_allowed($rules_code, $rules_filter)
 {
 	global $_rules_options;
 	
+	if (is_string($rules_filter))
+	{
+		$rules_filter = json_decode($rules_filter);
+	}
 	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
 	{
 		$rule = $_rules_options[$i];
@@ -380,6 +394,32 @@ function are_rules_allowed($rules_code, $rules_filter)
 		}
 	}
 	return true;
+}
+
+function are_rules_configurable($rules_filter)
+{
+	global $_rules_options;
+	
+	if (is_string($rules_filter))
+	{
+		$rules_filter = json_decode($rules_filter);
+	}
+	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	{
+		$rule = $_rules_options[$i];
+		$rule_name = $rule[RULE_OPTION_NAME];
+		if (!isset($rules_filter->$rule_name))
+		{
+			return true;
+		}
+		
+		$allowed_rules = $rules_filter->$rule_name;
+		if (is_array($allowed_rules) && count($allowed_rules) != 1)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 function api_rules_help($rules_param, $show_code_param = false)
@@ -621,6 +661,42 @@ function show_rules($rules_code, $view)
 		}
 	}
 	echo '</table></big>';
+}
+
+function get_available_rules($club_id, $club_name, $club_rules)
+{
+	$rules = array();
+	$r = new stdClass();
+	$r->id = 0;
+	$r->name = $club_name;
+	$r->rules = $club_rules;
+	$rules[] = $r;
+	
+	$query = new DbQuery('SELECT l.id, l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		$r = new stdClass();
+		list($r->id, $r->name, $r->rules) = $row;
+		$r->id = -(int)$r->id;
+		$rules[] = $r;
+	}
+	$query = new DbQuery('SELECT id, name, default_rules FROM leagues WHERE (flags & '.LEAGUE_FLAG_ELITE.') <> 0 AND id NOT IN (SELECT league_id FROM league_clubs WHERE club_id = ?) ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		$r = new stdClass();
+		list($r->id, $r->name, $r->rules) = $row;
+		$r->id = -(int)$r->id;
+		$rules[] = $r;
+	}
+	$query = new DbQuery('SELECT id, name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
+	while ($row = $query->next())
+	{
+		$r = new stdClass();
+		list($r->id, $r->name, $r->rules) = $row;
+		$r->id = (int)$r->id;
+		$rules[] = $r;
+	}
+	return $rules;
 }
 
 ?>

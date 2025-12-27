@@ -12,41 +12,16 @@ function show_rules_select($club_id, $rules_code)
 	
 	$found = false;
 	
-	$all_rules = array();
+	$all_rules = get_available_rules($club_id, $club_name, $club_rules_code);
 	$r = new stdClass();
-	$r->code = $club_rules_code;
-	$r->name = $club_name;
-	$all_rules[] = $r;
-	
-	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
-	while ($row = $query->next())
-	{
-		list ($league_name, $rules) = $row;
-		$r = new stdClass();
-		$r->code = $rules;
-		$r->name = $league_name;
-		$all_rules[] = $r;
-	}
-	
-	$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
-	while ($row = $query->next())
-	{
-		list ($rules_name, $rules) = $row;
-		$r = new stdClass();
-		$r->code = $rules;
-		$r->name = $rules_name;
-		$all_rules[] = $r;
-	}
-	
-	$r = new stdClass();
-	$r->code = $rules_code;
+	$r->rules = $rules_code;
 	$r->name = get_label('Custom...');
 	$all_rules[] = $r;
 	
 	echo '<select id="rules" onchange="rulesChanged()">';
 	foreach ($all_rules as $r)
 	{
-		if (show_option(upgrade_rules_code($r->code), $rules_code, $r->name))
+		if (show_option($r->rules, $rules_code, $r->name))
 		{
 			$rules_code = '';
 		}
@@ -352,7 +327,35 @@ try
 	}
 	else if ($club_id <= 0)
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('club')));
+		if ($league_id > 0)
+		{
+			list ($rules_code, $rules_filter, $rules_name) = Db::record(get_label('league'), 'SELECT default_rules, rules, name FROM leagues l WHERE id = ?', $league_id);
+			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+
+			dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
+?>
+			<script>
+			var rulesCode = "<?php echo $rules_code; ?>";
+			function commit(onSuccess)
+			{
+				var params =
+				{
+					op: 'change'
+					, league_id: <?php echo $league_id; ?>
+					, default_rules: rulesCode
+				};
+				json.post("api/ops/league.php", params, onSuccess);
+			}
+			</script>
+<?php
+			echo '<table class="transp" width="100%"><tr><td><h3>';
+			echo $rules_name;
+			echo '</h3><br></td></tr>';
+		}
+		else
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('club')));
+		}
 	}
 	else if ($create)
 	{
@@ -383,7 +386,7 @@ try
 	}
 	else if ($league_id > 0)
 	{
-		list ($rules_code, $rules_name) = Db::record(get_label('league'), 'SELECT lc.rules, l.name FROM league_clubs lc JOIN leagues l ON l.id = lc.league_id WHERE lc.league_id = ? AND lc.club_id = ?', $league_id, $club_id);
+		list ($rules_code, $rules_filter,  $rules_name) = Db::record(get_label('league'), 'SELECT lc.rules, l.rules, l.name FROM league_clubs lc JOIN leagues l ON l.id = lc.league_id WHERE lc.league_id = ? AND lc.club_id = ?', $league_id, $club_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 
 		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
@@ -456,6 +459,7 @@ try
 	function rulesChanged()
 	{
 		rulesCode = $('#rules').val();
+		console.log(rulesCode);
 		showRule(currentRule);
 	}
 

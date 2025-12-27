@@ -19,51 +19,46 @@ class Page extends ClubPageBase
 			$option = (int)$_REQUEST['option'];
 		}
 		
+		$this->edit_url = null;
 		if ($option > 0)
 		{
-			list($rules_code) = Db::record(get_label('rules'), 'SELECT rules FROM club_rules WHERE id = ? AND club_id = ?', $option, $this->id);
+			list($rules_id, $rules_code) = Db::record(get_label('rules'), 'SELECT id, rules FROM club_rules WHERE id = ? AND club_id = ?', $option, $this->id);
+			$this->edit_url = 'form/rules_edit.php?rules_id=' . $rules_id;
 		}
 		else if ($option < 0)
 		{
-			list($rules_code) = Db::record(get_label('league'), 'SELECT rules FROM league_clubs WHERE league_id = ? AND club_id = ?', -$option, $this->id);
+			$query = new DbQuery('SELECT rules FROM league_clubs WHERE league_id = ? AND club_id = ?', -$option, $this->id);
+			if ($row = $query->next())
+			{
+				list($rules_code) = $row;
+				$this->edit_url .= 'form/rules_edit.php?league_id=' . (-$option) . '&club_id=' . $this->id;
+			}
+			else
+			{
+				list($rules_code) = Db::record(get_label('league'), 'SELECT default_rules FROM leagues WHERE id = ?', -$option);
+			}
 		}
 		else
 		{
 			$rules_code = $this->rules_code;
+			$this->edit_url .= '&club_id=' . $this->id;
 		}
 		
+		$rules = get_available_rules($this->id, $this->name, $this->rules_code);
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		echo '<select id="rules" onchange="rulesChange(' . $view . ')">';
-		show_option(0, $option, $this->name);
-		$query = new DbQuery('SELECT id, name FROM club_rules WHERE club_id = ? ORDER BY name', $this->id);
-		while ($row = $query->next())
+		foreach ($rules as $r)
 		{
-			list($rules_id, $rules_name) = $row;
-			show_option($rules_id, $option, $rules_name);
-		}
-		$query = new DbQuery('SELECT l.id, l.name FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $this->id);
-		while ($row = $query->next())
-		{
-			list($league_id, $league_name) = $row;
-			show_option(-$league_id, $option, $league_name);
+			show_option($r->id, $option, $r->name);
 		}
 		echo '</select>';
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_FULL . ', ' . $option .')"' . ($view <= RULES_VIEW_FULL ? ' checked' : '') . '> ' . get_label('detailed');
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_SHORT . ', ' . $option .')"' . ($view == RULES_VIEW_SHORT ? ' checked' : '') . '> ' . get_label('shorter');
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_SHORTEST . ', ' . $option .')"' . ($view >= RULES_VIEW_SHORTEST ? ' checked' : '') . '> ' . get_label('shortest');
 		
-		if (is_permitted(PERMISSION_CLUB_MANAGER, $this->id))
+		if ($this->edit_url != null && is_permitted(PERMISSION_CLUB_MANAGER, $this->id))
 		{
-			echo '</td><td align="right"><button class="icon" onclick="mr.editRules(' . $this->id;
-			if ($option < 0)
-			{
-				echo ', ' . (-$option);
-			}
-			else if ($option > 0)
-			{
-				echo ', undefined, ' . $option;
-			}
-			echo ')"><img src="images/edit.png" border="0"></button>';
+			echo '</td><td align="right"><button class="icon" onclick="editRules()"><img src="images/edit.png" border="0"></button>';
 		}
 		echo '</td></tr></table></p>';
 		
@@ -82,6 +77,11 @@ class Page extends ClubPageBase
 		function rulesChange(view)
 		{
 			filter(view, $("#rules").val());
+		}
+		
+		function editRules()
+		{
+			dlg.form("<?php echo $this->edit_url; ?>", refr);
 		}
 <?php	
 	}

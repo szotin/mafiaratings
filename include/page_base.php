@@ -475,7 +475,7 @@ class PageBase
 	
 	protected function errorMessage($message)
 	{
-		setUserPrompt($message, PROMPT_TYPE_ERROR);
+		$this->setUserPrompt($message, PROMPT_TYPE_ERROR);
 	}
 	
 	protected function hasError()

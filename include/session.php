@@ -707,7 +707,7 @@ function show_option($option_value, $current_value, $text, $title = NULL)
 	{
 		echo ' title="' . $title . '"';
 	}
-	if ($option_value == $current_value)
+	if ($option_value === $current_value)
 	{
 		echo ' selected';
 		$result = true;

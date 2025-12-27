@@ -59,10 +59,10 @@ class LeaguePageBase extends PageBase
 
 		$this->is_manager = $_profile != NULL ? $_profile->is_league_manager($this->id) : false;
 		
-		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->scoring_id, $rules) = 
+		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->scoring_id, $rules, $this->default_rules) = 
 			Db::record(
 				get_label('league'),
-				'SELECT l.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules FROM leagues l WHERE l.id = ?', $this->id);
+				'SELECT l.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules, l.default_rules FROM leagues l WHERE l.id = ?', $this->id);
 		$this->rules_filter = json_decode($rules);
 	}
 

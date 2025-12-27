@@ -116,20 +116,15 @@ try
 	echo '</select></td></tr>';
 	
 	$rules_code = upgrade_rules_code($club->rules_code);
+	$rules_list = get_available_rules($club_id, $club->name, $club->rules_code);
 	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
 	echo '<select id="form-rules">';
-	show_option($rules_code, $rules_code, $club->name);
-	$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY l.name', $club_id);
-	while ($row = $query->next())
+	foreach ($rules_list as $r)
 	{
-		list ($league_name, $rules) = $row;
-		show_option(upgrade_rules_code($rules), null, $league_name);
-	}
-	$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
-	while ($row = $query->next())
-	{
-		list ($rules_name, $rules) = $row;
-		show_option(upgrade_rules_code($rules), null, $rules_name);
+		if (show_option($r->rules, $rules_code, $r->name))
+		{
+			$rules_code = '';
+		}
 	}
 	echo '</select></td></tr>';
 	
