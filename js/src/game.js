@@ -2508,7 +2508,8 @@ function gameNext()
 						else if (game.time.votingRound > 0 && winners.length == noms.length)
 						{
 							let numPlayers = gameGetNumPlayers();
-							if (numPlayers == 9 && winners.length == 3 && gameGetRule(/*RULES_SPLIT_ON_NINE*/8) == /*RULES_SPLIT_ON_NINE_PROHIBITED*/1)
+							let r = gameGetRule(/*RULES_SPLIT_ON_NINE*/8);
+							if (numPlayers == 9 && winners.length == 3 && (r == /*RULES_SPLIT_ON_NINE_NO*/1 || (r == /*RULES_SPLIT_ON_NINE_AFTER1*/2 && game.time.round < 2)))
 							{
 								game.time = { round: game.time.round + 1, time: 'night start' };
 							}

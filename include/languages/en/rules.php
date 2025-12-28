@@ -253,11 +253,13 @@ return array
 				(
 					'If there are nine players in the game and three of them are in the split twice, then the split is treated like all other splits. The moderator asks if all three players should leave the game. If more than four players vote for it, all three players become killed.',
 					'If there are nine players in the game and three of them are in the split twice killin all further voting is not conducted. The Moderator announces «Night is coming». No one leaves the game.',
+					'If in the first day (not to be confused with day zero) there are nine players in the game and three of them are in the split twice killin all further voting is not conducted. The Moderator announces «Night is coming». No one leaves the game. On any other day killing all three players is allowed.',
 				),
 				array
 				(
 					'Allowed.',
 					'Not allowed.',
+					'Only after a miss shot.',
 				),
 			),
 			'The role of the killed player is not revealed. The killed player or players have the right to the last one minute speech.', // 7.23.
