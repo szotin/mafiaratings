@@ -254,22 +254,24 @@ function _uiRender(resetTimer)
 			break;
 		case 'speaking':
 			let player = game.players[game.time.speaker - 1];
-			if (!isSet(player.warnings) ||
-				player.warnings.length != 3 ||
+			let r = gameGetRule(/*RULES_3_WARNINGS*/11);
+			if (r == /*RULES_3_WARNINGS_NO*/2 ||
+				!isSet(player.warnings) || 
+				player.warnings.length != 3 || 
 				(game.time.round != 0 &&
 				gameCompareTimes(player.warnings[2], { time: game.time.time, speaker: game.time.speaker, round: game.time.round - 1 }) < 0))
 			{
 				status = l('Speaking', _uiPlayerTitle(game.time.speaker - 1));
 			}
-			else if (gamePlayersCount() > 4)
-			{
-				status = l('MissingSpeech', _uiPlayerTitle(game.time.speaker - 1), l('he'), l('his'));
-				timerTime = 0;
-			}
-			else
+			else if (r == /*RULES_3_WARNINGS_SHORT_SPEECH*/1 || gamePlayersCount() <= 4)
 			{
 				status = l('SpeakingShort', _uiPlayerTitle(game.time.speaker - 1));
 				timerTime = 30;
+			}
+			else
+			{
+				status = l('MissingSpeech', _uiPlayerTitle(game.time.speaker - 1), l('he'), l('his'));
+				timerTime = 0;
 			}
 			
 			let n = gameNextSpeaker();

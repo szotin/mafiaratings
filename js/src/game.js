@@ -2378,6 +2378,19 @@ function _gameIsVotingToKill()
 	return game.time.round >= 0 || gameGetRule(/*RULES_FIRST_DAY_VOTING*/4) != /*RULES_FIRST_DAY_VOTING_STANDARD*/1;
 }
 
+function gameGetNumPlayers()
+{
+	let count = 0;
+	for (let p of game.players)
+	{
+		if (!isSet(p.death))
+		{
+			++count;
+		}
+	}
+	return count;
+}
+
 function gameNext()
 {
 	if (gameCanGoNext())
@@ -2494,13 +2507,20 @@ function gameNext()
 						}
 						else if (game.time.votingRound > 0 && winners.length == noms.length)
 						{
-							game.time = { time: 'voting kill all', round: game.time.round, votingRound: game.time.votingRound + 1 };
-							let noms = gameGetNominees();
-							for (let player of game.players)
+							let numPlayers = gameGetNumPlayers();
+							if (numPlayers == 9 && winners.length == 3 && gameGetRule(/*RULES_SPLIT_ON_NINE*/8) == /*RULES_SPLIT_ON_NINE_PROHIBITED*/1)
 							{
-								if (!isSet(player.death))
+								game.time = { round: game.time.round + 1, time: 'night start' };
+							}
+							else
+							{
+								game.time = { time: 'voting kill all', round: game.time.round, votingRound: game.time.votingRound + 1 };
+								for (let player of game.players)
 								{
-									player.voting[game.time.round].push(false);
+									if (!isSet(player.death))
+									{
+										player.voting[game.time.round].push(false);
+									}
 								}
 							}
 						}
