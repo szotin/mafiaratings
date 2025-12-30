@@ -1962,10 +1962,11 @@ class Game
 	
 	// returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
 	// num1 and num2 are 1 based. The range is 1-10.
-	function who_was_nominated_earlier($round, $num1, $num2)
+	function who_was_nominated_earlier($round, $num1, $num2, $voting_round = 0)
 	{
 		if ($num1 != $num2)
 		{
+			$reverse_coeff = (get_rule($this->get_rules(), RULES_SPLIT_ORDER) == RULES_SPLIT_ORDER_REVERSE && ($voting_round & 1) != 0) ? -1 : 1;
 			$speaksFirst = $this->who_speaks_first($round);
 			$i = $speaksFirst;
 			do
@@ -1976,11 +1977,11 @@ class Game
 					$n = $p->nominating[$round];
 					if ($n == $num1)
 					{
-						return -1;
+						return -$reverse_coeff;
 					}
 					if ($n == $num2)
 					{
-						return 1;
+						return $reverse_coeff;
 					}
 				}
 				
@@ -2397,11 +2398,11 @@ class Game
 			}
 			else if (isset($gt1->speaker))
 			{
-				$result = isset($gt2->speaker) ? $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker) : (isset($gt2->nominee) ? -1 : 1);
+				$result = isset($gt2->speaker) ? $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker, $gt1->votingRound) : (isset($gt2->nominee) ? -1 : 1);
 			}
 			else if (isset($gt1->nominee))
 			{
-				$result = isset($gt2->nominee) ? $this->who_was_nominated_earlier($gt1->round, $gt1->nominee, $gt2->nominee) : 1;
+				$result = isset($gt2->nominee) ? $this->who_was_nominated_earlier($gt1->round, $gt1->nominee, $gt2->nominee, $gt1->votingRound) : 1;
 			}
 			else
 			{
@@ -2410,7 +2411,17 @@ class Game
 			break;
 			
 		case GAMETIME_DAY_KILL_SPEAKING:
-			$result = $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker);
+			$player1 = $this->data->players[$gt1->speaker];
+			$voting_round = 0;
+			if (isset($player1->voting) && $gt1->round < count($player1->voting) && is_array($player1->voting[$gt1->round]))
+			{
+				$voting_round = count($player1->voting[$gt1->round]);
+				if ($voting_round < 0)
+				{
+					$voting_round = 0;
+				}
+			}
+			$result = $this->who_was_nominated_earlier($gt1->round, $gt1->speaker, $gt2->speaker, $voting_round);
 			break;
 		}
 		
@@ -2910,6 +2921,17 @@ class Game
 				}
 			}
 			while ($i != $first);
+		}
+		if (get_rule($this->get_rules(), RULES_SPLIT_ORDER) == RULES_SPLIT_ORDER_REVERSE && ($voting_round & 1) != 0)
+		{
+			$beg = 0;
+			$end = count($noms) - 1;
+			while ($beg < $end)
+			{
+				$n = $noms[$beg];
+				$noms[$beg++] = $noms[$end];
+				$noms[$end--] = $n;
+			}
 		}
 		return $noms;
 	}

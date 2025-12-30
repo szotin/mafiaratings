@@ -400,10 +400,12 @@ function _gameTimeToInt(time)
 
 // returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
 // num1 and num2 are 1 based. The range is 1-10.
-function _gameWhoWasNominatedEarlier(round, num1, num2)
+// When votingRound is greater than 0, the function is considering reverce voting with repeated voting (RULES_SPLIT_ORDER) 
+function _gameWhoWasNominatedEarlier(round, num1, num2, votingRound)
 {
 	if (num1 != num2)
 	{
+		let reverseCoef = (gameGetRule(/*RULES_SPLIT_ORDER*/5) == /*RULES_SPLIT_ORDER_REVERSE*/1 && isSet(votingRound) && (votingRound & 1) != 0 ? -1 : 1);
 		let speaksFirst = gameWhoSpeaksFirst(round);
 		let i = speaksFirst;
 		do
@@ -414,11 +416,11 @@ function _gameWhoWasNominatedEarlier(round, num1, num2)
 				let n = p.nominating[round];
 				if (n == num1)
 				{
-					return -1;
+					return -reverseCoef;
 				}
 				if (n == num2)
 				{
-					return 1;
+					return reverseCoef;
 				}
 			}
 			
@@ -479,11 +481,11 @@ function gameCompareTimes(time1, time2, roughly)
 		}
 		else if (isSet(time1.speaker))
 		{
-			result = isSet(time2.speaker) ? _gameWhoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker) : (isSet(time2.nominee) ? -1 : 1);
+			result = isSet(time2.speaker) ? _gameWhoWasNominatedEarlier(time1.round, time1.speaker, time2.speaker, time1.votingRound) : (isSet(time2.nominee) ? -1 : 1);
 		}
 		else if (isSet(time1.nominee))
 		{
-			result = isSet(time2.nominee) ? _gameWhoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee) : 1;
+			result = isSet(time2.nominee) ? _gameWhoWasNominatedEarlier(time1.round, time1.nominee, time2.nominee, time1.votingRound) : 1;
 		}
 		else
 		{
@@ -492,7 +494,7 @@ function gameCompareTimes(time1, time2, roughly)
 		break;
 			
 	case 'day kill speaking':
-		result = _gameWhoWasNominatedEarlier(round1, time1.speaker, time2.speaker);
+		result = _gameWhoWasNominatedEarlier(round1, time1.speaker, time2.speaker, game.players[time1.speaker].voting[round1].length - 1);
 		break;
 	}
 	
@@ -1695,6 +1697,17 @@ function gameGetNominees(votingRound, round)
 		}
 		while (i != first);
 	}
+	if (gameGetRule(/*RULES_SPLIT_ORDER*/5) == /*RULES_SPLIT_ORDER_REVERSE*/1 && (votingRound & 1) != 0)
+	{
+		let beg = 0;
+		let end = noms.length - 1;
+		while (beg < end)
+		{
+			let n = noms[beg];
+			noms[beg++] = noms[end];
+			noms[end--] = n;
+		}
+	}
 	return noms;
 }
 
@@ -1759,7 +1772,7 @@ function _gameVote(voter, type)
 			return 0;
 		}
 	}
-	if (_gameWhoWasNominatedEarlier(game.time.round, arr[index], game.time.nominee) < 0)
+	if (_gameWhoWasNominatedEarlier(game.time.round, arr[index], game.time.nominee, game.time.votingRound) < 0)
 	{
 		return 0;
 	}
@@ -1818,7 +1831,7 @@ function gameVote(voter)
 								break;
 							}
 						}
-						if (_gameWhoWasNominatedEarlier(game.time.round, arr[index], game.time.nominee) <= 0)
+						if (_gameWhoWasNominatedEarlier(game.time.round, arr[index], game.time.nominee, game.time.votingRound) <= 0)
 						{
 							nobodyVoted = false;
 							break;
