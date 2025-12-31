@@ -494,7 +494,13 @@ function gameCompareTimes(time1, time2, roughly)
 		break;
 			
 	case 'day kill speaking':
-		result = _gameWhoWasNominatedEarlier(round1, time1.speaker, time2.speaker, game.players[time1.speaker].voting[round1].length - 1);
+		let p = game.players[time1.speaker-1];
+		let votingRound = 0;
+		if (isSet(p.voting) && round1 < p.voting.length && p.voting[round1].length > 0)
+		{
+			votingRound = p.voting[round1].length - 1;
+		}
+		result = _gameWhoWasNominatedEarlier(round1, time1.speaker, time2.speaker, votingRound);
 		break;
 	}
 	
@@ -807,9 +813,12 @@ function gameGenerateRoles()
 
 function _gameEnd(winner)
 {
-	game.winner = winner;
-	game.time = { 'time': 'end', 'round': game.time.round };
-	game.endTime = Math.round((new Date()).getTime() / 1000);
+	if (!isSet(game.winner) || game.winner != winner)
+	{
+		game.winner = winner;
+		game.time = { 'time': 'end', 'round': game.time.round };
+		game.endTime = Math.round((new Date()).getTime() / 1000);
+	}
 }
 
 // Returns 0 if game continues; 1 on town win; 2 on mafia win; 3 on tie.
@@ -870,7 +879,11 @@ function _gameIsEnd()
 		
 		if (blackAlive <= 0)
 		{
-			return 1;
+			if (redAlive > 0)
+			{
+				return 1;
+			}
+			return 3;
 		}
 		
 		if (blackAlive >= redAlive)
@@ -891,7 +904,8 @@ function _gameCheckEnd()
 	case 2:
 		_gameEnd('maf');
 		return true;
-	case 3: // no need to do anything on tie, everything is right already
+	case 3:
+		_gameEnd('tie');
 		return true;
 	}
 	return false;
@@ -1715,7 +1729,7 @@ function gameGetVotingWinners()
 {
 	for (let player of game.players)
 	{
-		if (!isSet(player.death) && isSet(player.voting) && game.time.round < player.voting.length)
+		if (isSet(player.voting) && game.time.round < player.voting.length)
 		{
 			let v = player.voting[game.time.round];
 			if (isArray(v))
@@ -2391,6 +2405,27 @@ function _gameIsVotingToKill()
 	return game.time.round >= 0 || gameGetRule(/*RULES_FIRST_DAY_VOTING*/4) != /*RULES_FIRST_DAY_VOTING_STANDARD*/1;
 }
 
+function _gameCanKillAll(winners)
+{
+	let numPlayers = gameGetNumPlayers();
+	if (numPlayers == 9 && winners.length == 3)
+	{
+		let r = gameGetRule(/*RULES_SPLIT_ON_NINE*/8);
+		return r != /*RULES_SPLIT_ON_NINE_NO*/1 && (r != /*RULES_SPLIT_ON_NINE_AFTER1*/2 || game.time.round > 1);
+	}
+	
+	if (numPlayers == 4 && winners.length == 2)
+	{
+		return gameGetRule(/*RULES_SPLIT_ON_FOUR*/7) == /*RULES_SPLIT_ON_FOUR_ALLOWED*/0;
+	}
+
+	if (winners.length == numPlayers)
+	{
+		return gameGetRule(/*RULES_KILL_ALL*/6) == /*RULES_KILL_ALL_DRAW*/1;
+	}
+	return true;
+}
+
 function gameGetNumPlayers()
 {
 	let count = 0;
@@ -2520,13 +2555,7 @@ function gameNext()
 						}
 						else if (game.time.votingRound > 0 && winners.length == noms.length)
 						{
-							let numPlayers = gameGetNumPlayers();
-							let r = gameGetRule(/*RULES_SPLIT_ON_NINE*/8);
-							if (numPlayers == 9 && winners.length == 3 && (r == /*RULES_SPLIT_ON_NINE_NO*/1 || (r == /*RULES_SPLIT_ON_NINE_AFTER1*/2 && game.time.round < 2)))
-							{
-								game.time = { round: game.time.round + 1, time: 'night start' };
-							}
-							else
+							if (_gameCanKillAll(winners))
 							{
 								game.time = { time: 'voting kill all', round: game.time.round, votingRound: game.time.votingRound + 1 };
 								for (let player of game.players)
@@ -2536,6 +2565,10 @@ function gameNext()
 										player.voting[game.time.round].push(false);
 									}
 								}
+							}
+							else
+							{
+								game.time = { round: game.time.round + 1, time: 'night start' };
 							}
 						}
 						else
@@ -2574,6 +2607,7 @@ function gameNext()
 				else if (_gameKillAll())
 				{
 					let noms = gameGetNominees();
+					console.log('Noms', noms);
 					for (nom of noms)
 					{
 						let p = game.players[nom - 1];

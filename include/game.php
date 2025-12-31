@@ -2411,7 +2411,7 @@ class Game
 			break;
 			
 		case GAMETIME_DAY_KILL_SPEAKING:
-			$player1 = $this->data->players[$gt1->speaker];
+			$player1 = $this->data->players[$gt1->speaker-1];
 			$voting_round = 0;
 			if (isset($player1->voting) && $gt1->round < count($player1->voting) && is_array($player1->voting[$gt1->round]))
 			{
