@@ -234,7 +234,7 @@ function _uiRender(resetTimer)
 				' ' + l('NightKill', _uiPlayerTitle(game.time.speaker - 1), l('KilledMale')) +
 				' ' + l('LastSpeech', l('He'), l('his')) +
 				l('NextFloor', _uiPlayerTitle(gameWhoSpeaksFirst()))
-			if (game.time.round == 1)
+			if (game.time.round == 1 && gameGetRule(/*RULES_LEGACY*/9) != /*RULES_LEGACY_NO*/1 && gameGetNumPlayers() > 7)
 			{
 				for (var i = 0; i < 10; ++i)
 				{

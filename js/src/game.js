@@ -2379,10 +2379,9 @@ function gameGetRule(ruleIndex)
 	return game.rules.substr(ruleIndex, 1);
 }
 
-// For future use. It will soon be replaced with something that is really checking rules.
 function _gameLastSpeechExists()
 {
-	return true; // yes last speech
+	return gameGetRule(/*RULES_GAME_END_SPEECH*/10) == /*RULES_GAME_END_SPEECH_YES*/0;
 }
 
 function _gameCanStartVoting()
