@@ -1918,7 +1918,7 @@ class Game
 		}
 
 		$prev = $this->who_speaks_first($round - 1) - 1;
-		if (get_rule($this->get_rules(), RULES_ROTATION) != RULES_ROTATION_LAST)
+		if (get_rule($this->get_rules(), RULES_ROTATION) == RULES_ROTATION_LAST)
 		{
 			$prev = $this->_next_speaker($this->_prev_speaker($prev, $round - 1), $round);
 		}
