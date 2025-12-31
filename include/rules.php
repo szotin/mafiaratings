@@ -3,7 +3,7 @@
 require_once __DIR__ . '/db.php';
 
 // См правила описанные в https://docs.google.com/document/d/1MTOaNVRmx0eCT-TGYAUbGy2F2WAiOcpdf0NSDsVqjCk
-define('DEFAULT_RULES', '00020000100000');
+define('DEFAULT_RULES', '0002000010000');
 
 // 6.3. Ротация первой речи.
 // rotation
@@ -124,15 +124,7 @@ define('RULES_TECH_FAUL', 12);
 define('RULES_TECH_FAUL_NO', 0); // 9.6.1. В этой версии правил технических фолов нет.
 define('RULES_TECH_FAUL_YES', 1); // 9.6.2. За повышенные эмоции, споры с судьей, стуки по столу отвлекающие от игры, а также грубые высказывания в адрес других игроков, судья может дать технический фол. Технические фолы считаются отдельно от основных. За два технических фола игрок получает удаление.
 
-// 9.8. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол. Или за нарушение которое карается удалением.
-// antimonster
-define('RULES_ANTIMONSTER', 13);
-define('RULES_ANTIMONSTER_NO_VOTING', 0); // 9.8.1. Ближайшее или текущее голосование не проводится, кроме случаев, когда этот игрок был убит ночью или является покинувшим игру по результату голосования. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол, во время голосования, после того, как был определён результат голосования, и он не является покинувшим игру по результату этого голосования, то следующее голосование не проводится.
-define('RULES_ANTIMONSTER_NO', 1); // 9.8.2. Это никак не влияет на проведение последующих голосований.
-define('RULES_ANTIMONSTER_NOMINATED', 2); // 9.8.3. Ближайшее или текущее голосование не проводится, кроме случаев, когда этот игрок был выставлен на голосование. Если игрок покидает игровой стол, получая 4-й или дисквалифицирующий фол, во время голосования, после того, как был определён результат голосования, и он не является покинувшим игру по результату этого голосования, то следующее голосование не проводится.
-define('RULES_ANTIMONSTER_PARTICIPATION', 3); // 9.8.4. Ближайшее проводится, но если ушедший игрок был выставлен, то он участвует в голосовании наравне со всеми несмотря на то, что его нет за столом. Если он побеждает в голосовании, больше никто не покидает стол.
-
-define('RULE_OPTIONS_COUNT', 14);
+define('RULE_OPTIONS_COUNT', 13);
 
 define('RULE_OPTION_NAME', 0);
 define('RULE_OPTION_VALUES', 1);
@@ -162,7 +154,6 @@ $_rules_options = array(
 	array('gameEndSpeech', array(true, false), 7, 18, false),
 	array('threeFouls', array('lose-speech', 'short-speech', 'no'), 8, 4, false),
 	array('techFouls', array('no', 'yes'), 8, 5, false),
-	array('antimonster', array('no-voting', 'no', 'nominated', 'participation'), 8, 7, false),
 );
 
 function is_valid_rules_code($rules_code)
@@ -206,6 +197,11 @@ function upgrade_rules_code($rules_code)
 		if (strlen($rules_code) == 12)
 		{
 			$rules_code = substr($rules_code, 0, 11) . '00' . substr($rules_code, 11);
+		}
+		
+		if (strlen($rules_code) == 14)
+		{
+			$rules_code = substr($rules_code, 0, -1);
 		}
 	}
 	return $rules_code;

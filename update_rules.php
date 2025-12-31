@@ -13,11 +13,15 @@ function convert_game($game)
 	if (isset($game->rules))
 	{
 		$rules = upgrade_rules_code($game->rules);
+		if ($rules !== $game->rules)
+		{
+			$game->rules = $rules;
+			return true;
+		}
 	}
-	if ($rules !== $game->rules)
+	else
 	{
-		$game->rules = $rules;
-		return true;
+		$game->rules = DEFAULT_RULES;
 	}
 	return false;
 }
@@ -208,6 +212,51 @@ class RulesUpdater extends Updater
 				$this->vars->club = (int)$club_id;
 			}
 			
+			if (!$this->canDoOneMoreItem())
+			{
+				break;
+			}
+		}
+		if ($old_real_count != $this->vars->real_count)
+		{
+			$this->log('Upgraded '.$this->vars->real_count.' rules codes');
+		}
+		return $count;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// RulesUpdater.leagues
+	//-------------------------------------------------------------------------------------------------------
+	function leagues_task($items_count)
+	{
+		if (!isset($this->vars->league))
+		{
+			$this->vars->league = 0;
+		}
+		
+		if (!isset($this->vars->real_count))
+		{
+			$this->vars->real_count = 0;
+			$old_real_count = -1;
+		}
+		else
+		{
+			$old_real_count = $this->vars->real_count;
+		}
+
+		$count = 0;
+		$query = new DbQuery('SELECT id, default_rules FROM leagues WHERE id > ? ORDER BY id LIMIT ' . $items_count, $this->vars->league);
+		while ($row = $query->next())
+		{
+			++$count;
+			list($league_id, $rules_code) = $row;
+			$new_rules_code = upgrade_rules_code($rules_code);
+			if ($new_rules_code !== $rules_code)
+			{
+				Db::exec('league', 'UPDATE leagues SET default_rules = ? WHERE id = ?', $new_rules_code, $league_id);
+				++$this->vars->real_count;
+			}
+			$this->vars->league = (int)$league_id;
 			if (!$this->canDoOneMoreItem())
 			{
 				break;

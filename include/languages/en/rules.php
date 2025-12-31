@@ -364,25 +364,7 @@ return array
 				),
 			),
 			'When receiving a fourth warning, disqualification, or second technical foul, the player immediately leaves the game without the last word.', // 9.7.
-			array // 9.8.
-			(
-				RULES_ANTIMONSTER,
-				'Anti-monster: when a player is killed by warnings',
-				array
-				(
-					'If a player leaves the game by getting a fourth warning. or gets a disqualification from the game, the closest or current vote is canceled. Except when this player was killed at night or is already out of the game by the result of the vote. If a player leaves the gaming table, receiving a fourth or disqualifying foul, during a vote, after the result of the vote has been determined, and he is not leaving the game according to the result of this vote, then the next vote is canceled.',
-					'If a player leaves the game by getting a fourth warning. Or gets a disqualification from the game, the subsequent voting is not canceled.',
-					'If a player leaves the game by getting a fourth warning. or gets a disqualification from the game, the closest or current voting is canceled only if the player is nominated for this voting.',
-					'If a player leaves the game by getting a fourth warning. or gets a disqualification from the game, the subsequent voting is not canceled. The player participates in the voting on a par with everyone despite the fact that they are not in the game. If they win the vote, no one else leaves the game.',
-				),
-				array
-				(
-					'Voting is canceled.',
-					'Voting is not canceled. No anti-monster rule.',
-					'Voting is canceled only if the monster is nominated.',
-					'Voting is not canceled. The dead monster participates as a nominee.',
-				),
-			),
+			'If a player leaves the game by getting a fourth warning. or gets a disqualification from the game, the closest or current vote is canceled. Except when this player was killed at night or is already out of the game by the result of the vote. If a player leaves the gaming table, receiving a fourth or disqualifying foul, during a vote, after the result of the vote has been determined, and he is not leaving the game according to the result of this vote, then the next vote is canceled.', // 9.8.
 			'When a player gets a fourth warning or disqualifying foul during the last speech of another player, the result of the game is determined by the result of the vote. The removed player receives a penalty in accordance with the tournament regulations.', // 9.9.
 		),
 	),
