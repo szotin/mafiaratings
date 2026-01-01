@@ -298,14 +298,16 @@ class TournamentPageBase extends PageBase
 				if ($row = $query->next())
 				{
 					list($tu_flags) = $row;
+					echo '<button onclick="mr.unattendTournament(' . $this->id . ', \'' . get_label('Are you sure you want to cancel your tournament participation?') . '\')">';
 					if ($tu_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
 					{
-						echo '<button onclick="mr.unattendTournament(' . $this->id . ')">'.get_label('Cancel my application').'</button>';
+						echo get_label('Cancel my application');
 					}
 					else
 					{
-						echo '<button onclick="mr.unattendTournament(' . $this->id . ')">'.get_label('Cancel my participation').'</button>';
+						echo get_label('Cancel my participation');
 					}
+					echo '</button>';
 					$done = true;
 				}
 			}
@@ -313,6 +315,14 @@ class TournamentPageBase extends PageBase
 			{
 				echo '<button onclick="mr.attendTournament('.$this->id;
 				if ($this->flags & TOURNAMENT_FLAG_TEAM)
+				{
+					echo ', true';
+				}
+				else
+				{
+					echo ', false';
+				}
+				if ($_profile == null)
 				{
 					echo ', true';
 				}

@@ -690,17 +690,41 @@ var mr = new function()
 		json.post("api/ops/tournament.php", { op: "accept_registration", tournament_id: tournamentId, user_id: userId }, refr);
 	}
 	
-	this.attendTournament = function(tournamentId, isTeam)
+	this.attendTournament = function(tournamentId, isTeam, noUser)
 	{
-		if (isTeam)
-			dlg.form("form/registration_create.php?self=1&tournament_id=" + tournamentId, refr, 400);
+		function _attend()
+		{
+			if (isTeam)
+				dlg.form("form/registration_create.php?self=1&tournament_id=" + tournamentId, refr, 400);
+			else
+				json.post("api/ops/tournament.php", { op: "add_registration", tournament_id: tournamentId }, refr);
+		}
+		
+		if (noUser)
+		{
+			loginDialog('', '', _attend);
+		}
 		else
-			json.post("api/ops/tournament.php", { op: "add_registration", tournament_id: tournamentId }, refr);
+		{
+			_attend();
+		}
 	}
 	
-	this.unattendTournament = function(tournamentId)
+	this.unattendTournament = function(tournamentId, confirmMessage)
 	{
-		json.post("api/ops/tournament.php", { op: "remove_registration", tournament_id: tournamentId }, refr);
+		function _unattend()
+		{
+			json.post("api/ops/tournament.php", { op: "remove_registration", tournament_id: tournamentId }, refr);
+		}
+
+		if (confirmMessage)
+		{
+			dlg.yesNo(confirmMessage, null, null, _unattend);
+		}
+		else
+		{
+			_unattend();
+		}
 	}
 	
 	//--------------------------------------------------------------------------------------

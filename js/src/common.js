@@ -590,11 +590,16 @@ var html = new function()
 	}
 } // html
 
-function loginDialog(message, userName, onError, actionAfterLogin)
+function loginDialog(message, userName, onSuccess, onError)
 {
 	if (!isString(userName))
 	{
 		userName = "";
+	}
+	
+	if (!onSuccess)
+	{
+		onSuccess = refr;
 	}
 	
 	var html = '<p>' + message + '</p>' +
@@ -610,14 +615,7 @@ function loginDialog(message, userName, onError, actionAfterLogin)
 	
 	dlg.okCancel(html, l('Login'), null, function()
 	{
-		login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, function()
-		{
-			if (isSet(actionAfterLogin))
-			{
-				actionAfterLogin();
-			}
-			refr();
-		}, onError);
+		login($('#lf-name').val(), $('#lf-pwd').val(), $('#lf-rem').attr('checked') ? 1 : 0, onSuccess, onError);
 	}, onError);
 }
 
@@ -633,7 +631,7 @@ var json = new function()
 			{
 				if (isSet(obj.login))
 				{
-					loginDialog('', obj.login, onError, retry);
+					loginDialog('', obj.login, retry, onError);
 				}
 				else if (isString(obj.error))
 				{

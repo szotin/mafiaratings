@@ -1850,6 +1850,8 @@ $labelMenu = array (
 '[0] gets the second technical foul [1].' => '[EMPTY]', // view_game.php, view_game.php, form/game_player_view.php, view_game.php, view_game.php, form/game_player_view.php
 '[0] gets the second technical foul and leaves the game. [1]' => '[EMPTY]', // view_game.php, view_game.php, form/game_player_view.php, view_game.php, view_game.php, form/game_player_view.php
 '[0] gets a technical foul [1].' => '[EMPTY]', // view_game.php, view_game.php, form/game_player_view.php, view_game.php, view_game.php, form/game_player_view.php
+'Rules filter' => '[EMPTY]', // league_rules.php, league_rules.php
+'Default rules' => '[EMPTY]', // league_rules.php, league_rules.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1865,8 +1867,7 @@ $labelMenu = array (
 'During don\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'During sheriff\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
-'Rules filter' => '[EMPTY]', // league_rules.php
-'Default rules' => '[EMPTY]', // league_rules.php
+'Are you sure you want to cancel your tournament participation?' => '[EMPTY]', // include/tournament.php
 );
 
 return $labelMenu;

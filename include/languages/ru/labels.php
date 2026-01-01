@@ -1850,6 +1850,8 @@ $labelMenu = array (
 '[0] gets the second technical foul [1].' => '[0] получает второй технический фол [1].', // view_game.php, view_game.php, form/game_player_view.php
 '[0] gets the second technical foul and leaves the game. [1]' => '[0] получает второй технический фол и покидает игру. [1]', // view_game.php, view_game.php, form/game_player_view.php
 '[0] gets a technical foul [1].' => '[0] получает технический фол [1].', // view_game.php, view_game.php, form/game_player_view.php
+'Rules filter' => 'Допустимые правила', // league_rules.php
+'Default rules' => 'Стандартные правила', // league_rules.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1865,8 +1867,7 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'Rules filter' => 'Допустимые правила', // league_rules.php
-'Default rules' => 'Стандартные правила', // league_rules.php
+'Are you sure you want to cancel your tournament participation?' => 'Вы уверены, что хотите отменить свое участие в турнире?', // include/tournament.php
 );
 
 return $labelMenu;
