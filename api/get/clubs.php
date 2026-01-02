@@ -34,7 +34,7 @@ class ApiPage extends GetApiPageBase
 			$lang = $_lang;
 		}
 		
-		$condition = new SQL(' WHERE (c.flags & ?) = 0', CLUB_FLAG_RETIRED);
+		$condition = new SQL(' WHERE (c.flags & ?) = 0', CLUB_FLAG_CLOSED);
 		if ($name_contains != '')
 		{
 			$name_contains = '%' . $name_contains . '%';

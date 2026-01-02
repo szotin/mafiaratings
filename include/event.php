@@ -40,7 +40,7 @@ function show_event_buttons($id, $tournament_id, $start_time, $duration, $flags,
 	}
 	
 	$no_buttons = true;
-	if ($_profile != NULL && $id > 0 && ($club_flags & CLUB_FLAG_RETIRED) == 0)
+	if ($_profile != NULL && $id > 0 && ($club_flags & CLUB_FLAG_CLOSED) == 0)
 	{
 		$can_manage = false;
 		

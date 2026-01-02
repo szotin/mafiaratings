@@ -230,9 +230,9 @@ var mr = new function()
 		json.post("api/ops/address.php", { op: "restore", address_id: addrId }, refr);
 	}
 
-	this.retireAddr = function(addrId)
+	this.closeAddr = function(addrId)
 	{
-		json.post("api/ops/address.php", { op: "retire", address_id: addrId }, refr);
+		json.post("api/ops/address.php", { op: "close", address_id: addrId }, refr);
 	}
 
 	this.genAddr = function(addrId)
@@ -287,9 +287,9 @@ var mr = new function()
 		json.post("api/ops/club.php", { op: "restore", club_id: id }, refr);
 	}
 
-	this.retireClub = function(id)
+	this.closeClub = function(id)
 	{
-		json.post("api/ops/club.php", { op: "retire", club_id: id }, refr);
+		json.post("api/ops/club.php", { op: "close", club_id: id }, refr);
 	}
 
 	this.editClub = function(id)
@@ -344,9 +344,9 @@ var mr = new function()
 		json.post("api/ops/league.php", { op: "restore", league_id: id }, refr);
 	}
 
-	this.retireLeague = function(id)
+	this.closeLeague = function(id)
 	{
-		json.post("api/ops/league.php", { op: "retire", league_id: id }, refr);
+		json.post("api/ops/league.php", { op: "close", league_id: id }, refr);
 	}
 
 	this.editLeague = function(id)

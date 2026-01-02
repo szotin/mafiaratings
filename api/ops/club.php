@@ -333,9 +333,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// retire
+	// close
 	//-------------------------------------------------------------------------------------------------------
-	function retire_op()
+	function close_op()
 	{
 		global $_profile;
 		
@@ -343,18 +343,18 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		
 		Db::begin();
-		Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags | ' . CLUB_FLAG_RETIRED . ' WHERE id = ?', $club_id);
+		Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags | ' . CLUB_FLAG_CLOSED . ' WHERE id = ?', $club_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_CLUB, 'retired', NULL, $club_id, $club_id);
+			db_log(LOG_OBJECT_CLUB, 'closed', NULL, $club_id, $club_id);
 		}
 		Db::commit();
 		$_profile->update_clubs();
 	}
 	
-	function retire_op_help()
+	function close_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Close/retire the existing club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Close the existing club.');
 		$help->request_param('club_id', 'Club id.');
 		return $help;
 	}
@@ -369,7 +369,7 @@ class ApiPage extends OpsApiPageBase
 		$club_id = (int)get_required_param('club_id');
 		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
-			// it is possible that the permission is missing because the club is retired
+			// it is possible that the permission is missing because the club is closed
 			$query = new DbQuery(
 				'SELECT * FROM club_regs WHERE user_id = ? AND club_id = ? AND (flags & ' . USER_PERM_MANAGER . ') <> 0',
 				$_profile->user_id, $club_id);
@@ -384,7 +384,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags & ~' . CLUB_FLAG_RETIRED . ', activated = UNIX_TIMESTAMP() WHERE id = ?', $club_id);
+		Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags & ~' . CLUB_FLAG_CLOSED . ', activated = UNIX_TIMESTAMP() WHERE id = ?', $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_CLUB, 'restored', NULL, $club_id, $club_id);
@@ -395,7 +395,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Reopen/restore closed/retired club.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Reopen closed club.');
 		$help->request_param('club_id', 'Club id.');
 		return $help;
 	}

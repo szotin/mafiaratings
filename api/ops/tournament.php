@@ -236,6 +236,11 @@ class ApiPage extends OpsApiPageBase
 		
 		$notes = get_optional_param('notes', '');
 		$flags = (int)get_optional_param('flags', 0) & TOURNAMENT_EDITABLE_MASK;
+		if (!is_permitted(PERMISSION_ADMIN))
+		{
+			$flags &= ~TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE;
+		}
+		
 		$langs = get_optional_param('langs', $club->langs);
 		$rules_code = get_optional_param('rules_code', NULL);
 		
@@ -491,6 +496,10 @@ class ApiPage extends OpsApiPageBase
 		$langs = get_optional_param('langs', $old_langs);
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & TOURNAMENT_EDITABLE_MASK) + ($old_flags & ~TOURNAMENT_EDITABLE_MASK);
+		if (!is_permitted(PERMISSION_ADMIN))
+		{
+			$flags = ($flags & ~TOURNAMENT_EDITABLE_MASK) + ($old_flags & TOURNAMENT_EDITABLE_MASK);
+		}
 		
 		$address_id = get_optional_param('address_id', $old_address_id);
 		if ($address_id != $old_address_id)

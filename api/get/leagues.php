@@ -23,7 +23,7 @@ class ApiPage extends GetApiPageBase
 		$page = (int)get_optional_param('page', 0);
 		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
 		
-		$condition = new SQL(' WHERE (l.flags & ?) = 0', LEAGUE_FLAG_RETIRED);
+		$condition = new SQL(' WHERE (l.flags & ?) = 0', LEAGUE_FLAG_CLOSED);
 		if ($name_contains != '')
 		{
 			$name_contains = '%' . $name_contains . '%';

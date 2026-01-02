@@ -7,6 +7,8 @@ define('ONE_YEAR', 31536000);
 define('ONE_WEEK', 604800);
 define('ONE_DAY', 86400);
 
+define('CLUB_IDLE_TIME', 60 * 60 * 24 * 365); // one year
+
 class GarbageCollector extends Updater
 {
 	function __construct()
@@ -160,7 +162,6 @@ class GarbageCollector extends Updater
 			' ORDER BY e.id'.
 			' LIMIT '.$items_count, 
 			$this->vars->event_id);
-		$this->debug($query->get_parsed_sql());
 		while ($row = $query->next())
 		{
 			list ($event_id) = $row;
@@ -175,6 +176,71 @@ class GarbageCollector extends Updater
 		}
 		Db::commit();
 		$this->vars->event_id = $event_id;
+		return $count;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// GarbageCollector.clubs
+	//-------------------------------------------------------------------------------------------------------
+	function clubs_task($items_count)
+	{
+		if (!isset($this->vars->club_id))
+		{
+			$this->vars->club_id = 0;
+		}
+		
+		$club_id = 0;
+		$count = 0;
+		Db::begin();
+		
+		$query = new DbQuery(
+			'SELECT c.id, c.name FROM clubs c'.
+			' WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0'.
+			' AND c.id > ?'.
+			' AND c.activated < UNIX_TIMESTAMP() - '.CLUB_IDLE_TIME.
+			' AND NOT EXISTS (SELECT g.id FROM games g WHERE g.club_id = c.id AND g.start_time > UNIX_TIMESTAMP() - '.CLUB_IDLE_TIME.')'.
+			' ORDER BY c.id'.
+			' LIMIT '.$items_count, $club_id);
+		while ($row = $query->next())
+		{
+			list ($club_id, $club_name) = $row;
+			Db::exec(get_label('club'), 'UPDATE clubs SET flags = flags | ' . CLUB_FLAG_CLOSED . ' WHERE id = ?', $club_id);
+			$this->log('Club "' . $club_name . '" is closed due to more than one year of inactivity (id='.$club_id.')');
+			
+			// Send notifications
+			$query1 = new DbQuery(
+				'SELECT u.id, nu.name, u.email, u.def_lang'.
+				' FROM club_regs cr'.
+				' JOIN users u ON u.id = cr.user_id'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+				' WHERE cr.club_id = ? AND (cr.flags & '.USER_PERM_MANAGER.') <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0', $club_id);
+			while ($row1 = $query1->next())
+			{
+				list($user_id, $user_name, $user_email, $user_lang) = $row1;
+				if (!is_valid_lang($user_lang))
+				{
+					$user_lang = get_lang($league_langs);
+					if (!is_valid_lang($user_lang))
+					{
+						$user_lang = LANG_RUSSIAN;
+					}
+				}
+				list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($user_lang) . '/email/club_closed.php';
+				
+				$tags = array(
+					'root' => new Tag(get_server_url()),
+					'user_id' => new Tag($user_id),
+					'user_name' => new Tag($user_name),
+					'club_id' => new Tag($club_id),
+					'club_name' => new Tag($club_name));
+				$body = parse_tags($body, $tags);
+				$text_body = parse_tags($text_body, $tags);
+				send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
+			}
+			++$count;
+		}
+		Db::commit();
+		$this->vars->club_id = $club_id;
 		return $count;
 	}
 }

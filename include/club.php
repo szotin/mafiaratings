@@ -21,7 +21,7 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 	if ($_profile != NULL && $id > 0)
 	{
 		$can_manage = false;
-		if (($flags & CLUB_FLAG_RETIRED) != 0)
+		if (($flags & CLUB_FLAG_CLOSED) != 0)
 		{
 			if ($_profile->is_admin() || ($memb_flags != NULL && ($memb_flags & USER_PERM_MANAGER) != 0))
 			{
@@ -60,7 +60,7 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 			if ($can_manage)
 			{
 				echo '<button class="icon" onclick="mr.editClub(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.retireClub(' . $id . ')" title="' . get_label('Retire [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.closeClub(' . $id . ')" title="' . get_label('Close [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 				$no_buttons = false;
 			}
 			
@@ -196,7 +196,7 @@ class ClubPageBase extends PageBase
 		echo '<tr><td colspan="3">';
 		PageBase::show_menu($menu);
 		echo '</td></tr>';
-		if (($this->flags & CLUB_FLAG_RETIRED) != 0)
+		if (($this->flags & CLUB_FLAG_CLOSED) != 0)
 		{
 			$dark = 'darker';
 			$light = 'dark';

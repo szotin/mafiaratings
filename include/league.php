@@ -16,7 +16,7 @@ function show_league_buttons($id, $name, $flags)
 	if ($_profile != NULL && $id > 0 && $_profile->is_league_manager($id))
 	{
 		$can_manage = $_profile->is_league_manager($id);
-		if (($flags & LEAGUE_FLAG_RETIRED) != 0)
+		if (($flags & LEAGUE_FLAG_CLOSED) != 0)
 		{
 			echo '<button class="icon" onclick="mr.restoreLeague(' . $id . ')" title="' . get_label('Restore [0]', $name) . '"><img src="images/undelete.png" border="0"></button>';
 			$no_buttons = false;
@@ -24,7 +24,7 @@ function show_league_buttons($id, $name, $flags)
 		else
 		{
 			echo '<button class="icon" onclick="mr.editLeague(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
-			echo '<button class="icon" onclick="mr.retireLeague(' . $id . ')" title="' . get_label('Retire [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
+			echo '<button class="icon" onclick="mr.closeLeague(' . $id . ')" title="' . get_label('Close [0]', $name) . '"><img src="images/delete.png" border="0"></button>';
 			$no_buttons = false;
 		}
 	}
@@ -113,7 +113,7 @@ class LeaguePageBase extends PageBase
 		echo '<tr><td colspan="3">';
 		PageBase::show_menu($menu);
 		echo '</td></tr>';
-		if (($this->flags & LEAGUE_FLAG_RETIRED) != 0)
+		if (($this->flags & LEAGUE_FLAG_CLOSED) != 0)
 		{
 			$dark = 'darker';
 			$light = 'dark';

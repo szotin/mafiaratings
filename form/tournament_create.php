@@ -171,7 +171,11 @@ try
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
 	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
 	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
-	echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.') . '<br>';
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.') . '<br>';
+	}
+	echo '<input type="checkbox" id="form-hide"> ' . get_label('hide from the main page.') . '<br>';
 	echo '<input type="checkbox" id="form-streaming" checked> ' . get_label('video streaming games.') . '<br>';
 	echo '</td></tr>';
 	
@@ -469,7 +473,8 @@ try
 		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
 		if ($("#form-award-no-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED; ?>;
 		if ($("#form-award-no-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK; ?>;
-		if ($("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
+		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
+		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
 		_flags |= $("#form-hide-table").val();

@@ -27,7 +27,7 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 	global $_profile;
 	
 	$now = time();
-	if (($club_flags & CLUB_FLAG_RETIRED) == 0)
+	if (($club_flags & CLUB_FLAG_CLOSED) == 0)
 	{
 		if (is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $id))
 		{

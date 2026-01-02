@@ -105,7 +105,7 @@ function show_address_buttons($id, $name, $flags, $club_id)
 	{
 		echo '<button class="icon" onclick="mr.editAddr(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></button>';
 		echo '<button class="icon" onclick="mr.genAddr(' . $id . ')" title="' . get_label('Locate [0] in google maps and generate map image.', $name) . '"><img src="images/map.png" border="0"></button>';
-		echo '<button class="icon" onclick="mr.retireAddr(' . $id . ')" title="' . get_label('Mark [0] as not used', $name) . '"><img src="images/delete.png" border="0"></button>';
+		echo '<button class="icon" onclick="mr.closeAddr(' . $id . ')" title="' . get_label('Mark [0] as not used', $name) . '"><img src="images/delete.png" border="0"></button>';
 		$no_buttons = false;
 	}
 }

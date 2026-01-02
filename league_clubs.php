@@ -11,7 +11,7 @@ define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 define('FLAG_SHOW_ACTIVE', 1);
-define('FLAG_SHOW_RETIRED', 2);
+define('FLAG_SHOW_CLOSED', 2);
 
 class Page extends LeaguePageBase
 {
@@ -33,13 +33,13 @@ class Page extends LeaguePageBase
 		global $_profile, $_lang;
 		
 		$condition = new SQL();
-		if (($this->view_flags & FLAG_SHOW_RETIRED) == 0)
+		if (($this->view_flags & FLAG_SHOW_CLOSED) == 0)
 		{
-			$condition->add(' AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0');
+			$condition->add(' AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0');
 		}
 		if (($this->view_flags & FLAG_SHOW_ACTIVE) == 0)
 		{
-			$condition->add(' AND (c.flags & ' . CLUB_FLAG_RETIRED . ') <> 0');
+			$condition->add(' AND (c.flags & ' . CLUB_FLAG_CLOSED . ') <> 0');
 		}
 		
 		$managed_clubs_not_in_league_count = 0;
@@ -47,7 +47,7 @@ class Page extends LeaguePageBase
 		{
 			foreach ($_profile->clubs as $club)
 			{
-				if (($club->flags & USER_PERM_MANAGER) != 0 && ($club->club_flags & CLUB_FLAG_RETIRED) == 0)
+				if (($club->flags & USER_PERM_MANAGER) != 0 && ($club->club_flags & CLUB_FLAG_CLOSED) == 0)
 				{
 					++$managed_clubs_not_in_league_count;
 				}
@@ -87,12 +87,12 @@ class Page extends LeaguePageBase
 			++$clubs_count;
 		}
 		
-		echo '<table class="transp"><tr><td><input type="checkbox" id="retired" onclick="filter()"';
-		if ($this->view_flags & FLAG_SHOW_RETIRED)
+		echo '<table class="transp"><tr><td><input type="checkbox" id="closed" onclick="filter()"';
+		if ($this->view_flags & FLAG_SHOW_CLOSED)
 		{
 			echo ' checked';
 		}
-		echo '> ' . get_label('Show retired clubs') . '</td></tr></table>';
+		echo '> ' . get_label('Show closed clubs') . '</td></tr></table>';
 		
 		if ($can_add)
 		{
@@ -198,13 +198,13 @@ class Page extends LeaguePageBase
 		function filter()
 		{
 			var flags = <?php echo $this->view_flags; ?>;
-			if ($("#retired").attr("checked"))
+			if ($("#closed").attr("checked"))
 			{
-				flags |= <?php echo FLAG_SHOW_RETIRED; ?>;
+				flags |= <?php echo FLAG_SHOW_CLOSED; ?>;
 			}
 			else
 			{
-				flags &= ~<?php echo FLAG_SHOW_RETIRED; ?>;
+				flags &= ~<?php echo FLAG_SHOW_CLOSED; ?>;
 			}
 			goTo({ flags: flags, page: 0 });
 		}

@@ -16,7 +16,7 @@ function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $l
 	global $_profile;
 
 	$now = time();
-	if (($league_flags & LEAGUE_FLAG_RETIRED) == 0 && is_permitted(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id,  $id))
+	if (($league_flags & LEAGUE_FLAG_CLOSED) == 0 && is_permitted(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id,  $id))
 	{
 		echo '<button class="icon" onclick="mr.editSeries(' . $id . ')" title="' . get_label('Edit the series') . '"><img src="images/edit.png" border="0"></button>';
 		if ($start_time >= $now)

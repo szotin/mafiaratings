@@ -346,7 +346,7 @@ class ApiPage extends OpsApiPageBase
 		$club_id = -1;
 		if ($city_id > 0)
 		{
-			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id, $langs);
+			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id, $langs);
 			// $this->response['sql-03'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -355,7 +355,7 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($club_id <= 0)
 			{
-				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id, $langs);
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id, $langs);
 				// $this->response['sql-04'] = $query->get_parsed_sql();
 				if ($row = $query->next())
 				{
@@ -365,7 +365,7 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($club_id <= 0)
 			{
-				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id);
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id = ? AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $city_id);
 				// $this->response['sql-05'] = $query->get_parsed_sql();
 				if ($row = $query->next())
 				{
@@ -377,7 +377,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				if ($club_id <= 0)
 				{
-					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id IN (SELECT id FROM cities WHERE area_id = ?)) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $area_id, $area_id, $langs);
+					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id IN (SELECT id FROM cities WHERE area_id = ?)) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $area_id, $area_id, $langs);
 					// $this->response['sql-06'] = $query->get_parsed_sql();
 					if ($row = $query->next())
 					{
@@ -387,7 +387,7 @@ class ApiPage extends OpsApiPageBase
 				
 				if ($club_id <= 0)
 				{
-					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE area_id = ?)) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $area_id, $area_id, $langs);
+					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE area_id = ?)) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $area_id, $area_id, $langs);
 					// $this->response['sql-07'] = $query->get_parsed_sql();
 					if ($row = $query->next())
 					{
@@ -397,7 +397,7 @@ class ApiPage extends OpsApiPageBase
 				
 				if ($club_id <= 0)
 				{
-					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE area_id = ?)) AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $area_id, $area_id);
+					$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.city_id = ? OR c.city_id  IN (SELECT id FROM cities WHERE area_id = ?)) AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $area_id, $area_id);
 					// $this->response['sql-08'] = $query->get_parsed_sql();
 					if ($row = $query->next())
 					{
@@ -409,7 +409,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($club_id <= 0 && $country_id > 0)
 		{
-			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id, $langs);
+			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id, $langs);
 			// $this->response['sql-09'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -418,7 +418,7 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($club_id <= 0)
 			{
-				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id, $langs);
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id, $langs);
 				// $this->response['sql-10'] = $query->get_parsed_sql();
 				if ($row = $query->next())
 				{
@@ -428,7 +428,7 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($club_id <= 0)
 			{
-				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id);
+				$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE c.city_id IN (SELECT id FROM cities WHERE country_id = ?) AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $country_id);
 				// $this->response['sql-11'] = $query->get_parsed_sql();
 				if ($row = $query->next())
 				{
@@ -439,7 +439,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($club_id <= 0)
 		{
-			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $langs);
+			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id AND c.langs = ? AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $langs);
 			// $this->response['sql-12'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -449,7 +449,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($club_id <= 0)
 		{
-			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $langs);
+			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id AND (c.langs & ?) <> 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC', $langs);
 			// $this->response['sql-13'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{
@@ -459,7 +459,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($club_id <= 0)
 		{
-			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC');
+			$query = new DbQuery('SELECT c.id FROM clubs c LEFT JOIN games g ON g.club_id = c.id WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 GROUP BY c.id ORDER BY count(g.id) DESC');
 			// $this->response['sql-14'] = $query->get_parsed_sql();
 			if ($row = $query->next())
 			{

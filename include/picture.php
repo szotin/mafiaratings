@@ -307,7 +307,7 @@ class Picture
 		switch ($this->type)
 		{
 			case CLUB_PICTURE:
-				if ($this->flags & CLUB_FLAG_RETIRED)
+				if ($this->flags & CLUB_FLAG_CLOSED)
 				{
 					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
 					if ($width > 0)
@@ -382,7 +382,7 @@ class Picture
 				}
 				break;
 			case LEAGUE_PICTURE:
-				if ($this->flags & LEAGUE_FLAG_RETIRED)
+				if ($this->flags & LEAGUE_FLAG_CLOSED)
 				{
 					echo '<img src="images/' . $dir . get_lang_code($_lang) . '/closed.png" title="' . $title . ' (' . get_label('closed') . ')" style="position:absolute; left:50%; margin-left:-' . ($w / 2) . 'px;"';
 					if ($width > 0)

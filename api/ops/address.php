@@ -202,9 +202,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// retire
+	// close
 	//-------------------------------------------------------------------------------------------------------
-	function retire_op()
+	function close_op()
 	{
 		$address_id = (int)get_required_param('address_id');
 		list($club_id, $name, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
@@ -220,9 +220,9 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 	}
 	
-	function retire_op_help()
+	function close_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Mark address as retired. So it no longer appear in the list of addresses for the new events of the club. This means that this address is no longer used.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Mark address as closed. So it no longer appear in the list of addresses for the new events of the club. This means that this address is no longer used.');
 		$help->request_param('address_id', 'Address id.');
 		return $help;
 	}
@@ -248,7 +248,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Restore the retired address. So it can be used for new events again.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Restore the closed address. So it can be used for new events again.');
 		$help->request_param('address_id', 'Address id.');
 		return $help;
 	}

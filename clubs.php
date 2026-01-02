@@ -18,19 +18,19 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_lang, $_page;
 		
-		$retired = isset($_REQUEST['retired']);
+		$closed = isset($_REQUEST['closed']);
 		$root_only = isset($_REQUEST['root']);
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
-		echo '<input type="checkbox" id="retired" onclick="filter()"';
-		if (isset($_REQUEST['retired']))
+		echo '<input type="checkbox" id="closed" onclick="filter()"';
+		if (isset($_REQUEST['closed']))
 		{
 			echo ' checked';
 		}
-		echo '> ' . get_label('Show retired clubs');
+		echo '> ' . get_label('Show closed clubs');
 		
 		echo ' <input type="checkbox" id="root" onclick="filter()"';
 		if (isset($_REQUEST['root']))
@@ -42,9 +42,9 @@ class Page extends GeneralPageBase
 		
 		$delimiter = ' WHERE ';
 		$condition = new SQL();
-		if (!$retired)
+		if (!$closed)
 		{
-			$condition->add($delimiter . '(c.flags & ' . CLUB_FLAG_RETIRED . ') = 0');
+			$condition->add($delimiter . '(c.flags & ' . CLUB_FLAG_CLOSED . ') = 0');
 			$delimiter = ' AND ';
 		}
 		if ($root_only)
@@ -76,7 +76,7 @@ class Page extends GeneralPageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$column_count = 0;
 		$clubs_count = 0;
-		if ($_profile != NULL && !$retired)
+		if ($_profile != NULL && !$closed)
 		{
 			--$page_size;
 			++$column_count;
@@ -106,7 +106,7 @@ class Page extends GeneralPageBase
 			$user_id, $condition);
 		$query->add(' ORDER BY ISNULL(u.flags), games DESC, c.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 			
-		if ($_profile != NULL && !$retired)
+		if ($_profile != NULL && !$closed)
 		{
 			echo '<table class="bordered" width="100%"><tr>';
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';	
@@ -180,7 +180,7 @@ class Page extends GeneralPageBase
 		{
 			var params = 
 			{
-				retired: $("#retired").attr("checked") ? null : undefined,
+				closed: $("#closed").attr("checked") ? null : undefined,
 				root: $("#root").attr("checked") ? null : undefined
 			};
 			goTo(params);

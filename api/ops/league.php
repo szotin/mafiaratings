@@ -480,9 +480,9 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// retire
+	// close
 	//-------------------------------------------------------------------------------------------------------
-	function retire_op()
+	function close_op()
 	{
 		global $_profile;
 		
@@ -490,17 +490,17 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags | ' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
+		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags | ' . LEAGUE_FLAG_CLOSED . ' WHERE id = ?', $league_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_LEAGUE, 'retired', NULL, $league_id, NULL, $league_id);
+			db_log(LOG_OBJECT_LEAGUE, 'closed', NULL, $league_id, NULL, $league_id);
 		}
 		Db::commit();
 	}
 	
-	function retire_op_help()
+	function close_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Close/retire the existing league.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Close the existing league.');
 		$help->request_param('league_id', 'League id.');
 		return $help;
 	}
@@ -516,7 +516,7 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags & ~' . LEAGUE_FLAG_RETIRED . ' WHERE id = ?', $league_id);
+		Db::exec(get_label('league'), 'UPDATE leagues SET flags = flags & ~' . LEAGUE_FLAG_CLOSED . ' WHERE id = ?', $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_LEAGUE, 'restored', NULL, $league_id, NULL, $league_id);
@@ -526,7 +526,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Reopen/restore closed/retired league.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Reopen closed league.');
 		$help->request_param('league_id', 'League id.');
 		return $help;
 	}

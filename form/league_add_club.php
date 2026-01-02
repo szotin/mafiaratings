@@ -21,7 +21,7 @@ try
 
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120">' . get_label('Club') . ':</td><td><select id="form-club">';
-	$query = new DbQuery('SELECT c.id, c.name FROM clubs c WHERE (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND c.id NOT IN (SELECT club_id FROM league_clubs WHERE league_id = ?) ORDER BY name', $league_id);
+	$query = new DbQuery('SELECT c.id, c.name FROM clubs c WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND c.id NOT IN (SELECT club_id FROM league_clubs WHERE league_id = ?) ORDER BY name', $league_id);
 	while ($row = $query->next())
 	{
 		list($club_id, $club_name) = $row;

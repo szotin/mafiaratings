@@ -91,19 +91,19 @@ class Page extends GeneralPageBase
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('leagues')));
-		echo ' <input type="checkbox" id="retired" onclick="filterRetired()"';
-		if (isset($_REQUEST['retired']))
+		echo ' <input type="checkbox" id="closed" onclick="filterClosed()"';
+		if (isset($_REQUEST['closed']))
 		{
 			echo ' checked';
 		}
-		echo '> ' . get_label('Show retired leagues');
+		echo '> ' . get_label('Show closed leagues');
 		echo '</td></tr></table></p>';
 		
 		$this->show_requests();
 		
-		$retired = isset($_REQUEST['retired']);
-		$condition = new SQL(' WHERE (l.flags & ' . LEAGUE_FLAG_RETIRED);
-		if ($retired)
+		$closed = isset($_REQUEST['closed']);
+		$condition = new SQL(' WHERE (l.flags & ' . LEAGUE_FLAG_CLOSED);
+		if ($closed)
 		{
 			$condition->add(') <> 0');
 		}
@@ -136,7 +136,7 @@ class Page extends GeneralPageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		$column_count = 0;
 		$leagues_count = 0;
-		if ($_profile != NULL && !$retired)
+		if ($_profile != NULL && !$closed)
 		{
 			--$page_size;
 			++$column_count;
@@ -153,7 +153,7 @@ class Page extends GeneralPageBase
 		
 		$league_pic = new Picture(LEAGUE_PICTURE);
 			
-		if ($_profile != NULL && !$retired)
+		if ($_profile != NULL && !$closed)
 		{
 			echo '<table class="bordered" width="100%"><tr>';
 			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
@@ -222,9 +222,9 @@ class Page extends GeneralPageBase
 	{
 		parent::js();
 ?>
-		function filterRetired()
+		function filterClosed()
 		{
-			goTo({retired: ($("#retired").attr("checked") ? null : undefined), page: undefined});
+			goTo({closed: ($("#closed").attr("checked") ? null : undefined), page: undefined});
 		}
 <?php
 	}

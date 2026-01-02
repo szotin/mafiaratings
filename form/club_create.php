@@ -25,7 +25,7 @@ try
 	echo '<tr><td>' . get_label('Club system') . ':</td><td>';
 	echo '<select id="form-parent">';
 	show_option(0, $profile->user_club_id, '');
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_RETIRED . ') = 0 ORDER BY name');
+	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_CLOSED . ') = 0 ORDER BY name');
 	while ($row = $query->next())
 	{
 		list($c_id, $c_name) = $row;

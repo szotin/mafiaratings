@@ -225,13 +225,23 @@ try
 	}
 	echo  '> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	
-	echo '<input type="checkbox" id="form-pin"';
-	if ($flags & SERIES_FLAG_PINNED)
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<input type="checkbox" id="form-pin"';
+		if ($flags & SERIES_FLAG_PINNED)
+		{
+			echo ' checked';
+		}
+		echo  '> ' . get_label('pin to the main page.') . '<br>';
+	}
+
+	echo '<input type="checkbox" id="form-hide"';
+	if ($flags & TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE)
 	{
 		echo ' checked';
 	}
-	echo  '> ' . get_label('pin to the main page.') . '<br>';
-
+	echo  '> ' . get_label('hide from the main page.') . '<br>';
+	
 	echo '<input type="checkbox" id="form-streaming"';
 	if ($flags & TOURNAMENT_FLAG_STREAMING)
 	{
@@ -498,7 +508,8 @@ try
 		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
 		if ($("#form-award-no-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED; ?>;
 		if ($("#form-award-no-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK; ?>;
-		if ($("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
+		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
+		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
 		_flags |= $("#form-hide-table").val();

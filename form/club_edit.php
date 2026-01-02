@@ -50,7 +50,7 @@ try
 	echo '<tr><td>' . get_label('Club system') . ':</td><td>';
 	echo '<select id="form-parent">';
 	show_option(0, $club->parent_id, '');
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND id <> ? ORDER BY name', $club->id);
+	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND id <> ? ORDER BY name', $club->id);
 	while ($row = $query->next())
 	{
 		list($c_id, $c_name) = $row;

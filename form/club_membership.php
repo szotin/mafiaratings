@@ -25,7 +25,7 @@ try
 	
 	$club_pic = new Picture(CLUB_PICTURE);
 	echo '<p>' . get_label('Join club') . ': <select id="form-join-club" onChange="joinClub()">';
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_RETIRED . ') = 0 AND id NOT IN(SELECT club_id FROM club_regs WHERE user_id = ?) ORDER BY name', $user_id);
+	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND id NOT IN(SELECT club_id FROM club_regs WHERE user_id = ?) ORDER BY name', $user_id);
 	show_option(0, 0, '');
 	while ($row = $query->next())
 	{

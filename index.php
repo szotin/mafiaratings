@@ -206,7 +206,7 @@ class Page extends GeneralPageBase
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0', $condition);
+			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0', $condition);
 		$query->add(' ORDER BY e.flags & ' . EVENT_FLAG_PINNED .' DESC, e.start_time + e.duration, e.name, e.id LIMIT ' . EVENTS_ROW_COUNT * EVENTS_COLUMN_COUNT);
 		
 		$event_count = 0;
@@ -256,7 +256,7 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND', $condition);
+			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND ', $condition);
 		if (!$in_series)
 		{
 			$query->add(' NOT');

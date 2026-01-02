@@ -285,7 +285,7 @@ class PageBase
 				echo '<ul id="header-club-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
 				foreach ($_profile->clubs as $c)
 				{
-					if ($c->id != $club->id && ($c->club_flags & CLUB_FLAG_RETIRED) == 0)
+					if ($c->id != $club->id && ($c->club_flags & CLUB_FLAG_CLOSED) == 0)
 					{
 						echo '<li><a href="club_main.php?id=' . $c->id . '">';
 						$this->club_pic->set($c->id, $c->name, $c->club_flags);

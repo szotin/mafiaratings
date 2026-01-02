@@ -153,7 +153,7 @@ class ApiPage extends ControlApiPageBase
 			{
 				$query->add(' WHERE (n.langs & '.$_lang.') <> 0');
 			}
-			$query->add(' ORDER BY (SELECT count(*) FROM clubs c JOIN cities t ON t.id = c.city_id WHERE t.country_id = o.id AND (c.flags & ' . CLUB_FLAG_RETIRED . ') = 0) DESC, n.name LIMIT ' . COUNT_LIMIT);
+			$query->add(' ORDER BY (SELECT count(*) FROM clubs c JOIN cities t ON t.id = c.city_id WHERE t.country_id = o.id AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0) DESC, n.name LIMIT ' . COUNT_LIMIT);
 			
 			while ($row = $query->next())
 			{
