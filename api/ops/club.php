@@ -74,7 +74,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			$city_id = retrieve_city_id(get_required_param('city'), retrieve_country_id(get_required_param('country')), get_timezone());
 		}
-		list($city_name, $currency_id) = Db::record(get_label('city'), 'SELECT n.name, co.currency_id FROM cities c JOIN countries co ON co.id = c.country_id JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
+		list($city_name, $currency_id, $country_id) = Db::record(get_label('city'), 'SELECT n.name, co.currency_id, co.id FROM cities c JOIN countries co ON co.id = c.country_id JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
+		if (is_sanctioned($country_id))
+		{
+			throw new Exc(get_label('Due to international sanctions against Russia, the creation of [0] in this country is currently unavailable.', get_label('clubs')));
+		}
 		
 		$is_admin = is_permitted(PERMISSION_ADMIN);
 		if ($parent_id > 0)

@@ -179,6 +179,11 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		$club = $_profile->clubs[$club_id];
 		
+		if (is_sanctioned($club->city_id))
+		{
+			throw new Exc(get_label('Due to international sanctions against Russia, the creation of [0] in this country is currently unavailable.', get_label('tournaments')));
+		}
+		
 		$name = get_required_param('name');
 		if (empty($name))
 		{

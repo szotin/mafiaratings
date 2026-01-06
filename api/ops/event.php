@@ -134,6 +134,11 @@ class ApiPage extends OpsApiPageBase
 				Db::record(get_label('club'), 'SELECT c.id, ct.timezone, ct.id, ct.country_id, c.rules, c.scoring_id, c.fee, c.currency_id FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 		}
 		
+		if (is_sanctioned($club->city_id))
+		{
+			throw new Exc(get_label('Due to international sanctions against Russia, the creation of [0] in this country is currently unavailable.', get_label('events')));
+		}
+		
 		$name = get_required_param('name');
 		if ($name == '')
 		{

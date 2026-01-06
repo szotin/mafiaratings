@@ -765,4 +765,9 @@ function lock_site($lock)
 	}
 }
 
+function is_sanctioned($country_id, $time = 1677196801)
+{
+	return $country_id == 2 /* Russia */ && $time >= 1677196800 /* Feb 24, 2022 */;
+}
+
 ?>
