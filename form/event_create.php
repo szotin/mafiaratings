@@ -151,7 +151,10 @@ try
 		
 	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can referee games.');
 	echo '<br><input type="checkbox" id="form-fun"> '.get_label('non-rating event.');
-	echo '<br><input type="checkbox" id="form-pin"> '.get_label('pin to the main page.');
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<br><input type="checkbox" id="form-pin"> '.get_label('pin to the main page.');
+	}
 	echo '<br><input type="checkbox" id="form-streaming"> '.get_label('video streaming games.');
 	
 	echo '</table>';

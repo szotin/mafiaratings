@@ -88,7 +88,11 @@ try
 	echo '<tr><td>' . get_label('Notes') . ':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 	
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.');
+	
+	if (is_permitted(PERMISSION_ADMIN))
+	{
+		echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.');
+	}
 	if ($league_flags & LEAGUE_FLAG_ELITE)
 	{
 		echo '<br><input type="checkbox" id="form-elite"> ' . get_label('elite series. The tournaments with more than one star become elite tournaments and bring more rating points.');

@@ -52,6 +52,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$flags &= ~SERIES_FLAG_ELITE;
 		}
+		if (!is_permitted(PERMISSION_ADMIN))
+		{
+			$flags &= ~SERIES_ADMIN_EDITABLE_MASK;
+		}
 		
 		$langs = get_optional_param('langs', $league_langs);
 		$timezone = get_timezone();
@@ -164,6 +168,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$flags &= ~LEAGUE_FLAG_ELITE;
 		}
+		if (!is_permitted(PERMISSION_ADMIN))
+		{
+			$flags = ($flags & ~SERIES_ADMIN_EDITABLE_MASK) + ($old_flags & SERIES_ADMIN_EDITABLE_MASK);
+		}
 		
 		$fee = get_optional_param('fee', $old_fee);
 		if (!is_null($fee) && $fee < 0)
@@ -261,7 +269,7 @@ class ApiPage extends OpsApiPageBase
 			$query = new DbQuery(
 				'SELECT g.id, g.end_time FROM games g'.
 				' JOIN series_tournaments t ON t.tournament_id = g.tournament_id'.
-				' WHERE t.series_id = ? AND t.stars > 1 AND (g.flags & '.(GAME_FLAG_RATING | GAME_IS_CANCELED).') = '.GAME_FLAG_RATING.
+				' WHERE t.series_id = ? AND t.stars > 1 AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.
 				' ORDER BY g.end_time, g.id'.
 				' LIMIT 1', $series_id);
 			if ($row = $query->next())

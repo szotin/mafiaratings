@@ -107,12 +107,15 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-pin"';
-	if ($flags & SERIES_FLAG_PINNED)
+	if (is_permitted(PERMISSION_ADMIN))
 	{
-		echo ' checked';
+		echo '<input type="checkbox" id="form-pin"';
+		if ($flags & SERIES_FLAG_PINNED)
+		{
+			echo ' checked';
+		}
+		echo  '> ' . get_label('pin to the main page.');
 	}
-	echo  '> ' . get_label('pin to the main page.');
 	if ($league_flags & LEAGUE_FLAG_ELITE)
 	{
 		echo '<br><input type="checkbox" id="form-elite"';

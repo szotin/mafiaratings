@@ -173,12 +173,15 @@ try
 	}
 	echo '> '.get_label('non-rating event.');
 	
-	echo '<br><input type="checkbox" id="form-pin"';
-	if (($flags & EVENT_FLAG_PINNED) != 0)
+	if (is_permitted(PERMISSION_ADMIN))
 	{
-		echo ' checked';
+		echo '<br><input type="checkbox" id="form-pin"';
+		if (($flags & EVENT_FLAG_PINNED) != 0)
+		{
+			echo ' checked';
+		}
+		echo '> '.get_label('pin to the main page.');
 	}
-	echo '> '.get_label('pin to the main page.');
 	
 	echo '<br><input type="checkbox" id="form-streaming"';
 	if (($flags & EVENT_FLAG_STREAMING) != 0)

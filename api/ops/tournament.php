@@ -243,7 +243,7 @@ class ApiPage extends OpsApiPageBase
 		$flags = (int)get_optional_param('flags', 0) & TOURNAMENT_EDITABLE_MASK;
 		if (!is_permitted(PERMISSION_ADMIN))
 		{
-			$flags &= ~TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE;
+			$flags &= ~TOURNAMENT_ADMIN_EDITABLE_MASK;
 		}
 		
 		$langs = get_optional_param('langs', $club->langs);
@@ -503,7 +503,7 @@ class ApiPage extends OpsApiPageBase
 		$flags = ($flags & TOURNAMENT_EDITABLE_MASK) + ($old_flags & ~TOURNAMENT_EDITABLE_MASK);
 		if (!is_permitted(PERMISSION_ADMIN))
 		{
-			$flags = ($flags & ~TOURNAMENT_EDITABLE_MASK) + ($old_flags & TOURNAMENT_EDITABLE_MASK);
+			$flags = ($flags & ~TOURNAMENT_ADMIN_EDITABLE_MASK) + ($old_flags & TOURNAMENT_ADMIN_EDITABLE_MASK);
 		}
 		
 		$address_id = get_optional_param('address_id', $old_address_id);

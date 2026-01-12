@@ -165,6 +165,10 @@ class ApiPage extends OpsApiPageBase
 		
 		$flags = (int)get_optional_param('flags', $default_flags);
 		$flags = ($flags & EVENT_EDITABLE_MASK) + ($default_flags & ~EVENT_EDITABLE_MASK);
+		if (!is_permitted(PERMISSION_ADMIN))
+		{
+			$flags &= ~EVENT_ADMIN_EDITABLE_MASK;
+		}
 		
 		$langs = get_optional_param('langs', 0);
 		if (($langs & LANG_ALL) == 0)
@@ -427,6 +431,10 @@ class ApiPage extends OpsApiPageBase
 		
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & EVENT_EDITABLE_MASK) + ($old_flags & ~EVENT_EDITABLE_MASK);
+		if (!is_permitted(PERMISSION_ADMIN))
+		{
+			$flags = ($flags & ~EVENT_ADMIN_EDITABLE_MASK) + ($old_flags & EVENT_ADMIN_EDITABLE_MASK);
+		}
 		
 		$langs = get_optional_param('langs', $old_langs);
 		if (($langs & LANG_ALL) == 0)
