@@ -2134,6 +2134,11 @@ class Page extends PageBase
 	function show_mr_points()
 	{
 		$p = $this->game->get_mafiaratings_points();
+		// print_json($p->red_stats);
+		// print_json($p->black_stats);
+		// echo 'black_scale = ' . $p->black_scale . '<br>';
+		// echo 'black_shift = ' . $p->black_shift . '<br>';
+		
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="64"></td>';
 		for ($i = 0; $i < 10; ++$i)

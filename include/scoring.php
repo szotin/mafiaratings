@@ -53,7 +53,8 @@ define('SCORING_FLAG_EXTRA_POINTS', 0x400000); // 4194304: Matter 22 - Extra poi
 define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed 1 mafia after being killed first night
 define('SCORING_FLAG_WORST_MOVE', 0x1000000); // 16777216: Matter 24 - Worst move
 define('SCORING_FLAG_TEAM_KICK_OUT', 0x2000000); // 33554432: Matter 25 - Team kicked out (opposite team wins)
-define('SCORING_FLAG_END', 0x4000000); // 67108864: Just marks the end of flags for loops
+define('SCORING_FLAG_TIE', 0x4000000); // 67108864: Matter 26 - Tie
+define('SCORING_FLAG_END', 0x8000000); // 134217728: Just marks the end of flags for loops
 
 define('SCORING_SORTING_MAIN_POINTS', 'm');
 define('SCORING_SORTING_LEGACY_POINTS', 'g');
@@ -2196,6 +2197,9 @@ function get_scoring_matter_label($policy, $include_roles = false)
 				break;
 			case SCORING_FLAG_TEAM_KICK_OUT:
 				$l = get_label('making the opposite team win');
+				break;
+			case SCORING_FLAG_TIE:
+				$l = get_label('tie');
 				break;
 		}
 		if ($delim == NULL)

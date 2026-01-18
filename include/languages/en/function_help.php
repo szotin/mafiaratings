@@ -169,6 +169,7 @@ return array
 				<li>Guessed 1 mafia after being killed first night</li>
 				<li>Got the worst move status from the referee (aka auto-bonus)</li>
 				<li>Team kicked out (opposite team wins)</li>
+				<li>Tie</li>
 			</ol></dd>
 		</dl>
 	<h3>Examples</h3>

@@ -98,6 +98,9 @@ class GarbageCollector extends Updater
 		while ($row = $query->next())
 		{
 			list ($this->vars->game_id, $c) = $row;
+			Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ?', $this->vars->game_id);
+			Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $this->vars->game_id);
+			Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id = ?', $this->vars->game_id);
 			Db::exec('game', 'DELETE FROM games WHERE id = ?', $this->vars->game_id);
 			$this->log('Deleted the game #'.$this->vars->game_id);
 			++$count;

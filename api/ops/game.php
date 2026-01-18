@@ -129,7 +129,7 @@ class ApiPage extends OpsApiPageBase
 			Game::rebuild_ratings($prev_game_id, $end_time);
 		}
 		
-		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id = ?', $prev_game_id, $game_id);
+		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id = ?', $prev_game_id, $game_id); // it also triggers rebuilding mr_bonus_stats
 		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET current_game_id = ? WHERE current_game_id = ?', $prev_game_id, $game_id);
 		Db::exec(get_label('game'), 'UPDATE mwt_games SET game_id = NULL WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM dons WHERE game_id = ?', $game_id);
@@ -138,6 +138,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM players WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
+		Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
 		
 		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);

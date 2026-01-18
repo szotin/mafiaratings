@@ -325,13 +325,14 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 				
-				Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $prev_game_id, $tournament_id);
+				Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $prev_game_id, $tournament_id); // it also triggers rebuilding mr_bonus_stats
 				Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 				Db::exec(get_label('player'), 'DELETE FROM mafiosos WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 				Db::exec(get_label('player'), 'DELETE FROM sheriffs WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 				Db::exec(get_label('player'), 'DELETE FROM players WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 				Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 				Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+				Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 				Db::exec(get_label('game'), 'DELETE FROM games WHERE tournament_id = ?', $tournament_id);
 			}
 			else

@@ -107,13 +107,17 @@ class GamePlayersStats
 						$player->scoring_flags |= SCORING_FLAG_SURVIVE;
 					}
 				}
-				else
+				else if ($data->winner == 'civ')
 				{
 					$player->scoring_flags |= SCORING_FLAG_LOSE;
 					if ($civ_day_kills == 0)
 					{
 						$player->scoring_flags |= SCORING_FLAG_CLEAR_LOSE;
 					}
+				}
+				else
+				{
+					$player->scoring_flags |= SCORING_FLAG_TIE;
 				}
 			}
 			else if ($data->winner == 'civ')
@@ -128,13 +132,17 @@ class GamePlayersStats
 					$player->scoring_flags |= SCORING_FLAG_SURVIVE;
 				}
 			}
-			else
+			else if ($data->winner == 'maf')
 			{
 				$player->scoring_flags |= SCORING_FLAG_LOSE;
 				if ($maf_day_kills == 0)
 				{
 					$player->scoring_flags |= SCORING_FLAG_CLEAR_LOSE;
 				}
+			}
+			else
+			{
+				$player->scoring_flags |= SCORING_FLAG_TIE;
 			}
 			
 			if (isset($game_player->bonus))
@@ -283,7 +291,7 @@ class GamePlayersStats
 		$sheriff = NULL;
 		$data = $game->data;
 		
-		$mr_points = $game->get_mafiaratings_points();
+		$this->mr_points = $game->get_mafiaratings_points();
 		
 		// Init roles and ids
 		for ($i = 0; $i < 10; ++$i)
@@ -358,7 +366,7 @@ class GamePlayersStats
 			$player->mr_points = 0;
 			for ($j = 0; $j < 10; ++$j)
 			{
-				$player->mr_points += $mr_points->pos_points[$i][$j] + $mr_points->neg_points[$i][$j];
+				$player->mr_points += $this->mr_points->pos_points[$i][$j] + $this->mr_points->neg_points[$i][$j];
 			}
 			
 			$death_type = '';
@@ -824,6 +832,22 @@ class GamePlayersStats
     {
 		$data = $this->game->data;
 		$is_rating = isset($data->rating) && !$data->rating ? 0 : 1;
+		
+		Db::exec(get_label('stats'), 
+			'DELETE FROM mr_bonus_stats WHERE game_id = ?', $data->id);
+		if ($is_rating && isset($data->tournamentId))
+		{
+			list ($scoring_functions) = Db::record(get_label('tournament'), 'SELECT s.functions FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version WHERE t.id = ?', $data->tournamentId);
+			if ($scoring_functions & SCORING_FUNCTION_MR_POINTS)
+			{
+				$red_stats = $this->mr_points->red_stats;
+				$black_stats = $this->mr_points->black_stats;
+				Db::exec(get_label('stats'), 
+					'INSERT INTO mr_bonus_stats(game_id, time, red_num, red_mean, red_variance, black_num, black_mean, black_variance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+					$data->id, $data->endTime, $red_stats->n, $red_stats->mean, $red_stats->variance, $black_stats->n, $black_stats->mean, $black_stats->variance);
+			}
+		}
+		
 		for ($i = 0; $i < 10; ++$i)
 		{
 			$game_player = $data->players[$i];

@@ -86,4 +86,76 @@ if (!function_exists('array_is_list'))
 	}
 }
 
+class VarianceUpdater 
+{
+    public $n;
+    public $mean;
+    public $variance;
+	
+	public function sigma()
+	{
+		return sqrt($this->variance);
+	}
+
+	public function __construct($n = 0, $mean = 0, $variance = 0) 
+	{
+		if (is_object($n))
+		{
+			$this->n = (int)$n->n;
+			$this->mean = (float)$n->mean;
+			$this->variance = (float)$n->variance;
+		}
+		else
+		{
+			$this->n = (int)$n;
+			$this->mean = (float)$mean;
+			$this->variance = (float)$variance;
+		}
+	}
+
+    public function addNumber($x) 
+	{
+		$oldMean = $this->mean;
+		$this->n++;
+
+		$this->mean = $oldMean + ($x - $oldMean) / $this->n;
+        if ($this->n > 1) 
+		{
+            $this->variance = (($this->n - 2) * $this->variance + ($x - $oldMean) * ($x - $this->mean)) / ($this->n - 1);
+        }
+		else
+		{
+			$this->variance = 0;
+		}
+    }
+	
+	public function addSet($n, $mean = 0, $variance = 0)
+	{
+		if (is_object($n))
+		{
+			$mean = (float)$n->mean;
+			$variance = (float)$n->variance;
+			$n = (int)$n->n;
+		}
+		
+		$n_combined = $this->n + $n;
+		if ($n_combined > 0)
+		{
+			$mean_combined = ($this->mean * $this->n + $mean * $n) / $n_combined;
+			$this_d = ($this->mean - $mean_combined) * ($this->mean - $mean_combined);
+			$d = ($mean - $mean_combined) * ($mean - $mean_combined);
+			if ($n_combined > 1)
+			{
+				$this->variance = ($this->n * ($this->variance + $this_d) + $n * ($variance + $d) - $this->variance - $variance) / ($n_combined - 1);
+			}
+			else
+			{
+				$this->variance = 0;
+			}
+			$this->mean = $mean_combined;
+			$this->n = $n_combined;
+		}
+	}
+}
+
 ?>

@@ -3629,12 +3629,109 @@ class Game
 				}
 			}
 		}
+
+		// Now multiply winners positive points by 2 and divide their negative points by 2
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			if (isset($player->role) && $player->role != 'civ' && $player->role != 'sheriff')
+			{
+				$winner = ($this->data->winner == 'maf');
+			}
+			else
+			{
+				$winner = ($this->data->winner == 'civ');
+			}
+			if ($winner)
+			{
+				for ($j = 0; $j < 10; ++$j)
+				{
+					$pos_points[$i][$j] *= 2;
+					$neg_points[$i][$j] /= 2;
+				}
+			}
+		}
 		
-		//throw new Exc($points);
 		$result = new stdClass();
 		$result->actions = $actions;
 		$result->pos_points = $pos_points;
 		$result->neg_points = $neg_points;
+		//throw new Exc($result);
+		
+		// Now calculate mean and variance for points
+		$result->red_stats = new VarianceUpdater();
+		$result->black_stats = new VarianceUpdater();
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			$points = 0;
+			for ($j = 0; $j < 10; ++$j)
+			{
+				$points += $pos_points[$i][$j] + $neg_points[$i][$j];
+			}
+			
+			if (isset($player->role) && $player->role != 'civ' && $player->role != 'sheriff')
+			{
+				$result->black_stats->addNumber($points);
+			}
+			else
+			{
+				$result->red_stats->addNumber($points);
+			}
+		}
+		
+		// Now get current stat params and generate new stats
+		$red_stats = new VarianceUpdater();
+		$black_stats = new VarianceUpdater();
+		$query = new DbQuery(
+			'SELECT red_num, red_mean, red_variance, black_num, black_mean, black_variance FROM mr_bonus_stats'.
+			' WHERE time < ? OR (time = ? AND game_id < ?)'.
+			' ORDER BY time DESC, game_id DESC'.
+			' LIMIT 1', $this->data->endTime, $this->data->endTime, $this->data->id);
+		if ($row = $query->next())
+		{
+			list ($red_num, $red_mean, $red_variance, $black_num, $black_mean, $black_variance) = $row;
+			$red_stats->addSet($red_num, $red_mean, $red_variance);
+			$black_stats->addSet($black_num, $black_mean, $black_variance);
+		}
+		$result->red_stats->addSet($red_stats);
+		$result->black_stats->addSet($black_stats);
+		
+		if ($black_stats->n <= 24) // it has to be more than 8 games, because mean and variance are too volatile in the first games
+		{
+			$red_stats = new VarianceUpdater(56, 0.799352, 0.708711);
+			$black_stats = new VarianceUpdater(24, -0.491751, 0.196616); // Numbers are taken from the actual 8-th game.
+		}
+		
+		// Now normalize black stats to red stats
+		if ($black_stats->variance > 0)
+		{
+			$result->black_scale = sqrt($red_stats->variance / $black_stats->variance);
+		}
+		else
+		{
+			$result->black_scale = 1;
+		}
+		$result->black_shift = $red_stats->mean - $result->black_scale * $black_stats->mean;
+		
+		for ($i = 0; $i < 10; ++$i)
+		{
+			$player = $this->data->players[$i];
+			if (isset($player->role) && $player->role != 'civ' && $player->role != 'sheriff')
+			{
+				for ($j = 0; $j < 10; ++$j)
+				{
+					$player1 = $this->data->players[$j];
+					if (!isset($player1->role) || $player1->role == 'civ' || $player1->role == 'sheriff')
+					{
+						$result->pos_points[$i][$j] = $result->black_scale * $result->pos_points[$i][$j] + $result->black_shift / 14;
+						$result->neg_points[$i][$j] = $result->black_scale * $result->neg_points[$i][$j] + $result->black_shift / 14;
+					}
+					// $result->pos_points[$i][$j] = $result->black_scale * $result->pos_points[$i][$j] + $result->black_shift / 20;
+					// $result->neg_points[$i][$j] = $result->black_scale * $result->neg_points[$i][$j] + $result->black_shift / 20;
+				}
+			}
+		}
 		return $result;
 	}
 	
