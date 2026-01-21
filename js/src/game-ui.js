@@ -610,6 +610,11 @@ function _uiRender(resetTimer)
 			timerNeeded = false;
 			info = 'Night';
 			break;
+		case 'night end':
+			status = l('NightEnd');
+			timerNeeded = false;
+			info = 'Night';
+			break;
 		case 'end':
 			if (game.winner == 'maf')
 			{

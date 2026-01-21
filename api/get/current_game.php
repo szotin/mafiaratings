@@ -379,6 +379,10 @@ class ApiPage extends GetApiPageBase
 				$game->phase = 'night';
 				$game->state = 'sheriffChecking';
 				break;
+			case GAMETIME_NIGHT_END:
+				$game->phase = 'night';
+				$game->state = 'ending';
+				break;
 			case GAMETIME_END:
 				$game->phase = 'day';
 				$game->state = 'end';

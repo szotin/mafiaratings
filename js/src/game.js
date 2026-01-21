@@ -382,20 +382,22 @@ function _gameTimeToInt(time)
 		return 5;
 	case 'sheriff':
 		return 6;
-	case 'night kill speaking':
+	case 'night end':
 		return 7;
-	case 'speaking':
+	case 'night kill speaking':
 		return 8;
-	case 'voting start':
+	case 'speaking':
 		return 9;
-	case 'voting':
+	case 'voting start':
 		return 10;
-	case 'voting kill all':
+	case 'voting':
 		return 11;
-	case 'day kill speaking':
+	case 'voting kill all':
 		return 12;
+	case 'day kill speaking':
+		return 13;
 	}
-	return 13;
+	return 14;
 }
 
 // returns: -1 if num1 was nomimaned earlier; 1 if num2; 0 if none of them was nominated, or they are the same player
@@ -638,6 +640,7 @@ function gameIsNight()
 	case 'shooting':
 	case 'don':
 	case 'sheriff':
+	case 'night end':
 		return true;
 	case 'end':
 		return game.winner == 'maf';
@@ -2704,6 +2707,13 @@ function gameNext()
 				game.time.time = 'sheriff';
 				break;
 			case 'sheriff':
+				if (gameIsStreaming())
+				{
+					game.time = { time: 'night end', round: game.time.round };
+					break;
+				}
+				// no break by purpose
+			case 'night end':
 			{
 				let killed = gameGetNightKill();
 				if (killed >= 0)
@@ -2748,6 +2758,11 @@ function gameNext()
 	}
 }
 
+function gameIsStreaming()
+{
+	return isSet(game.streaming) && game.streaming;
+}
+
 function gameBack()
 {
 	if (gameCanGoBack())
@@ -2763,7 +2778,7 @@ function gameBack()
 			// Parameters that can not be reverted
 			let rating = !isSet(game.rating) || game.rating;
 			let features = isSet(game.features) ? game.features : DEFAULT_FEATURES;
-			let streaming = isSet(game.streaming) && game.streaming;
+			let streaming = gameIsStreaming();
 			
 			game = g;
 			
@@ -2888,7 +2903,7 @@ function obsProceedEvent(ev)
 
 function obsAfterNext()
 {
-	if (_obsScenes != null && isSet(game.streaming) && game.streaming)
+	if (_obsScenes != null && gameIsStreaming())
 	{
 		if (isSet(game.time.speaker) && _obsPlayers[game.time.speaker-1] != null)
 			obsSwitchScene(_obsPlayers[game.time.speaker-1]);
@@ -2899,6 +2914,6 @@ function obsAfterNext()
 	
 function obsAfterBack()
 {
-	if (_obsScenes != null && isSet(game.streaming) && game.streaming && isSet(game.obsScene))
+	if (_obsScenes != null && gameIsStreaming() && isSet(game.obsScene))
 		obsSwitchScene(game.obsScene);
 }

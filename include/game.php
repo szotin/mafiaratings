@@ -51,6 +51,7 @@ define('GAMETIME_NIGHT_START', 'night start'); // night
 define('GAMETIME_SHOOTING', 'shooting'); // night
 define('GAMETIME_DON', 'don'); // night
 define('GAMETIME_SHERIFF', 'sheriff'); // night
+define('GAMETIME_NIGHT_END', 'night end'); // night
 define('GAMETIME_END', 'end'); // day
 
 define('DEATH_TYPE_GIVE_UP', 'giveUp');
@@ -1397,22 +1398,24 @@ class Game
 				return 5;
 			case GAMETIME_SHERIFF:
 				return 6;
-			case GAMETIME_DAY_START:
+			case GAMETIME_NIGHT_END:
 				return 7;
-			case GAMETIME_NIGHT_KILL_SPEAKING:
+			case GAMETIME_DAY_START:
 				return 8;
-			case GAMETIME_SPEAKING:
+			case GAMETIME_NIGHT_KILL_SPEAKING:
 				return 9;
-			case GAMETIME_VOTING_START:
+			case GAMETIME_SPEAKING:
 				return 10;
-			case GAMETIME_VOTING:
+			case GAMETIME_VOTING_START:
 				return 11;
-			case GAMETIME_VOTING_KILL_ALL:
+			case GAMETIME_VOTING:
 				return 12;
-			case GAMETIME_DAY_KILL_SPEAKING:
+			case GAMETIME_VOTING_KILL_ALL:
 				return 13;
+			case GAMETIME_DAY_KILL_SPEAKING:
+				return 14;
 		}
-		return 14;
+		return 15;
 	}
 	
 	static function is_night($gametime)
@@ -1428,6 +1431,7 @@ class Game
 				case GAMETIME_SHOOTING:
 				case GAMETIME_DON:
 				case GAMETIME_SHERIFF:
+				case GAMETIME_NIGHT_END:
 					return true;
 			}
 		}
@@ -2313,6 +2317,7 @@ class Game
 			case GAMETIME_SHOOTING:
 			case GAMETIME_DON:
 			case GAMETIME_SHERIFF:
+			case GAMETIME_NIGHT_END:
 			case GAMETIME_END:
 				break;
 			case GAMETIME_VOTING_KILL_ALL:
@@ -2359,7 +2364,7 @@ class Game
 			default:
 				return 'incorrect time "' + $gt->time + '". Time must be one of: "' .
 					GAMETIME_START . '", "' . GAMETIME_ARRANGEMENT . '", "' . GAMETIME_RELAXED_SITTING . '", "' . GAMETIME_DAY_START . '", "' . GAMETIME_NIGHT_KILL_SPEAKING . '", "' . GAMETIME_SPEAKING . '", "' . GAMETIME_VOTING_START . '", "' . GAMETIME_VOTING . '", "' . GAMETIME_VOTING_KILL_ALL . '", "' . 
-					GAMETIME_DAY_KILL_SPEAKING . '", "' . GAMETIME_NIGHT_START . '", "' . GAMETIME_SHOOTING . '", "' . GAMETIME_DON . '", "' . GAMETIME_SHERIFF . '", or "' . GAMETIME_END . '".';
+					GAMETIME_DAY_KILL_SPEAKING . '", "' . GAMETIME_NIGHT_START . '", "' . GAMETIME_SHOOTING . '", "' . GAMETIME_DON . '", "' . GAMETIME_SHERIFF . '", "' . GAMETIME_NIGHT_END . '", or "' . GAMETIME_END . '".';
 		}
 		return NULL;
 	}
@@ -3810,6 +3815,8 @@ class Game
 				return get_label('when the don checks');
 			case GAMETIME_SHERIFF:
 				return get_label('when the sheriff checks');
+			case GAMETIME_NIGHT_END:
+				return get_label('when the night ends');
 			case GAMETIME_END:
 				return get_label('at the end of the game');
 		}

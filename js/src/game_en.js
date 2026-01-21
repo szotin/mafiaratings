@@ -66,6 +66,7 @@ _l["VotingLast"] = "The rest of the votes go to player {1}. Click Next to see th
 _l["RepeatVoting"] = "{1} players are voting leaders. We need to repeat voting.";
 _l["vote"] = "{1} votes for {2}";
 _l["NightStart"] = "The night is falling. Please make sure all eyes are closed before clicking Next.";
+_l["NightEnd"] = "The night ends. Please make sure the music is off before clicking Next.";
 _l["Shooting"] = "Enter mafia shooting and click Next to start the Don\'s check.";
 _l["DonCheck"] = "The Don is checking for the Sheriff. Select a player and click Next.";
 _l["NoDon"] = "The Don is not in the game. Click Next to start the Sheriff\'s check.";
