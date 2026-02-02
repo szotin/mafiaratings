@@ -730,7 +730,7 @@ class CompleteCompetitions extends Updater
 			list($series_id) = $row;
 			Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_FINISHED .  ' WHERE id = ?', $series_id);
 			Db::exec(get_label('series'), 'UPDATE series s JOIN series_series ss ON ss.parent_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE ss.child_id = ?', $series_id);
-			writeLog('Series ' . $series_id . ' is finished.');
+			$this->log('Series ' . $series_id . ' is finished.');
 			
 			++$count;
 			if (!$this->canDoOneMoreItem())
