@@ -162,7 +162,7 @@ class Picture
 		$url = NULL;
 		if (!is_null($this->id) && $this->id > 0 && ($this->flags & $this->mask) != 0)
 		{
-			$url = $this->pic_dir . $dir . $this->id;
+			$url = get_server_url(false) . '/' . $this->pic_dir . $dir . $this->id;
 			if (!is_null($this->secondary_id))
 			{
 				$url .= '-' . $this->secondary_id;
@@ -180,13 +180,13 @@ class Picture
 	{
 		if (is_null($this->id) || $this->id <= 0)
 		{
-			return 'images/transp.png';
+			return get_server_url(false) . '/images/transp.png';
 		}
 		
 		$url = $this->_url($dir);
 		if (is_null($url))
 		{
-			return 'images/' . $dir . $this->def_filename;
+			return get_server_url(false) . '/images/' . $dir . $this->def_filename;
 		}
 		return $url;
 	}
@@ -303,6 +303,8 @@ class Picture
 			echo ' ' . $attributes;
 		}
 		echo '>';
+		
+
 		
 		switch ($this->type)
 		{

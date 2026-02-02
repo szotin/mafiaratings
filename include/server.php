@@ -95,13 +95,17 @@ function is_ratings_server()
 	return true;
 }
 
-function get_server_url()
+function get_server_url($https = true)
 {
 	if (is_testing_server())
 	{
 		return 'http://127.0.0.1/projects/mafiaratings';
 	}
-	return PRODUCT_URL;
+	if ($https)
+	{
+		return PRODUCT_URL;
+	}
+	return PRODUCT_URL_HTTP;
 }
 
 ?>
