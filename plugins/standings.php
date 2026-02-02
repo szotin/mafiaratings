@@ -112,7 +112,7 @@ try
 				set($player->id, $player->name, $player->tournament_reg_flags, 't' . $tournament_id)->
 				set($player->id, $player->name, $player->club_reg_flags, 'c' . $club_id)->
 				set($player->id, $player->name, $player->flags);
-			echo '<img src="' . '../' . $tournament_reg_pic->url(ICONS_DIR) . '" width="60">';
+			echo '<img src="' . $tournament_reg_pic->url(ICONS_DIR) . '" width="60">';
 			echo '</td><td width="300"><big><big><b>' . $player->name . '</b></big></big></td>';
 			echo '<td width="50" align="center">';
 			// if (!is_null($player->club_id) && $player->club_id > 0)

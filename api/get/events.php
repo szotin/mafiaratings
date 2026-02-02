@@ -221,17 +221,15 @@ class ApiPage extends GetApiPageBase
 				$event->start = timestamp_to_string($event->timestamp, $event_timezone);
 				$event->end = timestamp_to_string($event->timestamp + $event->duration, $event_timezone);
 				
-				$server_url = get_server_url() . '/';
-				
 				$address_pic = new Picture(ADDRESS_PICTURE);
 				$address_pic->set($event->address_id, $event->address_name, $address_flags);
-				$event->address_icon = $server_url . $address_pic->url(ICONS_DIR);
-				$event->address_picture = $server_url . $address_pic->url(TNAILS_DIR);
+				$event->address_icon = $address_pic->url(ICONS_DIR);
+				$event->address_picture = $address_pic->url(TNAILS_DIR);
 				
 				$club_pic = new Picture(CLUB_PICTURE);
 				$club_pic->set($event->club_id, $event->club_name, $club_flags);
-				$event->club_icon = $server_url . $club_pic->url(ICONS_DIR);
-				$event->club_picture = $server_url . $club_pic->url(TNAILS_DIR);
+				$event->club_icon = $club_pic->url(ICONS_DIR);
+				$event->club_picture = $club_pic->url(TNAILS_DIR);
 				
 				if (!is_null($tournament_id))
 				{
@@ -240,8 +238,8 @@ class ApiPage extends GetApiPageBase
 					
 					$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
 					$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-					$event->tournament_icon = $server_url . $club_pic->url(ICONS_DIR);
-					$event->tournament_picture = $server_url . $club_pic->url(TNAILS_DIR);
+					$event->tournament_icon = $club_pic->url(ICONS_DIR);
+					$event->tournament_picture = $club_pic->url(TNAILS_DIR);
 					
 					$event_pic = new Picture(EVENT_PICTURE, $tournament_pic);
 				}
@@ -251,8 +249,8 @@ class ApiPage extends GetApiPageBase
 				}
 				
 				$event_pic->set($event->id, $event->name, $event_flags);
-				$event->icon = $server_url . $club_pic->url(ICONS_DIR);
-				$event->picture = $server_url . $club_pic->url(TNAILS_DIR);
+				$event->icon = $club_pic->url(ICONS_DIR);
+				$event->picture = $club_pic->url(TNAILS_DIR);
 				
 				$events[] = $event;
 			}

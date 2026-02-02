@@ -232,23 +232,21 @@ class ApiPage extends GetApiPageBase
 				$tournament->start = timestamp_to_string($tournament->timestamp, $tournament_timezone);
 				$tournament->end = timestamp_to_string($tournament->timestamp + $tournament->duration, $tournament_timezone);
 				
-				$server_url = get_server_url() . '/';
-				
 				$address_pic = new Picture(ADDRESS_PICTURE);
 				$address_pic->set($tournament->address_id, $tournament->address_name, $address_flags);
-				$tournament->address_icon = $server_url . $address_pic->url(ICONS_DIR);
-				$tournament->address_picture = $server_url . $address_pic->url(TNAILS_DIR);
+				$tournament->address_icon = $address_pic->url(ICONS_DIR);
+				$tournament->address_picture = $address_pic->url(TNAILS_DIR);
 				
 				$club_pic = new Picture(CLUB_PICTURE);
 				$club_pic->set($tournament->club_id, $tournament->club_name, $club_flags);
-				$tournament->club_icon = $server_url . $club_pic->url(ICONS_DIR);
-				$tournament->club_picture = $server_url . $club_pic->url(TNAILS_DIR);
+				$tournament->club_icon = $club_pic->url(ICONS_DIR);
+				$tournament->club_picture = $club_pic->url(TNAILS_DIR);
 				
 				$tournament_pic = new Picture(TOURNAMENT_PICTURE, $club_pic);
 				
 				$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-				$tournament->icon = $server_url . $tournament_pic->url(ICONS_DIR);
-				$tournament->picture = $server_url . $tournament_pic->url(TNAILS_DIR);
+				$tournament->icon = $tournament_pic->url(ICONS_DIR);
+				$tournament->picture = $tournament_pic->url(TNAILS_DIR);
 				
 				$tournament->flags = (int)$tournament->flags & TOURNAMENT_EDITABLE_MASK;
 				if (!is_null($fee) && !is_null($currency_id))

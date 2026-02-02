@@ -122,11 +122,10 @@ class ApiPage extends GetApiPageBase
 					$league->phone = $web;
 				}
 				
-				$server_url = get_server_url() . '/';
 				$league_pic = new Picture(LEAGUE_PICTURE);
 				$league_pic->set($league->id, $league->name, $flags);
-				$league->icon = $server_url . $league_pic->url(ICONS_DIR);
-				$league->picture = $server_url . $league_pic->url(TNAILS_DIR);
+				$league->icon = $league_pic->url(ICONS_DIR);
+				$league->picture = $league_pic->url(TNAILS_DIR);
 				$leagues[] = $league;
 			}
 		}

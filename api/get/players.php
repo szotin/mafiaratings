@@ -140,7 +140,6 @@ class ApiPage extends GetApiPageBase
 		}
 		
 		$this->show_query($query);
-		$server_url = get_server_url() . '/';
 		$user_pic = new Picture(USER_PICTURE);
 		while ($row = $query->next())
 		{
@@ -160,8 +159,8 @@ class ApiPage extends GetApiPageBase
 			}
 			
 			$user_pic->set($player->id, $player->name, $flags);
-			$player->icon = $server_url . $user_pic->url(ICONS_DIR);
-			$player->picture = $server_url . $user_pic->url(TNAILS_DIR);
+			$player->icon = $user_pic->url(ICONS_DIR);
+			$player->picture = $user_pic->url(TNAILS_DIR);
 			$players[] = $player;
 		}
 		$this->response['players'] = $players;

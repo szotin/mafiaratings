@@ -13,7 +13,6 @@ class ApiPage extends GetApiPageBase
 		global $_lang;
 		
 		$g = $this->game->data;
-		$server_url = get_server_url();
 		$game = new stdClass();
 		
 		$show_roles = !isset($g->hideRoles) || !$g->hideRoles;
@@ -21,9 +20,9 @@ class ApiPage extends GetApiPageBase
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		$game->club = new stdClass();
 		$game->club->name = $this->club_name;
-		$game->club->photoUrl = $server_url . '/' . $this->club_pic->url(SOURCE_DIR);
-		$game->club->tnailUrl = $server_url . '/' . $this->club_pic->url(TNAILS_DIR);
-		$game->club->iconUrl = $server_url . '/' . $this->club_pic->url(ICONS_DIR);
+		$game->club->photoUrl = $this->club_pic->url(SOURCE_DIR);
+		$game->club->tnailUrl = $this->club_pic->url(TNAILS_DIR);
+		$game->club->iconUrl = $this->club_pic->url(ICONS_DIR);
 		$game->club->hasPhoto = $this->club_pic->has_image();
 		
 		$game->city = $this->city;
@@ -34,9 +33,9 @@ class ApiPage extends GetApiPageBase
 			$this->tournament_pic->set($this->tournament_id, $this->tournament_name, $this->tournament_flags);
 			$game->tournament = new stdClass();
 			$game->tournament->name = $this->tournament_name;
-			$game->tournament->photoUrl = $server_url . '/' . $this->tournament_pic->url(SOURCE_DIR);
-			$game->tournament->tnailUrl = $server_url . '/' . $this->tournament_pic->url(TNAILS_DIR);
-			$game->tournament->iconUrl = $server_url . '/' . $this->tournament_pic->url(ICONS_DIR);
+			$game->tournament->photoUrl = $this->tournament_pic->url(SOURCE_DIR);
+			$game->tournament->tnailUrl = $this->tournament_pic->url(TNAILS_DIR);
+			$game->tournament->iconUrl = $this->tournament_pic->url(ICONS_DIR);
 			$game->tournament->hasPhoto = $this->tournament_pic->has_image();
 			
 			$game->stage = (int)$this->stage;
@@ -121,9 +120,9 @@ class ApiPage extends GetApiPageBase
 					$this->club_pic->set($user_club_id, $user_club_name, $user_club_flags);
 					$player->club = new stdClass();
 					$player->club->name = $user_club_name;
-					$player->club->photoUrl = $server_url . '/' . $this->club_pic->url(SOURCE_DIR);
-					$player->club->tnailUrl = $server_url . '/' . $this->club_pic->url(TNAILS_DIR);
-					$player->club->iconUrl = $server_url . '/' . $this->club_pic->url(ICONS_DIR);
+					$player->club->photoUrl = $this->club_pic->url(SOURCE_DIR);
+					$player->club->tnailUrl = $this->club_pic->url(TNAILS_DIR);
+					$player->club->iconUrl = $this->club_pic->url(ICONS_DIR);
 					$player->club->hasPhoto = $this->club_pic->has_image();
 				}
 			}
@@ -136,9 +135,9 @@ class ApiPage extends GetApiPageBase
 				set($player->id, $player->name, $tournament_reg_flags, 't' . $this->tournament_id)->
 				set($player->id, $player->name, $club_reg_flags, 'c' . $this->club_id)->
 				set($player->id, $player->name, $user_flags);
-			$player->photoUrl = $server_url . '/' . $this->user_pic->url(SOURCE_DIR);
-			$player->tnailUrl = $server_url . '/' . $this->user_pic->url(TNAILS_DIR);
-			$player->iconUrl = $server_url . '/' . $this->user_pic->url(ICONS_DIR);
+			$player->photoUrl = $this->user_pic->url(SOURCE_DIR);
+			$player->tnailUrl = $this->user_pic->url(TNAILS_DIR);
+			$player->iconUrl = $this->user_pic->url(ICONS_DIR);
 			$player->hasPhoto = $this->user_pic->has_image();
 			
 			if ($show_roles)
@@ -300,9 +299,9 @@ class ApiPage extends GetApiPageBase
 				set($game->moderator->id, $game->moderator->name, $tournament_reg_flags, 't' . $this->tournament_id)->
 				set($game->moderator->id, $game->moderator->name, $club_reg_flags, 'c' . $this->club_id)->
 				set($game->moderator->id, $game->moderator->name, $user_flags);
-			$game->moderator->photoUrl = $server_url . '/' . $this->user_pic->url(SOURCE_DIR);
-			$game->moderator->tnailUrl = $server_url . '/' . $this->user_pic->url(TNAILS_DIR);
-			$game->moderator->iconUrl = $server_url . '/' . $this->user_pic->url(ICONS_DIR);
+			$game->moderator->photoUrl = $this->user_pic->url(SOURCE_DIR);
+			$game->moderator->tnailUrl = $this->user_pic->url(TNAILS_DIR);
+			$game->moderator->iconUrl =  $this->user_pic->url(ICONS_DIR);
 			$game->moderator->hasPhoto = $this->user_pic->has_image();
 			
 			if (!is_null($user_club_id))
@@ -310,9 +309,9 @@ class ApiPage extends GetApiPageBase
 				$this->club_pic->set($user_club_id, $user_club_name, $user_club_flags);
 				$game->moderator->club = new stdClass();
 				$game->moderator->club->name = $user_club_name;
-				$game->moderator->club->photoUrl = $server_url . '/' . $this->club_pic->url(SOURCE_DIR);
-				$game->moderator->club->tnailUrl = $server_url . '/' . $this->club_pic->url(TNAILS_DIR);
-				$game->moderator->club->iconUrl = $server_url . '/' . $this->club_pic->url(ICONS_DIR);
+				$game->moderator->club->photoUrl = $this->club_pic->url(SOURCE_DIR);
+				$game->moderator->club->tnailUrl = $this->club_pic->url(TNAILS_DIR);
+				$game->moderator->club->iconUrl = $this->club_pic->url(ICONS_DIR);
 				$game->moderator->club->hasPhoto = $this->club_pic->has_image();
 			}
 		}

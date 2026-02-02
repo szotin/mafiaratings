@@ -141,7 +141,6 @@ try
 			echo '<td align="center"><b>' . $name . '</b></td>';
 		}
 		echo '</tr><tr>';
-		$server_url = get_server_url();
 		foreach ($seating as $user_id)
 		{
 			if (isset($players[$user_id]))
@@ -159,7 +158,7 @@ try
 				set($user_id, $name, $tournament_flags, 't' . $tournament_id)->
 				set($user_id, $name, $club_flags, 'c' . $club_id)->
 				set($user_id, $name, $flags);
-			echo '<img src="' . $server_url . '/' . $user_pic->url(ICONS_DIR) . '" width="80">';
+			echo '<img src="' . $user_pic->url(ICONS_DIR) . '" width="80">';
 			echo '</td>';
 		}
 		echo '</tr><tr>';
