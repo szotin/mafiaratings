@@ -38,14 +38,14 @@ class ApiPage extends GetApiPageBase
 		if ($name_contains != '')
 		{
 			$name_contains = '%' . $name_contains . '%';
-			$condition->add(' AND name LIKE(?)', $name_contains);
+			$condition->add(' AND c.name LIKE(?)', $name_contains);
 		}
 		
 		if ($name_starts != '')
 		{
 			$name_starts1 = '% ' . $name_starts . '%';
 			$name_starts2 = $name_starts . '%';
-			$condition->add(' AND (name LIKE(?) OR name LIKE(?))', $name_starts1, $name_starts2);
+			$condition->add(' AND (c.name LIKE(?) OR c.name LIKE(?))', $name_starts1, $name_starts2);
 		}
 		
 		if ($club_id > 0)
@@ -110,7 +110,7 @@ class ApiPage extends GetApiPageBase
 				' JOIN countries o ON o.id = i.country_id' .
 				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0', $lang, $lang, $condition);
-			$query->add(' ORDER BY name');
+			$query->add(' ORDER BY c.name');
 			if ($page_size > 0)
 			{
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
