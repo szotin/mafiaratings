@@ -711,8 +711,9 @@ class Page extends PageBase
 		echo '<button ' . ($this->view == VIEW_LOG ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_LOG . '})">' . get_label('Log') . '</button>';
 		echo '<button ' . ($this->view == VIEW_ROUND ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_ROUND . '})">' . get_label('Per round') . '</button>';
 		echo '<button ' . ($this->view == VIEW_PLAYER ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_PLAYER . '})">' . get_label('Per player') . '</button>';
-		echo '<button ' . ($this->view == VIEW_MR_POINTS ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS . '})">' . get_label('MR points') . '</button>';
-		echo '<button ' . ($this->view == VIEW_MR_POINTS_LOG ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS_LOG . '})">' . get_label('MR points log') . '</button>';
+		// mr points removed
+		// echo '<button ' . ($this->view == VIEW_MR_POINTS ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS . '})">' . get_label('MR points') . '</button>';
+		// echo '<button ' . ($this->view == VIEW_MR_POINTS_LOG ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS_LOG . '})">' . get_label('MR points log') . '</button>';
 		echo '</div><p>';
 		
 		switch ($this->view)
