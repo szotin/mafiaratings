@@ -579,6 +579,8 @@ class ApiPage extends OpsApiPageBase
 		{
 			$flags &= ~EVENT_FLAG_FINISHED;
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM  event_scores_cache WHERE event_id = ?', $event_id);
+			Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
 		
 		if ($rules_code != $old_rules_code)
@@ -1278,6 +1280,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM  event_scores_cache WHERE event_id = ?', $event_id);
+		Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		
 		Db::commit();
 		
@@ -1344,6 +1348,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM  event_scores_cache WHERE event_id = ?', $event_id);
+			Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
 		Db::commit();
 	}
@@ -1377,6 +1383,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(get_label('event'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $event_id);
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
 		Db::commit();
 	}
@@ -2299,24 +2307,30 @@ class ApiPage extends OpsApiPageBase
 		{
 			if (is_null($tournament_id))
 			{
-				list($scoring, $scoring_options, $round_num) =  Db::record(get_label('scoring'), 'SELECT s.scoring, e.scoring_options, e.round FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
+				list($scoring, $scoring_id, $scoring_version, $scoring_options, $round_num) =  Db::record(get_label('scoring'), 'SELECT s.scoring, s.scoring_id, s.version, e.scoring_options, e.round FROM events e JOIN scoring_versions s ON s.scoring_id = e.scoring_id AND s.version = e.scoring_version WHERE e.id = ?', $event_id);
 				$scoring = json_decode($scoring);
+				$scoring->id = (int)$scoring_id; // it is needed for caching
+				$scoring->version = (int)$scoring_version; // it is needed for caching
 				$scoring_options = json_decode($scoring_options);
 				$players = event_scores($event_id, null, 0, $scoring, $scoring_options, null, $round_num);
 			}
 			else
 			{
-				list($scoring, $normalizer, $scoring_options, $tournament_flags) =  Db::record(get_label('scoring'), 
-					'SELECT s.scoring, n.normalizer, t.scoring_options, t.flags'.
+				list($scoring, $scoring_id, $scoring_version, $normalizer, $normalizer_id, $normalizer_version, $scoring_options, $tournament_flags) =  Db::record(get_label('scoring'), 
+					'SELECT s.scoring, s.scoring_id, s.version, n.normalizer, n.normalizer_id, n.version, t.scoring_options, t.flags'.
 					' FROM tournaments t'.
 					' JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version'.
 					' LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND s.version = t.normalizer_version'.
 					' WHERE t.id = ?', $tournament_id);
 				$scoring = json_decode($scoring);
+				$scoring->id = (int)$scoring_id; // it is needed for caching
+				$scoring->version = (int)$scoring_version; // it is needed for caching
 				$scoring_options = json_decode($scoring_options);
 				if (!is_null($normalizer))
 				{
 					$normalizer = json_decode($normalizer);
+					$normalizer->id = (int)$normalizer_id; // it is needed for caching
+					$normalizer->version = (int)$normalizer_version; // it is needed for caching
 				}
 				$players = tournament_scores($tournament_id, $tournament_flags, null, 0, $scoring, $normalizer, $scoring_options);
 			}

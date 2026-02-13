@@ -145,8 +145,10 @@ try
 				echo '</td></tr></table>';
 			}
 			
-			list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $scoring_id, $scoring_version);
+			list($scoring, $scoring_id, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, scoring_id, version FROM scoring_versions WHERE scoring_id = ? AND version = ?', $scoring_id, $scoring_version);
 			$scoring = json_decode($scoring);
+			$scoring->id = (int)$scoring_id; // it is needed for caching
+			$scoring->version = (int)$scoring_version; // it is needed for caching
 			$scoring_options = json_decode($scoring_options);
 			$players = event_scores($event_id, NULL, SCORING_LOD_PER_GROUP, $scoring, $scoring_options, $tournament_flags, $round_num);
 			$players_count = count($players);

@@ -34,7 +34,11 @@ class Page extends TournamentPageBase
 		}
 		$this->scoring_options = json_decode($this->scoring_options);
 		$this->scoring = json_decode($this->scoring);
+		$this->scoring->id = (int)$this->scoring_id; // it is needed for caching
+		$this->scoring->version = (int)$this->scoring_version; // it is needed for caching
 		$this->normalizer = json_decode($this->normalizer);
+		$this->normalizer->id = (int)$this->normalizer_id; // it is needed for caching
+		$this->normalizer->version = (int)$this->normalizer_version; // it is needed for caching
         $players = tournament_scores($this->id, $this->flags, NULL, 0, $this->scoring, $this->normalizer, $this->scoring_options);
 		$players_count = count($players);
 		

@@ -84,7 +84,6 @@ class CompleteCompetitions extends Updater
 				$scoring = json_decode($scoring);
 				$scoring_options = json_decode($scoring_options);
 				
-				
 				$players = event_scores($event_id, null, SCORING_LOD_PER_GROUP, $scoring, $scoring_options, $tournament_flags, $round_num);
 				$players_count = count($players);
 				if ($players_count > 0)
@@ -238,6 +237,7 @@ class CompleteCompetitions extends Updater
 					$stars = 1;
 				}
 				$scoring = json_decode($scoring);
+				// We are not adding scoring_id and normalizer_id because we don't want caching here
 				$scoring_options = json_decode($scoring_options);
 				if (!is_null($normalizer))
 				{

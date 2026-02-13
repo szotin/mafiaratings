@@ -23,8 +23,10 @@ class Page extends EventPageBase
 			$this->first = (int)$_REQUEST['first'];
 		}
 		
-		list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
+		list($scoring, $scoring_id, $scoring_version) = Db::record(get_label('scoring'), 'SELECT scoring, scoring_id, version FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 		$scoring = json_decode($scoring);
+		$scoring->id = (int)$scoring_id; // it is needed for caching
+		$scoring->version = (int)$scoring_version; // it is needed for caching
 		$this->scoring_options = json_decode($this->scoring_options);
 		$players = event_scores($this->id, NULL, 0, $scoring, $this->scoring_options, $this->tournament_flags, $this->round_num);
 		$players_count = count($players);

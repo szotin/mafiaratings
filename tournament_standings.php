@@ -132,6 +132,8 @@ class Page extends TournamentPageBase
 			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 		}
 		$this->scoring = json_decode($this->scoring);
+		$this->scoring->id = (int)$this->scoring_id; // it is needed for caching
+		$this->scoring->version = (int)$this->scoring_version; // it is needed for caching
 		
 		$this->normalizer = '{}';
 		if (isset($_REQUEST['nid']))
@@ -157,6 +159,8 @@ class Page extends TournamentPageBase
 			list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
 		}
 		$this->normalizer = json_decode($this->normalizer);
+		$this->normalizer->id = (int)$this->normalizer_id; // it is needed for caching
+		$this->normalizer->version = (int)$this->normalizer_version; // it is needed for caching
 		$this->has_normalizer = isset($this->normalizer->policies) && count($this->normalizer->policies) > 0;
 		
 		$this->scoring_options = json_decode($this->scoring_options);
@@ -168,6 +172,7 @@ class Page extends TournamentPageBase
 			{
 				$this->scoring_options->$key = $value;
 			}
+			$this->scoring_options->custom = true; // this is needed for caching
 		}
 		$this->show_fk = !isset($this->scoring_options->flags) || ($this->scoring_options->flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0;
 		

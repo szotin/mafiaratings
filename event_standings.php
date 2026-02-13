@@ -45,6 +45,8 @@ class Page extends EventPageBase
 			list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 		}
 		$this->scoring = json_decode($this->scoring);
+		$this->scoring->id = (int)$this->scoring_id; // it is needed for caching
+		$this->scoring->version = (int)$this->scoring_version; // it is needed for caching
 		
 		$this->scoring_options = json_decode($this->scoring_options);
 		if (isset($_REQUEST['scoring_ops']))

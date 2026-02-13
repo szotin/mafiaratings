@@ -139,13 +139,25 @@ try
 				echo '</td></tr></table>';
 			}
 			
-			list($scoring, $normalizer, $scoring_options) =  Db::record(get_label('tournament'), 'SELECT s.scoring, n.normalizer, t.scoring_options FROM tournaments t JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version WHERE t.id = ?', $tournament_id);
+			list($scoring, $scoring_id, $scoring_version, $normalizer, $normalizer_id, $normalizer_version, $scoring_options) =  
+				Db::record(get_label('tournament'), 
+					'SELECT s.scoring, t.scoring_id, t.scoring_version, n.normalizer, t.normalizer_id, t.normalizer_version, t.scoring_options'.
+					' FROM tournaments t'.
+					' JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version'.
+					' LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version'.
+					' WHERE t.id = ?', $tournament_id);
 			if (is_null($normalizer))
 			{
 				$normalizer = '{}';
 			}
 			$scoring = json_decode($scoring);
+			$scoring->id = (int)$scoring_id; // it is needed for caching
+			$scoring->version = (int)$scoring_version; // it is needed for caching
+			
 			$normalizer = json_decode($normalizer);
+			$normalizer->id = (int)$normalizer_id; // it is needed for caching
+			$normalizer->version = (int)$normalizer_version; // it is needed for caching
+		
 			$scoring_options = json_decode($scoring_options);
 			$players = tournament_scores($tournament_id, $tournament_flags, NULL, SCORING_LOD_PER_GROUP, $scoring, $normalizer, $scoring_options);
 			$players_count = count($players);

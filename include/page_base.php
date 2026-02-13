@@ -10,6 +10,8 @@ define('PROMPT_TYPE_INFO', 1);
 define('PROMPT_TYPE_ERROR', 2); 
 define('PROMPT_TYPE_WARNING', 3); 
 
+define('PAGE_MEASURE_TIME', 1); // 0 do not measure; 1 - measure and output; 2 measure and collect stats
+
 class PageBase
 {
 	private $_state;
@@ -37,6 +39,11 @@ class PageBase
 	final function run($title = '')
 	{
 		global $_profile;
+		
+		if (PAGE_MEASURE_TIME > 0)
+		{
+			$this->start = microtime(true);
+		}
 		
 		$this->_prompt = NULL;
 		$this->_prompt_type = PROMPT_TYPE_NONE;
@@ -356,6 +363,11 @@ class PageBase
 			}
 		}
 		
+		if (PAGE_MEASURE_TIME > 0)
+		{
+			$duration = microtime(true) - $this->start;
+			echo '</td><td class="header" align="right">' . (microtime(true) - $this->start) . ' sec';
+		}
 		echo '</td></tr></table>';
 		// Correct fb_xd_fragment bug in IE
 		// echo '<script>document.getElementsByTagName(\'html\')[0].style.display=\'block\';</script>';

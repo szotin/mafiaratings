@@ -517,7 +517,6 @@ function init_player_score($player, $scoring, $lod_flags)
 {
     global $_scoring_groups;
     
-	$player->scoring = $scoring;
     $player->points = 0;
     $player->mvp_points = 0;
 	if (isset($scoring->counters) && count($scoring->counters) > 0)
@@ -967,7 +966,7 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 	}
 }
 
-function compare_scores($player1, $player2)
+function compare_scores($player1, $player2, $scoring)
 {
 	if ($player2->points > $player1->points + 0.00001)
 	{
@@ -979,9 +978,9 @@ function compare_scores($player1, $player2)
 	}
 	
 	$sorting = SCORING_DEFAULT_SORTING;
-	if (isset($player1->scoring->sorting))
+	if (isset($scoring->sorting))
 	{
-		$sorting = $player1->scoring->sorting;
+		$sorting = $scoring->sorting;
 	}
 	
 	$in_brackets = false;
@@ -1138,7 +1137,7 @@ function get_players_condition($players_list)
     return new SQL($players_condition_str);
 }
     
-function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num)
+function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num)
 {
 	global $_scoring_groups, $_lang;
 	if (is_null($scoring))
@@ -1301,9 +1300,34 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 			$scores[] = $player;
 		}
 	}
-    usort($scores, 'compare_scores');
+    usort($scores, function($a, $b) use ($scoring) { return compare_scores($a, $b, $scoring); } );
 	
 	return $scores;
+}
+                          
+function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num)
+{
+	if (is_null($players_list) && isset($scoring->id) && isset($scoring->version) && (!isset($options->custom) || !$options->custom))
+	{
+		$scoring->id = max(0, $scoring->id);
+		$scoring->version = max(0, $scoring->version);
+		
+		Db::begin();
+		$query = new DbQuery('SELECT scores FROM event_scores_cache WHERE event_id = ? AND flags = ? AND scoring_id = ? AND scoring_version = ?',
+			$event_id, $lod_flags, $scoring->id, $scoring->version); 
+		if ($row = $query->next())
+		{
+			list ($scores) = $row;
+			Db::commit();
+			return json_decode($scores);
+		}
+		$scores = _event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num);
+		Db::exec(get_label('score'), 'INSERT INTO event_scores_cache (event_id, flags, scoring_id, scoring_version, scores) VALUES (?, ?, ?, ?, ?)',
+			$event_id, $lod_flags, $scoring->id, $scoring->version, json_encode($scores)); 
+		Db::commit();
+		return $scores;
+	}
+	return _event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num);
 }
 
 function is_same_scoring_options_group($options1, $options2)
@@ -1551,7 +1575,7 @@ function team_add_player($team, $player)
     team_add_field($team, $player, 'raw_night1_points');
 }
 
-function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
+function _tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
 {
 	global $_lang;
 	
@@ -1934,7 +1958,6 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 				$scores[$team_id] = $team = new stdClass();
 				$team->id = $team_id;
 				$team->name = $team_name;
-				$team->scoring = $players[$user_id]->scoring;
 				$team->players = array();
 			}
 			team_add_player($team, $players[$user_id]);
@@ -1949,7 +1972,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		
 		foreach ($scores as $team)
 		{
-			usort($team->players, 'compare_scores');
+			usort($team->players, function($a, $b) use ($scoring) { return compare_scores($a, $b, $scoring); } );
 		}
 	}
     else
@@ -1971,8 +1994,43 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 			}
 		}
     }
-	usort($scores, 'compare_scores');
+    usort($scores, function($a, $b) use ($scoring) { return compare_scores($a, $b, $scoring); } );
     return $scores;
+}
+
+function tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options)
+{
+	if (is_null($players_list) && isset($scoring->id) && isset($scoring->version) && (!isset($options->custom) || !$options->custom))
+	{
+		$scoring->id = max(0, $scoring->id);
+		$scoring->version = max(0, $scoring->version);
+		
+		$normalizer_id = $normalizer_version = 0;
+		if ($normalizer != null && isset($normalizer->id))
+		{
+			$normalizer_id = max(0, (int)$normalizer->id);
+			if (isset($normalizer->version))
+			{
+				$normalizer_version = max(0, (int)$normalizer->version);
+			}
+		}
+		
+		Db::begin();
+		$query = new DbQuery('SELECT scores FROM tournament_scores_cache WHERE tournament_id = ? AND flags = ? AND scoring_id = ? AND scoring_version = ? AND normalizer_id = ? AND normalizer_version = ?',
+			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer->id, $normalizer->version); 
+		if ($row = $query->next())
+		{
+			list ($scores) = $row;
+			Db::commit();
+			return json_decode($scores);
+		}
+		$scores = _tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options);
+		Db::exec(get_label('score'), 'INSERT INTO tournament_scores_cache (tournament_id, flags, scoring_id, scoring_version, normalizer_id, normalizer_version, scores) VALUES (?, ?, ?, ?, ?, ?, ?)',
+			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer->id, $normalizer->version, json_encode($scores)); 
+		Db::commit();
+		return $scores;
+	}
+	return _tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options);
 }
 
 function set_mvp_flags($players)

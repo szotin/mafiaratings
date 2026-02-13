@@ -102,6 +102,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('comment'), 'UPDATE game_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE photo_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE video_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT g.event_id FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?)', $src_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id IN (SELECT g.tournament_id FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?)', $src_id);
 		list ($game_settings_count) = Db::record(get_label('settings'), 'SELECT count(*) FROM game_settings WHERE user_id = ?', $dst_id);
 		if ($game_settings_count > 0)
 		{

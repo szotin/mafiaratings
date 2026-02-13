@@ -689,6 +689,8 @@ class ApiPage extends OpsApiPageBase
 			$old_normalizer_version != $normalizer_version)
 		{
 			$flags &= ~TOURNAMENT_FLAG_FINISHED;
+			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
 		
 		if ($type != $old_type)
@@ -907,6 +909,8 @@ class ApiPage extends OpsApiPageBase
 		{
 			db_log(LOG_OBJECT_TOURNAMENT, 'canceled', NULL, $tournament_id, $club_id);
 		}
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		Db::commit();
 	}
 	
@@ -933,6 +937,8 @@ class ApiPage extends OpsApiPageBase
 		{
 			db_log(LOG_OBJECT_TOURNAMENT, 'restored', NULL, $tournament_id, $club_id);
 		}
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		Db::commit();
 	}
 	
@@ -1197,6 +1203,8 @@ class ApiPage extends OpsApiPageBase
 			$changed = $changed || Db::affected_rows() > 0;
 		}
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		
 		$query = new DbQuery('SELECT id, json, feature_flags FROM games WHERE tournament_id = ?', $tournament_id);
 		while ($row = $query->next())
@@ -1250,11 +1258,15 @@ class ApiPage extends OpsApiPageBase
 			list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
 		else
 		{
 			check_permissions(PERMISSION_ADMIN);
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED);
+			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id IS NOT NULL)');
+			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
 		db_log(LOG_OBJECT_TOURNAMENT, 'rebuild_places', NULL, $tournament_id);
 		Db::commit();
@@ -1300,13 +1312,14 @@ class ApiPage extends OpsApiPageBase
 		list ($records_count) = Db::record(get_label('score'), 'SELECT COUNT(*) FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
 		if ($records_count > 0)
 		{
-			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
 			list($place) = Db::record(get_label('score'), 'SELECT place FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
 			Db::exec(get_label('score'), 'DELETE FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
 			Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place - 1 WHERE tournament_id = ? AND place > ?', $tournament_id, $place);
 		}
 		
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id IS NOT NULL)');
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		list($place) = Db::record(get_label('score'), 'SELECT count(*) FROM tournament_places WHERE tournament_id = ? AND (main_points + IFNULL(bonus_points,0) + IFNULL(shot_points,0) - ? > 0.0001 OR (main_points + IFNULL(bonus_points,0) + IFNULL(shot_points,0) - ? > -0.001 AND (IFNULL(bonus_points,0) - ? > 0.0001 OR (IFNULL(bonus_points,0) - ? > -0.001 AND user_id < ?))))', $tournament_id, $points, $points, $bp, $bp, $user_id);
 		++$place;
 		Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place + 1 WHERE tournament_id = ? AND place >= ?', $tournament_id, $place);
@@ -1357,6 +1370,8 @@ class ApiPage extends OpsApiPageBase
 		list($place) = Db::record(get_label('score'), 'SELECT place FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
 		Db::exec(get_label('score'), 'DELETE FROM tournament_places WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
 		Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place - 1 WHERE tournament_id = ? AND place > ?', $tournament_id, $place);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id IS NOT NULL)');
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		
 		$log_details = new stdClass();
 		$log_details->tournament_id = $tournament_id;

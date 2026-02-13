@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS `tournament_scores_cache`;
+DROP TABLE IF EXISTS `event_scores_cache`;
 DROP TABLE IF EXISTS `club_info`;
 DROP TABLE IF EXISTS `club_rules`;
 DROP TABLE IF EXISTS `dons`;

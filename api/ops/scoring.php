@@ -215,7 +215,6 @@ class ApiPage extends OpsApiPageBase
 		list ($old_scoring, $version) = Db::record(get_label('scoring system'), 'SELECT v.scoring, s.version FROM scorings s JOIN scoring_versions v ON v.scoring_id = s.id AND v.version = s.version WHERE s.id = ?', $scoring_id);
 		
 		$overwrite = (int)get_optional_param('overwrite', 0);
-		$unfinish_dependents = true;
 		if ($old_scoring == $scoring)
 		{
 			$scoring = NULL;
@@ -228,7 +227,6 @@ class ApiPage extends OpsApiPageBase
 				list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
 			}
 			$overwrite = ($usageCount <= 0);
-			$unfinish_dependents = false;
 		}
 		
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
@@ -253,11 +251,11 @@ class ApiPage extends OpsApiPageBase
 					$log_details = new stdClass();
 					$log_details->scoring = $scoring;
 					db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id, $league_id);
-				}
-				if ($unfinish_dependents)
-				{
+					
 					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
 					Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ~' . EVENT_FLAG_FINISHED . ' WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
+					Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
+					Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
 				}
 			}
 			else

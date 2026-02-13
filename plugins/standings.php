@@ -33,9 +33,9 @@ try
 		new Picture(USER_CLUB_PICTURE,
 		new Picture(USER_PICTURE)));
 	
-	list ($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $scoring, $normalizer, $scoring_options) = 
+	list ($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $scoring, $scoring_id, $scoring_version, $normalizer, $normalizer_id, $normalizer_version, $scoring_options) = 
 		Db::record(get_label('tournament'), 
-			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.scoring, n.normalizer, t.scoring_options'.
+			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.scoring, s.scoring_id, s.version, n.normalizer, n.normalizer_id, n.version, t.scoring_options'.
 			' FROM tournaments t'.
 			' JOIN clubs c ON c.id = t.club_id'.
 			' JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version'.
@@ -46,7 +46,13 @@ try
 		$normalizer = '{}';
 	}
 	$scoring = json_decode($scoring);
+	$scoring->id = (int)$scoring_id; // it is needed for caching
+	$scoring->version = (int)$scoring_version; // it is needed for caching
+	
 	$normalizer = json_decode($normalizer);
+	$normalizer->id = (int)$normalizer_id; // it is needed for caching
+	$normalizer->version = (int)$normalizer_version; // it is needed for caching
+	
 	$scoring_options = json_decode($scoring_options);
 	$players = tournament_scores($tournament_id, $tournament_flags, NULL, SCORING_LOD_PER_GROUP, $scoring, $normalizer, $scoring_options);
 	$players_count = count($players);
