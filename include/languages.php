@@ -599,6 +599,7 @@ function show_language_picture($lang, $dir, $width = 0, $height = 0)
 
 function show_lang_select($name, $lang, $lang_mask = LANG_ALL, $on_change = NULL)
 {
+	$lang = (int)$lang;
 	if ($lang_mask & ($lang_mask - 1))
 	{
 		echo '<select name="' . $name . '" id="' . $name . '"';

@@ -28,6 +28,9 @@ try
 	if ($row = $query->next())
 	{
 		list ($odds, $friends, $late, $nickname) = $row;
+		$odds = (int)$odds;
+		$friends = (int)$friends;
+		$late = (int)$late;
 	}
 	if ($odds == 0)
 	{

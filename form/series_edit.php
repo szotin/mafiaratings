@@ -26,6 +26,8 @@ try
 			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs, l.flags, s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' . 
 			' JOIN leagues l ON l.id = s.league_id' .
 			' WHERE s.id = ?', $series_id);
+	$currency_id = (int)$currency_id;
+	$gaining_id = (int)$gaining_id;
 	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 	
 	$series_list = '{';
@@ -79,7 +81,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, $currency_id, $cname);
+		show_option((int)$cid, $currency_id, $cname);
 	}
 	echo '</select></td></tr>';
 	
@@ -99,7 +101,7 @@ try
 	while ($row = $query->next())
 	{
 		list($gid, $gname) = $row;
-		show_option($gid, $gaining_id, $gname);
+		show_option((int)$gid, $gaining_id, $gname);
 	}
 	echo '</select> <select id="form-gaining-version"></select>';
 	echo '</td></tr>';

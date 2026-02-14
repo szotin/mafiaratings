@@ -23,6 +23,8 @@ class Page extends UserPageBase
 		if ($row = $query->next())
 		{
 			list($prompt_sound, $end_sound) = $row;
+			$prompt_sound = (int)$prompt_sound;
+			$end_sound = (int)$end_sound;
 		}
 		
 		echo '<p>';

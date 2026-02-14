@@ -24,6 +24,9 @@ try
 	
 	list ($name, $url, $email, $phone, $langs, $flags, $league_scoring_id, $league_normalizer_id, $league_gaining_id) =
 		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags, scoring_id, normalizer_id, gaining_id FROM leagues WHERE id = ?', $id);
+	$league_scoring_id = (int)$league_scoring_id;
+	$league_normalizer_id = (int)$league_normalizer_id;
+	$league_gaining_id = (int)$league_gaining_id;
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
@@ -53,17 +56,17 @@ try
 	while ($row = $query->next())
 	{		
 		list ($scoring_id, $scoring_name) = $row;
-		show_option($scoring_id, $league_scoring_id, $scoring_name);
+		show_option((int)$scoring_id, $league_scoring_id, $scoring_name);
 	} 
 	echo '</select></td></tr>';
 	
 	echo '<tr><td>' . get_label('Scoring normalizer') . ':</td><td><select id="form-normalizer">';
-	show_option(0, is_null($league_normalizer_id) ? 0 : -1, get_label('No scoring normalization'));
+	show_option(0, $league_normalizer_id, get_label('No scoring normalization'));
 	$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id IS NULL ORDER BY name');
 	while ($row = $query->next())
 	{		
 		list ($normalizer_id, $normalizer_name) = $row;
-		show_option($normalizer_id, $league_normalizer_id, $normalizer_name);
+		show_option((int)$normalizer_id, $league_normalizer_id, $normalizer_name);
 	} 
 	echo '</select></td></tr>';
 	
@@ -72,7 +75,7 @@ try
 	while ($row = $query->next())
 	{
 		list($gaining_id, $gaining_name) = $row;
-		show_option($gaining_id, $league_gaining_id, $gaining_name);
+		show_option((int)$gaining_id, $league_gaining_id, $gaining_name);
 	}
 	echo '</select></td></tr>';
 	

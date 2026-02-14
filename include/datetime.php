@@ -54,14 +54,15 @@ function datetime_to_string($datetime, $include_time = true)
 
 function show_year_select($year, $start_time, $end_time, $on_change, $timezone = NULL)
 {
+	$year = (int)$year;
 	echo '<select name="year" id="year" onChange="' . $on_change . '">';
 	show_option(0, $year, get_label('All time'));
 	if ($start_time > 0)
 	{
 		$timezone = ($timezone == NULL ? get_timezone() : $timezone);
 		date_default_timezone_set($_profile->timezone);
-		$min_year = date('Y', $start_time);
-		$max_year = date('Y', $end_time);
+		$min_year = (int)date('Y', $start_time);
+		$max_year = (int)date('Y', $end_time);
 		while ($min_year <= $max_year)
 		{
 			show_option($min_year, $year, $min_year);

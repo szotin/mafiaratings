@@ -68,6 +68,7 @@ try
 	if ($row = $query->next())
 	{
 		list($addr_id, $scoring_options) = $row;
+		$addr_id = (int)$addr_id;
 	}
 	else
 	{
@@ -75,6 +76,7 @@ try
 		if ($row = $query->next())
 		{
 			list($addr_id, $scoring_options) = $row;
+			$addr_id = (int)$addr_id;
 		}
 	}
 	
@@ -85,7 +87,7 @@ try
 	$selected_address = '';
 	while ($row = $query->next())
 	{
-		if (show_option($row[0], $addr_id, $row[1]))
+		if (show_option((int)$row[0], $addr_id, $row[1]))
 		{
 			$selected_address = $row[1];
 		}
@@ -111,7 +113,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, $club->currency_id, $cname);
+		show_option((int)$cid, $club->currency_id, $cname);
 	}
 	echo '</select></td></tr>';
 	

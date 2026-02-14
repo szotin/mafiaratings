@@ -51,7 +51,7 @@ class Page extends PageBase
 		echo '<select name="club" onChange="document.createForm.submit()">';
 		foreach($_profile->clubs as $club)
 		{
-			show_option($club->id, $this->album->club_id, $club->name);
+			show_option($club->id, (int)$this->album->club_id, $club->name);
 		}
 		echo '</select>';
 		echo '</td></tr>';
@@ -93,14 +93,14 @@ class Page extends PageBase
 		echo '<tr><td>'.get_label('Who can view').':</td><td><select name="viewers" onChange="document.createForm.submit()">';
 		for ($i = 0; $i < 4; ++$i)
 		{
-			show_option($i, $this->album->viewers, $for_options[$i]);
+			show_option($i, (int)$this->album->viewers, $for_options[$i]);
 		}
 		echo '</select></td></tr>';
 		
 		echo '<tr><td>'.get_label('Who can add photos').':</td><td><select name="adders">';
 		for ($i = $this->album->viewers; $i < 4; ++$i)
 		{
-			show_option($i, $this->album->adders, $for_options[$i]);
+			show_option($i, (int)$this->album->adders, $for_options[$i]);
 		}
 		echo '</select></td></tr>';
 		

@@ -27,6 +27,7 @@ try
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities c ON c.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
+	$addr_id = (int)$addr_id;
 	
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	
@@ -68,7 +69,7 @@ try
 	$selected_address = '';
 	while ($row = $query->next())
 	{
-		if (show_option($row[0], $addr_id, $row[1]))
+		if (show_option((int)$row[0], $addr_id, $row[1]))
 		{
 			$selected_address = $row[1];
 		}

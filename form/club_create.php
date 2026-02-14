@@ -29,7 +29,7 @@ try
 	while ($row = $query->next())
 	{
 		list($c_id, $c_name) = $row;
-		show_option($c_id, $profile->user_club_id, $c_name);
+		show_option((int)$c_id, $profile->user_club_id, $c_name);
 	}
 	echo '</select>';
 	echo '</td></tr>';
@@ -71,7 +71,7 @@ try
 	while ($row = $query->next())
 	{		
 		list ($scoring_id, $scoring_name) = $row;
-		show_option($scoring_id, SCORING_DEFAULT_ID, $scoring_name);
+		show_option((int)$scoring_id, SCORING_DEFAULT_ID, $scoring_name);
 	} 
 	echo '</select></td></tr>';
 	

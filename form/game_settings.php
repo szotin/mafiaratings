@@ -66,6 +66,9 @@ try
 	if ($row = $query->next())
 	{
 		list($prompt_sound, $end_sound, $flags) = $row;
+		$prompt_sound = (int)$prompt_sound;
+		$end_sound = (int)$end_sound;
+		$flags = (int)$flags;
 	}
 		
 	echo '<table class="dialog_form" width="100%">';
@@ -78,7 +81,7 @@ try
 	foreach ($sounds as $row)
 	{
 		list ($id, $name) = $row;
-		show_option($id, $prompt_sound, $name);
+		show_option((int)$id, $prompt_sound, $name);
 	}
 	echo '</select></td></tr></table></td></tr>';
 	
@@ -90,7 +93,7 @@ try
 	foreach ($sounds as $row)
 	{
 		list ($id, $name) = $row;
-		show_option($id, $end_sound, $name);
+		show_option((int)$id, $end_sound, $name);
 	}
 	echo '</select></td></tr></table></td></tr>';
 	

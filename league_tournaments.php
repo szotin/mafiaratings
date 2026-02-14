@@ -235,13 +235,13 @@ class Page extends LeaguePageBase
 				if ($current_tournament < count($tournaments))
 				{
 					$series = new stdClass();
-					$series->stars = $stars;
-					$series->id = $series_id;
+					$series->stars = (int)$stars;
+					$series->id = (int)$series_id;
 					$series->name = $series_name;
-					$series->flags = $series_flags;
-					$series->league_id = $league_id;
+					$series->flags = (int)$series_flags;
+					$series->league_id = (int)$league_id;
 					$series->league_name = $league_name;
-					$series->league_flags = $league_flags;
+					$series->league_flags = (int)$league_flags;
 					$tournaments[$current_tournament]->series[] = $series;
 				}
 			}

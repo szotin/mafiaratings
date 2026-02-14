@@ -18,6 +18,7 @@ try
 	
 	list ($event_id, $club_id, $time, $status, $flags, $langs, $type, $tournament_id) = 
 		Db::record(get_label('mailing'), 'SELECT m.event_id, e.club_id, m.send_time, m.status, m.flags, m.langs, m.type, e.tournament_id FROM event_mailings m JOIN events e ON e.id = m.event_id WHERE m.id = ?', $mailing_id);
+	$type = (int)$type;
 
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 	if ($status != MAILING_WAITING)

@@ -29,6 +29,9 @@ try
 			'JOIN cities c ON c.id = a.city_id ' . 
 			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
 			'WHERE e.id = ?', $event_id);
+	$tour_id = (int)$tour_id;
+	$address_id = (int)$address_id;
+	$currency_id = (int)$currency_id;
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 	if (isset($_profile->clubs[$club_id]))
 	{
@@ -70,7 +73,7 @@ try
 	while ($row = $query->next())
 	{
 		list($tid, $tname) = $row;
-		show_option($tid, $tour_id, $tname);
+		show_option((int)$tid, $tour_id, $tname);
 		if ($tour_id == $tid)
 		{
 			$tournament_found = true;
@@ -99,7 +102,7 @@ try
 	$selected_address = '';
 	while ($row = $query->next())
 	{
-		if (show_option($row[0], $address_id, $row[1]))
+		if (show_option((int)$row[0], $address_id, $row[1]))
 		{
 			$selected_address = $row[1];
 		}
@@ -119,7 +122,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, $currency_id, $cname);
+		show_option((int)$cid, $currency_id, $cname);
 	}
 	echo '</select></td></tr>';
 		

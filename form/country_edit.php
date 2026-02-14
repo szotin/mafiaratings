@@ -20,6 +20,7 @@ try
 	
 	list($name_id, $code, $flags, $currency_id) = 
 		Db::record(get_label('country'), 'SELECT name_id, code, flags, currency_id FROM countries WHERE id = ?', $id);
+	$currency_id = (int)$currency_id;
 		
 	if (($flags & COUNTRY_FLAG_NOT_CONFIRMED) != 0)
 	{
@@ -45,7 +46,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, $currency_id, $cname);
+		show_option((int)$cid, $currency_id, $cname);
 	}
 	echo '</select><span id="form-create-currency"><table class="transp" width="100%">';
 	echo '<tr><td width="150">' . get_label('Name') . ':</td><td>';

@@ -65,7 +65,7 @@ class Page extends TournamentPageBase
 		$nom = 0;
 		if (isset($_REQUEST['nom']))
 		{
-			$nom = $_REQUEST['nom'];
+			$nom = (int)$_REQUEST['nom'];
 		}
 		if ($nom >= count($noms))
 		{

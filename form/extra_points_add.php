@@ -44,7 +44,7 @@ try
 				foreach ($events as $row)
 				{
 					list($event_id, $event_name, $event_flags) = $row;
-					show_option($event_id, 0, $event_name);
+					show_option((int)$event_id, 0, $event_name);
 				}
 				echo '</select></td></tr>';
 				break;

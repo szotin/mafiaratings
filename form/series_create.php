@@ -60,7 +60,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, DEFAULT_CURRENCY, $cname);
+		show_option((int)$cid, DEFAULT_CURRENCY, $cname);
 	}
 	echo '</select></td></tr>';
 	
@@ -76,12 +76,13 @@ try
 	}
 
 	list($default_gaining_id) = Db::record(get_label('league'), 'SELECT gaining_id FROM leagues WHERE id = ?', $league_id);
+	$default_gaining_id = (int)$default_gaining_id;
 	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $league_id);
 	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
 	while ($row = $query->next())
 	{
 		list($gaining_id, $gaining_name) = $row;
-		show_option($gaining_id, $default_gaining_id, $gaining_name);
+		show_option((int)$gaining_id, $default_gaining_id, $gaining_name);
 	}
 	echo '</select></td></tr>';
 	

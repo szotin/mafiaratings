@@ -293,7 +293,7 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 	while ($row = $query->next())
 	{
 		list ($sid, $sname) = $row;
-		show_option($sid, $scoring_id, $sname);
+		show_option((int)$sid, (int)$scoring_id, $sname);
 	}
 	echo '</select>';
 	if (($flags & SCORING_SELECT_FLAG_NO_VERSION) == 0)
@@ -361,12 +361,12 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 		
 		echo get_label('Scoring normalizer') . ': ';
 		echo '<select id="' . $name . '-norm-sel" name="' . $name . '-norm-sel" onChange="mr.onChangeNormalizer(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring normalizer') . '">';
-		show_option(0, $normalizer_id, get_label('No scoring normalization'));
+		show_option(0, (int)$normalizer_id, get_label('No scoring normalization'));
 		$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
 		while ($row = $query->next())
 		{
 			list ($nid, $nname) = $row;
-			show_option($nid, $normalizer_id, $nname);
+			show_option((int)$nid, (int)$normalizer_id, $nname);
 		}
 		echo '</select>';
 		echo '<span id="' . $name . '-norm-version"> ' . get_label('version') . ': <select id="' . $name . '-norm-ver" name="' . $name . '-norm-ver" onChange="mr.onChangeNormalizerVersion(\'' . $name . '\', ' . $on_change . ')"></select></span></p>';
@@ -475,6 +475,7 @@ function get_role_name($role, $flags = 0)
 
 function show_roles_select($roles, $on_change, $title, $flags = 0)
 {
+	$roles = (int)$roles;
 	echo '<select name="roles" id="roles" onChange="' . $on_change . '" title="' . $title . '">';
 	show_option(POINTS_ALL, $roles, get_role_name(POINTS_ALL, $flags));
 	show_option(POINTS_RED, $roles, get_role_name(POINTS_RED, $flags));

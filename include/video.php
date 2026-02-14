@@ -101,6 +101,7 @@ function get_video_title($video_type)
 
 function show_video_type_select($video_type, $select_id, $on_change)
 {
+	$video_type = (int)$video_type;
 	echo '<select id="' . $select_id . '"';
 	if ($on_change != NULL)
 	{

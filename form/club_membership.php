@@ -30,7 +30,7 @@ try
 	while ($row = $query->next())
 	{
 		list ($c_id, $c_name) = $row;
-		show_option($c_id, 0, $c_name);
+		show_option((int)$c_id, 0, $c_name);
 	}
 	echo '</select></p>';
 	echo '<table class="bordered dark" width="100%">';

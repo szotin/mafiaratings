@@ -30,7 +30,7 @@ try
 	echo '<select id="form-repl">';
 	while ($row = $query->next())
 	{
-		show_option($row[0], -1, $row[1]);
+		show_option((int)$row[0], -1, $row[1]);
 	}
 	echo '</select>';
 	echo '</td></tr>';

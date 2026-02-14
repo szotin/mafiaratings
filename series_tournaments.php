@@ -231,6 +231,7 @@ class Page extends SeriesPageBase
 			while ($row = $query->next())
 			{
 				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
+				$stars = (int)$stars;
 				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
 				{
 					++$current_tournament;

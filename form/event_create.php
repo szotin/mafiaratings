@@ -48,7 +48,7 @@ try
 		foreach ($tournaments as $row)
 		{
 			list($tid, $tname) = $row;
-			show_option($tid, 0, $tname);
+			show_option((int)$tid, 0, $tname);
 		}
 		echo '</select> <span id="form-round-span"></span></td></tr>';
 	}
@@ -92,7 +92,7 @@ try
 	$selected_address = '';
 	while ($row = $query->next())
 	{
-		if (show_option($row[0], 0, $row[1]))
+		if (show_option((int)$row[0], 0, $row[1]))
 		{
 			$selected_address = $row[1];
 		}
@@ -113,7 +113,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, $club->currency_id, $cname);
+		show_option((int)$cid, $club->currency_id, $cname);
 	}
 	echo '</select></td></tr>';
 	

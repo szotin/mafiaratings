@@ -33,6 +33,10 @@ try
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
+	$tournament_type = (int)$tournament_type;
+	$address_id = (int)$address_id;
+	$currency_id = (int)$currency_id;
+	$flags = (int)$flags;
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	if (isset($_profile->clubs[$club_id]))
 	{
@@ -101,7 +105,7 @@ try
 	echo '<select id="form-addr_id">';
 	while ($row = $query->next())
 	{
-		show_option($row[0], $address_id, $row[1]);
+		show_option((int)$row[0], $address_id, $row[1]);
 	}
 	echo '</select></td></tr>';
 
@@ -122,7 +126,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, $currency_id, $cname);
+		show_option((int)$cid, $currency_id, $cname);
 	}
 	echo '</select></td></tr>';
 	

@@ -79,7 +79,7 @@ try
 	while ($row = $query->next())
 	{
 		list ($c_id, $c_name) = $row;
-		show_option($c_id, $club_id, $c_name);
+		show_option((int)$c_id, $club_id, $c_name);
 	}
 	echo '</td></tr>';
 		

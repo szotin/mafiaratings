@@ -85,13 +85,24 @@ class Profile
 						' JOIN cities c ON u.city_id = c.id' .
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 						' WHERE u.id = ?', $user_id);
-		if ($this->region_id == NULL)
+		$this->user_id = (int)$this->user_id;
+		$this->user_langs = (int)$this->user_langs;
+		$_lang = (int)$_lang;
+		$this->user_flags = (int)$this->user_flags;
+		if (!is_null($this->user_club_id))
+		{
+			$this->user_club_id = (int)$this->user_club_id;
+		}
+		$this->city_id = (int)$this->city_id;
+		$this->country_id = (int)$this->country_id;
+		if (is_null($this->region_id))
 		{
 			$this->region_id = $this->city_id;
 		}
 		
 		list($this->user_accounts_count) = Db::record(get_label('user'), 'SELECT count(*) FROM users WHERE email = ?', $this->user_email);
-			
+		$this->user_accounts_count = (int)$this->user_accounts_count;
+		
 		$this->update_clubs();
 		$this->user_last_active = time();
 		$this->new_event = NULL;
@@ -111,6 +122,16 @@ class Profile
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 						' WHERE u.id = ?',
 					$this->user_id);
+		$this->user_id = (int)$this->user_id;
+		$this->user_langs = (int)$this->user_langs;
+		$_lang = (int)$_lang;
+		$this->user_flags = (int)$this->user_flags;
+		if (!is_null($this->user_club_id))
+		{
+			$this->user_club_id = (int)$this->user_club_id;
+		}
+		$this->city_id = (int)$this->city_id;
+		$this->country_id = (int)$this->country_id;
 			
 		$this->update_clubs();
 		$this->user_last_active = time();
@@ -151,6 +172,16 @@ class Profile
 			{
 				$pc = new ProfileClub();
 				list($pc->id, $pc->name, $pc->flags, $pc->club_flags, $pc->langs, $pc->city_id, $pc->city, $pc->country_id, $pc->country, $pc->timezone, $pc->rules_code, $pc->scoring_id, $pc->normalizer_id, $pc->fee, $pc->currency_id, $pc->parent_id) = $row;
+				$pc->id = (int)$pc->id;
+				$pc->flags = (int)$pc->flags;
+				$pc->club_flags = (int)$pc->club_flags;
+				$pc->langs = (int)$pc->langs;
+				$pc->city_id = (int)$pc->city_id;
+				$pc->country_id = (int)$pc->country_id;
+				$pc->scoring_id = (int)$pc->scoring_id;
+				$pc->normalizer_id = is_null($pc->normalizer_id) ? null : (int)$pc->normalizer_id;
+				$pc->currency_id = (int)$pc->currency_id;
+				$pc->parent_id = is_null($pc->parent_id) ? null : (int)$pc->parent_id;
 				$pc->rules_code = upgrade_rules_code($pc->rules_code);
 				$this->clubs[$pc->id] = $pc;
 			}

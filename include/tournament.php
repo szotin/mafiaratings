@@ -577,6 +577,7 @@ function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flag
 
 function show_tournament_type_select($tournament_type, $control_id, $on_change = null)
 {
+	$tournament_type = (int)$tournament_type;
 	echo '<select id="' . $control_id . '"';
 	if (!is_null($on_change))
 	{

@@ -48,7 +48,7 @@ try
 	while ($row = $query->next())
 	{
 		list ($id, $name) = $row;
-		show_option($id, 0, $name);
+		show_option((int)$id, 0, $name);
 	}
 	echo '</td></tr>';
 	

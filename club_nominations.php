@@ -35,7 +35,7 @@ class Page extends ClubPageBase
 		list($this->games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.club_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $this->id);
 		if (isset($_REQUEST['min']))
 		{
-			$this->min_games = $_REQUEST['min'];
+			$this->min_games = (int)$_REQUEST['min'];
 		}
 		else
 		{
@@ -77,7 +77,7 @@ class Page extends ClubPageBase
 		$nom = 0;
 		if (isset($_REQUEST['nom']))
 		{
-			$nom = $_REQUEST['nom'];
+			$nom = (int)$_REQUEST['nom'];
 		}
 		if ($nom >= count($noms))
 		{

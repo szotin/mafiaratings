@@ -30,7 +30,7 @@ try
 	while ($row = $query->next())
 	{
 		list($currency_id, $currency_name) = $row;
-		show_option($currency_id, -1, $currency_name);
+		show_option((int)$currency_id, -1, $currency_name);
 	}
 	echo '</select><span id="form-create-currency"><table class="transp" width="100%">';
 	echo '<tr><td width="150">' . get_label('Name') . ':</td><td>';

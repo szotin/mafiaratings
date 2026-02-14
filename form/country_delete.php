@@ -32,7 +32,7 @@ try
 	echo '<select id="form-repl">';
 	while ($row = $query->next())
 	{
-		show_option($row[0], -1, $row[1]);
+		show_option((int)$row[0], -1, $row[1]);
 	}
 	echo '</select></td></tr>';
 	echo '<tr><td colspan="2" align="right"><input type="checkbox" id="form-keep" checked> ' . get_label('keep the deleted city names as possible alternatives to the replacement country name') . '</td></tr>';

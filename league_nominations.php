@@ -113,7 +113,7 @@ class Page extends LeaguePageBase
 		
 		if (isset($_REQUEST['min']))
 		{
-			$this->min_games = $_REQUEST['min'];
+			$this->min_games = (int)$_REQUEST['min'];
 		}
 		else
 		{
@@ -124,7 +124,7 @@ class Page extends LeaguePageBase
 		$this->nom = 0;
 		if (isset($_REQUEST['nom']))
 		{
-			$this->nom = $_REQUEST['nom'];
+			$this->nom = (int)$_REQUEST['nom'];
 		}
 		if ($this->nom >= count($this->noms))
 		{

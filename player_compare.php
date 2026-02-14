@@ -82,6 +82,7 @@ function format_int($id, $value)
 
 function role_select($form_name, $role_name, $role, $together = false)
 {
+	$role = (int)$role;
 	echo '<select name="' . $role_name . '" onChange = "document.' . $form_name . '.submit()">';
 	show_option(0, $role, get_label('Any role'));
 	show_option(1, $role, get_label('Red'));

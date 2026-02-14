@@ -32,6 +32,7 @@ try
 	{
 		list($currency_id) = Db::record(get_label('country'), 'SELECT co.currency_id FROM clubs c JOIN cities ci ON ci.id = c.city_id JOIN countries co ON co.id = ci.country_id WHERE c.id = ?', $id);
 	}
+	$currency_id = (int)$currency_id;
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">' . get_label('Club name') . ':</td><td><input class="longest" id="form-club_name" value="' . htmlspecialchars($club->name, ENT_QUOTES) . '"></td>';
@@ -54,7 +55,7 @@ try
 	while ($row = $query->next())
 	{
 		list($c_id, $c_name) = $row;
-		show_option($c_id, $club->parent_id, $c_name);
+		show_option((int)$c_id, $club->parent_id, $c_name);
 	}
 	echo '</select>';
 	echo '</td></tr>';
@@ -76,7 +77,7 @@ try
 	while ($row = $query->next())
 	{
 		list($cid, $cname) = $row;
-		show_option($cid, $currency_id, $cname);
+		show_option((int)$cid, $currency_id, $cname);
 	}
 	echo '</select></td></tr>';
 	
@@ -109,7 +110,7 @@ try
 	while ($row = $query->next())
 	{		
 		list ($scoring_id, $scoring_name) = $row;
-		show_option($scoring_id, $club->scoring_id, $scoring_name);
+		show_option((int)$scoring_id, $club->scoring_id, $scoring_name);
 	} 
 	echo '</select></td></tr>';
 	
@@ -119,7 +120,7 @@ try
 	while ($row = $query->next())
 	{		
 		list ($normalizer_id, $normalizer_name) = $row;
-		show_option($normalizer_id, $club->normalizer_id, $normalizer_name);
+		show_option((int)$normalizer_id, $club->normalizer_id, $normalizer_name);
 	} 
 	echo '</select></td></tr>';
 	

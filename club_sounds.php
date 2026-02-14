@@ -35,9 +35,17 @@ class Page extends ClubPageBase
 		{
 			$prompt_sound = 0;
 		}
+		else
+		{
+			$prompt_sound = (int)$prompt_sound;
+		}
 		if (is_null($end_sound))
 		{
 			$end_sound = 0;
+		}
+		else
+		{
+			$end_sound = (int)$end_sound;
 		}
 		
 		echo '<p>';

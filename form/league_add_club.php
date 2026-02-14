@@ -27,7 +27,7 @@ try
 		list($club_id, $club_name) = $row;
 		if ($is_manager || is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
-			show_option($club_id, 0, $club_name);
+			show_option((int)$club_id, 0, $club_name);
 			$can_add = true;
 		}
 	}

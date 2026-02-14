@@ -34,7 +34,7 @@ try
 	$type = -1;
 	if (isset($_REQUEST['type']))
 	{
-		$type = $_REQUEST['type'];
+		$type = (int)$_REQUEST['type'];
 	}
 	
 	echo '<table class="bordered" width="100%">';

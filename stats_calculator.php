@@ -64,6 +64,7 @@ class Page extends PageBase
 			if ($row = $query->next())
 			{
 				list($this->id, $this->name, $this->description, $this->code, $this->owner_id, $this->owner_name, $this->owner_flags) = $row;
+				$this->id = (int)$this->id;
 			}
 		}
 	}
@@ -124,7 +125,7 @@ class Page extends PageBase
 		while ($row = $query->next())
 		{
 			list($id, $name) = $row;
-			show_option($id, $this->id, $name);
+			show_option((int)$id, $this->id, $name);
 		}
 		echo '</select>';
 		echo '</td></tr>';
