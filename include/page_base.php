@@ -10,7 +10,10 @@ define('PROMPT_TYPE_INFO', 1);
 define('PROMPT_TYPE_ERROR', 2); 
 define('PROMPT_TYPE_WARNING', 3); 
 
-define('PAGE_MEASURE_TIME', 1); // 0 do not measure; 1 - measure and output; 2 measure and collect stats
+define('INDEXING_POLICY_NONE', 0);
+define('INDEXING_POLICY_INDEX', 1);
+define('INDEXING_POLICY_INDEX_FOLLOW', 2);
+
 
 class PageBase
 {
@@ -19,6 +22,7 @@ class PageBase
 	protected $_title;
 	protected $_locked;
 	protected $_admin;
+	protected $_indexing_policy;
 	
 	private $_prompt;
 	private $_prompt_type;
@@ -34,13 +38,14 @@ class PageBase
 		initiate_session();
 		$this->user_pic = new Picture(USER_PICTURE);
 		$this->club_pic = new Picture(CLUB_PICTURE);
+		$this->_indexing_policy = INDEXING_POLICY_NONE;
 	}
 	
 	final function run($title = '')
 	{
 		global $_profile;
 		
-		if (PAGE_MEASURE_TIME > 0)
+		if (REQUEST_PROFILING)
 		{
 			$this->start = microtime(true);
 		}
@@ -144,6 +149,11 @@ class PageBase
 		{
 			Exc::log($e);
 		}
+		
+		if (REQUEST_PROFILING)
+		{
+			write_profiling_info(microtime(true) - $this->start);
+		}
 	}
 	
 	private function show_lock_page()
@@ -172,6 +182,18 @@ class PageBase
 		echo '<head>';
 		echo '<title>' . PRODUCT_NAME . ': ' . $this->_title . '</title>';
 		echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
+		switch ($this->_indexing_policy)
+		{
+		case INDEXING_POLICY_NONE:
+			echo '<meta name="robots" content="noindex, nofollow">';
+			break;
+		case INDEXING_POLICY_INDEX:
+			echo '<meta name="robots" content="nofollow">';
+			break;
+		case INDEXING_POLICY_INDEX_FOLLOW:
+		default:
+			break;
+		}
 		echo '<script src="js/jquery.min.js"></script>';
 		echo '<script src="js/jquery-ui.min.js"></script>';
 		echo '<script src="js/jquery.ui.menubar.js"></script>';
@@ -363,10 +385,9 @@ class PageBase
 			}
 		}
 		
-		if (PAGE_MEASURE_TIME > 0)
+		if (REQUEST_PROFILING)
 		{
-			$duration = microtime(true) - $this->start;
-			echo '</td><td class="header" align="right">' . (microtime(true) - $this->start) . ' sec';
+			echo '</td><td class="header" align="right">' . number_format(microtime(true) - $this->start, 5) . ' sec';
 		}
 		echo '</td></tr></table>';
 		// Correct fb_xd_fragment bug in IE

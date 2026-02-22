@@ -50,6 +50,11 @@ class ApiPageBase
 	{
 		global $_profile;
 
+		if (REQUEST_PROFILING)
+		{
+			$this->start = microtime(true);
+		}
+		
 		$this->title = $title;
 		$this->latest_version = $this->version = (int)$version;
 		if ($this->version >= 0 && isset($_REQUEST['version']))
@@ -64,6 +69,7 @@ class ApiPageBase
 			echo '<head>';
 			echo '<title>' . PRODUCT_NAME . ' ' . $title . ' API</title>';
 			echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
+			echo '<meta name="robots" content="nofollow">';
 			echo '<link rel="stylesheet" href="../api.css" type="text/css" media="screen" />';
 			echo '</head><body>';
 			try
@@ -163,6 +169,13 @@ class ApiPageBase
 					$message = $this->response['message'] . '<hr>' . $message;
 				}
 				$this->response['message'] = $message;
+			}
+			
+			if (REQUEST_PROFILING)
+			{
+				$duration = microtime(true) - $this->start;
+				//$this->response['exec_time'] = $duration;
+				write_profiling_info($duration);
 			}
 			echo json_encode($this->response);
 		}

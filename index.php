@@ -32,6 +32,13 @@ class Page extends GeneralPageBase
 	private $series_pic;
 	private $league_pic;
 	
+	protected function prepare()
+	{
+		parent::prepare();
+		
+		$this->_indexing_policy = INDEXING_POLICY_INDEX;
+	}
+	
 	private function show_series($series)
 	{
 		list (

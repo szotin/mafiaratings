@@ -174,6 +174,7 @@ class GarbageCollector extends Updater
 			Db::exec('mailing', 'DELETE FROM event_mailings WHERE event_id = ?', $event_id);
 			Db::exec('registration', 'DELETE FROM event_incomers WHERE event_id = ?', $event_id); 
 			Db::exec('registration', 'DELETE FROM event_regs WHERE event_id = ?', $event_id); 
+			Db::exec('score', 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
 			Db::exec('event', 'DELETE FROM events WHERE id = ?', $event_id);
 			++$count;
 		}

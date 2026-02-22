@@ -8,6 +8,8 @@ require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/languages.php';
 require_once __DIR__ . '/localization.php';
 
+define('REQUEST_PROFILING', true);
+
 $_session_state = SESSION_NO_USER;
 $_agent = AGENT_BROWSER;
 $_http_agent = '';
@@ -799,6 +801,44 @@ function lock_site($lock)
 function is_sanctioned($country_id, $time = 1677196801)
 {
 	return $country_id == 2 /* Russia */ && $time >= 1677196800 /* Feb 24, 2022 */;
+}
+
+function write_profiling_info($request_duration)
+{
+	global $_http_agent;
+	
+	$page = $_SERVER['PHP_SELF'];
+	Db::begin();
+	$query = new DbQuery('SELECT num, mean, variance, maximum FROM profiling_pages WHERE page = ?', $page);
+	if ($row = $query->next())
+	{
+		list ($num, $mean, $variance, $max) = $row;
+		$vu = new VarianceUpdater($num, $mean, $variance);
+		$vu->addNumber($request_duration);
+		$max = max($max, $request_duration);
+		Db::exec('stats', 'UPDATE profiling_pages SET num = ?, mean = ?, variance = ?, maximum = ? WHERE page = ?', $vu->n, $vu->mean, $vu->variance, $max, $page);
+	}
+	else
+	{
+		$vu = new VarianceUpdater();
+		$vu->addNumber($request_duration);
+		Db::exec('stats', 'INSERT INTO profiling_pages (page, num, mean, variance, maximum) VALUES (?, ?, ?, ?, ?)', $page, $vu->n, $vu->mean, $vu->variance, $request_duration);
+	}
+	
+	$ip = get_client_ip();
+	$query = new DbQuery('SELECT num, sum FROM profiling_ips WHERE ip = ?', $ip);
+	if ($row = $query->next())
+	{
+		list ($num, $sum) = $row;
+		++$num;
+		$sum += $request_duration;
+		Db::exec('stats', 'UPDATE profiling_ips SET num = ?, sum = ? WHERE ip = ?', $num, $sum, $ip);
+	}
+	else
+	{
+		Db::exec('stats', 'INSERT INTO profiling_ips (ip, agent, num, sum) VALUES (?, ?, 1, ?)', $ip, $_http_agent, $request_duration);
+	}
+	Db::commit();
 }
 
 ?>

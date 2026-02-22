@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+	<meta name="robots" content="noindex, nofollow">
     <title>Google Maps API Example: Simple Geocoding</title>
     <script src="//maps.google.com/maps?file=api&amp;v=3.x&amp;key=AIzaSyDVDj1_g_SQjSvWpCe9DQSyOi5PaypPOl4"></script>
     <script>

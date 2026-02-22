@@ -584,6 +584,10 @@ class ApiPage extends OpsApiPageBase
 			$flags = ($flags & ~TOURNAMENT_ICON_MASK) + ($icon_version << TOURNAMENT_ICON_MASK_OFFSET);
 			$logo_uploaded = true;
 		}
+
+		// Delete caches
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		
 		// update parent series records
 		$parent_series = json_decode(get_optional_param('parent_series', NULL));
@@ -689,8 +693,6 @@ class ApiPage extends OpsApiPageBase
 			$old_normalizer_version != $normalizer_version)
 		{
 			$flags &= ~TOURNAMENT_FLAG_FINISHED;
-			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
 		
 		if ($type != $old_type)
@@ -1065,6 +1067,9 @@ class ApiPage extends OpsApiPageBase
 				$log_details->rounds_updated = Db::affected_rows();
 			}
 		}
+		
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 			
 		Db::exec(get_label('user'), 'DELETE FROM event_regs WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('user'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);

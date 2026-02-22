@@ -7,6 +7,7 @@ require_once '../include/api.php';
 <head>
 <title><?php echo PRODUCT_NAME; ?> API reference</title>
 <META content="text/html; charset=utf-8" http-equiv=Content-Type>
+<meta name="robots" content="noindex, nofollow">
 <link rel="stylesheet" href="api.css" type="text/css" media="screen" />
 </head><body>
 

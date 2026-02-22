@@ -1097,7 +1097,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
 		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
 		Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
-		Db::exec(get_label('game'), 'DELETE FROM games WHERE event_id = ?', $event_id);
+		Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+		Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details->games = Db::affected_rows();

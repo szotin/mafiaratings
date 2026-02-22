@@ -47,6 +47,26 @@ function get_server_name()
 	return '';
 }
 
+function get_client_ip() 
+{
+	// Check for shared internet/proxy IP
+	if (!empty($_SERVER['HTTP_CLIENT_IP'])) 
+	{
+		$ip = $_SERVER['HTTP_CLIENT_IP'];
+	} 
+	// Check for IPs passing through proxies
+	else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) 
+	{
+		$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+	} 
+	// Default remote address
+	else 
+	{
+		$ip = $_SERVER['REMOTE_ADDR'];
+	}
+	return $ip;
+}
+
 function is_testing_server()
 {
 	global $_testing_server;
