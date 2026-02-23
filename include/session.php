@@ -8,7 +8,7 @@ require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/languages.php';
 require_once __DIR__ . '/localization.php';
 
-define('REQUEST_PROFILING', true);
+define('REQUEST_PROFILING', false);
 
 $_session_state = SESSION_NO_USER;
 $_agent = AGENT_BROWSER;
