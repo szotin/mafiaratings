@@ -6,6 +6,7 @@ require_once __DIR__ . '/db.php';
 define('END_RUNNING', 'done');
 
 define('MIN_EXPECTED_ITEMS', 5);
+define('MAX_BATCH_TIME', 10); // seconds
 
 define('LOG_TO_SCREEN', 1);
 define('LOG_TO_FILE', 2);
@@ -245,7 +246,7 @@ class Updater
 					break;
 				}
 				$this->debug('Batch: ' . $this->stats->batches);
-				$this->debug('Expected items count: ' . $items_count . ' in ' . $this->timeLeft() . ' sec');
+				$this->debug('Expected items count: ' . $items_count . ' in ' . min($this->timeLeft(), MAX_BATCH_TIME) . ' sec');
 				$first_time = false;
 				$time = time();
 				$method = $this->task . '_task';
@@ -761,10 +762,10 @@ class Updater
 	{
 		$a = $this->getAverageItemTime();
 		$b = $this->getAverageConstTime();
-		$time_left = $this->timeLeft();
 		$this->debug('Av item time: ' . $a);
 		$this->debug('Av const time: ' . $b);
-		$result = max((int)floor(($this->timeLeft() - $b) / $a), MIN_EXPECTED_ITEMS);
+		$time_left = min($this->timeLeft(), MAX_BATCH_TIME);
+		$result = max((int)floor(($time_left - $b) / $a), MIN_EXPECTED_ITEMS);
 		$this->debug('Can process: ' . $result);
 		if ($this->stats->last_items_count > 0 && $this->stats->batches < 20)
 		{

@@ -1879,7 +1879,15 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 			foreach ($games as $row)
 			{
 				list ($player_id, $flags, $role, $extra_points, $mr_points, $game_id, $game_end_time, $event_id, $round_num, $event_name, $rating_before) = $row;
+				if (!array_key_exists($player_id, $players))
+				{
+					continue;
+				}
 				$p = $players[$player_id];
+				if (is_null($p))
+				{
+					continue;
+				}
 				if (!isset($p->first_game_end) || $p->first_game_end > $game_end_time)
 				{
 					$p->first_game_end = $game_end_time;

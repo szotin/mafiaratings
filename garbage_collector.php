@@ -34,6 +34,7 @@ class GarbageCollector extends Updater
 			$this->vars->game_num = 0;
 		}
 		
+		Db::begin();
 		$count = 0;
 		$query = new DbQuery(
 			'SELECT event_id, table_num, game_num, game'.
@@ -71,6 +72,7 @@ class GarbageCollector extends Updater
 			}
 			++$count;
 		}
+		Db::commit();
 		return $count;
 	}
 
@@ -84,6 +86,7 @@ class GarbageCollector extends Updater
 			$this->vars->game_id = 0;
 		}
 		
+		Db::begin();
 		$count = 0;
 		$query = new DbQuery(
 			'SELECT g.id, COUNT(p.user_id) as uid'.
@@ -105,6 +108,7 @@ class GarbageCollector extends Updater
 			$this->log('Deleted the game #'.$this->vars->game_id);
 			++$count;
 		}
+		Db::commit();
 		return $count;
 	}
 	
@@ -122,6 +126,7 @@ class GarbageCollector extends Updater
 			$this->vars->code = '';
 		}
 		
+		Db::begin();
 		$count = 0;
 		$query = new DbQuery(
 			'SELECT user_id, code'.
@@ -136,6 +141,7 @@ class GarbageCollector extends Updater
 			Db::exec('email', 'DELETE FROM emails WHERE user_id = ? AND code = ?', $this->vars->user_id, $this->vars->code);
 			++$count;
 		}
+		Db::commit();
 		return $count;
 	}
 	
