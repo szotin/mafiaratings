@@ -93,15 +93,17 @@ class Page extends EventPageBase
 			return;
 		}
 		
-		echo '<form method="get" name="viewForm">';
-		echo '<input type="hidden" name="id" value="' . $this->id . '">';
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
 		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
 		echo '</td><td align="right">';
 		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, 'event=' . $this->id, get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table></form>';
+		if ($this->is_manager)
+		{
+			echo '</td><td align="right" width="32"><button class="icon" title="'.get_label('Refresh scoring table').'" onclick="clearCache()"><img src="images/refresh.png"></button>';
+		}
+		echo '</td></tr></table>';
 		
 		$condition = new SQL(' AND g.event_id = ?', $this->id);
 		
@@ -256,6 +258,19 @@ class Page extends EventPageBase
 	private function no_user_error()
 	{
 		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->name));
+	}
+	
+	protected function js()
+	{
+		if ($this->is_manager)
+		{
+?>		
+			function clearCache()
+			{
+				json.post("api/ops/event.php", { op: 'refresh_table', event_id: <?php echo $this->id; ?> }, refr);
+			}
+<?php
+		}
 	}
 }
 

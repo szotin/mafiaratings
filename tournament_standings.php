@@ -865,6 +865,7 @@ class Page extends TournamentPageBase
 			$view = (int)$_REQUEST['view'];
 		}
 
+		echo '<table class="transp" width="100%"><tr><td>';
 		if (($this->flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0)
 		{
 			if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
@@ -877,6 +878,12 @@ class Page extends TournamentPageBase
 			}
 			show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		}
+		echo '</td><td align="right">';
+		if ($this->is_manager)
+		{
+			echo '<button class="icon" title="'.get_label('Refresh scoring table').'" onclick="clearCache()"><img src="images/refresh.png"></button>';
+		}
+		echo '</td></tr></table>';
 		
 		if ($has_tabs)
 		{
@@ -943,6 +950,19 @@ class Page extends TournamentPageBase
 	private function no_user_error()
 	{
 		$this->errorMessage(get_label('[0] did not play in [1].', $this->user_name, $this->name));
+	}
+	
+	protected function js()
+	{
+		if ($this->is_manager)
+		{
+?>		
+			function clearCache()
+			{
+				json.post("api/ops/tournament.php", { op: 'refresh_table', tournament_id: <?php echo $this->id; ?> }, refr);
+			}
+<?php
+		}
 	}
 }
 

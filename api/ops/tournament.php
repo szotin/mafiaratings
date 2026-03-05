@@ -1893,6 +1893,26 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('tournament_id', 'Tournament id.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// refresh_table
+	//-------------------------------------------------------------------------------------------------------
+	function refresh_table_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		
+		Db::begin();
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+		Db::commit();
+	}
+	
+	function refresh_table_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Delete the cached tournament table.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

@@ -139,6 +139,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id = ?', $game_id);
 		Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id = ?', $game_id);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE id = ?', $game_id);
 		
 		db_log(LOG_OBJECT_GAME, 'deleted', NULL, $game_id, $club_id);
@@ -204,8 +206,6 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . TOURNAMENT_FLAG_FINISHED . ') WHERE id = ?', $game->data->tournamentId);
 			Db::exec(get_label('round'), 'UPDATE events SET flags = (flags & ~' . EVENT_FLAG_FINISHED . ') WHERE id = ?', $game->data->eventId);
-			Db::exec(get_label('score'), 'DELETE FROM  event_scores_cache WHERE event_id = ?', $game->data->eventId);
-			Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE event_id = ?', $game->data->tournamentId);
 			Db::exec(get_label('game'), 'INSERT INTO mwt_games (user_id, time, json, game_id) VALUES (?, UNIX_TIMESTAMP(), ?, ?)', $_profile->user_id, $json_str, $game->data->id);
 			Db::commit();
 		}

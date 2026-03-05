@@ -2384,6 +2384,22 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('event_id', 'Event id.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// refresh_table
+	//-------------------------------------------------------------------------------------------------------
+	function refresh_table_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+	}
+	
+	function refresh_table_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, 'Delete the cached event table.');
+		$help->request_param('event_id', 'Event id.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();
