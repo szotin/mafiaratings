@@ -93,6 +93,12 @@ class Page extends EventPageBase
 			return;
 		}
 		
+		$mvp_flag = ($this->flags & EVENT_FLAG_AWARD_MVP) ? COMPETITION_MVP : 0;
+		$best_red_flag = ($this->flags & EVENT_FLAG_AWARD_RED) ? (($this->flags & EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED) ? COMPETITION_BEST_CIV : COMPETITION_BEST_RED) : 0;
+		$best_black_flag = ($this->flags & EVENT_FLAG_AWARD_BLACK) ? (($this->flags & EVENT_FLAG_AWARD_NO_DON_IN_BLACK) ? COMPETITION_BEST_MAF : COMPETITION_BEST_BLACK) : 0;
+		$best_sheriff_flag = ($this->flags & EVENT_FLAG_AWARD_SHERIFF) ? COMPETITION_BEST_SHERIFF : 0;
+		$best_don_flag = ($this->flags & EVENT_FLAG_AWARD_DON) ? COMPETITION_BEST_DON : 0;
+		
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
 		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
@@ -181,31 +187,29 @@ class Page extends EventPageBase
 			if (isset($player->nom_flags) && $player->nom_flags)
 			{
 				echo '<td align="right">';
-				if ($player->nom_flags & COMPETITION_BEST_RED)
+				if ($player->nom_flags & $best_red_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_BEST_BLACK)
+				if ($player->nom_flags & $best_black_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_BEST_DON)
+				if ($player->nom_flags & $best_don_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_BEST_SHERIFF)
+				if ($player->nom_flags & $best_sheriff_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
 				}
-				if ($player->nom_flags & COMPETITION_MVP)
+				if ($player->nom_flags & $mvp_flag)
 				{
 					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
 				}
 				echo '</td>';
 			}
 			echo '</tr></table></a></td>';
-			
-			
 			
 			echo '<td width="50" align="center">';
 			if (!is_null($player->club_id) && $player->club_id > 0)

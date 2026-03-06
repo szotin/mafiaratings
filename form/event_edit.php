@@ -158,6 +158,19 @@ try
 		echo '</td></tr>';
 	}
 		
+	
+	echo '<tr><td>'.get_label('Special awards').':</td><td>';
+	echo '<table class="transp" width="100%">';
+	echo '<tr><td colspan="2"><input type="checkbox" id="form-award-mvp"' . (($flags & EVENT_FLAG_AWARD_MVP) ? ' checked' : '')  . '> ' . get_label('MVP') . '</td></tr>';
+	echo '<tr><td><input type="checkbox" id="form-award-red"' . (($flags & EVENT_FLAG_AWARD_RED) ? ' checked' : '')  . '> ' . get_label('best red player') . '</td>';
+	echo '<td><input type="checkbox" id="form-award-black"' . (($flags & EVENT_FLAG_AWARD_BLACK) ? ' checked' : '')  . '> ' . get_label('best black player') . '</td></tr>';
+	echo '<tr><td><input type="checkbox" id="form-award-sheriff"' . (($flags & EVENT_FLAG_AWARD_SHERIFF) ? ' checked' : '')  . '> ' . get_label('best sheriff') . '</td>';
+	echo '<td><input type="checkbox" id="form-award-don"' . (($flags & EVENT_FLAG_AWARD_DON) ? ' checked' : '')  . '> ' . get_label('best don') . '</td></tr>';
+	echo '<tr><td><p><input type="checkbox" id="form-award-no-sheriff"' . (($flags & EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED) ? ' checked' : '')  . '> ' . get_label('exclude the sheriff games from the "best red" award') . '</p></td>';
+	echo '<td><p><input type="checkbox" id="form-award-no-don"' . (($flags & EVENT_FLAG_AWARD_NO_DON_IN_BLACK) ? ' checked' : '')  . '> ' . get_label('exclude the don games from the "best black" award') . '</p></td></tr>';
+	echo '</table>';
+	echo '</td></tr>';
+		
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="50" rows="4">' . htmlspecialchars($notes, ENT_QUOTES) . '</textarea></td></tr>';
 		
 	echo '<tr><td colspan="2">';
@@ -336,6 +349,13 @@ try
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo EVENT_FLAG_PINNED; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
+		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_MVP; ?>;
+		if ($("#form-award-red").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_RED; ?>;
+		if ($("#form-award-black").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_BLACK; ?>;
+		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_SHERIFF; ?>;
+		if ($("#form-award-don").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_DON; ?>;
+		if ($("#form-award-no-sheriff").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED; ?>;
+		if ($("#form-award-no-don").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_NO_DON_IN_BLACK; ?>;
 		
 		var params =
 		{
