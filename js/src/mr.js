@@ -857,7 +857,7 @@ var mr = new function()
 	this.onChangeScoring = function(name, version, changed)
 	{
 		var scoringId = $('#' + name + '-sel').val();
-		json.post("api/get/scorings.php", { scoring_id: scoringId }, function(data)
+		json.get("api/get/scorings.php?scoring_id=" + scoringId, function(data)
 		{
 			var s = data.scorings[0];
 			var c = $('#' + name + '-ver');
@@ -912,7 +912,7 @@ var mr = new function()
 		}
 		else
 		{
-			json.post("api/get/scorings.php", { scoring_id: $('#' + name + '-sel').val(), scoring_version: $('#' + name + '-ver').val() }, function(data)
+			json.get("api/get/scorings.php?scoring_id=" + $('#' + name + '-sel').val() + "&scoring_version=" + $('#' + name + '-ver').val(), function(data)
 			{
 				mr.onChangeScoringVersion(name, data.scorings[0].versions[0], changed);
 			});
@@ -925,7 +925,7 @@ var mr = new function()
 		var versionDiv = $('#' + name + '-norm-version');
 		if (normalizerId > 0)
 		{
-			json.post("api/get/normalizers.php", { normalizer_id: normalizerId }, function(data)
+			json.get("api/get/normalizers.php?normalizer_id=" + normalizerId, function(data)
 			{
 				var s = data.normalizers[0];
 				var c = $('#' + name + '-norm-ver');
