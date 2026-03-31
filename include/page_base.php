@@ -45,7 +45,7 @@ class PageBase
 	{
 		global $_profile;
 		
-		if (REQUEST_PROFILING)
+		if (REQUEST_PROFILING > 0)
 		{
 			$this->start = microtime(true);
 		}
@@ -150,7 +150,7 @@ class PageBase
 			Exc::log($e);
 		}
 		
-		if (REQUEST_PROFILING)
+		if (REQUEST_PROFILING > 0)
 		{
 			write_profiling_info(microtime(true) - $this->start);
 		}
@@ -385,9 +385,9 @@ class PageBase
 			}
 		}
 		
-		if (REQUEST_PROFILING)
+		if (REQUEST_PROFILING > 0)
 		{
-			echo '</td><td class="header" align="right">' . number_format(microtime(true) - $this->start, 5) . ' sec';
+			echo '</td><td class="header" align="right">' . number_format(microtime(true) - $this->start, 3) . ' sec';
 		}
 		echo '</td></tr></table>';
 		// Correct fb_xd_fragment bug in IE

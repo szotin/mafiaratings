@@ -8,7 +8,12 @@ require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/languages.php';
 require_once __DIR__ . '/localization.php';
 
-define('REQUEST_PROFILING', false);
+define('REQUEST_PROFILING', 2); // 0 - no profiling; 1 - profile stats to database; 2 - write every request to log file
+
+if (REQUEST_PROFILING == 2)
+{
+	require_once __DIR__ . '/filelog.php';
+}
 
 $_session_state = SESSION_NO_USER;
 $_agent = AGENT_BROWSER;
@@ -805,40 +810,55 @@ function is_sanctioned($country_id, $time = 1677196801)
 
 function write_profiling_info($request_duration)
 {
-	global $_http_agent;
+	global $_http_agent, $_profile;
 	
-	$page = $_SERVER['PHP_SELF'];
-	Db::begin();
-	$query = new DbQuery('SELECT num, mean, variance, maximum FROM profiling_pages WHERE page = ?', $page);
-	if ($row = $query->next())
+	switch (REQUEST_PROFILING)
 	{
-		list ($num, $mean, $variance, $max) = $row;
-		$vu = new VarianceUpdater($num, $mean, $variance);
-		$vu->addNumber($request_duration);
-		$max = max($max, $request_duration);
-		Db::exec('stats', 'UPDATE profiling_pages SET num = ?, mean = ?, variance = ?, maximum = ? WHERE page = ?', $vu->n, $vu->mean, $vu->variance, $max, $page);
+	case 1:
+		$page = $_SERVER['PHP_SELF'];
+		Db::begin();
+		$query = new DbQuery('SELECT num, mean, variance, maximum FROM profiling_pages WHERE page = ?', $page);
+		if ($row = $query->next())
+		{
+			list ($num, $mean, $variance, $max) = $row;
+			$vu = new VarianceUpdater($num, $mean, $variance);
+			$vu->addNumber($request_duration);
+			$max = max($max, $request_duration);
+			Db::exec('stats', 'UPDATE profiling_pages SET num = ?, mean = ?, variance = ?, maximum = ? WHERE page = ?', $vu->n, $vu->mean, $vu->variance, $max, $page);
+		}
+		else
+		{
+			$vu = new VarianceUpdater();
+			$vu->addNumber($request_duration);
+			Db::exec('stats', 'INSERT INTO profiling_pages (page, num, mean, variance, maximum) VALUES (?, ?, ?, ?, ?)', $page, $vu->n, $vu->mean, $vu->variance, $request_duration);
+		}
+		
+		$ip = get_client_ip();
+		$query = new DbQuery('SELECT num, sum FROM profiling_ips WHERE ip = ?', $ip);
+		if ($row = $query->next())
+		{
+			list ($num, $sum) = $row;
+			++$num;
+			$sum += $request_duration;
+			Db::exec('stats', 'UPDATE profiling_ips SET num = ?, sum = ? WHERE ip = ?', $num, $sum, $ip);
+		}
+		else
+		{
+			Db::exec('stats', 'INSERT INTO profiling_ips (ip, agent, num, sum) VALUES (?, ?, 1, ?)', $ip, $_http_agent, $request_duration);
+		}
+		Db::commit();
+		break;
+		
+	case 2:
+		//print_json($_SERVER);
+		$user_name = '';
+		if ($_profile != NULL)
+		{
+			$user_name = '; user: ' . $_profile->user_name;
+		}
+		log_to_file('URI: ' . $_SERVER['REQUEST_URI'] . $user_name . '; duration: ' . number_format($request_duration, 3) . '; IP: ' . get_client_ip() . '; agent: ' . $_http_agent);
+		break;
 	}
-	else
-	{
-		$vu = new VarianceUpdater();
-		$vu->addNumber($request_duration);
-		Db::exec('stats', 'INSERT INTO profiling_pages (page, num, mean, variance, maximum) VALUES (?, ?, ?, ?, ?)', $page, $vu->n, $vu->mean, $vu->variance, $request_duration);
-	}
-	
-	$ip = get_client_ip();
-	$query = new DbQuery('SELECT num, sum FROM profiling_ips WHERE ip = ?', $ip);
-	if ($row = $query->next())
-	{
-		list ($num, $sum) = $row;
-		++$num;
-		$sum += $request_duration;
-		Db::exec('stats', 'UPDATE profiling_ips SET num = ?, sum = ? WHERE ip = ?', $num, $sum, $ip);
-	}
-	else
-	{
-		Db::exec('stats', 'INSERT INTO profiling_ips (ip, agent, num, sum) VALUES (?, ?, 1, ?)', $ip, $_http_agent, $request_duration);
-	}
-	Db::commit();
 }
 
 ?>

@@ -50,7 +50,7 @@ class ApiPageBase
 	{
 		global $_profile;
 
-		if (REQUEST_PROFILING)
+		if (REQUEST_PROFILING > 0)
 		{
 			$this->start = microtime(true);
 		}
@@ -171,7 +171,7 @@ class ApiPageBase
 				$this->response['message'] = $message;
 			}
 			
-			if (REQUEST_PROFILING)
+			if (REQUEST_PROFILING > 0)
 			{
 				$duration = microtime(true) - $this->start;
 				//$this->response['exec_time'] = $duration;
