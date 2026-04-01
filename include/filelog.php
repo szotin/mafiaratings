@@ -1,5 +1,7 @@
 <?php
 
+define('HOURS_IN_LOG_FILE', 2);
+
 function log_to_file($message)
 {
 	$logs_dir = __DIR__ . '/../logs';
@@ -10,8 +12,8 @@ function log_to_file($message)
 
 	date_default_timezone_set('America/Vancouver');
 	$now = time();
-	$hour_block = (int)(date('G', $now) / 4) * 4;
-	$filename = date('Y', $now) . date('m', $now) . date('d', $now) . '_' . sprintf('%02d', $hour_block) . '.log';
+	$hour_block = (int)(date('G', $now) / HOURS_IN_LOG_FILE) * HOURS_IN_LOG_FILE;
+	$filename = date('Y', $now) . '_' . date('m', $now) . '_' . date('d', $now) . '_' . sprintf('%02d', $hour_block) . '.log';
 	$filepath = $logs_dir . '/' . $filename;
 
 	$line = '[' . date('Y-m-d H:i:s', $now) . '] ' . $message . PHP_EOL;
