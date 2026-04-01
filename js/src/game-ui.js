@@ -929,17 +929,21 @@ function _uiProceedKeyEvent(e)
 		
 		if (isSet(game.time))
 		{
-			if (index >= 0 && gameIsPlayerAtTheTable(index))
+			if (index >= 0)
 			{
+				let exists = gameIsPlayerAtTheTable(index);
 				if (e.shiftKey)
 				{
-					if (!e.altKey)
+					if (exists)
 					{
-						gamePlayerWarning(index);
-					}
-					else
-					{
-						uiPlayerActions(index);
+						if (!e.altKey)
+						{
+							gamePlayerWarning(index);
+						}
+						else
+						{
+							uiPlayerActions(index);
+						}
 					}
 					return true;
 				}
@@ -952,22 +956,28 @@ function _uiProceedKeyEvent(e)
 				switch (game.time.time)
 				{
 				case 'start':
-					_uiNextRole(index, e.shiftKey);
+					if (exists)
+						_uiNextRole(index, e.shiftKey);
 					return true;
 				case 'arrangement':
-					uiArrangePlayer(index, e.shiftKey ? 0 : 1);
+					if (exists)
+						uiArrangePlayer(index, e.shiftKey ? 0 : 1);
 					return true;
 				case 'speaking':
-					gameNominatePlayer(gameIsPlayerNominated(index) == 2 ? -1 : index);
+					if (exists)
+						gameNominatePlayer(gameIsPlayerNominated(index) == 2 ? -1 : index);
 					return true;
 				case 'voting':
-					gameVote(index, 0);
+					if (exists)
+						gameVote(index, 0);
 					return true;
 				case 'voting kill all':
-					gameVoteToKillAll(index);
+					if (exists)
+						gameVoteToKillAll(index);
 					return true;
 				case 'shooting':
-					gameShoot(index);
+					if (exists)
+						gameShoot(index);
 					return true;
 				case 'don':
 					gameDonCheck(index);
