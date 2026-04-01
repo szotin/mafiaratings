@@ -929,7 +929,7 @@ function _uiProceedKeyEvent(e)
 		
 		if (isSet(game.time))
 		{
-			if (index >= 0 && !isSet(game.players[index].death))
+			if (index >= 0 && gameIsPlayerAtTheTable(index))
 			{
 				if (e.shiftKey)
 				{
