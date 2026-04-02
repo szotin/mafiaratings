@@ -37,7 +37,7 @@ try
 	show_option(PAIR_POLICY_WELCOME,   DEFAULT_POLICY, get_label('Increase number of games together.'));
 	echo '</select></td></tr>';
 
-	echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . get_label('For this tournament only') . '</td></tr>';
+	echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . get_label('for this tournament only') . '</td></tr>';
 
 	echo '</table>';
 
