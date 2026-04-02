@@ -1,5 +1,9 @@
 DROP TABLE IF EXISTS `tournament_scores_cache`;
 DROP TABLE IF EXISTS `event_scores_cache`;
+DROP TABLE IF EXISTS `club_separations`;
+DROP TABLE IF EXISTS `league_separations`;
+DROP TABLE IF EXISTS `tournament_separations`;
+DROP TABLE IF EXISTS `separations`;
 DROP TABLE IF EXISTS `club_info`;
 DROP TABLE IF EXISTS `club_rules`;
 DROP TABLE IF EXISTS `dons`;
@@ -25,6 +29,7 @@ DROP TABLE IF EXISTS `objections`;
 DROP TABLE IF EXISTS `game_issues`;
 DROP TABLE IF EXISTS `rebuild_ratings`;
 DROP TABLE IF EXISTS `mwt_games`;
+DROP TABLE IF EXISTS `mr_bonus_stats`;
 DROP TABLE IF EXISTS `games`;
 DROP TABLE IF EXISTS `user_videos`;
 DROP TABLE IF EXISTS `video_comments`;

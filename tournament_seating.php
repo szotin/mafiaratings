@@ -9,13 +9,14 @@ require_once 'include/checkbox_filter.php';
 
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
-define('VIEW_SETUP', 0);
-define('VIEW_BY_GAME', 1);
-define('VIEW_BY_TABLE', 2);
-define('VIEW_TABLE_STATS', 3);
-define('VIEW_PVP_STATS', 4);
-define('VIEW_NUMBERS_STATS', 5);
-define('VIEW_COUNT', 6);
+define('VIEW_PAIRS', 0);
+define('VIEW_SETUP', 1);
+define('VIEW_BY_GAME', 2);
+define('VIEW_BY_TABLE', 3);
+define('VIEW_TABLE_STATS', 4);
+define('VIEW_PVP_STATS', 5);
+define('VIEW_NUMBERS_STATS', 6);
+define('VIEW_COUNT', 7);
 
 define('HIDE_PLAYED', 1);
 define('SHOW_ICONS', 2);
@@ -93,10 +94,162 @@ class Page extends TournamentPageBase
 		}
 	}
 	
-	protected function show_body()
+	private function generateSeating()
+	{
+		if (!is_null($this->misc) && isset($this->misc->seating))
+		{
+			return true;
+		}			
+		
+		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
+		{
+			return false;
+		}
+		
+		// generates seating using existing games if needed
+		$old_misc = $this->misc;
+		if ($this->misc == null)
+		{
+			$this->misc = new stdClass();
+		}
+		$this->misc->seating = array();
+		
+		$query = new DbQuery('SELECT p.user_id, p.number, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ? AND g.table_num IS NOT NULL AND g.game_num IS NOT NULL', $this->round_id);
+		while ($row = $query->next())
+		{
+			list ($user_id, $number, $table, $game) = $row;
+			while (count($this->misc->seating) < $table)
+			{
+				$this->misc->seating[] = array();
+			}
+			while (count($this->misc->seating[$table-1]) < $game)
+			{
+				$this->misc->seating[$table-1][] = array(0,0,0,0,0,0,0,0,0,0);
+			}
+			$this->misc->seating[$table-1][$game-1][$number-1] = (int)$user_id;
+		}
+		if (count($this->misc->seating) > 0)
+		{
+			// cashe it for the future
+			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($this->misc), $this->round_id);
+			return true;
+		}
+		$this->misc = $old_misc;
+		return false;
+	}
+	
+	private function initVars()
 	{
 		global $_lang;
 		
+		$this->tables = &$this->misc->seating;
+		if (is_object($this->tables))
+		{
+			$this->tables = &$this->tables->tables;
+			if (isset($this->misc->seating->mapping))
+			{
+				$this->mapping = &$this->misc->seating->mapping;
+				for ($i = 0; $i < count($this->tables); ++$i)
+				{
+					$games = &$this->tables[$i];
+					for ($j = 0; $j < count($games); ++$j)
+					{
+						$game = &$games[$j];
+						for ($k = 0; $k < count($game); ++$k)
+						{
+							$index = $game[$k];
+							if ($index >= count($this->mapping))
+							{
+								$game[$k] = -$index - 1;
+							}
+							else if ($index >= 0)
+							{
+								$player_id = $this->mapping[$index];
+								if (is_object($player_id))
+								{
+									$player_id = isset($player_id->id) ? $player_id->id : -$index - 1;
+								}
+								$game[$k] = $player_id;
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if ($this->options & SHOW_ICONS)
+		{
+			$this->user_pic =
+				new Picture(USER_TOURNAMENT_PICTURE,
+				new Picture(USER_CLUB_PICTURE,
+				new Picture(USER_PICTURE)));
+		}
+		$players_list = '';
+		$this->users = array();
+		$delim = '';
+		for ($i = 0; $i < count($this->tables); ++$i)
+		{
+			for ($j = 0; $j < count($this->tables[$i]); ++$j)
+			{
+				if (is_null($this->tables[$i][$j]))
+				{
+					continue;
+				}
+				foreach ($this->tables[$i][$j] as $user_id)
+				{
+					if ($user_id > 0 && !isset($this->users[$user_id]))
+					{
+						$user = new stdClass();
+						$user->id = $user_id;
+						$user->name = '';
+						$user->flags = 0;
+						
+						$this->users[$user_id] = $user;
+						$players_list .= $delim . $user_id;
+						$delim = ',';
+					}
+				}
+			}
+		}
+			
+		if (!empty($players_list))
+		{
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.flags, ni.name, tu.flags, cu.flags'.
+				' FROM users u'.
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' JOIN cities i ON i.id = u.city_id'.
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
+				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
+				' WHERE u.id IN ('.$players_list.')', $this->id, $this->club_id);
+			while ($row = $query->next())
+			{
+				$user = $this->users[$row[0]];
+				list($user->id, $user->name, $user->flags, $user->city_name, $user->tournament_reg_flags, $user->club_reg_flags) = $row;
+			}
+		}
+		
+		$this->hideGames();
+	}
+	
+	private function showSeatingTop()
+	{
+		echo '<p><input type="checkbox" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
+		echo ' <input type="checkbox" id="show_icons"'.(($this->options & SHOW_ICONS) ? ' checked' : '').' onclick="showIcons()"> '.get_label('show user pictures');
+		if ($this->user_id > 0)
+		{
+			echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_MY) ? ' checked' : '').' onclick="onlyMy()"> '.get_label('show only my games');
+		}
+		if ($this->highlight_id > 0 && $this->highlight_id != $this->user_id)
+		{
+			echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_HIGHLIGHTED) ? ' checked' : '').' onclick="onlyHighlighted()"> '.get_label('show only the games with the higlighted player');
+		}
+		echo '</p>';
+	}
+	
+	protected function show_body()
+	{
 		$this->misc = NULL;
 		$this->round_num = 0;
 		echo '<div class="tab">';
@@ -141,157 +294,77 @@ class Page extends TournamentPageBase
 				$view = VIEW_BY_GAME;
 			}
 		}
-		if ($view == VIEW_SETUP && !$this->is_manager)
+		
+		$seating_exists = $this->generateSeating();
+		
+		if (!$this->is_manager)
 		{
-			$view = VIEW_BY_GAME;
+			if ($view == VIEW_SETUP || $view == VIEW_PAIRS)
+			{
+				$view = VIEW_BY_GAME;
+			}
+			if (!$seating_exists)
+			{
+				echo '<p>' . get_label('Seating is not generated for this round') . '</p>';
+				return;
+			}
+		}
+		else if (!$seating_exists && $view != VIEW_SETUP && $view != VIEW_PAIRS)
+		{
+			$view = VIEW_SETUP;
 		}
 		
-		$this->mapping = null;
-		if (!is_null($this->misc) && isset($this->misc->seating))
+		echo '<p><div class="tab">';
+		if ($this->is_manager)
 		{
-			$this->tables = &$this->misc->seating;
-			if (is_object($this->tables))
-			{
-				$this->tables = &$this->tables->tables;
-				if (isset($this->misc->seating->mapping))
-				{
-					$this->mapping = &$this->misc->seating->mapping;
-					for ($i = 0; $i < count($this->tables); ++$i)
-					{
-						$games = &$this->tables[$i];
-						for ($j = 0; $j < count($games); ++$j)
-						{
-							$game = &$games[$j];
-							for ($k = 0; $k < count($game); ++$k)
-							{
-								$index = $game[$k];
-								if ($index >= count($this->mapping))
-								{
-									$game[$k] = -$index - 1;
-								}
-								else if ($index >= 0)
-								{
-									$player_id = $this->mapping[$index];
-									if (is_object($player_id))
-									{
-										$player_id = isset($player_id->id) ? $player_id->id : -$index - 1;
-									}
-									$game[$k] = $player_id;
-								}
-							}
-						}
-					}
-				}
-			}
-			
-			echo '<p><input type="checkbox" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
-			echo ' <input type="checkbox" id="show_icons"'.(($this->options & SHOW_ICONS) ? ' checked' : '').' onclick="showIcons()"> '.get_label('show user pictures');
-			if ($this->user_id > 0)
-			{
-				echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_MY) ? ' checked' : '').' onclick="onlyMy()"> '.get_label('show only my games');
-			}
-			if ($this->highlight_id > 0 && $this->highlight_id != $this->user_id)
-			{
-				echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_HIGHLIGHTED) ? ' checked' : '').' onclick="onlyHighlighted()"> '.get_label('show only the games with the higlighted player');
-			}
-			echo '</p>';
-			
-			echo '<p><div class="tab">';
-			if ($this->is_manager)
-			{
-				echo '<button' . ($view == VIEW_SETUP ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_SETUP.'})">' . get_label('Setup') . '</button>';
-			}
+			echo '<button' . ($view == VIEW_PAIRS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_PAIRS.'})">' . get_label('Pairs') . '</button>';
+			echo '<button' . ($view == VIEW_SETUP ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_SETUP.'})">' . get_label('Setup') . '</button>';
+		}
+		if ($seating_exists)
+		{
 			echo '<button' . ($view == VIEW_BY_GAME ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_GAME.'})">' . get_label('By game') . '</button>';
 			echo '<button' . ($view == VIEW_BY_TABLE ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_TABLE.'})">' . get_label('By table') . '</button>';
 			echo '<button' . ($view == VIEW_TABLE_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_TABLE_STATS.'})">' . get_label('By table stats') . '</button>';
 			echo '<button' . ($view == VIEW_PVP_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_PVP_STATS.'})">' . get_label('PvP stats') . '</button>';
 			echo '<button' . ($view == VIEW_NUMBERS_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_NUMBERS_STATS.'})">' . get_label('By numbers stats') . '</button>';
-			echo '</div></p>';
-
-			if ($this->options & SHOW_ICONS)
-			{
-				$this->user_pic =
-					new Picture(USER_TOURNAMENT_PICTURE,
-					new Picture(USER_CLUB_PICTURE,
-					new Picture(USER_PICTURE)));
-			}
-			$players_list = '';
-			$this->users = array();
-			$delim = '';
-			for ($i = 0; $i < count($this->tables); ++$i)
-			{
-				for ($j = 0; $j < count($this->tables[$i]); ++$j)
-				{
-					if (is_null($this->tables[$i][$j]))
-					{
-						continue;
-					}
-					foreach ($this->tables[$i][$j] as $user_id)
-					{
-						if ($user_id > 0 && !isset($this->users[$user_id]))
-						{
-							$user = new stdClass();
-							$user->id = $user_id;
-							$user->name = '';
-							$user->flags = 0;
-							
-							$this->users[$user_id] = $user;
-							$players_list .= $delim . $user_id;
-							$delim = ',';
-						}
-					}
-				}
-			}
-				
-			if (!empty($players_list))
-			{
-				$query = new DbQuery(
-					'SELECT u.id, nu.name, u.flags, ni.name, tu.flags, cu.flags'.
-					' FROM users u'.
-					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-					' JOIN cities i ON i.id = u.city_id'.
-					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-					' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
-					' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
-					' WHERE u.id IN ('.$players_list.')', $this->id, $this->club_id);
-				while ($row = $query->next())
-				{
-					$user = $this->users[$row[0]];
-					list($user->id, $user->name, $user->flags, $user->city_name, $user->tournament_reg_flags, $user->club_reg_flags) = $row;
-				}
-			}
-			
-			$this->hide_games();
-			
-			switch ($view)
-			{
-				case VIEW_SETUP:
-					$this->showSetup();
-					break;
-				case VIEW_BY_GAME:
-					$this->showByGame();
-					break;
-				case VIEW_BY_TABLE:
-					$this->showByTable();
-					break;
-				case VIEW_TABLE_STATS:
-					$this->showTableStats();
-					break;
-				case VIEW_PVP_STATS:
-					$this->showPvpStats();
-					break;
-				case VIEW_NUMBERS_STATS:
-					$this->showNumbersStats();
-					break;
-			}
 		}
-		else if ($this->is_manager)
+		echo '</div></p>';
+
+		$this->mapping = null;
+		switch ($view)
 		{
+		case VIEW_PAIRS:
+			$this->showPairs();
+			break;
+		case VIEW_SETUP:
 			$this->showSetup();
+			break;
+		case VIEW_BY_GAME:
+			$this->initVars();
+			$this->showSeatingTop();
+			$this->showByGame();
+			break;
+		case VIEW_BY_TABLE:
+			$this->initVars();
+			$this->showSeatingTop();
+			$this->showByTable();
+			break;
+		case VIEW_TABLE_STATS:
+			$this->initVars();
+			$this->showTableStats();
+			break;
+		case VIEW_PVP_STATS:
+			$this->initVars();
+			$this->showPvpStats();
+			break;
+		case VIEW_NUMBERS_STATS:
+			$this->initVars();
+			$this->showNumbersStats();
+			break;
 		}
 	}
 	
-	private function hide_games()
+	private function hideGames()
 	{
 		$normalize = false;
 		
@@ -820,6 +893,169 @@ class Page extends TournamentPageBase
 		echo '</table>';
 	}
 	
+	private function createPair($row, $source)
+	{
+		list ($user1_id, $user1_name, $user1_flags, $user1_tournament_flags, $user1_club_flags, $user2_id, $user2_name, $user2_flags, $user2_tournament_flags, $user2_club_flags, $policy) = $row;
+		if (array_key_exists($user1_id, $this->pairs))
+		{
+			$u1 = $this->pairs[$user1_id];
+		}
+		else
+		{
+			$u1 = new stdClass();
+			$u1->id = (int)$user1_id;
+			$u1->name = $user1_name;
+			$u1->flags = (int)$user1_flags;
+			$u2->tournament_flags = (int)$user2_tournament_flags;
+			$u2->club_flags = (int)$user2_club_flags;
+			$u1->tournament_flags = (int)$user1_tournament_flags;
+			$u1->club_flags = (int)$user1_club_flags;
+			$u1->pairs = array();
+			$this->pairs[$user1_id] = $u1;
+		}
+		if (array_key_exists($user2_id, $u1->pairs))
+		{
+			$u1->pairs[$user2_id]->policy = (int)$policy;
+		}
+		else
+		{
+			$u2 = new stdClass();
+			$u2->id = (int)$user2_id;
+			$u2->name = $user2_name;
+			$u2->flags = (int)$user2_flags;
+			$u2->policy = (int)$policy;
+			$u2->source = $source;
+			$u1->pairs[$user2_id] = $u2;
+		}
+	}
+	
+	private function showPairs()
+	{
+		global $_lang;
+		
+		$players_list = '';
+		$delim = '';
+		$query = new DbQuery('SELECT user_id FROM tournament_regs WHERE tournament_id = ?', $this->id);
+		while ($row = $query->next())
+		{
+			list ($user_id) = $row;
+			$players_list .= $delim . $user_id;
+			$delim = ',';
+		}
+		
+		$this->pairs = array();
+		if (!empty($players_list))
+		{
+			$query = new DbQuery(
+				'SELECT u1.id, nu1.name, u1.flags, tu1.flags, cu1.flags, u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy'.
+				' FROM pairs p '.
+				' JOIN users u1 ON u1.id = p.user1_id'.
+				' JOIN users u2 ON u2.id = p.user2_id'.
+				' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & '.$_lang.') <> 0'.
+				' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = ?' .
+				' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = ?' .
+				' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+				' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+				' WHERE u1.id IN ('.$players_list.') AND u2.id IN ('.$players_list.')', $this->id, $this->id, $this->club_id, $this->club_id);
+			while ($row = $query->next())
+			{
+				$this->createPair($row, '');
+			}
+			
+			$query = new DbQuery(
+				'SELECT u1.id, nu1.name, u1.flags, u1.flags, tu1.flags, u2.id, nu2.name, u2.flags, u2.flags, tu2.flags, p.policy, l.name'.
+				' FROM league_pairs p '.
+				' JOIN leagues l ON l.id = p.league_id'.
+				' JOIN users u1 ON u1.id = p.user1_id'.
+				' JOIN users u2 ON u2.id = p.user2_id'.
+				' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & '.$_lang.') <> 0'.
+				' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = ?' .
+				' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = ?' .
+				' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+				' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+				' WHERE u1.id IN ('.$players_list.') AND u2.id IN ('.$players_list.')'.
+				' AND l.id IN (SELECT s.league_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?)', $this->id, $this->id, $this->club_id, $this->club_id, $this->id);
+			while ($row = $query->next())
+			{
+				$this->createPair($row, $row[11]);
+			}
+			
+			$query = new DbQuery(
+				'SELECT u1.id, nu1.name, u1.flags, u1.flags, tu1.flags, u2.id, nu2.name, u2.flags, u2.flags, tu2.flags, p.policy, c.name'.
+				' FROM club_pairs p '.
+				' JOIN clubs c ON c.id = p.club_id'.
+				' JOIN users u1 ON u1.id = p.user1_id'.
+				' JOIN users u2 ON u2.id = p.user2_id'.
+				' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & '.$_lang.') <> 0'.
+				' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = ?' .
+				' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = ?' .
+				' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+				' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+				' WHERE u1.id IN ('.$players_list.') AND u2.id IN ('.$players_list.')'.
+				' AND c.id = ?', $this->id, $this->id, $this->club_id, $this->club_id, $this->club_id);
+			while ($row = $query->next())
+			{
+				$this->createPair($row, $row[11]);
+			}
+			
+			$query = new DbQuery(
+				'SELECT u1.id, nu1.name, u1.flags, u1.flags, tu1.flags, u2.id, nu2.name, u2.flags, u2.flags, tu2.flags, p.policy'.
+				' FROM tournament_pairs p '.
+				' JOIN users u1 ON u1.id = p.user1_id'.
+				' JOIN users u2 ON u2.id = p.user2_id'.
+				' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & '.$_lang.') <> 0'.
+				' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = p.tournament_id' .
+				' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = p.tournament_id' .
+				' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+				' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+				' AND p.tournament_id = ?', $this->club_id, $this->club_id, $this->id);
+			while ($row = $query->next())
+			{
+				$this->createPair($row, get_label('In this tournament'));
+			}
+		}
+		
+		echo '<p><table class="bordered light" width="100%"><tr><th width="32"><button class="icon" onclick="createPair()" title="' . get_label('Create new pair') . '"><img src="images/create.png"></button></th>';
+		echo '<th width="200">' . get_label('Player [0]', 1) . '</th>';
+		echo '<th width="200">' . get_label('Player [0]', 2) . '</th>';
+		echo '<th>' . get_label('Policy') . '</th>';
+		echo '<th width="200">' . get_label('Where the policy is set') . '</th></tr>';
+		foreach ($this->pairs as $user1_id => $u1)
+		{
+			foreach ($u1->pairs as $user2_id => $u2)
+			{
+				echo '<tr>';
+				echo '<td><button class="icon" onclick="deletePair()" title="' . get_label('Delete pair') . '"><img src="images/delete.png"></button></td>';
+				
+				echo '<td><table class="transp" width="100%"><tr><td width="52">';
+				$this->user_pic->
+					set($u1->id, $u1->name, $u1->tournament_flags, 't' . $this->id)->
+					set($u1->id, $u1->name, $u1->club_flags, 'c' . $this->club_id)->
+					set($u1->id, $u1->name, $u1->flags);
+				$this->user_pic->show(ICONS_DIR, false, 48);
+				echo '</td><td><a href="user_info.php?id='.$u1->id.'&bck=1">' . $u1->name . '</a></td></tr></table></td>';
+				
+				echo '<td><table class="transp" width="100%"><tr><td width="52">';
+				$this->user_pic->
+					set($u2->id, $u2->name, $u2->tournament_flags, 't' . $this->id)->
+					set($u2->id, $u2->name, $u2->club_flags, 'c' . $this->club_id)->
+					set($u2->id, $u2->name, $u2->flags);
+				$this->user_pic->show(ICONS_DIR, false, 48);
+				echo '</td><td><a href="user_info.php?id='.$u2->id.'&bck=1">' . $u2->name . '</a></td></tr></table></td>';
+				
+				echo '<td>' . get_pair_policy_name($u2->policy) . '</td>';
+				echo '<td>' . $u2->source . '</td>';
+				echo '</tr>';
+			}
+		}
+		echo '</table></p>';
+		//print_json($pairs);
+	}
+	
 	private function showSetup()
 	{
 		global $_lang;
@@ -1187,6 +1423,11 @@ class Page extends TournamentPageBase
 					}, refr);
 					
 				}, 480);
+		}
+		
+		function createPair()
+		{
+			dlg.form("form/pair_create.php?tournament_id=<?php echo $this->id; ?>", refr, 600);
 		}
 		
 		function clearMappings()
