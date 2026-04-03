@@ -5,8 +5,8 @@ require_once __DIR__ . '/json.php';
 
 define('PAIR_POLICY_SEPARATE', 0);
 define('PAIR_POLICY_AVOID', 1);
-define('PAIR_POLICY_BALANCED', 2);
-define('PAIR_POLICY_WELCOME', 3);
+define('PAIR_POLICY_WELCOME', 2);
+define('PAIR_POLICY_NOTHING', 3);
 
 function get_pair_policy_name($policy)
 {
@@ -18,7 +18,7 @@ function get_pair_policy_name($policy)
 	case PAIR_POLICY_AVOID:
 		return get_label('Reduce number of games together but do not separate completely.');
 		break;
-	case PAIR_POLICY_BALANCED:
+	case PAIR_POLICY_NOTHING:
 		return get_label('As usual. No separation.');
 		break;
 	case PAIR_POLICY_WELCOME:

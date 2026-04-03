@@ -33,7 +33,6 @@ try
 	echo '<tr><td>' . get_label('Policy') . ':</td><td><select id="form-policy">';
 	show_option(PAIR_POLICY_SEPARATE,  DEFAULT_POLICY, get_label('Separate players.'));
 	show_option(PAIR_POLICY_AVOID,     DEFAULT_POLICY, get_label('Reduce number of games together but do not separate completely.'));
-	show_option(PAIR_POLICY_BALANCED,  DEFAULT_POLICY, get_label('As usual. No separation.'));
 	show_option(PAIR_POLICY_WELCOME,   DEFAULT_POLICY, get_label('Increase number of games together.'));
 	echo '</select></td></tr>';
 
