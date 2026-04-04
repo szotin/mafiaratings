@@ -10,7 +10,7 @@ define('PAIR_POLICY_NOTHING', 3);
 
 function get_pair_policy_name($policy)
 {
-	switch ($u2->policy)
+	switch ($policy)
 	{
 	case PAIR_POLICY_SEPARATE:
 		return get_label('Separate players.');
@@ -26,6 +26,161 @@ function get_pair_policy_name($policy)
 		break;
 	}
 	return '';
+}
+
+// Returns array of pair objects for all pairs affecting this tournament,
+// applying priority rules: tournament_pairs > club_pairs > league_pairs > pairs.
+// For conflicts between multiple leagues, the one with smaller abs(policy) wins.
+// Each returned object has:
+//   user1_id, user1_name, user1_flags, user1_tournament_flags, user1_club_flags
+//   user2_id, user2_name, user2_flags, user2_tournament_flags, user2_club_flags
+//   policy, source (display string)
+function get_tournament_pairs($tournament_id, $club_id, $lang)
+{
+	$players_list = '';
+	$delim = '';
+	$query = new DbQuery('SELECT user_id FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+	while ($row = $query->next())
+	{
+		$players_list .= $delim . (int)$row[0];
+		$delim = ',';
+	}
+
+	if (empty($players_list))
+	{
+		return array();
+	}
+
+	// $pairs_map: key = "user1_id_user2_id" => stdClass with all pair fields + priority
+	$pairs_map = array();
+
+	$add_pair = function($row, $priority, $source) use (&$pairs_map)
+	{
+		list ($user1_id, $user1_name, $user1_flags, $user1_tournament_flags, $user1_club_flags,
+		      $user2_id, $user2_name, $user2_flags, $user2_tournament_flags, $user2_club_flags,
+		      $policy) = $row;
+		$key = $user1_id . '_' . $user2_id;
+		if (isset($pairs_map[$key]))
+		{
+			$existing = $pairs_map[$key];
+			if ($priority > $existing->priority)
+			{
+				$existing->policy = (int)$policy;
+				$existing->priority = $priority;
+				$existing->source = $source;
+			}
+			else if ($priority == $existing->priority && abs((int)$policy) < abs($existing->policy))
+			{
+				// League conflict: prefer smaller absolute policy value
+				$existing->policy = (int)$policy;
+				$existing->source = $source;
+			}
+		}
+		else
+		{
+			$pair = new stdClass();
+			$pair->user1_id = (int)$user1_id;
+			$pair->user1_name = $user1_name;
+			$pair->user1_flags = (int)$user1_flags;
+			$pair->user1_tournament_flags = isset($user1_tournament_flags) ? (int)$user1_tournament_flags : 0;
+			$pair->user1_club_flags = isset($user1_club_flags) ? (int)$user1_club_flags : 0;
+			$pair->user2_id = (int)$user2_id;
+			$pair->user2_name = $user2_name;
+			$pair->user2_flags = (int)$user2_flags;
+			$pair->user2_tournament_flags = isset($user2_tournament_flags) ? (int)$user2_tournament_flags : 0;
+			$pair->user2_club_flags = isset($user2_club_flags) ? (int)$user2_club_flags : 0;
+			$pair->policy = (int)$policy;
+			$pair->priority = $priority;
+			$pair->source = $source;
+			$pairs_map[$key] = $pair;
+		}
+	};
+
+	// Priority 0: global pairs
+	$query = new DbQuery(
+		'SELECT u1.id, nu1.name, u1.flags, tu1.flags, cu1.flags,' .
+		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy' .
+		' FROM pairs p' .
+		' JOIN users u1 ON u1.id = p.user1_id' .
+		' JOIN users u2 ON u2.id = p.user2_id' .
+		' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & ' . $lang . ') <> 0' .
+		' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & ' . $lang . ') <> 0' .
+		' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = ?' .
+		' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = ?' .
+		' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+		' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+		' WHERE u1.id IN (' . $players_list . ') AND u2.id IN (' . $players_list . ')',
+		$tournament_id, $tournament_id, $club_id, $club_id);
+	while ($row = $query->next())
+	{
+		$add_pair($row, 0, get_label('Global'));
+	}
+
+	// Priority 1: league pairs (multiple leagues possible; conflict resolved by min abs(policy))
+	$query = new DbQuery(
+		'SELECT u1.id, nu1.name, u1.flags, tu1.flags, cu1.flags,' .
+		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy, l.name' .
+		' FROM league_pairs p' .
+		' JOIN leagues l ON l.id = p.league_id' .
+		' JOIN users u1 ON u1.id = p.user1_id' .
+		' JOIN users u2 ON u2.id = p.user2_id' .
+		' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & ' . $lang . ') <> 0' .
+		' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & ' . $lang . ') <> 0' .
+		' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = ?' .
+		' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = ?' .
+		' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+		' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+		' WHERE u1.id IN (' . $players_list . ') AND u2.id IN (' . $players_list . ')' .
+		' AND l.id IN (SELECT s.league_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?)',
+		$tournament_id, $tournament_id, $club_id, $club_id, $tournament_id);
+	while ($row = $query->next())
+	{
+		$add_pair($row, 1, $row[11]);
+	}
+
+	// Priority 2: club pairs
+	$query = new DbQuery(
+		'SELECT u1.id, nu1.name, u1.flags, tu1.flags, cu1.flags,' .
+		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy, c.name' .
+		' FROM club_pairs p' .
+		' JOIN clubs c ON c.id = p.club_id' .
+		' JOIN users u1 ON u1.id = p.user1_id' .
+		' JOIN users u2 ON u2.id = p.user2_id' .
+		' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & ' . $lang . ') <> 0' .
+		' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & ' . $lang . ') <> 0' .
+		' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = ?' .
+		' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = ?' .
+		' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+		' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+		' WHERE u1.id IN (' . $players_list . ') AND u2.id IN (' . $players_list . ')' .
+		' AND c.id = ?',
+		$tournament_id, $tournament_id, $club_id, $club_id, $club_id);
+	while ($row = $query->next())
+	{
+		$add_pair($row, 2, $row[11]);
+	}
+
+	// Priority 3: tournament pairs (highest priority)
+	$query = new DbQuery(
+		'SELECT u1.id, nu1.name, u1.flags, tu1.flags, cu1.flags,' .
+		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy' .
+		' FROM tournament_pairs p' .
+		' JOIN users u1 ON u1.id = p.user1_id' .
+		' JOIN users u2 ON u2.id = p.user2_id' .
+		' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & ' . $lang . ') <> 0' .
+		' JOIN names nu2 ON nu2.id = u2.name_id AND (nu2.langs & ' . $lang . ') <> 0' .
+		' LEFT OUTER JOIN tournament_regs tu1 ON tu1.user_id = u1.id AND tu1.tournament_id = p.tournament_id' .
+		' LEFT OUTER JOIN tournament_regs tu2 ON tu2.user_id = u2.id AND tu2.tournament_id = p.tournament_id' .
+		' LEFT OUTER JOIN club_regs cu1 ON cu1.user_id = u1.id AND cu1.club_id = ?' .
+		' LEFT OUTER JOIN club_regs cu2 ON cu2.user_id = u2.id AND cu2.club_id = ?' .
+		' WHERE p.tournament_id = ?',
+		$club_id, $club_id, $tournament_id);
+	while ($row = $query->next())
+	{
+		$add_pair($row, 3, get_label('In this tournament'));
+	}
+
+	return array_values(array_filter($pairs_map, function($pair) { return $pair->policy != PAIR_POLICY_NOTHING; }));
 }
 
 function generate_next_restriction_group_level($players, $groups = null)
