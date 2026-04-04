@@ -1896,6 +1896,7 @@ $labelMenu = array (
 'for this league only' => 'только для этой лиги', // league_pairs.php, form/pair_create.php
 'League pairs' => 'Пары лиги', // league_pairs.php
 'In this league' => 'В этой лиге', // include/seating.php
+'Global pair policies' => 'Глобальные политики пар', // include/general_page_base.php
 );
 
 return $labelMenu;

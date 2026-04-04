@@ -1896,6 +1896,7 @@ $labelMenu = array (
 'for this league only' => '[EMPTY]', // league_pairs.php, form/pair_create.php
 'League pairs' => '[EMPTY]', // league_pairs.php
 'In this league' => '[EMPTY]', // include/seating.php
+'Global pair policies' => '[EMPTY]', // include/general_page_base.php
 );
 
 return $labelMenu;

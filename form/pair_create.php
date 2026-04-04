@@ -34,7 +34,8 @@ try
 	}
 	else
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
+		check_permissions(PERMISSION_ADMIN);
+		$player_condition = '';
 	}
 
 	echo '<table class="dialog_form" width="100%">';
@@ -53,10 +54,12 @@ try
 	show_option(PAIR_POLICY_WELCOME,   DEFAULT_POLICY, get_label('Increase number of games together.'));
 	echo '</select></td></tr>';
 
-	if ($tournament_id > 0)      $scope_label = get_label('for this tournament only');
-	else if ($league_id > 0)    $scope_label = get_label('for this league only');
-	else                        $scope_label = get_label('for this club only');
-	echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . $scope_label . '</td></tr>';
+	if ($tournament_id > 0)
+		echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . get_label('for this tournament only') . '</td></tr>';
+	else if ($league_id > 0)
+		echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . get_label('for this league only') . '</td></tr>';
+	else if ($club_id > 0)
+		echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . get_label('for this club only') . '</td></tr>';
 
 	echo '</table>';
 
@@ -114,7 +117,11 @@ try
 				, user1_id: player1Id
 				, user2_id: player2Id
 				, policy: $("#form-policy").val()
+				<?php if ($tournament_id > 0 || $club_id > 0 || $league_id > 0): ?>
 				, global: $("#form-tournament-only").is(":checked") ? 0 : 1
+				<?php else: ?>
+				, global: 1
+				<?php endif; ?>
 			},
 			onSuccess);
 		}
