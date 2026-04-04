@@ -1889,6 +1889,13 @@ $labelMenu = array (
 'Are you sure you want to delete this pair?' => '[EMPTY]', // tournament_seating.php
 'Global' => '[EMPTY]', // include/seating.php
 'Cannot create a pair policy for the same user.' => '[EMPTY]', // api/ops/seating.php
+'for this club only' => '[EMPTY]', // club_pairs.php, form/pair_create.php
+'[0] pairs' => '[EMPTY]', // include/club.php
+'Club pairs' => '[EMPTY]', // club_pairs.php
+'In this club' => '[EMPTY]', // include/seating.php
+'for this league only' => '[EMPTY]', // league_pairs.php, form/pair_create.php
+'League pairs' => '[EMPTY]', // league_pairs.php
+'In this league' => '[EMPTY]', // include/seating.php
 );
 
 return $labelMenu;

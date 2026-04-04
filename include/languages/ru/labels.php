@@ -1889,6 +1889,13 @@ $labelMenu = array (
 'Are you sure you want to delete this pair?' => 'Вы уверены, что хотите удалить пару?', // tournament_seating.php
 'Global' => 'Глобально', // include/seating.php
 'Cannot create a pair policy for the same user.' => 'Невозможно создать пару с самим собой.', // api/ops/seating.php
+'for this club only' => 'только для этого клуба', // club_pairs.php, form/pair_create.php
+'[0] pairs' => 'Пары [0]', // include/club.php
+'Club pairs' => 'Пары клуба', // club_pairs.php
+'In this club' => 'В этом клубе', // include/seating.php
+'for this league only' => 'только для этой лиги', // league_pairs.php, form/pair_create.php
+'League pairs' => 'Пары лиги', // league_pairs.php
+'In this league' => 'В этой лиге', // include/seating.php
 );
 
 return $labelMenu;

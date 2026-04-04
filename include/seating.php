@@ -180,7 +180,9 @@ function get_tournament_pairs($tournament_id, $club_id, $lang)
 		$add_pair($row, 3, get_label('In this tournament'));
 	}
 
-	return array_values(array_filter($pairs_map, function($pair) { return $pair->policy != PAIR_POLICY_NOTHING; }));
+	$result = array_values(array_filter($pairs_map, function($pair) { return $pair->policy != PAIR_POLICY_NOTHING; }));
+	usort($result, function($a, $b) { return $a->user1_id - $b->user1_id; });
+	return $result;
 }
 
 function generate_next_restriction_group_level($players, $groups = null)

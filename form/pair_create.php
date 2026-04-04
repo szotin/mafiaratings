@@ -12,22 +12,39 @@ try
 {
 	dialog_title(get_label('Create [0]', get_label('pair')));
 
-	if (!isset($_REQUEST['tournament_id']))
+	$tournament_id = isset($_REQUEST['tournament_id']) ? (int)$_REQUEST['tournament_id'] : 0;
+	$club_id       = isset($_REQUEST['club_id'])       ? (int)$_REQUEST['club_id']       : 0;
+	$league_id     = isset($_REQUEST['league_id'])     ? (int)$_REQUEST['league_id']     : 0;
+
+	if ($tournament_id > 0)
+	{
+		list ($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+		$player_condition = 'tournament=' . $tournament_id;
+	}
+	else if ($club_id > 0)
+	{
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+		$player_condition = 'club=' . $club_id;
+	}
+	else if ($league_id > 0)
+	{
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		$player_condition = '';
+	}
+	else
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
 	}
-	$tournament_id = (int)$_REQUEST['tournament_id'];
-	list ($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
-	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 
 	echo '<table class="dialog_form" width="100%">';
 
 	echo '<tr><td width="120">' . get_label('Player [0]', 1) . ':</td><td>';
-	show_user_input('form-player1', '', 'tournament=' . $tournament_id, get_label('Select player.'), 'onSelectPlayer1');
+	show_user_input('form-player1', '', $player_condition, get_label('Select player.'), 'onSelectPlayer1');
 	echo '</td></tr>';
 
 	echo '<tr><td>' . get_label('Player [0]', 2) . ':</td><td>';
-	show_user_input('form-player2', '', 'tournament=' . $tournament_id, get_label('Select player.'), 'onSelectPlayer2');
+	show_user_input('form-player2', '', $player_condition, get_label('Select player.'), 'onSelectPlayer2');
 	echo '</td></tr>';
 
 	echo '<tr><td>' . get_label('Policy') . ':</td><td><select id="form-policy">';
@@ -36,7 +53,10 @@ try
 	show_option(PAIR_POLICY_WELCOME,   DEFAULT_POLICY, get_label('Increase number of games together.'));
 	echo '</select></td></tr>';
 
-	echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . get_label('for this tournament only') . '</td></tr>';
+	if ($tournament_id > 0)      $scope_label = get_label('for this tournament only');
+	else if ($league_id > 0)    $scope_label = get_label('for this league only');
+	else                        $scope_label = get_label('for this club only');
+	echo '<tr><td colspan="2"><input id="form-tournament-only" type="checkbox"> ' . $scope_label . '</td></tr>';
 
 	echo '</table>';
 
@@ -88,7 +108,9 @@ try
 			json.post("api/ops/seating.php",
 			{
 				op: "add_pair"
-				, tournament_id: <?php echo $tournament_id; ?>
+				<?php if ($tournament_id > 0): ?>, tournament_id: <?php echo $tournament_id; ?><?php endif; ?>
+				<?php if ($club_id > 0): ?>, club_id: <?php echo $club_id; ?><?php endif; ?>
+				<?php if ($league_id > 0): ?>, league_id: <?php echo $league_id; ?><?php endif; ?>
 				, user1_id: player1Id
 				, user2_id: player2Id
 				, policy: $("#form-policy").val()

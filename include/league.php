@@ -99,11 +99,15 @@ class LeaguePageBase extends PageBase
 		{
 			$menu[] = new MenuItem('#other', get_label('Management'), NULL, array
 			(
-				new MenuItem('league_managers.php?id=' . $this->id, get_label('Managers'), get_label('[0] managers', $this->name)),
 				new MenuItem('league_upcoming_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series', $this->name)),
 				// new MenuItem('league_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
+				new MenuItem(null, null, null),
+				new MenuItem('league_managers.php?id=' . $this->id, get_label('Managers'), get_label('[0] managers', $this->name)),
+				new MenuItem('league_pairs.php?id=' . $this->id, get_label('Pairs'), get_label('[0] pairs', $this->name)),
+				new MenuItem(null, null, null),
 				// new MenuItem('league_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name)),
 				new MenuItem('league_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name)),
+				// new MenuItem(null, null, null),
 				// new MenuItem('league_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name)),
 			));
 		}
