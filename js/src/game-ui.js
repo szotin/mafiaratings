@@ -1365,9 +1365,11 @@ function uiStart(eventId, tableNum, roundNum)
 	gameInit(eventId, tableNum, roundNum, _uiRender, _uiErrorListener, _uiConnectionListener, function(data)
 	{
 		$('#version').html(game.version);
-		$('#sound').html('<audio id="prompt-snd"></audio><audio id="end-snd"></audio>');
+		$('#sound').html('<audio id="prompt-snd" preload="auto"></audio><audio id="end-snd" preload="auto"></audio>');
 		document.getElementById('prompt-snd').src = data.prompt_sound;
+		document.getElementById('prompt-snd').load();
 		document.getElementById('end-snd').src = data.end_sound;
+		document.getElementById('end-snd').load();
 		_settingsFlags = data.flags;
 	});
 }
