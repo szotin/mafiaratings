@@ -60,6 +60,8 @@ class GeneralPageBase extends PageBase
 			$menu[] = new MenuItem('#site', get_label('Management'), NULL, array
 			(
 				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
+				new MenuItem('pairs.php' . $ccc, get_label('Pairs'), get_label('Global pair policies')),
+				new MenuItem(null, null, null),
 				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
 				new MenuItem('currencies.php' . $ccc, get_label('Currencies'), get_label('Manage currencies')),

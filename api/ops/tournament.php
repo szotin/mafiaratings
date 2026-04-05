@@ -154,7 +154,7 @@ function parse_id_from_url($url, $site_name)
 {
 	if (empty($url))
 	{
-		return NULL;
+		return null;
 	}
 	if (!is_null($url) && !is_numeric($url))
 	{
@@ -194,12 +194,12 @@ class ApiPage extends OpsApiPageBase
 		$fee = (int)get_optional_param('fee', -1);
 		if ($fee < 0)
 		{
-			$fee = NULL;
+			$fee = null;
 		}
 		$currency_id = (int)get_optional_param('currency_id', $club->currency_id);
 		if (!is_null($currency_id) && $currency_id <= 0)
 		{
-			$currency_id = NULL;
+			$currency_id = null;
 		}
 		$players = (int)get_optional_param('players', 0);
 		if ($players < 10)
@@ -210,11 +210,11 @@ class ApiPage extends OpsApiPageBase
 		$scoring_version = (int)get_optional_param('scoring_version', -1);
 		$normalizer_id = (int)get_optional_param('normalizer_id', -1);
 		$normalizer_version = (int)get_optional_param('normalizer_version', -1);
-		$scoring_options = json_decode(get_optional_param('scoring_options', NULL));
+		$scoring_options = json_decode(get_optional_param('scoring_options', null));
 		$scoring_options_str = json_encode($scoring_options);
 		$parent_series = json_decode(get_optional_param('parent_series', '[]'));
 		
-		if ($normalizer_id <= 0)
+		if ($normalizer_id < 0)
 		{
 			if ($scoring_id <= 0)
 			{
@@ -228,6 +228,11 @@ class ApiPage extends OpsApiPageBase
 		else if ($scoring_id <= 0)
 		{
 			list($scoring_id) = Db::record(get_label('club'), 'SELECT scoring_id FROM clubs WHERE id = ?', $club_id);
+		}
+		
+		if ($normalizer_id == 0)
+		{
+			$normalizer_id = null;
 		}
 		
 		if ($scoring_version < 0)
@@ -247,7 +252,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$langs = get_optional_param('langs', $club->langs);
-		$rules_code = get_optional_param('rules_code', NULL);
+		$rules_code = get_optional_param('rules_code', null);
 		
 		Db::begin();
 		
@@ -296,7 +301,7 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_ADDRESS, 'created', $log_details, $address_id, $club_id);
 	
 			$warning = load_map_info($address_id, '../../' . ADDRESS_PICS_DIR);
-			if ($warning != NULL)
+			if ($warning != null)
 			{
 				echo '<p>' . $warning . '</p>';
 			}
@@ -312,7 +317,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Tournament ends before or right after the start.'));
 		}
 		
-		if ($rules_code == NULL)
+		if ($rules_code == null)
 		{
 			$rules_code = $club->rules_code;
 		}
@@ -446,12 +451,12 @@ class ApiPage extends OpsApiPageBase
 		$fee = (int)get_optional_param('fee', $old_fee);
 		if (!is_null($fee) && $fee < 0)
 		{
-			$fee = NULL;
+			$fee = null;
 		}
 		$currency_id = (int)get_optional_param('currency_id', $old_currency_id);
 		if (!is_null($currency_id) && $currency_id <= 0)
 		{
-			$currency_id = NULL;
+			$currency_id = null;
 		}
 		$num_players = (int)get_optional_param('players', $old_num_players);
 		if ($num_players < 10)
@@ -464,8 +469,8 @@ class ApiPage extends OpsApiPageBase
 		$normalizer_version = get_optional_param('normalizer_version', -1);
 		if ($normalizer_id <= 0)
 		{
-			$normalizer_id = NULL;
-			$normalizer_version = NULL;
+			$normalizer_id = null;
+			$normalizer_version = null;
 		}
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
 		$type = (int)get_optional_param('type', $old_type);
@@ -590,7 +595,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		
 		// update parent series records
-		$parent_series = json_decode(get_optional_param('parent_series', NULL));
+		$parent_series = json_decode(get_optional_param('parent_series', null));
 		$parent_series_changed = false;
 		if (!is_null($parent_series))
 		{
@@ -626,7 +631,7 @@ class ApiPage extends OpsApiPageBase
 					}
 					if ($os->finals != $finals)
 					{
-						$finals_id = $finals ? $tournament_id : NULL;
+						$finals_id = $finals ? $tournament_id : null;
 						Db::exec(
 							get_label('sеriеs'), 
 							'UPDATE series SET finals_id = ? WHERE id = ?', $finals_id, $s->id);
@@ -909,7 +914,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = ((flags | ' . TOURNAMENT_FLAG_CANCELED . ') & ~' . TOURNAMENT_FLAG_FINISHED .') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_TOURNAMENT, 'canceled', NULL, $tournament_id, $club_id);
+			db_log(LOG_OBJECT_TOURNAMENT, 'canceled', null, $tournament_id, $club_id);
 		}
 		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
@@ -937,7 +942,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = (flags & ~' . (TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_FINISHED) . ') WHERE id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_TOURNAMENT, 'restored', NULL, $tournament_id, $club_id);
+			db_log(LOG_OBJECT_TOURNAMENT, 'restored', null, $tournament_id, $club_id);
 		}
 		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
@@ -958,7 +963,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$tournament_id = (int)get_required_param('tournament_id');
 		$log_details = new stdClass();
-		$prev_game_id = NULL;
+		$prev_game_id = null;
 		
 		Db::begin();
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
@@ -975,7 +980,7 @@ class ApiPage extends OpsApiPageBase
 			if ($row = $query->next())
 			{
 				list($game_id, $end_time) = $row;
-				$prev_game_id = NULL;
+				$prev_game_id = null;
 				$query = new DbQuery('SELECT id FROM games WHERE end_time < ? OR (end_time = ? AND id < ?) ORDER BY end_time DESC, id DESC', $end_time, $end_time, $game_id);
 				if ($row = $query->next())
 				{
@@ -1138,7 +1143,7 @@ class ApiPage extends OpsApiPageBase
 				}
 				Db::exec(get_label('round'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?', $round_start, $round_duration, $round_id);
 			}
-			db_log(LOG_OBJECT_TOURNAMENT, 'finished', NULL, $tournament_id, $club_id);
+			db_log(LOG_OBJECT_TOURNAMENT, 'finished', null, $tournament_id, $club_id);
 		}
 		Db::commit();
 	}
@@ -1160,7 +1165,7 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_required_param('tournament_id');
 		$user_id = (int)get_required_param('user_id');
 		$new_user_id = (int)get_optional_param('new_user_id', 0);
-		$nickname = get_optional_param('nick', NULL);
+		$nickname = get_optional_param('nick', null);
 		$changed = false;
 		
 		list($club_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
@@ -1175,7 +1180,7 @@ class ApiPage extends OpsApiPageBase
 		if ($user_id != $new_user_id)
 		{
 			list($user_name, $user_city_id, $user_rating) = Db::record(get_label('user'), 'SELECT nu.name, u.city_id, u.rating FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $new_user_id);
-			if ($nickname == NULL)
+			if ($nickname == null)
 			{
 				$nickname = $user_name; 
 			}
@@ -1202,7 +1207,7 @@ class ApiPage extends OpsApiPageBase
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
 			$changed = $changed || Db::affected_rows() > 0;
 		}
-		else if ($nickname != NULL)
+		else if ($nickname != null)
 		{
 			Db::exec(get_label('registration'), 'UPDATE event_regs eu JOIN events e ON eu.event_id = e.id SET eu.nickname = ? WHERE eu.user_id = ? AND e.tournament_id = ?', $nickname, $user_id, $tournament_id);
 			$changed = $changed || Db::affected_rows() > 0;
@@ -1273,7 +1278,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id IS NOT NULL)');
 			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		}
-		db_log(LOG_OBJECT_TOURNAMENT, 'rebuild_places', NULL, $tournament_id);
+		db_log(LOG_OBJECT_TOURNAMENT, 'rebuild_places', null, $tournament_id);
 		Db::commit();
 	}
 	
@@ -1292,12 +1297,12 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_required_param('tournament_id');
 		$user_id = (int)get_required_param('user_id');
 		$points = (double)get_optional_param('points', 0);
-		$bonus_points = get_optional_param('bonus_points', NULL);
-		$shot_points = get_optional_param('shot_points', NULL);
-		$games_count = get_optional_param('games_count', NULL);
+		$bonus_points = get_optional_param('bonus_points', null);
+		$shot_points = get_optional_param('shot_points', null);
+		$games_count = get_optional_param('games_count', null);
 		if (!is_null($games_count) && $games_count <= 0)
 		{
-			$games_count = NULL;
+			$games_count = null;
 		}
 		
 		$bp = is_null($bonus_points) ? 0 : $bonus_points;
@@ -1478,8 +1483,8 @@ class ApiPage extends OpsApiPageBase
 	{
 		$tournament_id = (int)get_required_param('tournament_id');
 		$series_id = (int)get_required_param('series_id');
-		$payment = get_optional_param('payment', NULL);
-		$not_payed = get_optional_param('not_payed', NULL);
+		$payment = get_optional_param('payment', null);
+		$not_payed = get_optional_param('not_payed', null);
 		
 		Db::begin();
 		list($club_id, $league_id, $series_fee, $old_series_flags, $old_payment, $num_players) = Db::record(get_label('tournament'), 
@@ -1495,7 +1500,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($payment < 0)
 		{
-			$payment = NULL;
+			$payment = null;
 		}
 		else
 		{
@@ -1503,7 +1508,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		if (!is_null($payment) && $payment == $num_players * $series_fee)
 		{
-			$payment = NULL;
+			$payment = null;
 		}
 		
 		$series_flags = $old_series_flags;
@@ -1555,14 +1560,14 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$owner_id = 0;
-		if ($_profile != NULL)
+		if ($_profile != null)
 		{
 			$owner_id = $_profile->user_id;
 		}
 		
 		$user_id = (int)get_optional_param('user_id', $owner_id);
 		$tournament_id = (int)get_required_param('tournament_id');
-		$team = get_optional_param('team', NULL);
+		$team = get_optional_param('team', null);
 		$city_id = (int)get_optional_param('city_id', 0);
 		$flags = (int)get_optional_param('access_flags', USER_PERM_PLAYER) & USER_PERM_MASK;
 		if ($flags == 0)
@@ -1573,7 +1578,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list ($user_city_id, $user_rating, $user_club_id) = Db::record(get_label('user'), 'SELECT city_id, rating, club_id FROM users WHERE id = ?', $user_id);
-		if ($city_id == NULL)
+		if ($city_id == null)
 		{
 			$city_id = $user_city_id;
 		}
@@ -1602,7 +1607,7 @@ class ApiPage extends OpsApiPageBase
 			list($old_team_id, $old_team, $old_flags, $old_city_id, $old_rating) = $row;
 			if (($tournament_flags & TOURNAMENT_FLAG_TEAM) != 0 && $team != $old_team)
 			{
-				if ($team == NULL || empty($team))
+				if ($team == null || empty($team))
 				{
 					Db::exec(get_label('registration'), 'UPDATE tournament_regs SET team_id = NULL, flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $flags, $city_id, $user_rating, $user_id, $tournament_id);
 				}
@@ -1634,8 +1639,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($tournament_flags & TOURNAMENT_FLAG_TEAM)
 		{
-			$team_id = NULL;
-			if ($team != NULL && !empty($team))
+			$team_id = null;
+			if ($team != null && !empty($team))
 			{
 				$query = new DbQuery('SELECT id FROM tournament_teams WHERE name = ?', $team);
 				if ($row = $query->next())
@@ -1651,7 +1656,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, team_id, city_id, rating) values (?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id, $city_id, $user_rating);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
-			if ($team_id != NULL)
+			if ($team_id != null)
 			{
 				$log_details->team = $team;
 			}
@@ -1696,7 +1701,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile, $_lang;
 		
 		$owner_id = 0;
-		if ($_profile != NULL)
+		if ($_profile != null)
 		{
 			$owner_id = $_profile->user_id;
 		}
@@ -1737,7 +1742,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if (($tournament_flags & TOURNAMENT_FLAG_TEAM) != 0 && $team != $old_team)
 		{
-			if ($team == NULL || empty($team))
+			if ($team == null || empty($team))
 			{
 				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET team_id = NULL WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 			}
@@ -1784,7 +1789,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$owner_id = 0;
-		if ($_profile != NULL)
+		if ($_profile != null)
 		{
 			$owner_id = $_profile->user_id;
 		}
