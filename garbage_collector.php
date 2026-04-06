@@ -253,6 +253,67 @@ class GarbageCollector extends Updater
 		$this->vars->club_id = $club_id;
 		return $count;
 	}
+	//-------------------------------------------------------------------------------------------------------
+	// GarbageCollector.log_files
+	//-------------------------------------------------------------------------------------------------------
+	function log_files_task($items_count)
+	{
+		if (!isset($this->vars->last_file))
+		{
+			$this->vars->last_file = '';
+		}
+
+		$logs_dir = 'logs';
+		$two_weeks_ago = time() - ONE_WEEK * 2;
+
+		if (!is_dir($logs_dir))
+		{
+			return 0;
+		}
+
+		$files = scandir($logs_dir, SCANDIR_SORT_ASCENDING);
+		if ($files === false)
+		{
+			return 0;
+		}
+
+		$count = 0;
+		foreach ($files as $file)
+		{
+			if ($file <= $this->vars->last_file)
+			{
+				continue;
+			}
+
+			if (!preg_match('/^\d{4}_\d{2}_\d{2}_\d{2}/', $file))
+			{
+				continue;
+			}
+
+			$year  = (int)substr($file, 0, 4);
+			$month = (int)substr($file, 5, 2);
+			$day   = (int)substr($file, 8, 2);
+			$hour  = (int)substr($file, 11, 2);
+			$file_time = mktime($hour, 0, 0, $month, $day, $year);
+
+			if ($file_time >= $two_weeks_ago)
+			{
+				break; // Files are sorted by date, remaining files are even newer
+			}
+
+			unlink($logs_dir . '/' . $file);
+			$this->log('Deleted log file: ' . $file);
+			$this->vars->last_file = $file;
+			++$count;
+
+			if ($count >= $items_count)
+			{
+				break;
+			}
+		}
+
+		return $count;
+	}
 }
 
 $updater = new GarbageCollector();
