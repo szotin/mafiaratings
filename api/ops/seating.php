@@ -233,6 +233,85 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('global', 'If 0 (default), the policy is deleted for this tournament/club/league only. If 1, it may be deleted at a broader scope depending on caller permissions.', '0');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// create
+	//-------------------------------------------------------------------------------------------------------
+	function create_op()
+	{
+		check_permissions(PERMISSION_USER);
+		
+		$players  = (int)get_required_param('players');
+		$tables   = (int)get_required_param('tables');
+		$games    = (int)get_required_param('games');
+		$restrictions_json = get_optional_param('restrictions', '[]');
+		$restrictions   = json_decode($restrictions_json, true);
+		if (!is_array($restrictions))
+		{
+			$restrictions = array();
+		}
+
+		$seatingDef = new SeatingDef($players, $tables, $games, $restrictions);
+		$seatingDef->normalizeRestrictions();
+		$hash = $seatingDef->hash;
+
+		Db::begin();
+		// If already exists, just return the hash.
+		$query = new DbQuery('SELECT hash FROM seatings WHERE hash = ?', $hash);
+		if (!$query->next())
+		{
+			$query = new DbQuery('SELECT seating, players_score, numbers_score, tables_score, players_max_score, numbers_max_score, tables_max_score FROM seatings WHERE hash LIKE(?)', $hash . '%');
+			if ($row = $query->next())
+			{
+				list ($seating_json, $players_score, $numbers_score, $tables_score, $players_max_score, $numbers_max_score, $tables_max_score) = $row;
+				echo get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.');
+			}
+			else
+			{
+				$seating = $seatingDef->generateInitialSeating();
+				$players_score = $players_max_score = $seatingDef->calculatePlayersScore($seating);
+				$numbers_score = $numbers_max_score = $seatingDef->calculateNumbersScore($seating); 
+				$tables_score = $tables_max_score = $seatingDef->calculateTablesScore($seating);
+				$seating_json = json_encode($seating);
+				echo get_label('We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.');
+			}
+			Db::exec(get_label('seating'), 
+				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score, players_max_score, numbers_max_score, tables_max_score)'.
+				' VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
+					$hash, $seating_json, $players_score, $numbers_score, $tables_score, $players_max_score, $numbers_max_score, $tables_max_score);
+		}
+		Db::commit();
+
+		$this->response['hash'] = $hash;
+	}
+
+	function create_op_help()
+	{
+		$help = new ApiHelp(0, 'Create a seating configuration.');
+		$help->request_param('players', 'Total number of players (min 10).');
+		$help->request_param('tables', 'Number of tables per round (min 1).');
+		$help->request_param('games', 'Number of games each player must play (min 1).');
+		$help->request_param('restrictions', 'JSON array of groups of player numbers that cannot sit together.', '[]');
+		$help->response_param('hash', 'Seating configuration hash (primary key).');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// delete
+	//-------------------------------------------------------------------------------------------------------
+	function delete_op()
+	{
+		check_permissions(PERMISSION_ADMIN);
+		$hash = get_required_param('hash');
+		Db::exec(get_label('seating'), 'DELETE FROM seatings WHERE hash = ?', $hash);
+	}
+
+	function delete_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_ADMIN, 'Delete a seating configuration.');
+		$help->request_param('hash', 'Seating configuration hash.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

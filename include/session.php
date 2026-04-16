@@ -8,7 +8,7 @@ require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/languages.php';
 require_once __DIR__ . '/localization.php';
 
-define('REQUEST_PROFILING', 2); // 0 - no profiling; 1 - profile stats to database; 2 - write every request to log file
+define('REQUEST_PROFILING', 0); // 0 - no profiling; 1 - profile stats to database; 2 - write every request to log file
 
 if (REQUEST_PROFILING == 2)
 {

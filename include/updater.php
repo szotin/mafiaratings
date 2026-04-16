@@ -76,7 +76,7 @@ function updaterErrorHandler($errno, $errstr, $errfile, $errline)
 //    }
 //
 //    // This optional function is called at the end of the task.
-//    function to_cube_task_start()
+//    function to_cube_task_end()
 //    {
 //       // Write down the results of the task execution
 //       ...
@@ -91,13 +91,17 @@ function updaterErrorHandler($errno, $errstr, $errfile, $errline)
 //    }
 //
 //    // This optional function is called at the end of the run.
-//    function to_cube_run_start()
+//    function to_cube_run_end()
 //    {
 //       // Do whatever you need at the end of the run
 //       ...
 //       $this->log('Run ended');
 //    }
 // }
+//
+// Options (set as protected properties in the subclass):
+//    $infiniteTasks (default: false) - if set to true, the updater will restart from the first task
+//       when all tasks are done and there is still time left, repeating indefinitely.
 //
 class Updater
 {
@@ -117,7 +121,8 @@ class Updater
 	private $task;
 	private $stats;
 	private $taskOnly;
-	
+
+	protected $infiniteTasks = false; // if true, restarts from the first task when all tasks are done
 	protected $vars; // vars class members keep their values during task execution, event in different runs
 	
 	public function __construct($file)
@@ -211,6 +216,39 @@ class Updater
 		set_time_limit($whole_exec_time);
 		$_updater = $this;
 		set_error_handler('updaterErrorHandler');
+	}
+	
+	protected function getArg($name)
+	{
+		if ($this->isWeb)
+		{
+			if (isset($_REQUEST[$name]))
+			{
+				return $_REQUEST[$name];
+			}
+		}
+		else if (isset($_SERVER['argv']))
+		{
+			$coming = false;
+			$name = '-' . $name;
+			foreach ($_SERVER['argv'] as $arg)
+			{
+				if ($coming)
+				{
+					return $arg;
+				}
+				else if ($arg == $name)
+				{
+					$coming = true;
+				}
+			}
+		}
+		return null;
+	}
+	
+	protected function gasArg($name)
+	{
+		return !is_null(getArg($name));
 	}
 	
 	public function errorHandler($errno, $errstr, $errfile, $errline)
@@ -373,16 +411,21 @@ class Updater
 		{
 			$this->onTaskEnd(true);
 		}
-		
+
 		if (is_null($this->taskOnly))
 		{
 			$methods = get_class_methods(get_class($this));
 			$next_one = is_null($this->task);
+			$first_task = null;
 			foreach ($methods as $method)
 			{
 				if (substr($method, -5) == '_task')
 				{
 					$task = substr($method, 0, -5);
+					if ($first_task === null)
+					{
+						$first_task = $task;
+					}
 					if ($next_one)
 					{
 						$this->task = $task;
@@ -396,6 +439,13 @@ class Updater
 					}
 				}
 			}
+			if ($this->infiniteTasks && $first_task !== null)
+			{
+				$this->task = $first_task;
+				$this->writeTask();
+				$this->onTaskStart(true);
+				return $this->task;
+			}
 		}
 		else if ($this->taskOnly != $this->task)
 		{
@@ -403,6 +453,13 @@ class Updater
 			{
 				throw new Exc('Task ' . $this->taskOnly . ' does not exist');
 			}
+			$this->task = $this->taskOnly;
+			$this->writeTask();
+			$this->onTaskStart(true);
+			return $this->task;
+		}
+		else if ($this->infiniteTasks)
+		{
 			$this->task = $this->taskOnly;
 			$this->writeTask();
 			$this->onTaskStart(true);
@@ -778,6 +835,12 @@ class Updater
 	public function timeLeft()
 	{
 		return $this->startTime + $this->maxExecTime - time();
+	}
+	
+	// returns number of items processed by current task
+	protected function itemsProcessed()
+	{
+		return $this->stats->current_run_items;
 	}
 }
 
