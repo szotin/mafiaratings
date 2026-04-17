@@ -65,3 +65,4 @@ js/game1-ui.js
 test.php
 include/api_keys.php
 logs/
+*.task.txt
