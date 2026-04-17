@@ -1903,10 +1903,12 @@ $labelMenu = array (
 'Player 2' => 'Игрок 2', // form/seating_create.php
 'Remove' => 'Удалить', // form/seating_create.php
 'Players must be at least 10.' => 'Игроков должно быть не меньше 10.', // form/seating_create.php
+'Players must be no more than 200.' => 'Игроков должно быть не больше 200.', // form/seating_create.php
 'Tables must be at least 1.' => 'Столов должно быть не меньше одного.', // form/seating_create.php
 'Games per player must be at least 1.' => 'Каждый игрок должен играть как минимум одну игру.', // form/seating_create.php
 'Team size must be at least 1.' => 'Размер команды должен быть не меньше 1 игрока.', // form/seating_create.php
 'Players count must be divisible by team size.' => 'Количество игроков должно быть кратно размеру команды.', // form/seating_create.php
+'Players count multiplied by games count must be divisible by 10.' => 'Количество игроков умноженное на количество игр должно делиться на десять.', // form/seating_create.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1922,7 +1924,11 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'Players count multiplied by games count must be divisible by 10.' => 'Количество игроков умноженное на количество игр должно делиться на десять.', // form/seating_create.php
+'Players opt level' => 'Оптимизация игроков', // seatings.php
+'Numbers opt level' => 'Оптимизация номеров', // seatings.php
+'Tables opt level' => 'Оптимизация столов', // seatings.php
+'infinite' => 'бесконечно', // form/run_script.php
+'use all allocated time' => 'использовать все отведённое время', // form/run_script.php
 );
 
 return $labelMenu;

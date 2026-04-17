@@ -13,7 +13,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 
 	echo '<tr><td width="220">' . get_label('Players') . ':</td>';
-	echo '<td><input type="number" id="form-players" value="20" min="10" style="width:80px"></td></tr>';
+	echo '<td><input type="number" id="form-players" value="20" min="10" max="200" style="width:80px"></td></tr>';
 
 	echo '<tr><td>' . get_label('Tables') . ':</td>';
 	echo '<td><input type="number" id="form-tables" value="2" min="1" style="width:80px"></td></tr>';
@@ -69,6 +69,11 @@ try
 		if (isNaN(players) || players < 10)
 		{
 			alert('<?php echo get_label('Players must be at least 10.'); ?>');
+			return;
+		}
+		if (players > 200)
+		{
+			alert('<?php echo get_label('Players must be no more than 200.'); ?>');
 			return;
 		}
 		if (isNaN(tables) || tables < 1)

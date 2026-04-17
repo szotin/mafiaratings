@@ -66,29 +66,37 @@ class Page extends GeneralPageBase
 			$seating->games   = (int)$parts[2];
 			$restriction_parts = array_slice($parts, 3);
 			$seating->restrictions = format_seating_restrictions($restriction_parts);
-			if ($players_max_score == 0)
+			if ($seating->players == 10)
 			{
-				$seating->players_opt_level = 1;
+				$seating->players_opt_level = '';
+			}
+			else if ($players_max_score == 0)
+			{
+				$seating->players_opt_level = '100%';
 			}
 			else
 			{
-				$seating->players_opt_level = 1 - min(max($players_score/$players_max_score, 0), 1);
+				$seating->players_opt_level = number_format((1 - min(max($players_score/$players_max_score, 0), 1)) * 100, 0) . '%';
 			}
 			if ($numbers_max_score == 0)
 			{
-				$seating->numbers_opt_level = 1;
+				$seating->numbers_opt_level = '100%';
 			}
 			else
 			{
-				$seating->numbers_opt_level = 1 - min(max($numbers_score/$numbers_max_score, 0), 1);
+				$seating->numbers_opt_level = number_format((1 - min(max($numbers_score/$numbers_max_score, 0), 1)) * 100, 0) . '%';
 			}
-			if ($tables_max_score == 0)
+			if ($seating->tables < 3)
 			{
-				$seating->tables_opt_level = 1;
+				$seating->tables_opt_level = '';
+			}
+			else if ($tables_max_score == 0)
+			{
+				$seating->tables_opt_level = '100%';
 			}
 			else
 			{
-				$seating->tables_opt_level = 1 - min(max($tables_score/$tables_max_score, 0), 1);
+				$seating->tables_opt_level = number_format((1 - min(max($tables_score/$tables_max_score, 0), 1)) * 100, 0) . '%';
 			}
 			$seatings[] = $seating;
 		}
@@ -136,9 +144,9 @@ class Page extends GeneralPageBase
 			echo '<td align="center">' . $seating->tables . '</td>';
 			echo '<td align="center">' . $seating->games . '</td>';
 			echo '<td>' . $seating->restrictions . '</td>';
-			echo '<td align="center">' . number_format($seating->players_opt_level * 100, 0) . '%</td>';
-			echo '<td align="center">' . number_format($seating->numbers_opt_level * 100, 0) . '%</td>';
-			echo '<td align="center">' . number_format($seating->tables_opt_level * 100, 0) . '%</td>';
+			echo '<td align="center">' . $seating->players_opt_level . '</td>';
+			echo '<td align="center">' . $seating->numbers_opt_level . '</td>';
+			echo '<td align="center">' . $seating->tables_opt_level . '</td>';
 			echo '</tr>';
 		}
 

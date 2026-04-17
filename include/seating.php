@@ -5,7 +5,7 @@ require_once __DIR__ . '/json.php';
 
 define('SEATING_MAX_PLAYERS_OPTIMIZATIONS', 1000000);
 define('SEATING_MAX_NUMBERS_OPTIMIZATIONS', 1000000);
-define('SEATING_MAX_TABLES_OPTIMIZATIONS', 100);
+define('SEATING_MAX_TABLES_OPTIMIZATIONS', 1000);
 
 define('PAIR_POLICY_SEPARATE', 0);
 define('PAIR_POLICY_AVOID', 1);
@@ -818,6 +818,11 @@ class SeatingDef
 			{
 				$diff = $expected - $numbers[$offset++];
 				$diff *= $diff;
+				if ($diff >= 1)
+				{
+					// echo 'Player: ' . $i . '; number: ' . ($j + 1) . ': diff: ' . $diff . '<br>';
+					$perfect = false;
+				}
 				switch ($j)
 				{
 				case 0:
@@ -831,10 +836,6 @@ class SeatingDef
 					break;
 				}
 				$score += $diff * 4; // 4 is the importance multiplier
-				if ($diff >= 1)
-				{
-					$perfect = false;
-				}
 			}
 		}
 		
@@ -851,11 +852,12 @@ class SeatingDef
 					$diff -= $numbers[$offset++];
 				}
 				$diff *= $diff;
-				$score += $diff * 2; // 2 is the importance multiplier
 				if ($diff >= 1)
 				{
+					// echo 'Player: ' . $i . '; number: ' . ($j + 1) . '-' . ($j + 2) . ': diff: ' . $diff . '<br>';
 					$perfect = false;
 				}
+				$score += $diff * 2; // 2 is the importance multiplier
 			}
 		}
 		
@@ -872,11 +874,12 @@ class SeatingDef
 					$diff -= $numbers[$offset++];
 				}
 				$diff *= $diff;
-				$score += $diff;
 				if ($diff >= 1)
 				{
+					// echo 'Player: ' . $i . '; number: ' . ($j == 0 ? '1-half' : '2-half') . ': diff: ' . $diff . '<br>';
 					$perfect = false;
 				}
+				$score += $diff;
 			}
 		}
 		
@@ -890,7 +893,7 @@ class SeatingDef
 	// returning 0 means we have found a perfect tables. There is no need to optimize it any more
 	public function calculateTablesScore($seating)
 	{
-		if ($this->tables < 2)
+		if ($this->tables < 3)
 		{
 			return 0;
 		}

@@ -38,7 +38,8 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td>Time limit:</td><td><input id="form-time" type="number" min="30" style="width: 45px;" step="30" value="180"></td></tr>';
-	echo '<tr><td colspan="2"><input id="form-once" type="checkbox"> run once</td></tr>';
+	echo '<tr><td>Number of runs:</td><td><input id="form-runs" type="number" min="1" step="1" value="1" style="width: 55px;"> <input id="form-runs-infinite" type="checkbox" onchange="runsInfiniteChange(this)"><label for="form-runs-infinite">' . get_label('infinite') . '</label></td></tr>';
+	echo '<tr><td colspan="2"><input id="form-loop" type="checkbox"> ' . get_label('use all allocated time') . '</td></tr>';
 	
 	echo '</table>';
 
@@ -48,19 +49,29 @@ try
 	function logLevelChange(radio)
 	{
 		logLevel = radio.value;
-	}	
+	}
+
+	function runsInfiniteChange(checkbox)
+	{
+		let input = $("#form-runs");
+		if (checkbox.checked)
+		{
+			input.data("saved", input.val()).val("").prop("disabled", true);
+		}
+		else
+		{
+			input.prop("disabled", false).val(input.data("saved") || 1);
+		}
+	}
 	
 	function commit(onSuccess)
 	{
 		let task = <?php echo $task ? '"'.$task.'"' : 'null'; ?>;
-		let url = "<?php echo $script; ?>" + ".php?log_level=" + logLevel + "&time=" + $("#form-time").val();
+		let runs = $("#form-runs-infinite").is(":checked") ? 0 : $("#form-runs").val();
+		let url = "<?php echo $script; ?>" + ".php?log_level=" + logLevel + "&time=" + $("#form-time").val() + "&runs=" + runs + "&loop=" + ($("#form-loop").is(":checked") ? 1 : 0);
 		if (task != null)
 		{
 			url += "&task=" + task;
-		}
-		if ($("#form-once").attr("checked"))
-		{
-			url += "&run_once";
 		}
 		window.location.assign(url);
 	}

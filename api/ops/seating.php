@@ -251,6 +251,10 @@ class ApiPage extends OpsApiPageBase
 			$restrictions = array();
 		}
 
+		if ($players > 200)
+		{
+			throw new Exc(get_label('Seatings with more than 200 players are not supproted.'));
+		}
 		$seatingDef = new SeatingDef($players, $tables, $games, $restrictions);
 		$seatingDef->normalizeRestrictions();
 		$hash = $seatingDef->hash;
@@ -276,8 +280,8 @@ class ApiPage extends OpsApiPageBase
 				echo get_label('We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.');
 			}
 			Db::exec(get_label('seating'), 
-				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score, players_max_score, numbers_max_score, tables_max_score)'.
-				' VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
+				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score, players_max_score, numbers_max_score, tables_max_score, players_state, numbers_state, tables_state)'.
+				' VALUES (?, ?, ?, ?, ?, ?, ?, ?, "", "", "")', 
 					$hash, $seating_json, $players_score, $numbers_score, $tables_score, $players_max_score, $numbers_max_score, $tables_max_score);
 		}
 		Db::commit();
@@ -288,7 +292,7 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(0, 'Create a seating configuration.');
-		$help->request_param('players', 'Total number of players (min 10).');
+		$help->request_param('players', 'Total number of players (min 10, max 200).');
 		$help->request_param('tables', 'Number of tables per round (min 1).');
 		$help->request_param('games', 'Number of games each player must play (min 1).');
 		$help->request_param('restrictions', 'JSON array of groups of player numbers that cannot sit together.', '[]');

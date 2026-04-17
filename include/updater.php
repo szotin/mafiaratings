@@ -100,7 +100,7 @@ function updaterErrorHandler($errno, $errstr, $errfile, $errline)
 // }
 //
 // Options (set as protected properties in the subclass):
-//    $infiniteTasks (default: false) - if set to true, the updater will restart from the first task
+//    $loopTasks (default: false) - if set to true, the updater will restart from the first task
 //       when all tasks are done and there is still time left, repeating indefinitely.
 //
 class Updater
@@ -122,7 +122,7 @@ class Updater
 	private $stats;
 	private $taskOnly;
 
-	protected $infiniteTasks = false; // if true, restarts from the first task when all tasks are done
+	protected $loopTasks = false; // if true, restarts from the first task when all tasks are done
 	protected $vars; // vars class members keep their values during task execution, event in different runs
 	
 	public function __construct($file)
@@ -167,11 +167,16 @@ class Updater
 			{
 				$this->taskOnly = $_REQUEST['task'];
 			}
+
+			if (isset($_REQUEST['loop']))
+			{
+				$this->loopTasks = (bool)$_REQUEST['loop'];
+			}
 		}
 		else
 		{
 			$whole_exec_time = 240;// 4 minutes
-			$expect_param = 0; // 1 - log_level; 2 - time; 3 - task
+			$expect_param = 0; // 1 - log_level; 2 - time; 3 - task; 4 - loop
 			if (isset($_SERVER['argv']))
 			{
 				foreach ($_SERVER['argv'] as $arg)
@@ -194,6 +199,10 @@ class Updater
 						$this->taskOnly = $arg;
 						$expect_param = 0;
 						break;
+					case 4: // loop
+						$this->loopTasks = (bool)$arg;
+						$expect_param = 0;
+						break;
 					default:
 						switch ($arg)
 						{
@@ -205,6 +214,9 @@ class Updater
 							break;
 						case '-task':
 							$expect_param = 3;
+							break;
+						case '-loop':
+							$expect_param = 4;
 							break;
 						}
 						break;
@@ -270,7 +282,7 @@ class Updater
 			{
 				initiate_session();
 				check_permissions(PERMISSION_ADMIN);
-				echo '<!DOCTYPE HTML><html><head><META content="text/html; charset=utf-8" http-equiv=Content-Type></head><body>';
+				echo '<!DOCTYPE HTML><html><head><META content="text/html; charset=utf-8" http-equiv=Content-Type><script src="js/common.js"></script></head><body>';
 			}
 			
 			$this->readTask();
@@ -304,18 +316,26 @@ class Updater
 			$this->onTaskEnd(false);
 			$this->writeTask();
 			
-			if ($this->isWeb)
-			{
-				if ($this->task != END_RUNNING && !isset($_REQUEST['run_once']))
-				{
-					echo '<script>window.location.reload();</script>';
-				}
-				echo '</body>';
-			}
-			
 			if ($this->task == END_RUNNING)
 			{
 				$this->log('Complete.', LOG_TO_SCREEN);
+			}
+			
+			if ($this->isWeb)
+			{
+				$runs = isset($_REQUEST['runs']) ? (int)$_REQUEST['runs'] : 0;
+				switch ($runs)
+				{
+				case 0:
+					echo '<script>window.location.reload();</script>';
+					break;
+				case 1:
+					break;
+				default:
+					echo '<script>goTo({runs:' . ($runs - 1) . '});</script>';
+					break;
+				}
+				echo '</body>';
 			}
 		}
 		catch (Exception $e)
@@ -439,7 +459,7 @@ class Updater
 					}
 				}
 			}
-			if ($this->infiniteTasks && $first_task !== null)
+			if ($this->loopTasks && $first_task !== null)
 			{
 				$this->task = $first_task;
 				$this->writeTask();
@@ -458,7 +478,7 @@ class Updater
 			$this->onTaskStart(true);
 			return $this->task;
 		}
-		else if ($this->infiniteTasks)
+		else if ($this->loopTasks)
 		{
 			$this->task = $this->taskOnly;
 			$this->writeTask();

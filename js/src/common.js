@@ -801,7 +801,11 @@ function getUrlWithParams(url, params)
 
 function goTo(url, params)
 {
-	window.location.replace(getUrlWithParams(url, params));
+	let target = getUrlWithParams(url, params);
+	if (target == window.location.href)
+		window.location.reload();
+	else
+		window.location.replace(target);
 }
 
 function refr()
