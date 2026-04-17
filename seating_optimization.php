@@ -107,6 +107,10 @@ class SeatingOptimization extends Updater
 			{
 				$this->_swap_current_players();
 			}
+			if (!$this->canDoOneMoreItem())
+			{
+				break;
+			}
 		}
 		return $count;
 	}
@@ -149,6 +153,7 @@ class SeatingOptimization extends Updater
 			}
 			$this->vars->score = $this->seatingDef->calculatePlayersScore($this->vars->seating);
 		}
+		$this->resetTimeStats();
 		if ($this->vars->hash != null)
 		{
 			$this->log($this->vars->hash);
@@ -310,6 +315,10 @@ class SeatingOptimization extends Updater
 			{
 				$this->_swap_current_tables();
 			}
+			if (!$this->canDoOneMoreItem())
+			{
+				break;
+			}
 		}
 		return $count;
 	}
@@ -349,6 +358,7 @@ class SeatingOptimization extends Updater
 			}
 			$this->vars->score = $this->seatingDef->calculateTablesScore($this->vars->seating);
 		}
+		$this->resetTimeStats();
 		if ($this->vars->hash != null)
 		{
 			$this->log($this->vars->hash);
@@ -491,6 +501,10 @@ class SeatingOptimization extends Updater
 			{
 				$this->_swap_current_numbers();
 			}
+			if (!$this->canDoOneMoreItem())
+			{
+				break;
+			}
 		}
 		return $count;
 	}
@@ -533,6 +547,7 @@ class SeatingOptimization extends Updater
 			
 			$this->vars->score = $this->seatingDef->calculateNumbersScore($this->vars->seating);
 		}
+		$this->resetTimeStats();
 		if ($this->vars->hash != null)
 		{
 			$this->log($this->vars->hash);
