@@ -792,6 +792,11 @@ class SeatingDef
 		return $score;
 	}
 	
+	public function worstPlayersScore()
+	{
+		return SeatingDef::worst_players_score($this->players, $this->tables, $this->games);
+	}
+	
 	// returning 0 means we have found a perfect numbers. There is no need to optimize it any more
 	public function calculateNumbersScore($seating)
 	{
@@ -890,6 +895,11 @@ class SeatingDef
 		return $score;
 	}
 	
+	public function worstNumbersScore()
+	{
+		return SeatingDef::worst_numbers_score($this->players, $this->tables, $this->games);
+	}
+	
 	// returning 0 means we have found a perfect tables. There is no need to optimize it any more
 	public function calculateTablesScore($seating)
 	{
@@ -932,6 +942,38 @@ class SeatingDef
 			$score = 0;
 		}
 		return $score;
+	}
+	
+	public function worstTablesScore()
+	{
+		return SeatingDef::worst_tables_score($this->players, $this->tables, $this->games);
+	}
+	
+	static function worst_players_score($players, $tables, $games)
+	{
+		$tens = floor($players / 10);
+		$expectation = $games * 9 / ($players - 1);
+		return 
+			$expectation * $expectation * 50 * $tens * ($tens - 1) +
+			($expectation - $games) * ($expectation - $games) * $tens * 45;
+	}
+	
+	static function worst_numbers_score($players, $tables, $games)
+	{
+		$e1 = $games / 10; // expected per single number
+		$e2 = $games / 5;  // expected per pair
+		$e3 = $games / 2;  // expected per half
+		// worst case: player always at position 0 (highest-weighted slot)
+		// part1 single numbers: 1296*e1² (pos0) + 12 + 28 + 8 = 1344*e1²
+		// part2 pairs: pair(0,1) gives 32*e2², four others give 8*e2² → 40*e2²
+		// part3 halves: 2*e3²
+		return $players * ($e1 * $e1 * 1344 + $e2 * $e2 * 40 + 2 * $e3 * $e3);
+	}
+
+	static function worst_tables_score($players, $tables, $games)
+	{
+		$expectation = $games / $tables;
+		return $players * ($expectation * $expectation * ($tables - 1) + ($expectation - $games) * ($expectation - $games));
 	}
 }
 

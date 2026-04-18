@@ -264,25 +264,25 @@ class ApiPage extends OpsApiPageBase
 		$query = new DbQuery('SELECT hash FROM seatings WHERE hash = ?', $hash);
 		if (!$query->next())
 		{
-			$query = new DbQuery('SELECT seating, players_score, numbers_score, tables_score, players_max_score, numbers_max_score, tables_max_score FROM seatings WHERE hash LIKE(?)', $hash . '%');
+			$query = new DbQuery('SELECT seating, players_score, numbers_score, tables_score FROM seatings WHERE hash LIKE(?)', $hash . '%');
 			if ($row = $query->next())
 			{
-				list ($seating_json, $players_score, $numbers_score, $tables_score, $players_max_score, $numbers_max_score, $tables_max_score) = $row;
+				list ($seating_json, $players_score, $numbers_score, $tables_score) = $row;
 				echo get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.');
 			}
 			else
 			{
 				$seating = $seatingDef->generateInitialSeating();
-				$players_score = $players_max_score = $seatingDef->calculatePlayersScore($seating);
-				$numbers_score = $numbers_max_score = $seatingDef->calculateNumbersScore($seating); 
-				$tables_score = $tables_max_score = $seatingDef->calculateTablesScore($seating);
+				$players_score = $seatingDef->calculatePlayersScore($seating);
+				$numbers_score = $seatingDef->calculateNumbersScore($seating);
+				$tables_score = $seatingDef->calculateTablesScore($seating);
 				$seating_json = json_encode($seating);
 				echo get_label('We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.');
 			}
-			Db::exec(get_label('seating'), 
-				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score, players_max_score, numbers_max_score, tables_max_score, players_state, numbers_state, tables_state)'.
-				' VALUES (?, ?, ?, ?, ?, ?, ?, ?, "", "", "")', 
-					$hash, $seating_json, $players_score, $numbers_score, $tables_score, $players_max_score, $numbers_max_score, $tables_max_score);
+			Db::exec(get_label('seating'),
+				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score, players_state, numbers_state, tables_state)'.
+				' VALUES (?, ?, ?, ?, ?, "", "", "")',
+					$hash, $seating_json, $players_score, $numbers_score, $tables_score);
 		}
 		Db::commit();
 

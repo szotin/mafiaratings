@@ -49,10 +49,10 @@ class Page extends GeneralPageBase
 		list($count) = Db::record(get_label('seating'), 'SELECT count(*) FROM seatings');
 
 		$seatings = array();
-		$query = new DbQuery('SELECT hash, players_score, players_max_score, numbers_score, numbers_max_score, tables_score, tables_max_score FROM seatings ORDER BY hash LIMIT ' . ((int)$_page * PAGE_SIZE) . ', ' . PAGE_SIZE);
+		$query = new DbQuery('SELECT hash, players_score, numbers_score, tables_score FROM seatings ORDER BY hash LIMIT ' . ((int)$_page * PAGE_SIZE) . ', ' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
-			list ($hash, $players_score, $players_max_score, $numbers_score, $numbers_max_score, $tables_score, $tables_max_score) = $row;
+			list ($hash, $players_score, $numbers_score, $tables_score) = $row;
 			$parts = explode('_', $hash);
 			if (count($parts) < 3)
 			{
@@ -66,6 +66,9 @@ class Page extends GeneralPageBase
 			$seating->games   = (int)$parts[2];
 			$restriction_parts = array_slice($parts, 3);
 			$seating->restrictions = format_seating_restrictions($restriction_parts);
+			$players_max_score = SeatingDef::worst_players_score($seating->players, $seating->tables, $seating->games);
+			$numbers_max_score = SeatingDef::worst_numbers_score($seating->players, $seating->tables, $seating->games);
+			$tables_max_score = SeatingDef::worst_tables_score($seating->players, $seating->tables, $seating->games);
 			if ($seating->players == 10)
 			{
 				$seating->players_opt_level = '';

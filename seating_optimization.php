@@ -211,9 +211,9 @@ class SeatingOptimization extends Updater
 			$tables_score = $seatingDef->calculateTablesScore($this->vars->seating);
 			Db::exec('seating', 
 				'UPDATE seatings SET players_state = ?, seating = ?, players_runs = players_runs + 1, players_full_runs = ?, players_score = ?'.
-				', numbers_runs = 0, numbers_full_runs = 0, numbers_void_runs = 0, numbers_state = "", numbers_score = ?, numbers_max_score = ?'.
-				', tables_runs = 0, tables_full_runs = 0, tables_void_runs = 0, tables_state = "", tables_score = ?, tables_max_score = ?'.
-				' WHERE hash = ?', $state, json_encode($this->vars->seating), $players_full_runs, $this->vars->score, $numbers_score, $numbers_score, $tables_score, $tables_score, $this->vars->hash);
+				', numbers_runs = 0, numbers_full_runs = 0, numbers_void_runs = 0, numbers_state = "", numbers_score = ?'.
+				', tables_runs = 0, tables_full_runs = 0, tables_void_runs = 0, tables_state = "", tables_score = ?'.
+				' WHERE hash = ?', $state, json_encode($this->vars->seating), $players_full_runs, $this->vars->score, $numbers_score, $tables_score, $this->vars->hash);
 		}
 		else
 		{
