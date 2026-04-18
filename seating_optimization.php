@@ -4,6 +4,7 @@ require_once 'include/updater.php';
 require_once 'include/seating.php';
 
 define('MAX_ITEMS_IN_RUN', 10000);
+define('SEATING_PLAYERS_SKIP_RUNS', 30);
 
 class SeatingOptimization extends Updater
 {
@@ -168,11 +169,12 @@ class SeatingOptimization extends Updater
 		}
 		
 		Db::begin();
-		list ($seating, $players_full_runs, $score) = Db::record('seating', 'SELECT seating, players_full_runs, players_score FROM seatings WHERE hash = ?', $this->vars->hash);
+		list ($seating, $players_full_runs, $score, $players_skip_runs) = Db::record('seating', 'SELECT seating, players_full_runs, players_score, players_skip_runs FROM seatings WHERE hash = ?', $this->vars->hash);
 		$seating = json_decode($seating);
-		
+
 		$this->log('Score: ' . $this->vars->score . '; Target: ' . $score);
-		if ($this->vars->current_round >= count($this->vars->seating))
+		$is_full_scan = ($this->vars->current_round >= count($this->vars->seating));
+		if ($is_full_scan)
 		{
 			++$players_full_runs;
 			$state = '';
@@ -193,12 +195,15 @@ class SeatingOptimization extends Updater
 				$players_full_runs = max($players_full_runs, 1); // We need to make sure it is greater than 0 for a perfect score, because number/table optimizers always wait until players optimizer make at least one full run. This is done to avoid numbers/tables optimizations to seatings that are often changing.
 			}
 		}
-		
-		
-		if ($this->vars->score < $score)
+
+		$counter_reached = ($players_skip_runs + 1 >= SEATING_PLAYERS_SKIP_RUNS);
+		$save_seating = ($this->vars->score < $score) && ($is_full_scan || $counter_reached);
+		$reset_counter = $is_full_scan || $counter_reached;
+
+		if ($save_seating)
 		{
 			$this->log('Success!');
-			
+
 			if (isset($this->seatingDef))
 			{
 				$seatingDef = $this->seatingDef;
@@ -209,16 +214,17 @@ class SeatingOptimization extends Updater
 			}
 			$numbers_score = $seatingDef->calculateNumbersScore($this->vars->seating);
 			$tables_score = $seatingDef->calculateTablesScore($this->vars->seating);
-			Db::exec('seating', 
-				'UPDATE seatings SET players_state = ?, seating = ?, players_runs = players_runs + 1, players_full_runs = ?, players_score = ?'.
+			Db::exec('seating',
+				'UPDATE seatings SET players_state = ?, seating = ?, players_runs = players_runs + 1, players_full_runs = ?, players_score = ?, players_skip_runs = 0'.
 				', numbers_runs = 0, numbers_full_runs = 0, numbers_void_runs = 0, numbers_state = "", numbers_score = ?'.
 				', tables_runs = 0, tables_full_runs = 0, tables_void_runs = 0, tables_state = "", tables_score = ?'.
 				' WHERE hash = ?', $state, json_encode($this->vars->seating), $players_full_runs, $this->vars->score, $numbers_score, $tables_score, $this->vars->hash);
 		}
 		else
 		{
-			Db::exec('seating', 
-				'UPDATE seatings SET players_state = ?, players_runs = players_runs + 1, players_full_runs = ?, players_void_runs = players_void_runs + 1'.
+			$skip_runs_expr = $reset_counter ? '0' : 'players_skip_runs + 1';
+			Db::exec('seating',
+				'UPDATE seatings SET players_state = ?, players_runs = players_runs + 1, players_full_runs = ?, players_void_runs = players_void_runs + 1, players_skip_runs = ' . $skip_runs_expr .
 				' WHERE hash = ?', $state, $players_full_runs, $this->vars->hash);
 		}
 		Db::commit();
