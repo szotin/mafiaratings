@@ -66,9 +66,9 @@ class Page extends GeneralPageBase
 			$seating->games   = (int)$parts[2];
 			$restriction_parts = array_slice($parts, 3);
 			$seating->restrictions = format_seating_restrictions($restriction_parts);
-			$players_max_score = SeatingDef::worst_players_score($seating->players, $seating->tables, $seating->games);
-			$numbers_max_score = SeatingDef::worst_numbers_score($seating->players, $seating->tables, $seating->games);
-			$tables_max_score = SeatingDef::worst_tables_score($seating->players, $seating->tables, $seating->games);
+			$players_max_score = SeatingDef::worst_acceptable_players_score($seating->players, $seating->tables, $seating->games);
+			$numbers_max_score = SeatingDef::worst_acceptable_numbers_score($seating->players, $seating->tables, $seating->games);
+			$tables_max_score = SeatingDef::worst_acceptable_tables_score($seating->players, $seating->tables, $seating->games);
 			if ($seating->players == 10)
 			{
 				$seating->players_opt_level = '';

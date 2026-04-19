@@ -975,6 +975,21 @@ class SeatingDef
 		$expectation = $games / $tables;
 		return $players * ($expectation * $expectation * ($tables - 1) + ($expectation - $games) * ($expectation - $games));
 	}
+	
+	static function worst_acceptable_players_score($players, $tables, $games)
+	{
+		return SeatingDef::worst_players_score($players, $tables, $games) * 4 / ($games + 2);
+	}
+	
+	static function worst_acceptable_numbers_score($players, $tables, $games)
+	{
+		return $players * 6;
+	}
+
+	static function worst_acceptable_tables_score($players, $tables, $games)
+	{
+		return SeatingDef::worst_tables_score($players, $tables, $games) / 2;
+	}
 }
 
 ?>
