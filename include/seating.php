@@ -983,12 +983,12 @@ class SeatingDef
 	
 	static function worst_acceptable_numbers_score($players, $tables, $games)
 	{
-		return $players * 6;
+		return $players * 12;
 	}
 
 	static function worst_acceptable_tables_score($players, $tables, $games)
 	{
-		return SeatingDef::worst_tables_score($players, $tables, $games) / 2;
+		return SeatingDef::worst_tables_score($players, $tables, $games) / 5;
 	}
 
 	// Renumbers free players (those not in any restriction group) in the seating

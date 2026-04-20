@@ -157,7 +157,6 @@ class SeatingOptimization extends Updater
 			}
 			$this->vars->score = $this->seatingDef->calculatePlayersScore($this->vars->seating);
 		}
-		$this->resetTimeStats();
 		if ($this->vars->hash != null)
 		{
 			$this->log($this->vars->hash);
@@ -368,7 +367,6 @@ class SeatingOptimization extends Updater
 			}
 			$this->vars->score = $this->seatingDef->calculateTablesScore($this->vars->seating);
 		}
-		$this->resetTimeStats();
 		if ($this->vars->hash != null)
 		{
 			$this->log($this->vars->hash);
@@ -563,7 +561,6 @@ class SeatingOptimization extends Updater
 			
 			$this->vars->score = $this->seatingDef->calculateNumbersScore($this->vars->seating);
 		}
-		$this->resetTimeStats();
 		if ($this->vars->hash != null)
 		{
 			$this->log($this->vars->hash);

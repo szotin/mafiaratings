@@ -281,7 +281,6 @@ class Updater
 			if ($this->isWeb)
 			{
 				initiate_session();
-				check_permissions(PERMISSION_ADMIN);
 				echo '<!DOCTYPE HTML><html><head><META content="text/html; charset=utf-8" http-equiv=Content-Type><script src="js/common.js"></script></head><body>';
 			}
 			
@@ -831,7 +830,7 @@ class Updater
 	{
 		$a = $this->getAverageItemTime();
 		$b = $this->getAverageConstTime();
-		return $a * $items_count + $b <= $this->timeLeft();
+		return max($a * $items_count + $b, $a) <= $this->timeLeft();
 	}
 
 	

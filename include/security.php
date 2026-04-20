@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/session.php';
 
+define('ANY_ID', -1);
+
 define('PERMISSION_EVERYONE',            0x000001); // Does not even have to login
 define('PERMISSION_USER',                0x000002); // Any logged-in user
 define('PERMISSION_OWNER',               0x000004); // An owner of the object represented by the page or API
@@ -33,10 +35,10 @@ define('PERMISSION_OFFSET_EVENT', 9);
 define('PERMISSION_OFFSET_TOURNAMENT', 12);
 define('PERMISSION_OFFSET_SERIES', 15);
 
-function get_profile_event_permissions($event_id)
+function get_profile_event_permissions($event_id, $required_mask = 0)
 {
 	global $_profile;
-	
+
 	if ($_profile != NULL)
 	{
 		if ($_profile->is_admin())
@@ -44,7 +46,21 @@ function get_profile_event_permissions($event_id)
 			return PERMISSION_MASK_EVENT;
 		}
 
-		if (is_numeric($event_id) && $event_id > 0)
+		if ($event_id == ANY_ID)
+		{
+			// $required_mask is already in PERMISSION_* space; convert to event_regs.flags space
+			$required_flags = ($required_mask & PERMISSION_MASK_EVENT) >> PERMISSION_OFFSET_EVENT;
+			$query = new DbQuery(
+				'SELECT er.flags FROM event_regs er JOIN events e ON e.id = er.event_id' .
+				' WHERE er.user_id = ? AND (e.flags & ?) = 0 AND (er.flags & ?) != 0 LIMIT 1',
+				$_profile->user_id, EVENT_FLAG_FINISHED | EVENT_FLAG_CANCELED, $required_flags);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags << PERMISSION_OFFSET_EVENT) & PERMISSION_MASK_EVENT;
+			}
+		}
+		else if (is_numeric($event_id) && $event_id > 0)
 		{
 			$query = new DbQuery('SELECT flags FROM event_regs WHERE event_id = ? AND user_id = ?', $event_id, $_profile->user_id);
 			if ($row = $query->next())
@@ -57,10 +73,10 @@ function get_profile_event_permissions($event_id)
 	return 0;
 }
 
-function get_profile_tournament_permissions($tournament_id)
+function get_profile_tournament_permissions($tournament_id, $required_mask = 0)
 {
 	global $_profile;
-	
+
 	if ($_profile != NULL)
 	{
 		if ($_profile->is_admin())
@@ -68,7 +84,20 @@ function get_profile_tournament_permissions($tournament_id)
 			return PERMISSION_MASK_TOURNAMENT;
 		}
 
-		if (is_numeric($tournament_id) && $tournament_id > 0)
+		if ($tournament_id == ANY_ID)
+		{
+			$required_flags = ($required_mask & PERMISSION_MASK_TOURNAMENT) >> PERMISSION_OFFSET_TOURNAMENT;
+			$query = new DbQuery(
+				'SELECT tr.flags FROM tournament_regs tr JOIN tournaments t ON t.id = tr.tournament_id' .
+				' WHERE tr.user_id = ? AND (t.flags & ?) = 0 AND (tr.flags & ?) != 0 LIMIT 1',
+				$_profile->user_id, TOURNAMENT_FLAG_FINISHED | TOURNAMENT_FLAG_CANCELED, $required_flags);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags << PERMISSION_OFFSET_TOURNAMENT) & PERMISSION_MASK_TOURNAMENT;
+			}
+		}
+		else if (is_numeric($tournament_id) && $tournament_id > 0)
 		{
 			$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $tournament_id, $_profile->user_id);
 			if ($row = $query->next())
@@ -81,10 +110,10 @@ function get_profile_tournament_permissions($tournament_id)
 	return 0;
 }
 
-function get_profile_series_permissions($series_id)
+function get_profile_series_permissions($series_id, $required_mask = 0)
 {
 	global $_profile;
-	
+
 	if ($_profile != NULL)
 	{
 		if ($_profile->is_admin())
@@ -92,7 +121,20 @@ function get_profile_series_permissions($series_id)
 			return PERMISSION_MASK_SERIES;
 		}
 
-		if (is_numeric($series_id) && $series_id > 0)
+		if ($series_id == ANY_ID)
+		{
+			$required_flags = ($required_mask & PERMISSION_MASK_SERIES) >> PERMISSION_OFFSET_SERIES;
+			$query = new DbQuery(
+				'SELECT su.flags FROM series_users su JOIN series s ON s.id = su.series_id' .
+				' WHERE su.user_id = ? AND (s.flags & ?) = 0 AND (su.flags & ?) != 0 LIMIT 1',
+				$_profile->user_id, SERIES_FLAG_FINISHED | SERIES_FLAG_CANCELED, $required_flags);
+			if ($row = $query->next())
+			{
+				list($flags) = $row;
+				return ($flags << PERMISSION_OFFSET_SERIES) & PERMISSION_MASK_SERIES;
+			}
+		}
+		else if (is_numeric($series_id) && $series_id > 0)
 		{
 			$query = new DbQuery('SELECT flags FROM series_users WHERE series_id = ? AND user_id = ?', $series_id, $_profile->user_id);
 			if ($row = $query->next())
@@ -183,42 +225,87 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0, $id4 = 0, $id5
 				break;
 				
 			case PERMISSION_CLUB_MEMBER:
-				if (isset($_profile->clubs[$club_id]))
+				if ($club_id == ANY_ID)
+				{
+					foreach ($_profile->clubs as $c)
+					{
+						if (($c->club_flags & CLUB_FLAG_CLOSED) == 0) return true;
+					}
+				}
+				else if (isset($_profile->clubs[$club_id]))
 				{
 					return true;
 				}
 				break;
-				
+
 			case PERMISSION_CLUB_REPRESENTATIVE:
-				if ($_profile->user_club_id == $club_id)
+				if ($club_id == ANY_ID)
+				{
+					if ($_profile->user_club_id && isset($_profile->clubs[$_profile->user_club_id]) &&
+						($_profile->clubs[$_profile->user_club_id]->club_flags & CLUB_FLAG_CLOSED) == 0)
+					{
+						return true;
+					}
+				}
+				else if ($_profile->user_club_id == $club_id)
 				{
 					return true;
 				}
 				break;
-				
+
 			case PERMISSION_CLUB_PLAYER:
-				if ($_profile->is_club_player($club_id))
+				if ($club_id == ANY_ID)
+				{
+					foreach ($_profile->clubs as $c)
+					{
+						if (($c->flags & USER_PERM_PLAYER) != 0 && ($c->club_flags & CLUB_FLAG_CLOSED) == 0) return true;
+					}
+				}
+				else if ($_profile->is_club_player($club_id))
 				{
 					return true;
 				}
 				break;
-				
+
 			case PERMISSION_CLUB_REFEREE:
-				if ($_profile->is_club_referee($club_id))
+				if ($club_id == ANY_ID)
+				{
+					foreach ($_profile->clubs as $c)
+					{
+						if (($c->flags & USER_PERM_REFEREE) != 0 && ($c->club_flags & CLUB_FLAG_CLOSED) == 0) return true;
+					}
+				}
+				else if ($_profile->is_club_referee($club_id))
 				{
 					return true;
 				}
 				break;
-				
+
 			case PERMISSION_CLUB_MANAGER:
-				if ($_profile->is_club_manager($club_id))
+				if ($club_id == ANY_ID)
+				{
+					foreach ($_profile->clubs as $c)
+					{
+						if (($c->flags & USER_PERM_MANAGER) != 0 && ($c->club_flags & CLUB_FLAG_CLOSED) == 0) return true;
+					}
+				}
+				else if ($_profile->is_club_manager($club_id))
 				{
 					return true;
 				}
 				break;
-				
+
 			case PERMISSION_LEAGUE_MANAGER:
-				if ($_profile->is_league_manager($league_id))
+				if ($league_id == ANY_ID)
+				{
+					$query = new DbQuery(
+						'SELECT count(*) FROM league_managers lm JOIN leagues l ON l.id = lm.league_id' .
+						' WHERE lm.user_id = ? AND (l.flags & ?) = 0',
+						$_profile->user_id, LEAGUE_FLAG_CLOSED);
+					list($cnt) = $query->next();
+					if ($cnt > 0) return true;
+				}
+				else if ($_profile->is_league_manager($league_id))
 				{
 					return true;
 				}
@@ -227,39 +314,69 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0, $id4 = 0, $id5
 			case PERMISSION_EVENT_PLAYER:
 			case PERMISSION_EVENT_REFEREE:
 			case PERMISSION_EVENT_MANAGER:
-				if ($event_permissions < 0)
+				if ($event_id == ANY_ID)
 				{
-					$event_permissions = get_profile_event_permissions($event_id);
+					if ((get_profile_event_permissions(ANY_ID, $flag) & $flag) != 0)
+					{
+						return true;
+					}
 				}
-				if (($event_permissions & $flag) != 0)
+				else
 				{
-					return true;
+					if ($event_permissions < 0)
+					{
+						$event_permissions = get_profile_event_permissions($event_id);
+					}
+					if (($event_permissions & $flag) != 0)
+					{
+						return true;
+					}
 				}
 				break;
 
 			case PERMISSION_TOURNAMENT_PLAYER:
 			case PERMISSION_TOURNAMENT_REFEREE:
 			case PERMISSION_TOURNAMENT_MANAGER:
-				if ($tournament_permissions < 0)
+				if ($tournament_id == ANY_ID)
 				{
-					$tournament_permissions = get_profile_tournament_permissions($tournament_id);
+					if ((get_profile_tournament_permissions(ANY_ID, $flag) & $flag) != 0)
+					{
+						return true;
+					}
 				}
-				if (($tournament_permissions & $flag) != 0)
+				else
 				{
-					return true;
+					if ($tournament_permissions < 0)
+					{
+						$tournament_permissions = get_profile_tournament_permissions($tournament_id);
+					}
+					if (($tournament_permissions & $flag) != 0)
+					{
+						return true;
+					}
 				}
 				break;
-				
+
 			case PERMISSION_SERIES_PLAYER:
 			case PERMISSION_SERIES_REFEREE:
 			case PERMISSION_SERIES_MANAGER:
-				if ($series_permissions < 0)
+				if ($series_id == ANY_ID)
 				{
-					$series_permissions = get_profile_series_permissions($series_id);
+					if ((get_profile_series_permissions(ANY_ID, $flag) & $flag) != 0)
+					{
+						return true;
+					}
 				}
-				if (($series_permissions & $flag) != 0)
+				else
 				{
-					return true;
+					if ($series_permissions < 0)
+					{
+						$series_permissions = get_profile_series_permissions($series_id);
+					}
+					if (($series_permissions & $flag) != 0)
+					{
+						return true;
+					}
 				}
 				break;
 		}
