@@ -226,8 +226,9 @@ class SeatingOptimization extends Updater
 		else
 		{
 			$skip_runs_expr = $reset_counter ? '0' : 'players_skip_runs + 1';
+			$void_runs_expr = ($this->vars->score - $score >= SEATING_SCORE_MIN_IMPROVEMENT) ? 'players_void_runs + 1' : 'players_void_runs';
 			Db::exec('seating',
-				'UPDATE seatings SET players_state = ?, players_runs = players_runs + 1, players_full_runs = ?, players_void_runs = players_void_runs + 1, players_skip_runs = ' . $skip_runs_expr .
+				'UPDATE seatings SET players_state = ?, players_runs = players_runs + 1, players_full_runs = ?, players_void_runs = ' . $void_runs_expr . ', players_skip_runs = ' . $skip_runs_expr .
 				' WHERE hash = ?', $state, $players_full_runs, $this->vars->hash);
 		}
 		Db::commit();
@@ -416,8 +417,9 @@ class SeatingOptimization extends Updater
 		else
 		{
 			$skip_runs_expr = $reset_counter ? '0' : 'tables_skip_runs + 1';
+			$void_runs_expr = ($this->vars->score - $score >= SEATING_SCORE_MIN_IMPROVEMENT) ? 'tables_void_runs + 1' : 'tables_void_runs';
 			Db::exec('seating',
-				'UPDATE seatings SET tables_state = ?, tables_runs = tables_runs + 1, tables_full_runs = ?, tables_void_runs = tables_void_runs + 1, tables_skip_runs = ' . $skip_runs_expr .
+				'UPDATE seatings SET tables_state = ?, tables_runs = tables_runs + 1, tables_full_runs = ?, tables_void_runs = ' . $void_runs_expr . ', tables_skip_runs = ' . $skip_runs_expr .
 				' WHERE hash = ?', $state, $tables_full_runs, $this->vars->hash);
 		}
 		Db::commit();
@@ -611,8 +613,9 @@ class SeatingOptimization extends Updater
 		else
 		{
 			$skip_runs_expr = $reset_counter ? '0' : 'numbers_skip_runs + 1';
+			$void_runs_expr = ($this->vars->score - $score >= SEATING_SCORE_MIN_IMPROVEMENT) ? 'numbers_void_runs + 1' : 'numbers_void_runs';
 			Db::exec('seating',
-				'UPDATE seatings SET numbers_state = ?, numbers_runs = numbers_runs + 1, numbers_full_runs = ?, numbers_void_runs = numbers_void_runs + 1, numbers_skip_runs = ' . $skip_runs_expr .
+				'UPDATE seatings SET numbers_state = ?, numbers_runs = numbers_runs + 1, numbers_full_runs = ?, numbers_void_runs = ' . $void_runs_expr . ', numbers_skip_runs = ' . $skip_runs_expr .
 				' WHERE hash = ?', $state, $numbers_full_runs, $this->vars->hash);
 		}
 		Db::commit();

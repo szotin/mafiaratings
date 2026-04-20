@@ -15,7 +15,7 @@ $labelMenu = array (
 'I am bringing' => 'Я привожу', // form/event_attend.php
 'friends with me.' => 'друга(зей).', // form/event_attend.php
 'My nickname for this event is' => 'Мой псевдоним для игрового дня', // form/event_attend.php
-'Cancel' => 'Отменить', // album_edit.php, create_album.php, tag_user.php
+'Cancel' => 'Отменить', // album_edit.php, create_album.php, seating.php, tag_user.php
 'Clubs' => 'Клубы', // clubs.php, league_main.php, menu.php, menu.php, user_clubs.php, include/general_page_base.php, include/league.php, include/user.php, api/control/ccc.php, form/account_edit.php
 'Status' => 'Статус', // event_mailings.php
 'Your email has expired.' => 'Ваше письмо устарело.', // email_request.php
@@ -1909,6 +1909,11 @@ $labelMenu = array (
 'Team size must be at least 1.' => 'Размер команды должен быть не меньше 1 игрока.', // form/seating_create.php
 'Players count must be divisible by team size.' => 'Количество игроков должно быть кратно размеру команды.', // form/seating_create.php
 'Players count multiplied by games count must be divisible by 10.' => 'Количество игроков умноженное на количество игр должно делиться на десять.', // form/seating_create.php
+'Players opt level' => 'Оптимизация игроков', // seatings.php
+'Numbers opt level' => 'Оптимизация номеров', // seatings.php
+'Tables opt level' => 'Оптимизация столов', // seatings.php
+'infinite' => 'бесконечно', // form/run_script.php
+'use all allocated time' => 'использовать все отведённое время', // form/run_script.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1924,11 +1929,10 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'Players opt level' => 'Оптимизация игроков', // seatings.php
-'Numbers opt level' => 'Оптимизация номеров', // seatings.php
-'Tables opt level' => 'Оптимизация столов', // seatings.php
-'infinite' => 'бесконечно', // form/run_script.php
-'use all allocated time' => 'использовать все отведённое время', // form/run_script.php
+'Quality' => 'Качество', // seating.php
+'Optimize' => 'Оптимизировать', // seating.php
+'Optimization time (minutes)' => 'Время оптимизации в минутах', // seating.php
+'Seatings with more than 200 players are not supproted.' => 'Рассадки на более, чем 200 игроков не поддерживаются.', // api/ops/seating.php
 );
 
 return $labelMenu;
