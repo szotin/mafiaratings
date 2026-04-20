@@ -255,6 +255,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Seatings with more than 200 players are not supproted.'));
 		}
+		if ($tables > intdiv($players, 10))
+		{
+			throw new Exc(get_label('[0] players cannot be seated at [1] tables.', $players, $tables));
+		}
 		$seatingDef = new SeatingDef($players, $tables, $games, $restrictions);
 		$seatingDef->normalizeRestrictions();
 		$hash = $seatingDef->hash;

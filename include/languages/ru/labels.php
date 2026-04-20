@@ -1914,6 +1914,10 @@ $labelMenu = array (
 'Tables opt level' => 'Оптимизация столов', // seatings.php
 'infinite' => 'бесконечно', // form/run_script.php
 'use all allocated time' => 'использовать все отведённое время', // form/run_script.php
+'Quality' => 'Качество', // seating.php
+'Optimize' => 'Оптимизировать', // seating.php
+'Optimization time (minutes)' => 'Время оптимизации в минутах', // seating.php
+'Seatings with more than 200 players are not supproted.' => 'Рассадки на более, чем 200 игроков не поддерживаются.', // api/ops/seating.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1929,10 +1933,7 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'Quality' => 'Качество', // seating.php
-'Optimize' => 'Оптимизировать', // seating.php
-'Optimization time (minutes)' => 'Время оптимизации в минутах', // seating.php
-'Seatings with more than 200 players are not supproted.' => 'Рассадки на более, чем 200 игроков не поддерживаются.', // api/ops/seating.php
+'[0] players cannot be seated at [1] tables.' => 'Невозможно усадить [0] игрок(a/ов) за [1] стол(а/ов).', // api/ops/seating.php, form/seating_create.php
 );
 
 return $labelMenu;

@@ -13,10 +13,10 @@ try
 	echo '<table class="dialog_form" width="100%">';
 
 	echo '<tr><td width="220">' . get_label('Players') . ':</td>';
-	echo '<td><input type="number" id="form-players" value="20" min="10" max="200" style="width:80px"></td></tr>';
+	echo '<td><input type="number" id="form-players" value="20" min="10" max="200" style="width:80px" oninput="onPlayersChanged()"></td></tr>';
 
 	echo '<tr><td>' . get_label('Tables') . ':</td>';
-	echo '<td><input type="number" id="form-tables" value="2" min="1" style="width:80px"></td></tr>';
+	echo '<td><input type="number" id="form-tables" value="2" min="1" max="2" style="width:80px"></td></tr>';
 
 	echo '<tr><td>' . get_label('Games per player') . ':</td>';
 	echo '<td><input type="number" id="form-games" value="10" min="1" style="width:80px"></td></tr>';
@@ -40,6 +40,22 @@ try
 ?>
 	<script>
 	var pairCount = 0;
+
+	function onPlayersChanged()
+	{
+		var players = parseInt($('#form-players').val());
+		if (isNaN(players) || players < 10)
+		{
+			return;
+		}
+		var maxTables = Math.floor(players / 10);
+		$('#form-tables').attr('max', maxTables);
+		var tables = parseInt($('#form-tables').val());
+		if (!isNaN(tables) && tables > maxTables)
+		{
+			$('#form-tables').val(maxTables);
+		}
+	}
 
 	function addPair()
 	{
@@ -79,6 +95,11 @@ try
 		if (isNaN(tables) || tables < 1)
 		{
 			alert('<?php echo get_label('Tables must be at least 1.'); ?>');
+			return;
+		}
+		if (tables > Math.floor(players / 10))
+		{
+			alert(parseLabel('<?php echo get_label('[0] players cannot be seated at [1] tables.'); ?>', players, tables));
 			return;
 		}
 		if (isNaN(games) || games < 1)

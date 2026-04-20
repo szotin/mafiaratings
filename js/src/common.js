@@ -973,3 +973,41 @@ function dateToStr(date, withTime)
 }
 
 // function printStackTrace() { console.log((new Error('stack trace')).stack); }
+
+// Mirrors PHP get_label() but uses the first argument as the template string as-is (no label lookup).
+// Example: parseLabel('Hi [1]! You scored [0] points!', 40, 'Vasya') => 'Hi Vasya! You scored 40 points!'
+function parseLabel(label)
+{
+	if (arguments.length <= 1)
+	{
+		return label;
+	}
+	var args = arguments;
+	var result = '';
+	var end = 0;
+	var beg;
+	while ((beg = label.indexOf('[', end)) !== -1)
+	{
+		result += label.slice(end, beg);
+		beg++;
+		var close = label.indexOf(']', beg);
+		if (close === -1)
+		{
+			result += label.slice(beg - 1);
+			return result;
+		}
+		var index = label.slice(beg, close);
+		if (/^\d+$/.test(index) && +index >= 0 && +index < args.length - 1)
+		{
+			result += args[+index + 1];
+			end = close + 1;
+		}
+		else
+		{
+			result += '[';
+			end = beg;
+		}
+	}
+	result += label.slice(end);
+	return result;
+}

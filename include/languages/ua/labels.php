@@ -1914,6 +1914,10 @@ $labelMenu = array (
 'Players count multiplied by games count must be divisible by 10.' => '[EMPTY]', // form/seating_create.php, form/seating_create.php
 'infinite' => '[EMPTY]', // form/run_script.php, form/run_script.php
 'use all allocated time' => '[EMPTY]', // form/run_script.php, form/run_script.php
+'Quality' => '[EMPTY]', // seating.php, seating.php
+'Optimize' => '[EMPTY]', // seating.php, seating.php
+'Optimization time (minutes)' => '[EMPTY]', // seating.php, seating.php
+'Seatings with more than 200 players are not supproted.' => '[EMPTY]', // api/ops/seating.php, api/ops/seating.php
 'town\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => '[EMPTY]', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => '[EMPTY]', // event_screen.php, event_screen.php
@@ -1929,10 +1933,7 @@ $labelMenu = array (
 'During don\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'During sheriff\'s check' => '[EMPTY]', // game_obs.php, game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => '[EMPTY]', // form/account_edit.php, form/account_edit.php
-'Quality' => '[EMPTY]', // seating.php
-'Optimize' => '[EMPTY]', // seating.php
-'Optimization time (minutes)' => '[EMPTY]', // seating.php
-'Seatings with more than 200 players are not supproted.' => '[EMPTY]', // api/ops/seating.php
+'Tables must be no more than players divided by 10.' => '[EMPTY]', // api/ops/seating.php, form/seating_create.php
 );
 
 return $labelMenu;
