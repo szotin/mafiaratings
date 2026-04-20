@@ -111,7 +111,7 @@ class Page extends GeneralPageBase
 		// Header row: "+" create button + column headers.
 		echo '<tr class="darker">';
 		echo '<td width="80" align="center">';
-		if (is_permitted(PERMISSION_USER))
+		if (is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID))
 		{
 			echo '<button class="icon" onclick="createSeating()" title="' . get_label('Create new seating') . '">';
 			echo '<img src="images/create.png" border="0">';

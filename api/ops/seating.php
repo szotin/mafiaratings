@@ -239,7 +239,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		check_permissions(PERMISSION_USER);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID);
 		
 		$players  = (int)get_required_param('players');
 		$tables   = (int)get_required_param('tables');

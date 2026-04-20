@@ -27,6 +27,8 @@ class Page extends GeneralPageBase
 		{
 			$this->highlight = (int)$_REQUEST['hlt'];
 		}
+
+		$this->can_optimize = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID);
 	}
 
 	private function getPlayerName($player_index)
@@ -170,8 +172,32 @@ class Page extends GeneralPageBase
 		}
 	}
 
+	private function showOptLevelBar($percent, $task)
+	{
+		$pct = round($percent);
+		echo '<p><div style="display:flex;align-items:center;gap:8px;">';
+		echo '<span style="white-space:nowrap;">' . get_label('Quality') . ':</span>';
+		echo '<div style="position:relative;flex:1;height:24px;line-height:24px;overflow:hidden;">';
+		if ($pct > 0)
+		{
+			echo '<img src="images/red_dot.png" style="position:absolute;left:0;top:0;width:' . $pct . '%;height:24px;opacity:0.6;">';
+		}
+		if ($pct < 100)
+		{
+			echo '<img src="images/black_dot.png" style="position:absolute;left:' . $pct . '%;top:0;width:' . (100 - $pct) . '%;height:24px;opacity:0.6;">';
+		}
+		echo '<b style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';
+		echo '</div>';
+		if ($this->can_optimize)
+		{
+			echo '<button onclick="startOptimization(\'' . $task . '\')">' . get_label('Optimize') . '</button>';
+		}
+		echo '</div></p>';
+	}
+
 	private function showTableStats()
 	{
+		if (!is_null($this->tables_pct)) $this->showOptLevelBar($this->tables_pct, 'tables');
 		// Count how many games each player plays at each table.
 		$pl = array();
 		for ($i = 0; $i < $this->num_tables; $i++)
@@ -218,6 +244,7 @@ class Page extends GeneralPageBase
 
 	private function showPvpStats()
 	{
+		if (!is_null($this->players_pct)) $this->showOptLevelBar($this->players_pct, 'players');
 		// Build player list and count shared games.
 		$pl = array();
 		for ($i = 0; $i < $this->num_tables; $i++)
@@ -356,6 +383,7 @@ class Page extends GeneralPageBase
 
 	private function showNumbersStats()
 	{
+		if (!is_null($this->numbers_pct)) $this->showOptLevelBar($this->numbers_pct, 'numbers');
 		// Count how many times each player sat at each seat number.
 		$pl = array();
 		for ($i = 0; $i < $this->num_tables; $i++)
@@ -410,7 +438,7 @@ class Page extends GeneralPageBase
 			return;
 		}
 
-		$query = new DbQuery('SELECT seating FROM seatings WHERE hash = ?', $this->hash);
+		$query = new DbQuery('SELECT seating, players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $this->hash);
 		$row = $query->next();
 		if (!$row)
 		{
@@ -418,7 +446,8 @@ class Page extends GeneralPageBase
 			return;
 		}
 
-		$seating_data = json_decode($row[0], true);
+		list ($seating_json, $players_score, $numbers_score, $tables_score) = $row;
+		$seating_data = json_decode($seating_json, true);
 		if (!is_array($seating_data) || count($seating_data) === 0)
 		{
 			echo '<p>' . get_label('Seating data is empty.') . '</p>';
@@ -474,12 +503,25 @@ class Page extends GeneralPageBase
 		$this->all_players = $all_players;
 
 		// Parse hash for display info.
-		$players = isset($parts[0]) ? (int)$parts[0] : '?';
-		$tables  = isset($parts[1]) ? (int)$parts[1] : '?';
-		$games   = isset($parts[2]) ? (int)$parts[2] : '?';
+		$players = isset($parts[0]) ? (int)$parts[0] : 0;
+		$tables  = isset($parts[1]) ? (int)$parts[1] : 0;
+		$games   = isset($parts[2]) ? (int)$parts[2] : 0;
 		echo '<p>' . get_label('Players') . ': <b>' . $players . '</b> &nbsp; ';
 		echo get_label('Tables') . ': <b>' . $tables . '</b> &nbsp; ';
 		echo get_label('Games per player') . ': <b>' . $games . '</b></p>';
+
+		// Pre-compute optimization level percentages (same formula as seatings.php).
+		$calc_pct = function($score, $max_score) {
+			if ($max_score <= 0) return 100.0;
+			return (1 - min(max($score / $max_score, 0), 1)) * 100;
+		};
+		$this->players_pct = ($players > 10)
+			? $calc_pct($players_score, SeatingDef::worst_acceptable_players_score($players, $tables, $games))
+			: null;
+		$this->numbers_pct = $calc_pct($numbers_score, SeatingDef::worst_acceptable_numbers_score($players, $tables, $games));
+		$this->tables_pct  = ($tables >= 3)
+			? $calc_pct($tables_score, SeatingDef::worst_acceptable_tables_score($players, $tables, $games))
+			: null;
 
 		// Highlight selector.
 		$hlt = $this->highlight;
@@ -519,14 +561,48 @@ class Page extends GeneralPageBase
 			$this->showNumbersStats();
 			break;
 		}
+
+		echo '<div id="opt-dialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">';
+		echo '<div class="bordered light" style="background:white;padding:20px;min-width:280px;">';
+		echo '<p>' . get_label('Optimization time (minutes)') . ':</p>';
+		echo '<p><input type="number" id="opt-minutes" value="60" min="3" max="120" step="3" style="width:100%;font-size:1.2em;"></p>';
+		echo '<p style="text-align:right;">';
+		echo '<button onclick="cancelOptimization()" style="margin-right:8px;">' . get_label('Cancel') . '</button>';
+		echo '<button onclick="confirmOptimization()">OK</button>';
+		echo '</p></div></div>';
 	}
 
 	protected function js()
 	{
+		$hash = addslashes($this->hash);
 ?>
 		function highlight(playerIndex)
 		{
 			goTo({hlt: playerIndex});
+		}
+
+		var _opt_task = '';
+
+		function startOptimization(task)
+		{
+			_opt_task = task;
+			document.getElementById('opt-minutes').value = 60;
+			document.getElementById('opt-dialog').style.display = 'flex';
+		}
+
+		function cancelOptimization()
+		{
+			document.getElementById('opt-dialog').style.display = 'none';
+		}
+
+		function confirmOptimization()
+		{
+			var minutes = parseInt(document.getElementById('opt-minutes').value, 10);
+			if (isNaN(minutes) || minutes < 3) minutes = 3;
+			if (minutes > 120) minutes = 120;
+			document.getElementById('opt-dialog').style.display = 'none';
+			var runs = Math.round(minutes / 3);
+			window.open('seating_optimization.php?log_level=info&time=180&runs=' + runs + '&loop=1&task=' + _opt_task + '&hash=<?php echo $hash; ?>', '_blank');
 		}
 <?php
 	}
