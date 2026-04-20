@@ -215,6 +215,7 @@ class SeatingOptimization extends Updater
 			{
 				$seatingDef = new SeatingDef($this->vars->hash);
 			}
+			$this->vars->seating = $seatingDef->renumberByDistribution($this->vars->seating);
 			$numbers_score = $seatingDef->calculateNumbersScore($this->vars->seating);
 			$tables_score = $seatingDef->calculateTablesScore($this->vars->seating);
 			Db::exec('seating',

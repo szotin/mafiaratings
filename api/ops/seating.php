@@ -273,6 +273,7 @@ class ApiPage extends OpsApiPageBase
 			else
 			{
 				$seating = $seatingDef->generateInitialSeating();
+				$seating = $seatingDef->renumberByDistribution($seating);
 				$players_score = $seatingDef->calculatePlayersScore($seating);
 				$numbers_score = $seatingDef->calculateNumbersScore($seating);
 				$tables_score = $seatingDef->calculateTablesScore($seating);

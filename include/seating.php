@@ -990,6 +990,114 @@ class SeatingDef
 	{
 		return SeatingDef::worst_tables_score($players, $tables, $games) / 2;
 	}
+
+	// Renumbers free players (those not in any restriction group) in the seating
+	// so that players with better meeting distribution (lower SSQ) get lower numbers.
+	// Restricted players keep their current indices unchanged.
+	// Returns a new seating with renumbered players.
+	function renumberByDistribution($seating)
+	{
+		// Collect restricted player indices
+		$restricted = array();
+		foreach ($this->restrictions as $group)
+		{
+			foreach ($group as $p)
+			{
+				$restricted[$p] = true;
+			}
+		}
+
+		// Collect free player indices (sorted ascending)
+		$free_indices = array();
+		for ($p = 0; $p < $this->players; ++$p)
+		{
+			if (!isset($restricted[$p]))
+			{
+				$free_indices[] = $p;
+			}
+		}
+
+		if (count($free_indices) <= 1)
+		{
+			$mapping = array();
+			for ($p = 0; $p < $this->players; ++$p)
+			{
+				$mapping[$p] = $p;
+			}
+			return $mapping;
+		}
+
+		// Count meetings between all pairs of players across all games
+		$meetings = array_fill(0, $this->players * $this->players, 0);
+		foreach ($seating as $round)
+		{
+			foreach ($round as $table)
+			{
+				for ($a = 0; $a < 10; ++$a)
+				{
+					for ($b = $a + 1; $b < 10; ++$b)
+					{
+						$pi = $table[$a];
+						$pj = $table[$b];
+						$meetings[$pi * $this->players + $pj]++;
+						$meetings[$pj * $this->players + $pi]++;
+					}
+				}
+			}
+		}
+
+		// For each free player compute SSQ of meeting-frequency deviations from expected
+		$expected = $this->games * 9 / ($this->players - 1);
+		$ssq = array();
+		foreach ($free_indices as $p)
+		{
+			$sum = 0;
+			for ($q = 0; $q < $this->players; ++$q)
+			{
+				if ($q !== $p)
+				{
+					$diff = $meetings[$p * $this->players + $q] - $expected;
+					$sum += $diff * $diff;
+				}
+			}
+			$ssq[$p] = $sum;
+		}
+
+		// Sort free players by SSQ ascending: lowest SSQ → lowest index (best distribution = lowest number)
+		$free_players = $free_indices;
+		usort($free_players, function($a, $b) use ($ssq)
+		{
+			$diff = $ssq[$a] - $ssq[$b];
+			return abs($diff) < 1e-9 ? 0 : (int)($diff < 0 ? -1 : 1);
+		});
+
+		// Build mapping: restricted players keep their index; free players get reassigned
+		$mapping = array();
+		for ($p = 0; $p < $this->players; ++$p)
+		{
+			$mapping[$p] = $p;
+		}
+		for ($i = 0; $i < count($free_players); ++$i)
+		{
+			$mapping[$free_players[$i]] = $free_indices[$i];
+		}
+
+		// Build and return new seating with remapped player indices
+		$result = array();
+		foreach ($seating as $r => $round)
+		{
+			$result[$r] = array();
+			foreach ($round as $t => $table)
+			{
+				$result[$r][$t] = array();
+				for ($a = 0; $a < 10; ++$a)
+				{
+					$result[$r][$t][$a] = $mapping[$table[$a]];
+				}
+			}
+		}
+		return $result;
+	}
 }
 
 ?>
