@@ -555,13 +555,13 @@ class Updater
 		{
 			$this->vars = new stdClass();
 			$this->stats->current_run_items = 0;
-			$this->important(date('F d, Y H:i:s', time()) . ' - start    ' . $this->task);
+			$this->debug('start    ' . $this->task);
 			$this->runOptionalMethod($this->task . '_task_start');
 		}
 		else
 		{
 			$this->vars = json_decode($vars);
-			$this->important(date('F d, Y H:i:s', time()) . ' - continue ' . $this->task);
+			$this->debug('continue ' . $this->task);
 		}
 		$this->runOptionalMethod($this->task . '_run_start');
 	}
@@ -574,14 +574,17 @@ class Updater
 			return;
 		}
 		
-		$this->log($this->stats->current_run_items . ' items');
+		if ($this->stats->current_run_items > 0)
+		{
+			$this->log($this->stats->current_run_items . ' items');
+		}
 		$this->runOptionalMethod($this->task . '_run_end');
 		if ($real)
 		{
 			$this->runOptionalMethod($this->task . '_task_end');
 			$this->vars = new stdClass();
 			$this->stats->current_run_items = 0;
-			$this->important(date('F d, Y H:i:s', time()) . ' - end      ' . $this->task);
+			$this->debug('end      ' . $this->task);
 		}
 		
 		$vars = json_encode($this->vars);
@@ -663,10 +666,12 @@ class Updater
 			return;
 		}
 		
+		$prefix = date('F d, Y H:i:s', time()) . ': ';
 		if ($flags & LOG_TO_SCREEN)
 		{
 			if ($this->isWeb)
 			{
+				echo '<span style="color:gray;"><i>' . $prefix . '</i></span>';
 				switch ($level)
 				{
 				case LOG_LEVEL_ERROR:
@@ -685,6 +690,7 @@ class Updater
 			}
 			else
 			{
+				echo $prefix;
 				switch ($level)
 				{
 				case LOG_LEVEL_ERROR:
@@ -717,6 +723,7 @@ class Updater
 				$str = '... ' . $str;
 				break;
 			}
+			$str = $prefix . $str;
 			
 			if ($this->task != $this->logTask)
 			{
