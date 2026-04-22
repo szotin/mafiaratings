@@ -369,12 +369,12 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id, $old_name, $old_tournament_id, $old_start_timestamp, $old_duration, $old_address_id, $old_fee, $old_currency_id, $old_rules_code, $old_scoring_id, $old_scoring_version, $old_scoring_options, $old_langs, $old_notes, $old_flags, $timezone, $old_round_num) = 
-			Db::record(get_label('event'), 
-				'SELECT e.club_id, e.name, e.tournament_id, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, e.round ' .
-				'FROM events e ' . 
-				'JOIN addresses a ON a.id = e.address_id ' . 
-				'JOIN cities c ON c.id = a.city_id ' . 
+		list($club_id, $old_name, $old_tournament_id, $old_start_timestamp, $old_duration, $old_address_id, $old_fee, $old_currency_id, $old_rules_code, $old_scoring_id, $old_scoring_version, $old_scoring_options, $old_langs, $old_notes, $old_flags, $timezone, $old_round_num, $old_players, $old_tables, $old_games) =
+			Db::record(get_label('event'),
+				'SELECT e.club_id, e.name, e.tournament_id, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, e.round, e.players, e.tables, e.games ' .
+				'FROM events e ' .
+				'JOIN addresses a ON a.id = e.address_id ' .
+				'JOIN cities c ON c.id = a.city_id ' .
 				'WHERE e.id = ?', $event_id);
 		check_permissions(PERMISSION_MANAGER, $club_id, $event_id, $old_tournament_id);
 		if (isset($_profile->clubs[$club_id]))
@@ -555,6 +555,24 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		$players = (int)get_optional_param('players', $old_players);
+		if ($players < 10)
+		{ 
+			$players = null;
+		}
+
+		$tables = (int)get_optional_param('tables', $old_tables);
+		if ($tables < 1)
+		{
+			$tables = null;
+		}
+
+		$games = (int)get_optional_param('games', $old_games);
+		if ($games < 1)
+		{
+			$games = null;
+		}
+
 		$logo_uploaded = false;
 		if (isset($_FILES['logo']))
 		{
@@ -603,14 +621,14 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(
-			get_label('event'), 
+			get_label('event'),
 			'UPDATE events SET ' .
 				'name = ?, tournament_id = ?, fee = ?, currency_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
-				'languages = ?, round = ? WHERE id = ?',
+				'languages = ?, round = ?, players = ?, tables = ?, games = ? WHERE id = ?',
 			$name, $tournament_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options,
 			$address_id, $start_timestamp, $notes, $duration, $flags,
-			$langs, $round_num, $event_id);
+			$langs, $round_num, $players, $tables, $games, $event_id);
 		if (Db::affected_rows() > 0)
 		{
 			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $address_id);
@@ -2400,6 +2418,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('event_id', 'Event id.');
 		return $help;
 	}
+
 }
 
 $page = new ApiPage();

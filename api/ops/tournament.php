@@ -58,7 +58,7 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	}
 }
 
-function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags)
+function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags, $num_players = 0)
 {
 	global $_lang;
 	if (is_valid_lang($langs))
@@ -69,6 +69,21 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 	{
 		$lang_code = get_lang_code($_lang);
 	}
+
+	// Scheme values for main round
+	$main_players = ($num_players > 0) ? $num_players : null;
+	$main_tables  = ($num_players >= 10) ? (int)floor($num_players / 10) : null;
+	$main_games   = ($num_players >= 10) ? (($num_players % 10 === 0) ? 12 : 10) : null;
+
+	// Scheme values for semi-final and other intermediate rounds
+	$mid_players = ($num_players >= 10) ? (int)(floor($num_players / 10) * 10) : null;
+	$mid_tables  = $main_tables;
+	$mid_games   = ($num_players >= 10) ? 2 : null;
+
+	// Scheme values for final
+	$final_players = 10;
+	$final_tables  = 1;
+
 	switch ($type)
 	{
 		case TOURNAMENT_TYPE_FIIM_ONE_ROUND:
@@ -78,7 +93,7 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags = $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -88,10 +103,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 2);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -101,9 +116,9 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
 			$ops->group = 'final';
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 4);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -113,11 +128,11 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags, $mid_players, $mid_tables, $mid_games);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 2);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -127,10 +142,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags, $mid_players, $mid_tables, $mid_games);
 			$ops->group = 'final';
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 4);
 			break;
 		default:
 			break;
@@ -357,8 +372,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->parent_series = json_encode($parent_series);
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
-		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags);
-		
+		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $players);
+
 		// create parent series records
 		foreach ($parent_series as $s)
 		{
@@ -712,9 +727,9 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('round'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 			Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?', $tournament_id);
 			
-			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags);
+			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $num_players);
 		}
-		else 
+		else
 		{
 			if (
 				$rules_code != $old_rules_code ||
@@ -1916,6 +1931,51 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Delete the cached tournament table.');
 		$help->request_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// set_scheme
+	//-------------------------------------------------------------------------------------------------------
+	function set_scheme_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$rounds = json_decode(get_required_param('rounds'));
+
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+
+		Db::begin();
+
+		$main_players = null;
+		foreach ($rounds as $round)
+		{
+			$event_id = (int)$round->event_id;
+			$players  = isset($round->players) && $round->players > 0 ? (int)$round->players : null;
+			$tables   = isset($round->tables)  && $round->tables  > 0 ? (int)$round->tables  : null;
+			$games    = isset($round->games)   && $round->games   > 0 ? (int)$round->games   : null;
+
+			Db::exec(get_label('event'), 'UPDATE events SET players = ?, tables = ?, games = ? WHERE id = ? AND tournament_id = ?', $players, $tables, $games, $event_id, $tournament_id);
+
+			if (isset($round->is_main) && $round->is_main && !is_null($players))
+			{
+				$main_players = $players;
+			}
+		}
+
+		if (!is_null($main_players))
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET num_players = ? WHERE id = ?', $main_players, $tournament_id);
+		}
+
+		Db::commit();
+	}
+
+	function set_scheme_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Set players/tables/games scheme for all tournament rounds at once. Also updates tournament num_players from the main round.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('rounds', 'JSON array of round objects: [{event_id, players, tables, games, is_main}, ...].');
 		return $help;
 	}
 }
