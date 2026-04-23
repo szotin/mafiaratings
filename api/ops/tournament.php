@@ -445,8 +445,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id, t.emo_id FROM tournaments t' . 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id, $old_preparation_stage) =
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id, t.emo_id, t.preparation_stage FROM tournaments t' .
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -490,6 +490,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
 		$type = (int)get_optional_param('type', $old_type);
 		$rules_code = check_rules_code(get_optional_param('rules_code', $old_rules_code));
+		$preparation_stage = (int)get_optional_param('preparation_stage', $old_preparation_stage);
 
 		$update_flags = (int)get_optional_param('update_flags', 0);
 		
@@ -779,8 +780,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $emo_id, $rules_code, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ?, preparation_stage = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $emo_id, $rules_code, $preparation_stage, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
@@ -1741,10 +1742,15 @@ class ApiPage extends OpsApiPageBase
 		$flags = (int)get_optional_param('access_flags', ($old_flags & USER_PERM_MASK)) & USER_PERM_MASK;
 		if ($flags == 0)
 		{
-			throw new Exc(get_label('Please choose at least one role for the user.'));
+			Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+			Db::commit();
+			$this->response['tournament_id'] = $tournament_id;
+			$this->response['user_id'] = $user_id;
+			return;
 		}
 		$flags += ($old_flags & ~USER_PERM_MASK);
-			
+
 		if ($city_id != $old_city_id || $flags != $old_flags)
 		{
 			if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id))
@@ -1915,6 +1921,34 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// rollback_registration
+	//-------------------------------------------------------------------------------------------------------
+	function rollback_registration_op()
+	{
+		$user_id = (int)get_required_param('user_id');
+		$tournament_id = (int)get_required_param('tournament_id');
+
+		list($club_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET flags = flags | ' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED . ' WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+
+		$this->response['tournament_id'] = $tournament_id;
+		$this->response['user_id'] = $user_id;
+	}
+
+	function rollback_registration_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Move an accepted registration back to the not-confirmed state.');
+		$help->request_param('user_id', 'User id.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// refresh_table
 	//-------------------------------------------------------------------------------------------------------
 	function refresh_table_op()
@@ -1976,6 +2010,68 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Set players/tables/games scheme for all tournament rounds at once. Also updates tournament num_players from the main round.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('rounds', 'JSON array of round objects: [{event_id, players, tables, games, is_main}, ...].');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// reorder_registration
+	//-------------------------------------------------------------------------------------------------------
+	function reorder_registration_op()
+	{
+		global $_lang;
+
+		$tournament_id = (int)get_required_param('tournament_id');
+		$user_id = (int)get_required_param('user_id');
+		$adjacent_user_id = (int)get_required_param('adjacent_user_id');
+		$flags_filter = (int)get_required_param('flags_filter');
+
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+
+		$query = new DbQuery(
+			'SELECT tr.user_id, tr.reg_order FROM tournament_regs tr' .
+			' JOIN users u ON u.id = tr.user_id' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ?) <> 0' .
+			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
+			' ORDER BY tr.reg_order ASC, nu.name ASC',
+			$_lang, $tournament_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED
+		);
+		$users = array();
+		while ($row = $query->next())
+		{
+			$users[] = array('user_id' => (int)$row[0], 'reg_order' => (int)$row[1]);
+		}
+
+		$idx = -1;
+		$adj_idx = -1;
+		foreach ($users as $i => $u)
+		{
+			if ($u['user_id'] == $user_id) $idx = $i;
+			if ($u['user_id'] == $adjacent_user_id) $adj_idx = $i;
+		}
+		if ($idx < 0 || $adj_idx < 0 || $adj_idx >= $idx) return;
+
+		Db::begin();
+		foreach ($users as $i => $u)
+		{
+			$expected = $i + 1;
+			if ($u['reg_order'] != $expected)
+			{
+				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $expected, $tournament_id, $u['user_id']);
+			}
+		}
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $adj_idx + 1, $tournament_id, $user_id);
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $idx + 1, $tournament_id, $adjacent_user_id);
+		Db::commit();
+	}
+
+	function reorder_registration_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Move a registration one position up within its group.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('user_id', 'User id to move up.');
+		$help->request_param('adjacent_user_id', 'User id currently displayed just above — the two will be swapped.');
+		$help->request_param('flags_filter', 'Permission flag to filter group (USER_PERM_PLAYER or USER_PERM_REFEREE etc).');
 		return $help;
 	}
 }
