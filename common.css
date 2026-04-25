@@ -183,9 +183,20 @@ img.message-img
 	font-size: 14px;
 }
 
-.tab button:hover 
+.tab button:hover
 {
 	background-color: #cfdfdf;
+}
+
+.tab button:disabled
+{
+	opacity: 0.4;
+	cursor: default;
+}
+
+.tab button:disabled:hover
+{
+	background-color: inherit;
 }
 
 /* Create an active/current tablink class */

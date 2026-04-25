@@ -9,6 +9,8 @@ require_once '../../include/datetime.php';
 require_once '../../include/image.php';
 require_once '../../include/scoring.php';
 require_once '../../include/game.php';
+require_once '../../include/seating.php';
+require_once '../../include/geo.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -2416,6 +2418,326 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, 'Delete the cached event table.');
 		$help->request_param('event_id', 'Event id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// clear_seating
+	//-------------------------------------------------------------------------------------------------------
+	function clear_seating_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+
+		Db::begin();
+		list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
+			'SELECT club_id, tournament_id, misc FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+
+		if (!is_null($misc_str))
+		{
+			$misc = json_decode($misc_str);
+			if (!is_null($misc) && isset($misc->seating))
+			{
+				unset($misc->seating);
+				Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+			}
+		}
+		Db::commit();
+	}
+
+	function clear_seating_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove seating for a tournament round.');
+		$help->request_param('event_id', 'The event (round) to remove seating for.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// set_seating
+	//-------------------------------------------------------------------------------------------------------
+	function set_seating_op()
+	{
+		global $_lang;
+
+		$event_id = (int)get_required_param('event_id');
+
+		// --- 1. Load event ---
+		list($club_id, $tournament_id, $misc_str, $event_players, $event_tables, $event_games) =
+			Db::record(get_label('event'),
+				'SELECT club_id, tournament_id, misc, players, tables, games FROM events WHERE id = ?',
+				$event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+
+		$event_players = (int)$event_players;
+		$event_tables  = (int)$event_tables;
+		$event_games   = (int)$event_games;
+
+		// --- 2. Tournament venue lat/lon ---
+		list($t_lat, $t_lon) = Db::record(get_label('tournament'),
+			'SELECT a.lat, a.lon FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?',
+			$tournament_id);
+
+		// --- 3. Accepted registered players ---
+		$reg_users       = array();
+		$user_to_reg_idx = array();
+		$q = new DbQuery(
+			'SELECT tr.user_id, c.lat, c.lon, tr.rating' .
+			' FROM tournament_regs tr' .
+			' LEFT JOIN cities c ON c.id = tr.city_id' .
+			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0',
+			$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+		while ($row = $q->next())
+		{
+			$u = new stdClass();
+			$u->user_id  = (int)$row[0];
+			$u->lat      = isset($row[1]) ? (float)$row[1] : null;
+			$u->lon      = isset($row[2]) ? (float)$row[2] : null;
+			$u->rating   = (float)$row[3];
+			$u->distance = 0.0;
+			$user_to_reg_idx[$u->user_id] = count($reg_users);
+			$reg_users[] = $u;
+		}
+
+		throw new Exc($reg_users);
+
+		if (count($reg_users) !== $event_players)
+		{
+			throw new Exc(get_label(
+				'Cannot generate seating: expected [0] players but [1] are registered.',
+				$event_players, count($reg_users)));
+		}
+
+		// --- 4. Calculate travel distances ---
+		foreach ($reg_users as $u)
+		{
+			if (!is_null($u->lat) && !is_null($u->lon) && !is_null($t_lat) && !is_null($t_lon))
+			{
+				$u->distance = get_distance($u->lat, $u->lon, (float)$t_lat, (float)$t_lon, GEO_KILOMETERS);
+			}
+		}
+
+		// --- 5. Classify pairs ---
+		$pairs         = get_tournament_pairs($tournament_id, $club_id, $_lang, true);
+		$restrictions  = array();
+		$welcome_pairs = array();
+		$avoid_pairs   = array();
+		foreach ($pairs as $pair)
+		{
+			if (!isset($user_to_reg_idx[$pair->user1_id]) ||
+				!isset($user_to_reg_idx[$pair->user2_id]))
+			{
+				continue;
+			}
+			$idx1 = $user_to_reg_idx[$pair->user1_id];
+			$idx2 = $user_to_reg_idx[$pair->user2_id];
+			if ($pair->policy == PAIR_POLICY_SEPARATE)
+			{
+				$restrictions[] = array($idx1, $idx2);
+			}
+			else if ($pair->policy == PAIR_POLICY_WELCOME)
+			{
+				$welcome_pairs[] = array($idx1, $idx2);
+			}
+			else if ($pair->policy == PAIR_POLICY_AVOID)
+			{
+				$avoid_pairs[] = array($idx1, $idx2);
+			}
+		}
+
+		// --- 6. Build SeatingDef, normalize restrictions ---
+		$seatingDef = new SeatingDef($event_players, $event_tables, $event_games, $restrictions);
+		$restrict_mapping = $seatingDef->normalizeRestrictions();
+		$hash = $seatingDef->hash;
+
+		// --- 7. Get or create canonical seating from seatings table ---
+		Db::begin();
+		$row = (new DbQuery('SELECT seating FROM seatings WHERE hash = ?', $hash))->next();
+		if ($row)
+		{
+			$seating = json_decode($row[0], true);
+		}
+		else
+		{
+			$row = (new DbQuery(
+				'SELECT seating FROM seatings WHERE hash LIKE ?',
+				$event_players . '_' . $event_tables . '_' . $event_games . '%'))->next();
+			if ($row)
+			{
+				$seating = json_decode($row[0], true);
+			}
+			else
+			{
+				$seating = $seatingDef->generateInitialSeating();
+				$seating = $seatingDef->renumberByDistribution($seating);
+			}
+			$ps = $seatingDef->calculatePlayersScore($seating);
+			$ns = $seatingDef->calculateNumbersScore($seating);
+			$ts = $seatingDef->calculateTablesScore($seating);
+			Db::exec(get_label('seating'),
+				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score,' .
+				' players_state, numbers_state, tables_state) VALUES (?, ?, ?, ?, ?, "", "", "")',
+				$hash, json_encode($seating), $ps, $ns, $ts);
+		}
+		Db::commit();
+
+		// --- 8. Build final mapping [seating_slot => user_id] ---
+		$final_mapping     = array_fill(0, $event_players, 0);
+		$assigned_slots    = array();
+		$assigned_reg_idxs = array();
+
+		foreach ($restrict_mapping as $reg_idx => $slot)
+		{
+			$final_mapping[$slot]        = $reg_users[$reg_idx]->user_id;
+			$assigned_slots[$slot]       = true;
+			$assigned_reg_idxs[$reg_idx] = true;
+		}
+
+		// --- 9. Handle WELCOME / AVOID pairs via meeting-frequency matrix ---
+		if (!empty($welcome_pairs) || !empty($avoid_pairs))
+		{
+			$meetings = array();
+			foreach ($seating as $round)
+			{
+				foreach ($round as $table)
+				{
+					$n = count($table);
+					for ($a = 0; $a < $n; ++$a)
+					{
+						for ($b = $a + 1; $b < $n; ++$b)
+						{
+							$sa = (int)$table[$a];
+							$sb = (int)$table[$b];
+							if (!isset($meetings[$sa][$sb])) { $meetings[$sa][$sb] = 0; }
+							if (!isset($meetings[$sb][$sa])) { $meetings[$sb][$sa] = 0; }
+							++$meetings[$sa][$sb];
+							++$meetings[$sb][$sa];
+						}
+					}
+				}
+			}
+
+			$pick_slot_pair = function($want_max)
+				use (&$assigned_slots, &$meetings, $event_players)
+			{
+				$best_s1   = -1;
+				$best_s2   = -1;
+				$best_freq = $want_max ? -1 : PHP_INT_MAX;
+				for ($s1 = 0; $s1 < $event_players; ++$s1)
+				{
+					if (isset($assigned_slots[$s1])) { continue; }
+					for ($s2 = $s1 + 1; $s2 < $event_players; ++$s2)
+					{
+						if (isset($assigned_slots[$s2])) { continue; }
+						$freq = isset($meetings[$s1][$s2]) ? $meetings[$s1][$s2] : 0;
+						if ($want_max ? ($freq > $best_freq) : ($freq < $best_freq))
+						{
+							$best_freq = $freq;
+							$best_s1   = $s1;
+							$best_s2   = $s2;
+						}
+					}
+				}
+				return array($best_s1, $best_s2);
+			};
+
+			foreach ($welcome_pairs as $up)
+			{
+				list($ri1, $ri2) = $up;
+				if (isset($assigned_reg_idxs[$ri1]) || isset($assigned_reg_idxs[$ri2])) { continue; }
+				list($s1, $s2) = $pick_slot_pair(true);
+				if ($s1 < 0) { break; }
+				$final_mapping[$s1]      = $reg_users[$ri1]->user_id;
+				$final_mapping[$s2]      = $reg_users[$ri2]->user_id;
+				$assigned_slots[$s1]     = true;
+				$assigned_slots[$s2]     = true;
+				$assigned_reg_idxs[$ri1] = true;
+				$assigned_reg_idxs[$ri2] = true;
+			}
+
+			foreach ($avoid_pairs as $up)
+			{
+				list($ri1, $ri2) = $up;
+				if (isset($assigned_reg_idxs[$ri1]) || isset($assigned_reg_idxs[$ri2])) { continue; }
+				list($s1, $s2) = $pick_slot_pair(false);
+				if ($s1 < 0) { break; }
+				$final_mapping[$s1]      = $reg_users[$ri1]->user_id;
+				$final_mapping[$s2]      = $reg_users[$ri2]->user_id;
+				$assigned_slots[$s1]     = true;
+				$assigned_slots[$s2]     = true;
+				$assigned_reg_idxs[$ri1] = true;
+				$assigned_reg_idxs[$ri2] = true;
+			}
+		}
+
+		// --- 10. Sort remaining players and assign to remaining slots ---
+		$remaining_reg   = array();
+		$remaining_slots = array();
+		for ($i = 0; $i < $event_players; ++$i)
+		{
+			if (!isset($assigned_reg_idxs[$i])) { $remaining_reg[] = $i; }
+		}
+		for ($s = 0; $s < $event_players; ++$s)
+		{
+			if (!isset($assigned_slots[$s])) { $remaining_slots[] = $s; }
+		}
+
+		$distance_group = function($km)
+		{
+			if ($km < 100)  { return 1; }
+			if ($km < 1000) { return 2; }
+			if ($km < 5000) { return 3; }
+			return 4;
+		};
+		usort($remaining_reg, function($a, $b) use ($reg_users, $distance_group)
+		{
+			$ga = $distance_group($reg_users[$a]->distance);
+			$gb = $distance_group($reg_users[$b]->distance);
+			if ($ga !== $gb) { return $gb - $ga; }
+			$diff = $reg_users[$b]->rating - $reg_users[$a]->rating;
+			return $diff > 0 ? 1 : ($diff < 0 ? -1 : 0);
+		});
+
+		$n = count($remaining_reg);
+		for ($i = 0; $i < $n; ++$i)
+		{
+			$slot    = $remaining_slots[$i];
+			$reg_idx = $remaining_reg[$n - 1 - $i];
+			$final_mapping[$slot] = $reg_users[$reg_idx]->user_id;
+		}
+
+		// --- 11. Transpose seating [round][table][seat] → [table][round][seat] ---
+		$seating_by_table = array();
+		foreach ($seating as $r => $round)
+		{
+			foreach ($round as $t => $table)
+			{
+				if (!isset($seating_by_table[$t]))
+				{
+					$seating_by_table[$t] = array();
+				}
+				$seating_by_table[$t][$r] = $table;
+			}
+		}
+
+		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
+		if (is_null($misc)) { $misc = new stdClass(); }
+		$misc->seating         = new stdClass();
+		$misc->seating->tables = $seating_by_table;
+		$misc->seating->mapping = $final_mapping;
+
+		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+	}
+
+	function set_seating_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Generate seating for a tournament round.');
+		$help->request_param('event_id', 'The event (round) to generate seating for.');
 		return $help;
 	}
 
