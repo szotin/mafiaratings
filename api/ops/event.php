@@ -2490,7 +2490,9 @@ class ApiPage extends OpsApiPageBase
 			'SELECT tr.user_id, c.lat, c.lon, tr.rating' .
 			' FROM tournament_regs tr' .
 			' LEFT JOIN cities c ON c.id = tr.city_id' .
-			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0',
+			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
+			' ORDER BY reg_order' .
+			' LIMIT ' . $event_players,
 			$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
 		while ($row = $q->next())
 		{
@@ -2502,15 +2504,6 @@ class ApiPage extends OpsApiPageBase
 			$u->distance = 0.0;
 			$user_to_reg_idx[$u->user_id] = count($reg_users);
 			$reg_users[] = $u;
-		}
-
-		throw new Exc($reg_users);
-
-		if (count($reg_users) !== $event_players)
-		{
-			throw new Exc(get_label(
-				'Cannot generate seating: expected [0] players but [1] are registered.',
-				$event_players, count($reg_users)));
 		}
 
 		// --- 4. Calculate travel distances ---
@@ -2566,15 +2559,17 @@ class ApiPage extends OpsApiPageBase
 		{
 			$row = (new DbQuery(
 				'SELECT seating FROM seatings WHERE hash LIKE ?',
-				$event_players . '_' . $event_tables . '_' . $event_games . '%'))->next();
+				$hash . '%'))->next();
 			if ($row)
 			{
 				$seating = json_decode($row[0], true);
+				echo get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.');
 			}
 			else
 			{
 				$seating = $seatingDef->generateInitialSeating();
 				$seating = $seatingDef->renumberByDistribution($seating);
+				echo get_label('We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.');
 			}
 			$ps = $seatingDef->calculatePlayersScore($seating);
 			$ns = $seatingDef->calculateNumbersScore($seating);
@@ -2588,8 +2583,8 @@ class ApiPage extends OpsApiPageBase
 
 		// --- 8. Build final mapping [seating_slot => user_id] ---
 		$final_mapping     = array_fill(0, $event_players, 0);
-		$assigned_slots    = array();
-		$assigned_reg_idxs = array();
+		$assigned_slots    = array_fill(0, $event_players, false);
+		$assigned_reg_idxs = array_fill(0, $event_players, false);
 
 		foreach ($restrict_mapping as $reg_idx => $slot)
 		{
@@ -2630,10 +2625,10 @@ class ApiPage extends OpsApiPageBase
 				$best_freq = $want_max ? -1 : PHP_INT_MAX;
 				for ($s1 = 0; $s1 < $event_players; ++$s1)
 				{
-					if (isset($assigned_slots[$s1])) { continue; }
+					if ($assigned_slots[$s1]) { continue; }
 					for ($s2 = $s1 + 1; $s2 < $event_players; ++$s2)
 					{
-						if (isset($assigned_slots[$s2])) { continue; }
+						if ($assigned_slots[$s2]) { continue; }
 						$freq = isset($meetings[$s1][$s2]) ? $meetings[$s1][$s2] : 0;
 						if ($want_max ? ($freq > $best_freq) : ($freq < $best_freq))
 						{
@@ -2649,7 +2644,7 @@ class ApiPage extends OpsApiPageBase
 			foreach ($welcome_pairs as $up)
 			{
 				list($ri1, $ri2) = $up;
-				if (isset($assigned_reg_idxs[$ri1]) || isset($assigned_reg_idxs[$ri2])) { continue; }
+				if ($assigned_reg_idxs[$ri1] || $assigned_reg_idxs[$ri2]) { continue; }
 				list($s1, $s2) = $pick_slot_pair(true);
 				if ($s1 < 0) { break; }
 				$final_mapping[$s1]      = $reg_users[$ri1]->user_id;
@@ -2663,7 +2658,7 @@ class ApiPage extends OpsApiPageBase
 			foreach ($avoid_pairs as $up)
 			{
 				list($ri1, $ri2) = $up;
-				if (isset($assigned_reg_idxs[$ri1]) || isset($assigned_reg_idxs[$ri2])) { continue; }
+				if ($assigned_reg_idxs[$ri1] || $assigned_reg_idxs[$ri2]) { continue; }
 				list($s1, $s2) = $pick_slot_pair(false);
 				if ($s1 < 0) { break; }
 				$final_mapping[$s1]      = $reg_users[$ri1]->user_id;
@@ -2680,11 +2675,11 @@ class ApiPage extends OpsApiPageBase
 		$remaining_slots = array();
 		for ($i = 0; $i < $event_players; ++$i)
 		{
-			if (!isset($assigned_reg_idxs[$i])) { $remaining_reg[] = $i; }
+			if (!$assigned_reg_idxs[$i]) { $remaining_reg[] = $i; }
 		}
 		for ($s = 0; $s < $event_players; ++$s)
 		{
-			if (!isset($assigned_slots[$s])) { $remaining_slots[] = $s; }
+			if (!$assigned_slots[$s]) { $remaining_slots[] = $s; }
 		}
 
 		$distance_group = function($km)
@@ -2707,7 +2702,7 @@ class ApiPage extends OpsApiPageBase
 		for ($i = 0; $i < $n; ++$i)
 		{
 			$slot    = $remaining_slots[$i];
-			$reg_idx = $remaining_reg[$n - 1 - $i];
+			$reg_idx = $remaining_reg[$i];
 			$final_mapping[$slot] = $reg_users[$reg_idx]->user_id;
 		}
 

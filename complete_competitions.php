@@ -208,16 +208,19 @@ class CompleteCompetitions extends Updater
 					$players[] = $player;
 				}
 				$real_count = $players_count = count($players);
-				
+
+				list($max_reg_order) = Db::record(get_label('registration'), 'SELECT COALESCE(MAX(reg_order), 0) FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+				$next_reg_order = (int)$max_reg_order;
 				$counter = 0;
 				foreach ($players as $player)
 				{
+					++$next_reg_order;
 					$importance = $this->getTournamentImportance($stars, $player->place, $players_count);
 					Db::exec(get_label('player'), 'UPDATE tournament_places SET importance = ? WHERE tournament_id = ? AND user_id = ?', $importance, $tournament_id, $player->id);
-					Db::exec(get_label('player'), 
-						'INSERT INTO tournament_regs(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
-						' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED, 
-						$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $player->rating);
+					Db::exec(get_label('player'),
+						'INSERT INTO tournament_regs(tournament_id, user_id, flags, city_id, rating, reg_order) VALUES (?, ?, ?, ?, ?, ?)'.
+						' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED,
+						$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $next_reg_order, $player->rating);
 						
 					$td = get_distance($player->lat, $player->lon, $lat, $lon, GEO_MILES);
 					$rating_sum += $player->rating;
@@ -305,6 +308,8 @@ class CompleteCompetitions extends Updater
 				$real_count = min($real_count, $players_count);
 				
 				Db::exec(get_label('tournament'), 'DELETE FROM tournament_places WHERE tournament_id = ?', $tournament_id);
+				list($max_reg_order) = Db::record(get_label('registration'), 'SELECT COALESCE(MAX(reg_order), 0) FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+				$next_reg_order = (int)$max_reg_order;
 				$top20_ratings = array();
 				$place = 1;
 				for ($number = 0; $number < $real_count; ++$number)
@@ -318,14 +323,14 @@ class CompleteCompetitions extends Updater
 					{
 						$player->rating = 0;
 					}
-					
-					Db::exec(get_label('player'), 
-						'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+					++$next_reg_order;
+					Db::exec(get_label('player'),
+						'INSERT INTO tournament_places (tournament_id, user_id, place, importance, main_points, bonus_points, shot_points, games_count, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$tournament_id, $player->id, $place, $importance, $main_points, $bonus_points, $shot_points, $player->games_count, $player->nom_flags, $player->wins);
-					Db::exec(get_label('player'), 
-						'INSERT INTO tournament_regs(tournament_id, user_id, flags, city_id, rating) VALUES (?, ?, ?, ?, ?)'.
-						' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED, 
-						$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $player->rating);
+					Db::exec(get_label('player'),
+						'INSERT INTO tournament_regs(tournament_id, user_id, flags, city_id, rating, reg_order) VALUES (?, ?, ?, ?, ?, ?)'.
+						' ON DUPLICATE KEY UPDATE rating = ?, flags = (flags | ' . USER_PERM_PLAYER . ') & ~' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED,
+						$tournament_id, $player->id, USER_TOURNAMENT_NEW_PLAYER_FLAGS, $player->city_id, $player->rating, $next_reg_order, $player->rating);
 						
 					$td = get_distance($player->lat, $player->lon, $lat, $lon, GEO_MILES);
 					$rating_sum += $player->rating;

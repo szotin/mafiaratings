@@ -1669,7 +1669,8 @@ class ApiPage extends OpsApiPageBase
 					list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
 				}
 			}
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, team_id, city_id, rating) values (?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id, $city_id, $user_rating);
+			list($max_reg_order) = Db::record(get_label('registration'), 'SELECT COALESCE(MAX(reg_order), 0) FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, team_id, city_id, rating, reg_order) values (?, ?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id, $city_id, $user_rating, (int)$max_reg_order + 1);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			if ($team_id != null)
@@ -1680,7 +1681,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $city_id, $user_rating);
+			list($max_reg_order) = Db::record(get_label('registration'), 'SELECT COALESCE(MAX(reg_order), 0) FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, city_id, rating, reg_order) values (?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $city_id, $user_rating, (int)$max_reg_order + 1);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			db_log(LOG_OBJECT_USER, 'joined tournament', $log_details, $user_id, $club_id);
@@ -2014,63 +2016,43 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
-	// reorder_registration
+	// move_registration_up
 	//-------------------------------------------------------------------------------------------------------
-	function reorder_registration_op()
+	function move_registration_up_op()
 	{
-		global $_lang;
-
 		$tournament_id = (int)get_required_param('tournament_id');
-		$user_id = (int)get_required_param('user_id');
-		$adjacent_user_id = (int)get_required_param('adjacent_user_id');
-		$flags_filter = (int)get_required_param('flags_filter');
+		$user_id       = (int)get_required_param('user_id');
+		$flags_filter  = (int)get_required_param('flags_filter');
 
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 
-		$query = new DbQuery(
-			'SELECT tr.user_id, tr.reg_order FROM tournament_regs tr' .
-			' JOIN users u ON u.id = tr.user_id' .
-			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ?) <> 0' .
-			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
-			' ORDER BY tr.reg_order ASC, nu.name ASC',
-			$_lang, $tournament_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED
-		);
-		$users = array();
-		while ($row = $query->next())
-		{
-			$users[] = array('user_id' => (int)$row[0], 'reg_order' => (int)$row[1]);
-		}
+		list($my_order) = Db::record(get_label('registration'),
+			'SELECT reg_order FROM tournament_regs WHERE tournament_id = ? AND user_id = ?',
+			$tournament_id, $user_id);
+		$my_order = (int)$my_order;
 
-		$idx = -1;
-		$adj_idx = -1;
-		foreach ($users as $i => $u)
-		{
-			if ($u['user_id'] == $user_id) $idx = $i;
-			if ($u['user_id'] == $adjacent_user_id) $adj_idx = $i;
-		}
-		if ($idx < 0 || $adj_idx < 0 || $adj_idx >= $idx) return;
+		$row = (new DbQuery(
+			'SELECT user_id, reg_order FROM tournament_regs' .
+			' WHERE tournament_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0 AND reg_order < ?' .
+			' ORDER BY reg_order DESC LIMIT 1',
+			$tournament_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED, $my_order
+		))->next();
+		if (!$row) return;
+
+		list($prev_user_id, $prev_order) = $row;
 
 		Db::begin();
-		foreach ($users as $i => $u)
-		{
-			$expected = $i + 1;
-			if ($u['reg_order'] != $expected)
-			{
-				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $expected, $tournament_id, $u['user_id']);
-			}
-		}
-		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $adj_idx + 1, $tournament_id, $user_id);
-		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $idx + 1, $tournament_id, $adjacent_user_id);
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $prev_order, $tournament_id, $user_id);
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $my_order, $tournament_id, $prev_user_id);
 		Db::commit();
 	}
 
-	function reorder_registration_op_help()
+	function move_registration_up_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Move a registration one position up within its group.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('user_id', 'User id to move up.');
-		$help->request_param('adjacent_user_id', 'User id currently displayed just above — the two will be swapped.');
 		$help->request_param('flags_filter', 'Permission flag to filter group (USER_PERM_PLAYER or USER_PERM_REFEREE etc).');
 		return $help;
 	}
