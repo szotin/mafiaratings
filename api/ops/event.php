@@ -2479,21 +2479,36 @@ class ApiPage extends OpsApiPageBase
 		$event_games   = (int)$event_games;
 
 		// --- 2. Tournament venue lat/lon ---
-		list($t_lat, $t_lon) = Db::record(get_label('tournament'),
-			'SELECT a.lat, a.lon FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?',
-			$tournament_id);
+		list($t_lat, $t_lon) = Db::record(get_label('event'),
+			'SELECT a.lat, a.lon FROM events e JOIN addresses a ON a.id = e.address_id WHERE e.id = ?',
+			$event_id);
 
 		// --- 3. Accepted registered players ---
 		$reg_users       = array();
 		$user_to_reg_idx = array();
-		$q = new DbQuery(
-			'SELECT tr.user_id, c.lat, c.lon, tr.rating' .
-			' FROM tournament_regs tr' .
-			' LEFT JOIN cities c ON c.id = tr.city_id' .
-			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
-			' ORDER BY reg_order' .
-			' LIMIT ' . $event_players,
-			$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+		if (is_null($tournament_id))
+		{
+			$q = new DbQuery(
+				'SELECT er.user_id, c.lat, c.lon, u.rating' .
+				' FROM event_regs er' .
+				' JOIN users u ON u.id = er.user_id' .
+				' LEFT JOIN cities c ON c.id = u.city_id' .
+				' WHERE er.event_id = ? AND er.coming_odds > 0' .
+				' ORDER BY er.coming_odds DESC' .
+				' LIMIT ' . $event_players,
+				$event_id);
+		}
+		else
+		{
+			$q = new DbQuery(
+				'SELECT tr.user_id, c.lat, c.lon, tr.rating' .
+				' FROM tournament_regs tr' .
+				' LEFT JOIN cities c ON c.id = tr.city_id' .
+				' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
+				' ORDER BY reg_order' .
+				' LIMIT ' . $event_players,
+				$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+		}
 		while ($row = $q->next())
 		{
 			$u = new stdClass();
@@ -2516,7 +2531,7 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		// --- 5. Classify pairs ---
-		$pairs         = get_tournament_pairs($tournament_id, $club_id, $_lang, true);
+		$pairs         = is_null($tournament_id) ? array() : get_tournament_pairs($tournament_id, $club_id, $_lang, true);
 		$restrictions  = array();
 		$welcome_pairs = array();
 		$avoid_pairs   = array();
