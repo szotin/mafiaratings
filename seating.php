@@ -188,7 +188,7 @@ class Page extends GeneralPageBase
 		}
 		echo '<b style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';
 		echo '</div>';
-		if ($this->can_optimize)
+		if ($this->can_optimize && $pct < 100)
 		{
 			echo '<button onclick="startOptimization(\'' . $task . '\')">' . get_label('Optimize') . '</button>';
 		}

@@ -2818,8 +2818,9 @@ class ApiPage extends OpsApiPageBase
 
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
-		$misc->seating         = new stdClass();
-		$misc->seating->tables = $seating_by_table;
+		$misc->seating          = new stdClass();
+		$misc->seating->hash    = $hash;
+		$misc->seating->tables  = $seating_by_table;
 		$misc->seating->mapping = $final_mapping;
 
 		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);

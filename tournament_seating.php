@@ -142,10 +142,38 @@ class Page extends TournamentPageBase
 	private function initVars()
 	{
 		global $_lang;
-		
+
+		$this->players_pct = null;
+		$this->numbers_pct = null;
+		$this->tables_pct  = null;
+
 		$this->tables = &$this->misc->seating;
 		if (is_object($this->tables))
 		{
+			if (isset($this->misc->seating->hash))
+			{
+				$hash = $this->misc->seating->hash;
+				$srow = (new DbQuery('SELECT players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $hash))->next();
+				if ($srow)
+				{
+					list($ps, $ns, $ts) = $srow;
+					$parts   = explode('_', $hash);
+					$players = isset($parts[0]) ? (int)$parts[0] : 0;
+					$tables  = isset($parts[1]) ? (int)$parts[1] : 0;
+					$games   = isset($parts[2]) ? (int)$parts[2] : 0;
+					$calc_pct = function($score, $max_score) {
+						if ($max_score <= 0) return 100.0;
+						return (1 - min(max($score / $max_score, 0), 1)) * 100;
+					};
+					$this->players_pct = ($players > 10)
+						? $calc_pct($ps, SeatingDef::worst_acceptable_players_score($players, $tables, $games))
+						: null;
+					$this->numbers_pct = $calc_pct($ns, SeatingDef::worst_acceptable_numbers_score($players, $tables, $games));
+					$this->tables_pct  = ($tables >= 3)
+						? $calc_pct($ts, SeatingDef::worst_acceptable_tables_score($players, $tables, $games))
+						: null;
+				}
+			}
 			$this->tables = &$this->tables->tables;
 			if (isset($this->misc->seating->mapping))
 			{
@@ -234,6 +262,24 @@ class Page extends TournamentPageBase
 		$this->hideGames();
 	}
 	
+	private function showOptLevelBar($percent)
+	{
+		$pct = round($percent);
+		echo '<p><div style="display:flex;align-items:center;gap:8px;">';
+		echo '<span style="white-space:nowrap;">' . get_label('Quality') . ':</span>';
+		echo '<div style="position:relative;flex:1;height:24px;line-height:24px;overflow:hidden;">';
+		if ($pct > 0)
+		{
+			echo '<img src="images/red_dot.png" style="position:absolute;left:0;top:0;width:' . $pct . '%;height:24px;opacity:0.6;">';
+		}
+		if ($pct < 100)
+		{
+			echo '<img src="images/black_dot.png" style="position:absolute;left:' . $pct . '%;top:0;width:' . (100 - $pct) . '%;height:24px;opacity:0.6;">';
+		}
+		echo '<b style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';
+		echo '</div></div></p>';
+	}
+
 	private function showSeatingTop()
 	{
 		echo '<p><input type="checkbox" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
@@ -588,6 +634,7 @@ class Page extends TournamentPageBase
 	
 	private function showTableStats()
 	{
+		if (!is_null($this->tables_pct)) $this->showOptLevelBar($this->tables_pct);
 		$pl = array();
 		for ($i = 0; $i < count($this->tables); ++$i)
 		{
@@ -654,6 +701,7 @@ class Page extends TournamentPageBase
 	
 	private function showPvpStats()
 	{
+		if (!is_null($this->players_pct)) $this->showOptLevelBar($this->players_pct);
 		$highlight_id = -1;
 		$pl = array();
 		for ($i = 0; $i < count($this->tables); ++$i)
@@ -818,6 +866,7 @@ class Page extends TournamentPageBase
 	
 	private function showNumbersStats()
 	{
+		if (!is_null($this->numbers_pct)) $this->showOptLevelBar($this->numbers_pct);
 		$pl = array();
 		for ($i = 0; $i < count($this->tables); ++$i)
 		{
