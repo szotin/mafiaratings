@@ -168,9 +168,9 @@ class Page extends TournamentPageBase
 								$player_id = $this->mapping[$index];
 								if (is_object($player_id))
 								{
-									$player_id = isset($player_id->id) ? $player_id->id : -$index - 1;
+									$player_id = isset($player_id->id) ? (int)$player_id->id : 0;
 								}
-								$game[$k] = $player_id;
+								$game[$k] = ($player_id > 0) ? $player_id : -$index - 1;
 							}
 						}
 					}
@@ -297,49 +297,29 @@ class Page extends TournamentPageBase
 		}
 		
 		$seating_exists = $this->generateSeating();
-		
-		if (!$this->is_manager)
+
+		if (!$seating_exists)
 		{
-			if ($view == VIEW_SETUP || $view == VIEW_PAIRS)
-			{
-				$view = VIEW_BY_GAME;
-			}
-			if (!$seating_exists)
-			{
-				echo '<p>' . get_label('Seating is not generated for this round') . '</p>';
-				return;
-			}
+			echo '<p>' . get_label('Seating is not generated for this round') . '</p>';
+			return;
 		}
-		else if (!$seating_exists && $view != VIEW_SETUP && $view != VIEW_PAIRS)
+
+		if ($view == VIEW_PAIRS || $view == VIEW_SETUP)
 		{
-			$view = VIEW_SETUP;
+			$view = VIEW_BY_GAME;
 		}
-		
+
 		echo '<p><div class="tab">';
-		if ($this->is_manager)
-		{
-			echo '<button' . ($view == VIEW_PAIRS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_PAIRS.'})">' . get_label('Pairs') . '</button>';
-			echo '<button' . ($view == VIEW_SETUP ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_SETUP.'})">' . get_label('Setup') . '</button>';
-		}
-		if ($seating_exists)
-		{
-			echo '<button' . ($view == VIEW_BY_GAME ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_GAME.'})">' . get_label('By game') . '</button>';
-			echo '<button' . ($view == VIEW_BY_TABLE ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_TABLE.'})">' . get_label('By table') . '</button>';
-			echo '<button' . ($view == VIEW_TABLE_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_TABLE_STATS.'})">' . get_label('By table stats') . '</button>';
-			echo '<button' . ($view == VIEW_PVP_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_PVP_STATS.'})">' . get_label('PvP stats') . '</button>';
-			echo '<button' . ($view == VIEW_NUMBERS_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_NUMBERS_STATS.'})">' . get_label('By numbers stats') . '</button>';
-		}
+		echo '<button' . ($view == VIEW_BY_GAME ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_GAME.'})">' . get_label('By game') . '</button>';
+		echo '<button' . ($view == VIEW_BY_TABLE ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_BY_TABLE.'})">' . get_label('By table') . '</button>';
+		echo '<button' . ($view == VIEW_TABLE_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_TABLE_STATS.'})">' . get_label('By table stats') . '</button>';
+		echo '<button' . ($view == VIEW_PVP_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_PVP_STATS.'})">' . get_label('PvP stats') . '</button>';
+		echo '<button' . ($view == VIEW_NUMBERS_STATS ? ' class="active"' : '') . ' onclick="goTo({view:'.VIEW_NUMBERS_STATS.'})">' . get_label('By numbers stats') . '</button>';
 		echo '</div></p>';
 
 		$this->mapping = null;
 		switch ($view)
 		{
-		case VIEW_PAIRS:
-			$this->showPairs();
-			break;
-		case VIEW_SETUP:
-			$this->showSetup();
-			break;
 		case VIEW_BY_GAME:
 			$this->initVars();
 			$this->showSeatingTop();
@@ -684,6 +664,7 @@ class Page extends TournamentPageBase
 				for ($k = 0; $k < count($table[$j]) && $k < 10; ++$k)
 				{
 					$user_id = $table[$j][$k];
+					if ($user_id == 0) { continue; }
 					if (!array_key_exists($user_id, $pl))
 					{
 						$player = new stdClass();
@@ -716,6 +697,7 @@ class Page extends TournamentPageBase
 				for ($k = 0; $k < count($table[$j]) && $k < 10; ++$k)
 				{
 					$user1_id = $table[$j][$k];
+					if ($user1_id == 0) { continue; }
 					if ($this->highlight_id == $user1_id)
 					{
 						$highlight_id = $this->highlight_id;
@@ -725,6 +707,7 @@ class Page extends TournamentPageBase
 						if ($k != $l)
 						{
 							$user2_id = $table[$j][$l];
+							if ($user2_id == 0) { continue; }
 							++$pl[$user2_id]->players[$user1_id];
 							++$pl[$user1_id]->players[$user2_id];
 						}

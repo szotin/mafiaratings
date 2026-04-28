@@ -2465,9 +2465,9 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 
 		// --- 1. Load event ---
-		list($club_id, $tournament_id, $misc_str, $event_players, $event_tables, $event_games) =
+		list($club_id, $tournament_id, $misc_str, $event_players, $event_tables, $event_games, $event_round) =
 			Db::record(get_label('event'),
-				'SELECT club_id, tournament_id, misc, players, tables, games FROM events WHERE id = ?',
+				'SELECT club_id, tournament_id, misc, players, tables, games, round FROM events WHERE id = ?',
 				$event_id);
 		check_permissions(
 			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
@@ -2477,6 +2477,7 @@ class ApiPage extends OpsApiPageBase
 		$event_players = (int)$event_players;
 		$event_tables  = (int)$event_tables;
 		$event_games   = (int)$event_games;
+		$event_round   = (int)$event_round;
 
 		// --- 2. Tournament venue lat/lon ---
 		list($t_lat, $t_lon) = Db::record(get_label('event'),
@@ -2486,6 +2487,7 @@ class ApiPage extends OpsApiPageBase
 		// --- 3. Accepted registered players ---
 		$reg_users       = array();
 		$user_to_reg_idx = array();
+		$q = null;
 		if (is_null($tournament_id))
 		{
 			$q = new DbQuery(
@@ -2498,8 +2500,83 @@ class ApiPage extends OpsApiPageBase
 				' LIMIT ' . $event_players,
 				$event_id);
 		}
+		else if ($event_round > 0)
+		{
+			// Playoff round: compute live standings and take top players
+			list($t_flags, $t_scoring_id, $t_scoring_ver, $t_normalizer_id, $t_normalizer_ver, $t_scoring_options) =
+				Db::record(get_label('tournament'),
+					'SELECT flags, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options FROM tournaments WHERE id = ?',
+					$tournament_id);
+
+			list($scoring_json) = Db::record(get_label('scoring'),
+				'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?',
+				$t_scoring_id, $t_scoring_ver);
+			$t_scoring = json_decode($scoring_json);
+			$t_scoring->id      = (int)$t_scoring_id;
+			$t_scoring->version = (int)$t_scoring_ver;
+
+			$t_normalizer = new stdClass();
+			$t_normalizer->id      = (int)$t_normalizer_id;
+			$t_normalizer->version = (int)$t_normalizer_ver;
+			if ($t_normalizer_id > 0)
+			{
+				list($normalizer_json) = Db::record(get_label('normalizer'),
+					'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?',
+					$t_normalizer_id, $t_normalizer_ver);
+				$normalizer_data = json_decode($normalizer_json);
+				foreach ($normalizer_data as $key => $value)
+				{
+					$t_normalizer->$key = $value;
+				}
+			}
+
+			$t_options = json_decode($t_scoring_options);
+
+			$ranked = tournament_scores(
+				$tournament_id, (int)$t_flags, null,
+				SCORING_LOD_PER_GROUP, $t_scoring, $t_normalizer, $t_options);
+
+			$count = 0;
+			foreach ($ranked as $player)
+			{
+				if ($count >= $event_players) { break; }
+				$u = new stdClass();
+				$u->user_id  = (int)$player->id;
+				$u->lat      = isset($player->lat) ? (float)$player->lat : null;
+				$u->lon      = isset($player->lon) ? (float)$player->lon : null;
+				$u->rating   = 0.0;
+				$u->distance = 0.0;
+				$user_to_reg_idx[$u->user_id] = count($reg_users);
+				$reg_users[] = $u;
+				++$count;
+			}
+
+			// Load tournament-specific ratings
+			$ids = '';
+			$delim = '';
+			foreach ($reg_users as $u)
+			{
+				$ids .= $delim . $u->user_id;
+				$delim = ',';
+			}
+			if ($ids !== '')
+			{
+				$q_r = new DbQuery(
+					'SELECT user_id, rating FROM tournament_regs WHERE tournament_id = ? AND user_id IN (' . $ids . ')',
+					$tournament_id);
+				while ($r = $q_r->next())
+				{
+					$uid = (int)$r[0];
+					if (isset($user_to_reg_idx[$uid]))
+					{
+						$reg_users[$user_to_reg_idx[$uid]]->rating = (float)$r[1];
+					}
+				}
+			}
+		}
 		else
 		{
+			// Main round (round = 0): use accepted tournament registrations
 			$q = new DbQuery(
 				'SELECT tr.user_id, c.lat, c.lon, tr.rating' .
 				' FROM tournament_regs tr' .
@@ -2509,16 +2586,19 @@ class ApiPage extends OpsApiPageBase
 				' LIMIT ' . $event_players,
 				$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
 		}
-		while ($row = $q->next())
+		if (!is_null($q))
 		{
-			$u = new stdClass();
-			$u->user_id  = (int)$row[0];
-			$u->lat      = isset($row[1]) ? (float)$row[1] : null;
-			$u->lon      = isset($row[2]) ? (float)$row[2] : null;
-			$u->rating   = (float)$row[3];
-			$u->distance = 0.0;
-			$user_to_reg_idx[$u->user_id] = count($reg_users);
-			$reg_users[] = $u;
+			while ($row = $q->next())
+			{
+				$u = new stdClass();
+				$u->user_id  = (int)$row[0];
+				$u->lat      = isset($row[1]) ? (float)$row[1] : null;
+				$u->lon      = isset($row[2]) ? (float)$row[2] : null;
+				$u->rating   = (float)$row[3];
+				$u->distance = 0.0;
+				$user_to_reg_idx[$u->user_id] = count($reg_users);
+				$reg_users[] = $u;
+			}
 		}
 
 		// --- 4. Calculate travel distances ---
@@ -2597,9 +2677,10 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 
 		// --- 8. Build final mapping [seating_slot => user_id] ---
+		$num_regs          = count($reg_users);
 		$final_mapping     = array_fill(0, $event_players, 0);
 		$assigned_slots    = array_fill(0, $event_players, false);
-		$assigned_reg_idxs = array_fill(0, $event_players, false);
+		$assigned_reg_idxs = $num_regs > 0 ? array_fill(0, $num_regs, false) : array();
 
 		foreach ($restrict_mapping as $reg_idx => $slot)
 		{
@@ -2688,7 +2769,7 @@ class ApiPage extends OpsApiPageBase
 		// --- 10. Sort remaining players and assign to remaining slots ---
 		$remaining_reg   = array();
 		$remaining_slots = array();
-		for ($i = 0; $i < $event_players; ++$i)
+		for ($i = 0; $i < $num_regs; ++$i)
 		{
 			if (!$assigned_reg_idxs[$i]) { $remaining_reg[] = $i; }
 		}
