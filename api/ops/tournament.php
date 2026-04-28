@@ -182,6 +182,79 @@ function parse_id_from_url($url, $site_name)
 	return $url;
 }
 
+function sync_seating_mapping($tournament_id)
+{
+	$eq = new DbQuery(
+		'SELECT id, players, misc FROM events WHERE tournament_id = ? AND round = 0 AND misc IS NOT NULL',
+		$tournament_id);
+	$all_accepted = null;
+	while ($erow = $eq->next())
+	{
+		list($event_id, $event_players, $misc_str) = $erow;
+		$event_players = (int)$event_players;
+		$misc = json_decode($misc_str);
+		if (!isset($misc->seating) || !isset($misc->seating->mapping))
+		{
+			continue;
+		}
+		if ($all_accepted === null)
+		{
+			$all_accepted = array();
+			$aq = new DbQuery(
+				'SELECT user_id FROM tournament_regs' .
+				' WHERE tournament_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0' .
+				' ORDER BY reg_order ASC',
+				$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+			while ($ar = $aq->next())
+			{
+				$all_accepted[] = (int)$ar[0];
+			}
+		}
+		$mapping = (array)$misc->seating->mapping;
+		$n = min($event_players, count($all_accepted));
+		$accepted_set = array();
+		for ($i = 0; $i < $n; ++$i)
+		{
+			$accepted_set[$all_accepted[$i]] = true;
+		}
+		$in_mapping = array();
+		foreach ($mapping as $slot => $uid)
+		{
+			$uid = (int)$uid;
+			if ($uid > 0)
+			{
+				if (isset($accepted_set[$uid]))
+				{
+					$in_mapping[$uid] = true;
+				}
+				else
+				{
+					$mapping[$slot] = 0;
+				}
+			}
+		}
+		for ($i = 0; $i < $n; ++$i)
+		{
+			$uid = $all_accepted[$i];
+			if (isset($in_mapping[$uid]))
+			{
+				continue;
+			}
+			foreach ($mapping as $slot => $val)
+			{
+				if ((int)$val === 0)
+				{
+					$mapping[$slot] = $uid;
+					$in_mapping[$uid] = true;
+					break;
+				}
+			}
+		}
+		$misc->seating->mapping = array_values($mapping);
+		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+	}
+}
+
 class ApiPage extends OpsApiPageBase
 {
 	//-------------------------------------------------------------------------------------------------------
@@ -1252,12 +1325,43 @@ class ApiPage extends OpsApiPageBase
 			$log_details->nickname = $nickname;
 			db_log(LOG_OBJECT_USER, 'replaced', $log_details, $new_user_id);
 		}
+		if ($user_id != $new_user_id)
+		{
+			$meq = new DbQuery(
+				'SELECT id, misc FROM events WHERE tournament_id = ? AND round = 0 AND misc IS NOT NULL',
+				$tournament_id);
+			while ($mrow = $meq->next())
+			{
+				list($event_id, $misc_str) = $mrow;
+				$misc = json_decode($misc_str);
+				if (!isset($misc->seating) || !isset($misc->seating->mapping))
+				{
+					continue;
+				}
+				$mapping = (array)$misc->seating->mapping;
+				$mapping_changed = false;
+				foreach ($mapping as $slot => $uid)
+				{
+					if ((int)$uid === $user_id)
+					{
+						$mapping[$slot] = $new_user_id;
+						$mapping_changed = true;
+						break;
+					}
+				}
+				if ($mapping_changed)
+				{
+					$misc->seating->mapping = array_values($mapping);
+					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+				}
+			}
+		}
 		Db::commit();
-		
+
 		$this->response['user_id'] = $new_user_id;
 		$this->response['nickname'] = $nickname;
 	}
-	
+
 	function change_player_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change player on the tournament.');
@@ -1689,11 +1793,12 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+		sync_seating_mapping($tournament_id);
 		Db::commit();
-		
+
 		$this->response['tournament_id'] = $tournament_id;
 		$this->response['user_id'] = $user_id;
-		
+
 		if ($flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
 		{
 			echo get_label('You application is submitted. The tournament organizers will review your application and contact you if necessary.');
@@ -1746,6 +1851,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+			sync_seating_mapping($tournament_id);
 			Db::commit();
 			$this->response['tournament_id'] = $tournament_id;
 			$this->response['user_id'] = $user_id;
@@ -1790,9 +1896,10 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $old_team_id);
 			}
 		}
+		sync_seating_mapping($tournament_id);
 		Db::commit();
 	}
-	
+
 	function edit_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Edit user registration.');
@@ -1842,12 +1949,13 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $team_id);
 			}
 		}
+		sync_seating_mapping($tournament_id);
 		Db::commit();
-		
+
 		$this->response['tournament_id'] = $tournament_id;
 		$this->response['user_id'] = $user_id;
 	}
-	
+
 	function remove_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove user from the registrations to the tournament.');
@@ -1891,8 +1999,9 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('User [0] did not apply for the tournament.', $user_name));
 		}
+		sync_seating_mapping($tournament_id);
 		Db::commit();
-		
+
 		if ($user_flags & USER_FLAG_NOTIFY)
 		{
 			$lang = get_lang_code($user_lang);
@@ -1935,6 +2044,7 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET flags = flags | ' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED . ' WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+		sync_seating_mapping($tournament_id);
 
 		$this->response['tournament_id'] = $tournament_id;
 		$this->response['user_id'] = $user_id;
@@ -2045,6 +2155,7 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $prev_order, $tournament_id, $user_id);
 		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $my_order, $tournament_id, $prev_user_id);
+		sync_seating_mapping($tournament_id);
 		Db::commit();
 	}
 
