@@ -2868,8 +2868,13 @@ class ApiPage extends OpsApiPageBase
 
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
+		list($pr, $pvr, $tr, $tvr, $nr, $nvr) = Db::record(get_label('seating'),
+			'SELECT players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs FROM seatings WHERE hash = ?',
+			$hash);
+
 		$misc->seating          = new stdClass();
 		$misc->seating->hash    = $hash;
+		$misc->seating->version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
 		$misc->seating->tables  = $seating_by_table;
 		$misc->seating->mapping = $final_mapping;
 

@@ -274,10 +274,40 @@ class Page extends TournamentPageBase
 		{
 			echo '<button onclick="swapPlayers(' . $event_id . ')"><img src="images/user_change.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap players') . '</button>';
 			echo ' <button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
+
+			$stored_hash    = is_object($misc->seating) && isset($misc->seating->hash)    ? $misc->seating->hash    : null;
+			$stored_version = is_object($misc->seating) && isset($misc->seating->version) ? $misc->seating->version : null;
+			$current_version = null;
+
+			if (!is_null($stored_hash))
+			{
+				$srow = (new DbQuery(
+					'SELECT players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs FROM seatings WHERE hash = ?',
+					$stored_hash))->next();
+				if ($srow)
+				{
+					list($pr, $pvr, $tr, $tvr, $nr, $nvr) = $srow;
+					$current_version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
+					if (!is_null($stored_version) && $stored_version !== $current_version && ($nr - $nvr) != 0)
+					{
+						$title = htmlspecialchars(get_label('An improved seating version [0] is available.', $current_version));
+						echo ' <button onclick="makeSeating(' . $event_id . ')" title="' . $title . '"><img src="images/refresh.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Update seating') . '</button>';
+					}
+				}
+			}
 		}
 		echo '</td><td align="right">';
 		$this->nextButton();
-		echo '</td></tr></table></p>';
+		echo '</td></tr></table>';
+
+		if (!empty($misc->seating) && !is_null($stored_hash))
+		{
+			echo '<small style="color:gray">' . htmlspecialchars($stored_hash);
+			if (!is_null($current_version))
+				echo ' &nbsp; v' . htmlspecialchars($current_version);
+			echo '</small>';
+		}
+		echo '</p>';
 
 		if (empty($misc->seating))
 		{
