@@ -119,11 +119,12 @@ class Page extends TournamentPageBase
 		}
 
 		$sel =
-			'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, ni.name FROM tournament_regs tr' .
+			'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, ni.name, u.club_id, c.name, c.flags FROM tournament_regs tr' .
 			' JOIN users u ON u.id = tr.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
 			' JOIN cities i ON i.id = u.city_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
+			' LEFT JOIN clubs c ON c.id = u.club_id' .
 			' WHERE tr.tournament_id = ?';
 		$accepted = ' AND (tr.flags & ' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED . ') = 0';
 
@@ -159,17 +160,19 @@ class Page extends TournamentPageBase
 			echo '<td width="160" align="center"></td>';
 			echo '<td width="40"></td>';
 			echo '<td>' . get_label('Player') . '</td>';
+			echo '<td width="60" align="center">' . get_label('Club') . '</td>';
 			echo '<td width="200">' . get_label('Email') . '</td>';
 			echo '</tr>';
 			foreach ($unconfirmed as $i => $row)
 			{
-				list($user_id, $name, $email, $user_flags, $tr_flags, $city) = $row;
+				list($user_id, $name, $email, $user_flags, $tr_flags, $city, $club_id, $club_name, $club_flags) = $row;
 				echo '<tr class="light">';
 				echo '<td class="dark" align="center" nowrap>';
 				echo '<button onclick="mr.acceptTournamentReg(' . $this->id . ',' . $user_id . ')">' . get_label('Accept application') . '</button>';
 				echo '</td>';
 				echo '<td align="center">' . ($i + 1) . '</td>';
 				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 				echo '</tr>';
 			}
@@ -187,6 +190,17 @@ class Page extends TournamentPageBase
 		echo '</td>';
 		echo '<td valign="middle"><a href="user_info.php?id=' . $user_id . '&bck=1"><b>' . $name . '</b></a><br>' . $city . '</td>';
 		echo '</tr></table>';
+		return ob_get_clean();
+	}
+
+	private function clubCell($club_id, $club_name, $club_flags)
+	{
+		if ($club_id <= 0) { return ''; }
+		ob_start();
+		echo '<a href="club_main.php?id=' . $club_id . '&bck=1">';
+		$this->club_pic->set($club_id, $club_name, $club_flags);
+		$this->club_pic->show(ICONS_DIR, true, 50);
+		echo '</a>';
 		return ob_get_clean();
 	}
 
@@ -208,6 +222,7 @@ class Page extends TournamentPageBase
 		echo '<td width="' . $btn_width . '" align="center"><button class="icon" onclick="dlg.form(\'form/registration_create.php?tournament_id=' . $this->id . '&flags=' . $default_flags . '\', refr, 400)" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button></td>';
 		echo '<td width="40"></td>';
 		echo '<td>' . $person_label . '</td>';
+		echo '<td width="60" align="center">' . get_label('Club') . '</td>';
 		echo '<td width="200">' . get_label('Email') . '</td>';
 		echo '<td width="40"></td>';
 		echo '</tr>';
@@ -218,7 +233,7 @@ class Page extends TournamentPageBase
 			echo '<tr class="' . ($overflow ? 'darker' : 'light') . '">';
 			if ($i < $reg_count)
 			{
-				list($user_id, $name, $email, $user_flags, $tr_flags, $city) = $regs[$i];
+				list($user_id, $name, $email, $user_flags, $tr_flags, $city, $club_id, $club_name, $club_flags) = $regs[$i];
 				echo '<td align="center" nowrap>';
 				echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
 				$new_flags = ($tr_flags & USER_PERM_MASK) & ~$default_flags;
@@ -231,6 +246,7 @@ class Page extends TournamentPageBase
 				echo '</td>';
 				echo '<td align="center">' . ($i + 1) . '</td>';
 				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 				$up_style = ($i == 0) ? ' style="visibility:hidden"' : '';
 				echo '<td align="center"><button class="icon"' . $up_style . ' onclick="moveRegistration(' . $user_id . ', ' . $default_flags . ')" title="' . get_label('Move up') . '"><img src="images/up.png" border="0"></button></td>';
@@ -240,6 +256,7 @@ class Page extends TournamentPageBase
 				echo '<td></td>';
 				echo '<td align="center">' . ($i + 1) . '</td>';
 				echo '<td>' . $this->emptyPersonCell() . '</td>';
+				echo '<td></td>';
 				echo '<td></td>';
 				echo '<td></td>';
 			}
