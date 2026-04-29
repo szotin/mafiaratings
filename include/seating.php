@@ -271,7 +271,7 @@ class SeatingDef
 			$this->players = (int)$hash;
 			$this->tables = (int)$tables;
 			$this->games = (int)$games;
-			if ($restrictions == null)
+			if ($restrictions == null || $this->players < 12)
 			{
 				$this->restrictions = array();
 			}
@@ -297,29 +297,32 @@ class SeatingDef
 				$this->players      = (int)$parts[0];
 				$this->tables       = (int)$parts[1];
 				$this->games        = (int)$parts[2];
-				for ($i = 3; $i < count($parts); ++$i)
+				if ($this->players >= 12)
 				{
-					$group = array();
-					// Each segment is separated by ':'; a segment may be "a" or "a-b" (inclusive range).
-					$segments = explode(':', $parts[$i]);
-					foreach ($segments as $seg)
+					for ($i = 3; $i < count($parts); ++$i)
 					{
-						if (strpos($seg, '-') !== false)
+						$group = array();
+						// Each segment is separated by ':'; a segment may be "a" or "a-b" (inclusive range).
+						$segments = explode(':', $parts[$i]);
+						foreach ($segments as $seg)
 						{
-							list($from, $to) = explode('-', $seg, 2);
-							for ($n = (int)$from; $n <= (int)$to; ++$n)
+							if (strpos($seg, '-') !== false)
 							{
-								$group[] = $n;
+								list($from, $to) = explode('-', $seg, 2);
+								for ($n = (int)$from; $n <= (int)$to; ++$n)
+								{
+									$group[] = $n;
+								}
+							}
+							else
+							{
+								$group[] = (int)$seg;
 							}
 						}
-						else
+						if (count($group) > 0)
 						{
-							$group[] = (int)$seg;
+							$this->restrictions[] = $group;
 						}
-					}
-					if (count($group) > 0)
-					{
-						$this->restrictions[] = $group;
 					}
 				}
 			}
