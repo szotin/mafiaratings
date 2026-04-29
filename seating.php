@@ -510,11 +510,19 @@ class Page extends GeneralPageBase
 		$players = isset($parts[0]) ? (int)$parts[0] : 0;
 		$tables  = isset($parts[1]) ? (int)$parts[1] : 0;
 		$games   = isset($parts[2]) ? (int)$parts[2] : 0;
+		$restriction_parts = array_slice($parts, 3);
+		$restrictions_html = format_seating_restrictions($restriction_parts);
 		$version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
-		echo '<p>' . get_label('Players') . ': <b>' . $players . '</b> &nbsp; ';
+		echo '<p style="display:flex;justify-content:space-between;align-items:center;">';
+		echo '<span>' . get_label('Players') . ': <b>' . $players . '</b> &nbsp; ';
 		echo get_label('Tables') . ': <b>' . $tables . '</b> &nbsp; ';
-		echo get_label('Games per player') . ': <b>' . $games . '</b></p>';
-		echo '<p><small style="color:gray">' . htmlspecialchars($this->hash) . ' &nbsp; v' . htmlspecialchars($version) . '</small></p>';
+		echo get_label('Games per player') . ': <b>' . $games . '</b></span>';
+		echo '<small style="color:gray">' . htmlspecialchars($this->hash) . ' &nbsp; v' . htmlspecialchars($version) . '</small>';
+		echo '</p>';
+		if (!empty($restrictions_html))
+		{
+			echo '<p>' . get_label('Restrictions') . ': ' . $restrictions_html . '</p>';
+		}
 
 		// Pre-compute optimization level percentages (same formula as seatings.php).
 		$calc_pct = function($score, $max_score) {

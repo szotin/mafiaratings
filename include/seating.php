@@ -190,6 +190,37 @@ function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = 
 	return $result;
 }
 
+function format_seating_restrictions($parts)
+{
+	if (empty($parts))
+	{
+		return '';
+	}
+	$groups = array();
+	foreach ($parts as $part)
+	{
+		$players = array();
+		$tokens = explode(':', $part);
+		foreach ($tokens as $token)
+		{
+			if (strpos($token, '-') !== false)
+			{
+				list($from, $to) = explode('-', $token, 2);
+				for ($i = (int)$from; $i <= (int)$to; $i++)
+				{
+					$players[] = $i;
+				}
+			}
+			else
+			{
+				$players[] = (int)$token;
+			}
+		}
+		$groups[] = '(' . implode(', ', $players) . ')';
+	}
+	return implode(' &nbsp; ', $groups);
+}
+
 function _generate_next_restriction_group_level($players, $groups = null)
 {
 	$next = array();
