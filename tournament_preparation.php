@@ -272,7 +272,8 @@ class Page extends TournamentPageBase
 		}
 		else
 		{
-			echo '<button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
+			echo '<button onclick="swapPlayers(' . $event_id . ')"><img src="images/user_change.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap players') . '</button>';
+			echo ' <button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
 		}
 		echo '</td><td align="right">';
 		$this->nextButton();
@@ -578,6 +579,11 @@ class Page extends TournamentPageBase
 				tournament_id: <?php echo $this->id; ?>,
 				type: $('#tournament-type').val(),
 			}, refr);
+		}
+
+		function swapPlayers(eventId)
+		{
+			dlg.form("form/seating_swap.php?event_id=" + eventId, refr, 400);
 		}
 
 		function createPair()

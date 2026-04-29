@@ -2422,6 +2422,56 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// swap_seating_players
+	//-------------------------------------------------------------------------------------------------------
+	function swap_seating_players_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		$user1_id = (int)get_required_param('user1_id');
+		$user2_id = (int)get_required_param('user2_id');
+
+		Db::begin();
+		list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
+			'SELECT club_id, tournament_id, misc FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+
+		if (!is_null($misc_str))
+		{
+			$misc = json_decode($misc_str);
+			if (!is_null($misc) && isset($misc->seating) && isset($misc->seating->mapping))
+			{
+				$mapping = (array)$misc->seating->mapping;
+				$slot1 = -1;
+				$slot2 = -1;
+				foreach ($mapping as $slot => $uid)
+				{
+					if ((int)$uid === $user1_id) $slot1 = $slot;
+					if ((int)$uid === $user2_id) $slot2 = $slot;
+				}
+				if ($slot1 >= 0 && $slot2 >= 0)
+				{
+					$mapping[$slot1] = $user2_id;
+					$mapping[$slot2] = $user1_id;
+					$misc->seating->mapping = array_values($mapping);
+					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+				}
+			}
+		}
+		Db::commit();
+	}
+
+	function swap_seating_players_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Swap two players in the seating mapping.');
+		$help->request_param('event_id', 'The event (round) id.');
+		$help->request_param('user1_id', 'First user id.');
+		$help->request_param('user2_id', 'Second user id.');
+		return $help;
+	}
+
 	// clear_seating
 	//-------------------------------------------------------------------------------------------------------
 	function clear_seating_op()
