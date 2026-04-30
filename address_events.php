@@ -134,7 +134,7 @@ class Page extends AddressPageBase
 				$tournament_pic->show(ICONS_DIR, false, 40);
 				echo '</td>';
 			}
-			echo '<td style="padding-left:12px;"><b><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
+			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
 			echo '<br>' . format_date($event_time, $timezone, true) . '</a></td>';
 			if ($videos_count > 0)
 			{
@@ -144,7 +144,7 @@ class Page extends AddressPageBase
 			echo '</td>';
 			
 			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
+			echo '<td align="center"><a href="event.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
 			
 			echo '</tr>';
 		}

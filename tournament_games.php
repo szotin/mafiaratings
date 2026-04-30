@@ -310,7 +310,7 @@ class Page extends TournamentPageBase
 			}
 			echo '</td>';
 			
-			echo '<td><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name . '</a></td>';
+			echo '<td><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</a></td>';
 			
 			echo '<td>';
 			$moder_pic->

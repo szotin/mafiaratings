@@ -161,7 +161,7 @@ class Page extends TournamentPageBase
 			echo '</td>';
 			
 			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td style="padding-left:12px;"><b><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
+			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
 			echo '<br>' . format_date_period($event_time, $event_duration, $timezone) . '</a></td>';
 			if ($videos_count > 0)
 			{
@@ -184,7 +184,7 @@ class Page extends TournamentPageBase
 			echo '<td align="center">' . $scoring_weight . '</td>';
 			
 			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
+			echo '<td align="center"><a href="event.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
 			
 			echo '</tr>';
 		}

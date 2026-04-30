@@ -123,7 +123,7 @@ class Page extends GeneralPageBase
 				echo '</td></tr>';	
 			}
 			
-			echo '<tr><td align="center"><a href="event_info.php?bck=1&id=' . $id . '">' . $club_name . '<br>';
+			echo '<tr><td align="center"><a href="event.php?bck=1&id=' . $id . '">' . $club_name . '<br>';
 			$event_pic->
 				set($id, $name, $flags)->
 				set($tournament_id, $tournament_name, $tournament_flags)->

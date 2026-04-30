@@ -66,10 +66,10 @@ class Page extends PageBase
 						throw new RedirectExc('event_info.php?attend&id=' . $row1[0]);
 					}
 				}
-				throw new RedirectExc('event_info.php?id=' . $obj_id);
-				
+				throw new RedirectExc('event.php?id=' . $obj_id);
+
 			case EMAIL_OBJ_EVENT:
-				throw new RedirectExc('event_info.php?id=' . $obj_id);
+				throw new RedirectExc('event.php?id=' . $obj_id);
 				
 			case EMAIL_OBJ_TOURNAMENT:
 				throw new RedirectExc('tournament.php?id=' . $obj_id);

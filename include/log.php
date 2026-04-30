@@ -53,7 +53,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_ADDRESS => 'address_info.php?bck=1&id='
 		, LOG_OBJECT_TOURNAMENT => 'tournament.php?bck=1&id='
 		, LOG_OBJECT_SERIES => 'series_info.php?bck=1&id='
-		, LOG_OBJECT_EVENT => 'event_info.php?bck=1&id='
+		, LOG_OBJECT_EVENT => 'event.php?bck=1&id='
 		, LOG_OBJECT_EVENT_BROADCAST => NULL
 		, LOG_OBJECT_GAME => 'view_game.php?bck=1&id='
 		, LOG_OBJECT_VIDEO => 'video.php?bck=1&id='

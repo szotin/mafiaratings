@@ -291,7 +291,7 @@ class Page extends PageBase
 		echo '<p><table class="transp" width="100%"><tr><td width="60"><a href="';
 		if (is_null($tournament_id))
 		{
-			echo 'event_standings.php?bck=1&id=' . $event_id;
+			echo 'event.php?bck=1&id=' . $event_id;
 		}
 		else
 		{
@@ -436,7 +436,7 @@ class Page extends PageBase
 		echo '<p><table class="transp" width="100%"><tr><td width="60"><a href="';
 		if (is_null($tournament_id))
 		{
-			echo 'event_standings.php?bck=1&id=' . $event_id;
+			echo 'event.php?bck=1&id=' . $event_id;
 		}
 		else
 		{

@@ -202,7 +202,7 @@ class Page extends GeneralPageBase
 				echo '</td>';
 			}
 			
-			echo '<td style="padding-left:12px;"><b><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $event_name;
+			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name;
 			if ($playing)
 			{
 				echo ' (' . get_label('playing now') . ')';
@@ -217,7 +217,7 @@ class Page extends GeneralPageBase
 			echo '</td>';
 			
 			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event_standings.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
+			echo '<td align="center"><a href="event.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
 			
 			echo '</tr>';
 		}

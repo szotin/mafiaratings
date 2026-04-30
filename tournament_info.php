@@ -330,13 +330,13 @@ class Page extends TournamentPageBase
 			$past = ($start_time + $duration <= $now);
 			if ($past)
 			{
-				$url = 'event_standings.php';
+				$url = 'event.php';
 				$dark_class = ' class="dark"';
 				$light_class = '';
 			}
 			else
 			{
-				$url = 'event_info.php';
+				$url = 'event.php';
 				$dark_class = ' class="darker"';
 				$light_class = ' class="dark"';
 			}
