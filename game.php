@@ -295,7 +295,7 @@ class Page extends PageBase
 		}
 		else
 		{
-			echo 'tournament_standings.php?bck=1&id=' . $tournament_id;
+			echo 'tournament.php?bck=1&id=' . $tournament_id;
 		}
 		echo '">';
 		$pic->show(ICONS_DIR, false, 60);
@@ -440,7 +440,7 @@ class Page extends PageBase
 		}
 		else
 		{
-			echo 'tournament_standings.php?bck=1&id=' . $tournament_id;
+			echo 'tournament.php?bck=1&id=' . $tournament_id;
 		}
 		echo '">';
 		$pic->show(ICONS_DIR, false, 56);

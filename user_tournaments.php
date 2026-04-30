@@ -173,7 +173,7 @@ class Page extends UserPageBase
 			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
 			$club_pic->show(ICONS_DIR, false, 40);
 			echo '</td><td>';
-			echo '<b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name . '</b>';
+			echo '<b><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->name . '</b>';
 			echo '<br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</a></td>';
 			foreach ($tournament->series as $series)
 			{

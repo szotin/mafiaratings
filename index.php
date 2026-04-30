@@ -100,7 +100,7 @@ class Page extends GeneralPageBase
 		// {
 			$dark_class = ' class = "dark"';
 			$light_class = '';
-			$url = 'tournament_standings.php';
+			$url = 'tournament.php';
 		// }
 		
 		echo '<table class="transp" width="100%">';

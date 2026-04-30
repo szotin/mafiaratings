@@ -46,13 +46,13 @@ class Page extends SeriesPageBase
 			$past = ($tournament_start_time + $tournament_duration <= $now);
 			if ($past)
 			{
-				$url = 'tournament_standings.php';
+				$url = 'tournament.php';
 				$dark_class = ' class="dark"';
 				$light_class = '';
 			}
 			else
 			{
-				$url = 'tournament_info.php';
+				$url = 'tournament.php';
 				$dark_class = ' class="darker"';
 				$light_class = ' class="dark"';
 			}

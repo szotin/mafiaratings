@@ -141,7 +141,7 @@ class Page extends LeaguePageBase
 			
 			echo '<td align="center"><a href="series_tournaments.php?bck=1&id=' . $series_id . '">' . $tournaments_count . '</a></td>';
 			
-			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $finals_id . '">';
+			echo '<td align="center"><a href="tournament.php?bck=1&id=' . $finals_id . '">';
 			$tournament_pic->set($finals_id, $finals_name, $finals_flags);
 			$tournament_pic->show(ICONS_DIR, true, 56);
 			echo '</a></td>';

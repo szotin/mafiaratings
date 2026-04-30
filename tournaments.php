@@ -268,7 +268,7 @@ class Page extends GeneralPageBase
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 			$tournament_pic->show(ICONS_DIR, true, 60);
 			echo '</td>';
-			echo '<td><b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
+			echo '<td><b><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
 			if ($playing)
 			{
 				echo ' (' . get_label('playing now') . ')';
@@ -306,7 +306,7 @@ class Page extends GeneralPageBase
 			}
 			else
 			{
-				echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->num_players . '</a></td>';
+				echo '<td align="center"><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->num_players . '</a></td>';
 				echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
 				echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
 				

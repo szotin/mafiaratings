@@ -633,7 +633,7 @@ class ApiPage extends OpsApiPageBase
 			if ($row = $query->next())
 			{
 				list($mwt_tournament_id, $mwt_tournament_flags, $mwt_tournament_name) = $row;
-				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $mwt_id, $mwt_tournament_id, $mwt_tournament_name, 'MWT'));
+				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament.php?id=[1]">[2]</a>', $mwt_id, $mwt_tournament_id, $mwt_tournament_name, 'MWT'));
 			}
 		}
 		
@@ -647,7 +647,7 @@ class ApiPage extends OpsApiPageBase
 			if ($row = $query->next())
 			{
 				list($imafia_tournament_id, $imafia_tournament_flags, $imafia_tournament_name) = $row;
-				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $imafia_id, $imafia_tournament_id, $imafia_tournament_name, 'Emotion Games'));
+				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament.php?id=[1]">[2]</a>', $imafia_id, $imafia_tournament_id, $imafia_tournament_name, 'Emotion Games'));
 			}
 		}
 		
@@ -661,7 +661,7 @@ class ApiPage extends OpsApiPageBase
 			if ($row = $query->next())
 			{
 				list($emo_tournament_id, $emo_tournament_flags, $emo_tournament_name) = $row;
-				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament_info.php?id=[1]">[2]</a>', $emo_id, $emo_tournament_id, $emo_tournament_name, 'Emotion.games'));
+				throw new Exc(get_label('[3] ID [0] is already used by <a href="tournament.php?id=[1]">[2]</a>', $emo_id, $emo_tournament_id, $emo_tournament_name, 'Emotion.games'));
 			}
 		}
 		

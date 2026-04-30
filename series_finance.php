@@ -209,7 +209,7 @@ class Page extends SeriesPageBase
 			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
 			$tournament_pic->show(ICONS_DIR, true, 60, 60, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
 			echo '</td>';
-			echo '<td><b><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
+			echo '<td><b><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
 			echo '</a></b>';
 			if (isset($tournament->stars))
 			{
@@ -238,7 +238,7 @@ class Page extends SeriesPageBase
 			echo '</tr></table></td>';
 			
 			echo '<td align="center">' . $tournament->num_players . '</td>';
-			echo '<td align="center"><a href="tournament_standings.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
+			echo '<td align="center"><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->players_count . '</a></td>';
 
 			$total_expected += $tournament->num_players * $tournament->series_fee;
 			echo '<td align="center">' . format_currency($tournament->num_players * $tournament->series_fee, $currency_pattern, false) . '</td>';

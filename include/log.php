@@ -51,7 +51,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_SCORING_SYSTEM => 'scoring.php?bck=1&id='
 		, LOG_OBJECT_GAINING_SYSTEM => 'gaining.php?bck=1&id='
 		, LOG_OBJECT_ADDRESS => 'address_info.php?bck=1&id='
-		, LOG_OBJECT_TOURNAMENT => 'tournament_info.php?bck=1&id='
+		, LOG_OBJECT_TOURNAMENT => 'tournament.php?bck=1&id='
 		, LOG_OBJECT_SERIES => 'series_info.php?bck=1&id='
 		, LOG_OBJECT_EVENT => 'event_info.php?bck=1&id='
 		, LOG_OBJECT_EVENT_BROADCAST => NULL

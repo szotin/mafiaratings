@@ -72,7 +72,7 @@ class Page extends PageBase
 				throw new RedirectExc('event_info.php?id=' . $obj_id);
 				
 			case EMAIL_OBJ_TOURNAMENT:
-				throw new RedirectExc('tournament_info.php?id=' . $obj_id);
+				throw new RedirectExc('tournament.php?id=' . $obj_id);
 				
 			case EMAIL_OBJ_GAME:
 				throw new RedirectExc('view_game.php?id=' . $obj_id);

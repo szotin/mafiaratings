@@ -30,13 +30,13 @@ class Page extends ClubPageBase
 		{
 			$dark_class = ' class = "darker"';
 			$light_class = ' class = "dark"';
-			$url = 'tournament_info.php';
+			$url = 'tournament.php';
 		}
 		else
 		{
 			$dark_class = ' class = "dark"';
 			$light_class = '';
-			$url = 'tournament_standings.php';
+			$url = 'tournament.php';
 		}
 		
 		echo '<table class="transp" width="100%">';

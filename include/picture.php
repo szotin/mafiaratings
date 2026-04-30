@@ -220,7 +220,7 @@ class Picture
 			case EVENT_PICTURE:
 				return 'event_standings.php?bck=1&id=' . $this->id;
 			case TOURNAMENT_PICTURE:
-				return 'tournament_standings.php?bck=1&id=' . $this->id;
+				return 'tournament.php?bck=1&id=' . $this->id;
 			case SERIES_PICTURE:
 				return 'series_standings.php?bck=1&id=' . $this->id;
 			case ADDRESS_PICTURE:
