@@ -58,7 +58,7 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	}
 }
 
-function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags)
+function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags, $num_players = 0)
 {
 	global $_lang;
 	if (is_valid_lang($langs))
@@ -69,6 +69,21 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 	{
 		$lang_code = get_lang_code($_lang);
 	}
+
+	// Scheme values for main round
+	$main_players = ($num_players > 0) ? $num_players : null;
+	$main_tables  = ($num_players >= 10) ? (int)floor($num_players / 10) : null;
+	$main_games   = ($num_players >= 10) ? (($num_players % 10 === 0) ? 12 : 10) : null;
+
+	// Scheme values for semi-final and other intermediate rounds
+	$mid_players = ($num_players >= 10) ? (int)(floor($num_players / 10) * 10) : null;
+	$mid_tables  = $main_tables;
+	$mid_games   = ($num_players >= 10) ? 2 : null;
+
+	// Scheme values for final
+	$final_players = 10;
+	$final_tables  = 1;
+
 	switch ($type)
 	{
 		case TOURNAMENT_TYPE_FIIM_ONE_ROUND:
@@ -78,7 +93,7 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags = $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -88,10 +103,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 2);
 			break;
 		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -101,9 +116,9 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
 			$ops->group = 'final';
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 4);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3:
 			$ops = new stdClass();
@@ -113,11 +128,11 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags, $mid_players, $mid_tables, $mid_games);
 			$ops->group = 'final';
 			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 2);
 			break;
 		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4:
 			$ops = new stdClass();
@@ -127,10 +142,10 @@ function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $
 			{
 				$ops->flags |= $scoring_options->flags;
 			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags);
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags, $mid_players, $mid_tables, $mid_games);
 			$ops->group = 'final';
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags);
+			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 4);
 			break;
 		default:
 			break;
@@ -165,6 +180,79 @@ function parse_id_from_url($url, $site_name)
 		}
 	}
 	return $url;
+}
+
+function sync_seating_mapping($tournament_id)
+{
+	$eq = new DbQuery(
+		'SELECT id, players, misc FROM events WHERE tournament_id = ? AND round = 0 AND misc IS NOT NULL',
+		$tournament_id);
+	$all_accepted = null;
+	while ($erow = $eq->next())
+	{
+		list($event_id, $event_players, $misc_str) = $erow;
+		$event_players = (int)$event_players;
+		$misc = json_decode($misc_str);
+		if (!isset($misc->seating) || !isset($misc->seating->mapping))
+		{
+			continue;
+		}
+		if ($all_accepted === null)
+		{
+			$all_accepted = array();
+			$aq = new DbQuery(
+				'SELECT user_id FROM tournament_regs' .
+				' WHERE tournament_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0' .
+				' ORDER BY reg_order ASC',
+				$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+			while ($ar = $aq->next())
+			{
+				$all_accepted[] = (int)$ar[0];
+			}
+		}
+		$mapping = (array)$misc->seating->mapping;
+		$n = min($event_players, count($all_accepted));
+		$accepted_set = array();
+		for ($i = 0; $i < $n; ++$i)
+		{
+			$accepted_set[$all_accepted[$i]] = true;
+		}
+		$in_mapping = array();
+		foreach ($mapping as $slot => $uid)
+		{
+			$uid = (int)$uid;
+			if ($uid > 0)
+			{
+				if (isset($accepted_set[$uid]))
+				{
+					$in_mapping[$uid] = true;
+				}
+				else
+				{
+					$mapping[$slot] = 0;
+				}
+			}
+		}
+		for ($i = 0; $i < $n; ++$i)
+		{
+			$uid = $all_accepted[$i];
+			if (isset($in_mapping[$uid]))
+			{
+				continue;
+			}
+			foreach ($mapping as $slot => $val)
+			{
+				if ((int)$val === 0)
+				{
+					$mapping[$slot] = $uid;
+					$in_mapping[$uid] = true;
+					break;
+				}
+			}
+		}
+		$misc->seating->mapping = array_values($mapping);
+		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+	}
 }
 
 class ApiPage extends OpsApiPageBase
@@ -357,8 +445,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->parent_series = json_encode($parent_series);
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
-		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags);
-		
+		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $players);
+
 		// create parent series records
 		foreach ($parent_series as $s)
 		{
@@ -430,8 +518,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id) = 
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id, t.emo_id FROM tournaments t' . 
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id, $old_preparation_stage) =
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id, t.emo_id, t.preparation_stage FROM tournaments t' .
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -475,6 +563,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
 		$type = (int)get_optional_param('type', $old_type);
 		$rules_code = check_rules_code(get_optional_param('rules_code', $old_rules_code));
+		$preparation_stage = (int)get_optional_param('preparation_stage', $old_preparation_stage);
 
 		$update_flags = (int)get_optional_param('update_flags', 0);
 		
@@ -712,9 +801,9 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('round'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 			Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?', $tournament_id);
 			
-			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags);
+			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $num_players);
 		}
-		else 
+		else
 		{
 			if (
 				$rules_code != $old_rules_code ||
@@ -764,8 +853,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $emo_id, $rules_code, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ?, preparation_stage = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $emo_id, $rules_code, $preparation_stage, $tournament_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
@@ -1236,12 +1325,43 @@ class ApiPage extends OpsApiPageBase
 			$log_details->nickname = $nickname;
 			db_log(LOG_OBJECT_USER, 'replaced', $log_details, $new_user_id);
 		}
+		if ($user_id != $new_user_id)
+		{
+			$meq = new DbQuery(
+				'SELECT id, misc FROM events WHERE tournament_id = ? AND round = 0 AND misc IS NOT NULL',
+				$tournament_id);
+			while ($mrow = $meq->next())
+			{
+				list($event_id, $misc_str) = $mrow;
+				$misc = json_decode($misc_str);
+				if (!isset($misc->seating) || !isset($misc->seating->mapping))
+				{
+					continue;
+				}
+				$mapping = (array)$misc->seating->mapping;
+				$mapping_changed = false;
+				foreach ($mapping as $slot => $uid)
+				{
+					if ((int)$uid === $user_id)
+					{
+						$mapping[$slot] = $new_user_id;
+						$mapping_changed = true;
+						break;
+					}
+				}
+				if ($mapping_changed)
+				{
+					$misc->seating->mapping = array_values($mapping);
+					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+				}
+			}
+		}
 		Db::commit();
-		
+
 		$this->response['user_id'] = $new_user_id;
 		$this->response['nickname'] = $nickname;
 	}
-	
+
 	function change_player_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change player on the tournament.');
@@ -1653,7 +1773,8 @@ class ApiPage extends OpsApiPageBase
 					list ($team_id) = Db::record(get_label('team'), 'SELECT LAST_INSERT_ID()');
 				}
 			}
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, team_id, city_id, rating) values (?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id, $city_id, $user_rating);
+			list($max_reg_order) = Db::record(get_label('registration'), 'SELECT COALESCE(MAX(reg_order), 0) FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, team_id, city_id, rating, reg_order) values (?, ?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $team_id, $city_id, $user_rating, (int)$max_reg_order + 1);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			if ($team_id != null)
@@ -1664,18 +1785,20 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $city_id, $user_rating);
+			list($max_reg_order) = Db::record(get_label('registration'), 'SELECT COALESCE(MAX(reg_order), 0) FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+			Db::exec(get_label('registration'), 'INSERT INTO tournament_regs (user_id, tournament_id, flags, city_id, rating, reg_order) values (?, ?, ?, ?, ?, ?)', $user_id, $tournament_id, $flags, $city_id, $user_rating, (int)$max_reg_order + 1);
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			db_log(LOG_OBJECT_USER, 'joined tournament', $log_details, $user_id, $club_id);
 		}
 		
 		update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+		sync_seating_mapping($tournament_id);
 		Db::commit();
-		
+
 		$this->response['tournament_id'] = $tournament_id;
 		$this->response['user_id'] = $user_id;
-		
+
 		if ($flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
 		{
 			echo get_label('You application is submitted. The tournament organizers will review your application and contact you if necessary.');
@@ -1726,10 +1849,16 @@ class ApiPage extends OpsApiPageBase
 		$flags = (int)get_optional_param('access_flags', ($old_flags & USER_PERM_MASK)) & USER_PERM_MASK;
 		if ($flags == 0)
 		{
-			throw new Exc(get_label('Please choose at least one role for the user.'));
+			Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+			sync_seating_mapping($tournament_id);
+			Db::commit();
+			$this->response['tournament_id'] = $tournament_id;
+			$this->response['user_id'] = $user_id;
+			return;
 		}
 		$flags += ($old_flags & ~USER_PERM_MASK);
-			
+
 		if ($city_id != $old_city_id || $flags != $old_flags)
 		{
 			if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id))
@@ -1767,9 +1896,10 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $old_team_id);
 			}
 		}
+		sync_seating_mapping($tournament_id);
 		Db::commit();
 	}
-	
+
 	function edit_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Edit user registration.');
@@ -1819,12 +1949,13 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(get_label('team'), 'DELETE FROM tournament_teams WHERE id = ?', $team_id);
 			}
 		}
+		sync_seating_mapping($tournament_id);
 		Db::commit();
-		
+
 		$this->response['tournament_id'] = $tournament_id;
 		$this->response['user_id'] = $user_id;
 	}
-	
+
 	function remove_registration_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Remove user from the registrations to the tournament.');
@@ -1868,8 +1999,9 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('User [0] did not apply for the tournament.', $user_name));
 		}
+		sync_seating_mapping($tournament_id);
 		Db::commit();
-		
+
 		if ($user_flags & USER_FLAG_NOTIFY)
 		{
 			$lang = get_lang_code($user_lang);
@@ -1900,6 +2032,35 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// rollback_registration
+	//-------------------------------------------------------------------------------------------------------
+	function rollback_registration_op()
+	{
+		$user_id = (int)get_required_param('user_id');
+		$tournament_id = (int)get_required_param('tournament_id');
+
+		list($club_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET flags = flags | ' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED . ' WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+		sync_seating_mapping($tournament_id);
+
+		$this->response['tournament_id'] = $tournament_id;
+		$this->response['user_id'] = $user_id;
+	}
+
+	function rollback_registration_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Move an accepted registration back to the not-confirmed state.');
+		$help->request_param('user_id', 'User id.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->response_param('user_id', 'User id.');
+		$help->response_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// refresh_table
 	//-------------------------------------------------------------------------------------------------------
 	function refresh_table_op()
@@ -1916,6 +2077,94 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Delete the cached tournament table.');
 		$help->request_param('tournament_id', 'Tournament id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// set_scheme
+	//-------------------------------------------------------------------------------------------------------
+	function set_scheme_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$rounds = json_decode(get_required_param('rounds'));
+
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+
+		Db::begin();
+
+		$main_players = null;
+		foreach ($rounds as $round)
+		{
+			$event_id = (int)$round->event_id;
+			$players  = isset($round->players) && $round->players > 0 ? (int)$round->players : null;
+			$tables   = isset($round->tables)  && $round->tables  > 0 ? (int)$round->tables  : null;
+			$games    = isset($round->games)   && $round->games   > 0 ? (int)$round->games   : null;
+
+			Db::exec(get_label('event'), 'UPDATE events SET players = ?, tables = ?, games = ? WHERE id = ? AND tournament_id = ?', $players, $tables, $games, $event_id, $tournament_id);
+
+			if (isset($round->is_main) && $round->is_main && !is_null($players))
+			{
+				$main_players = $players;
+			}
+		}
+
+		if (!is_null($main_players))
+		{
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET num_players = ? WHERE id = ?', $main_players, $tournament_id);
+		}
+
+		Db::commit();
+	}
+
+	function set_scheme_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Set players/tables/games scheme for all tournament rounds at once. Also updates tournament num_players from the main round.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('rounds', 'JSON array of round objects: [{event_id, players, tables, games, is_main}, ...].');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// move_registration_up
+	//-------------------------------------------------------------------------------------------------------
+	function move_registration_up_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$user_id       = (int)get_required_param('user_id');
+		$flags_filter  = (int)get_required_param('flags_filter');
+
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+
+		list($my_order) = Db::record(get_label('registration'),
+			'SELECT reg_order FROM tournament_regs WHERE tournament_id = ? AND user_id = ?',
+			$tournament_id, $user_id);
+		$my_order = (int)$my_order;
+
+		$row = (new DbQuery(
+			'SELECT user_id, reg_order FROM tournament_regs' .
+			' WHERE tournament_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0 AND reg_order < ?' .
+			' ORDER BY reg_order DESC LIMIT 1',
+			$tournament_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED, $my_order
+		))->next();
+		if (!$row) return;
+
+		list($prev_user_id, $prev_order) = $row;
+
+		Db::begin();
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $prev_order, $tournament_id, $user_id);
+		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $my_order, $tournament_id, $prev_user_id);
+		sync_seating_mapping($tournament_id);
+		Db::commit();
+	}
+
+	function move_registration_up_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Move a registration one position up within its group.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('user_id', 'User id to move up.');
+		$help->request_param('flags_filter', 'Permission flag to filter group (USER_PERM_PLAYER or USER_PERM_REFEREE etc).');
 		return $help;
 	}
 }

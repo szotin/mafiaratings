@@ -83,15 +83,15 @@ class SeatingOptimization extends Updater
 			return 0;
 		}
 		
+		if (!isset($this->seatingDef))
+		{
+			$this->seatingDef = new SeatingDef($this->vars->hash);
+		}
+		
 		if ($this->seatingDef->tables <= 1)
 		{
 			$this->vars->current_round = count($this->vars->seating);
 			return 0;
-		}
-		
-		if (!isset($this->seatingDef))
-		{
-			$this->seatingDef = new SeatingDef($this->vars->hash);
 		}
 		
 		for ($count = 0; $count < $items_count && $this->_next_players_itteration(); ++$count)

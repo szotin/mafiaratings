@@ -209,7 +209,7 @@ class TournamentPageBase extends PageBase
 		{
 			$manager_menu = array
 			(
-				new MenuItem('tournament_regs.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name)),
+				new MenuItem('tournament_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Tournament preparation.')),
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
 				new MenuItem('tournament_seating.php?view=0&id=' . $this->id, get_label('Seating'), get_label('Edit tournament seating.')),
@@ -481,7 +481,7 @@ function get_round_name($round_num)
 	}
 }
 
-function create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $tournament_flags)
+function create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $tournament_flags, $players = null, $tables = null, $games = null)
 {
 	$event_name = get_round_name($round_num);
 	$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
@@ -490,9 +490,9 @@ function create_tournament_round($address_id, $club_id, $start, $end, $notes, $l
 		$flags |= EVENT_FLAG_STREAMING;
 	}
 	Db::exec(
-		get_label('round'), 
-		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules, round) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num);
+		get_label('round'),
+		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, players, tables, games) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $players, $tables, $games);
 	list ($round_id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
 	
 		

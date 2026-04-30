@@ -39,11 +39,12 @@ function get_pair_policy_name($policy)
 //   user1_id, user1_name, user1_flags, user1_tournament_flags, user1_club_flags
 //   user2_id, user2_name, user2_flags, user2_tournament_flags, user2_club_flags
 //   policy, source (display string)
-function get_tournament_pairs($tournament_id, $club_id, $lang)
+function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = false)
 {
 	$players_list = '';
 	$delim = '';
-	$query = new DbQuery('SELECT user_id FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+	$accepted_filter = $accepted_only ? ' AND (flags & ' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED . ') = 0' : '';
+	$query = new DbQuery('SELECT user_id FROM tournament_regs WHERE tournament_id = ?' . $accepted_filter, $tournament_id);
 	while ($row = $query->next())
 	{
 		$players_list .= $delim . (int)$row[0];
@@ -189,6 +190,37 @@ function get_tournament_pairs($tournament_id, $club_id, $lang)
 	return $result;
 }
 
+function format_seating_restrictions($parts)
+{
+	if (empty($parts))
+	{
+		return '';
+	}
+	$groups = array();
+	foreach ($parts as $part)
+	{
+		$players = array();
+		$tokens = explode(':', $part);
+		foreach ($tokens as $token)
+		{
+			if (strpos($token, '-') !== false)
+			{
+				list($from, $to) = explode('-', $token, 2);
+				for ($i = (int)$from; $i <= (int)$to; $i++)
+				{
+					$players[] = $i;
+				}
+			}
+			else
+			{
+				$players[] = (int)$token;
+			}
+		}
+		$groups[] = '(' . implode(', ', $players) . ')';
+	}
+	return implode(' &nbsp; ', $groups);
+}
+
 function _generate_next_restriction_group_level($players, $groups = null)
 {
 	$next = array();
@@ -270,7 +302,7 @@ class SeatingDef
 			$this->players = (int)$hash;
 			$this->tables = (int)$tables;
 			$this->games = (int)$games;
-			if ($restrictions == null)
+			if ($restrictions == null || $this->players < 12)
 			{
 				$this->restrictions = array();
 			}
@@ -296,29 +328,32 @@ class SeatingDef
 				$this->players      = (int)$parts[0];
 				$this->tables       = (int)$parts[1];
 				$this->games        = (int)$parts[2];
-				for ($i = 3; $i < count($parts); ++$i)
+				if ($this->players >= 12)
 				{
-					$group = array();
-					// Each segment is separated by ':'; a segment may be "a" or "a-b" (inclusive range).
-					$segments = explode(':', $parts[$i]);
-					foreach ($segments as $seg)
+					for ($i = 3; $i < count($parts); ++$i)
 					{
-						if (strpos($seg, '-') !== false)
+						$group = array();
+						// Each segment is separated by ':'; a segment may be "a" or "a-b" (inclusive range).
+						$segments = explode(':', $parts[$i]);
+						foreach ($segments as $seg)
 						{
-							list($from, $to) = explode('-', $seg, 2);
-							for ($n = (int)$from; $n <= (int)$to; ++$n)
+							if (strpos($seg, '-') !== false)
 							{
-								$group[] = $n;
+								list($from, $to) = explode('-', $seg, 2);
+								for ($n = (int)$from; $n <= (int)$to; ++$n)
+								{
+									$group[] = $n;
+								}
+							}
+							else
+							{
+								$group[] = (int)$seg;
 							}
 						}
-						else
+						if (count($group) > 0)
 						{
-							$group[] = (int)$seg;
+							$this->restrictions[] = $group;
 						}
-					}
-					if (count($group) > 0)
-					{
-						$this->restrictions[] = $group;
 					}
 				}
 			}

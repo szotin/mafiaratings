@@ -6,40 +6,6 @@ require_once 'include/pages.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
-// Parses restriction segments from the hash and returns a human-readable HTML string.
-// Each segment is a group: "0-2" means players 0,1,2; "0:2:5" means players 0,2,5.
-// Groups are separated by semicolons in the output.
-function format_seating_restrictions($parts)
-{
-	if (empty($parts))
-	{
-		return '';
-	}
-	$groups = array();
-	foreach ($parts as $part)
-	{
-		$players = array();
-		$tokens = explode(':', $part);
-		foreach ($tokens as $token)
-		{
-			if (strpos($token, '-') !== false)
-			{
-				list($from, $to) = explode('-', $token, 2);
-				for ($i = (int)$from; $i <= (int)$to; $i++)
-				{
-					$players[] = $i;
-				}
-			}
-			else
-			{
-				$players[] = (int)$token;
-			}
-		}
-		$groups[] = '(' . implode(', ', $players) . ')';
-	}
-	return implode(' &nbsp; ', $groups);
-}
-
 class Page extends GeneralPageBase
 {
 	protected function show_body()

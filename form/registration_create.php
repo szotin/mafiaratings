@@ -105,10 +105,11 @@ try
 		}
 	}
 	
+	$default_flags = isset($_REQUEST['flags']) ? (int)$_REQUEST['flags'] : USER_PERM_PLAYER;
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-manager"> '.get_label('Manager');
-	echo '<br><input type="checkbox" id="form-referee"> '.get_label('Referee');
-	echo '<br><input type="checkbox" id="form-player" checked> '.get_label('Player');
+	echo '<input type="checkbox" id="form-manager"' . (($default_flags & USER_PERM_MANAGER) ? ' checked' : '') . '> '.get_label('Manager');
+	echo '<br><input type="checkbox" id="form-referee"' . (($default_flags & USER_PERM_REFEREE) ? ' checked' : '') . '> '.get_label('Referee');
+	echo '<br><input type="checkbox" id="form-player"' . (($default_flags & USER_PERM_PLAYER) ? ' checked' : '') . '> '.get_label('Player');
 	echo '</td></tr>';
 	
 	echo '</table>';

@@ -3,179 +3,179 @@
 return array
 (
 	'round' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>round(num, precision)</code></p>
-		<p>Returns the rounded value of num to specified precision (number of digits after the decimal point). precision can also be negative or zero (default).</p>
-	<p><h3>Parameters</h3>
+		<p>Повертає округлене значення num до заданої точності (кількість цифр після десяткової крапки). precision може бути від\'ємним або нульовим (за замовчуванням).</p>
+	<p><h3>Параметри</h3>
 		<dl>
-			<dt>num</dt><dd>The value to round. If missing, 0 is returned.</dd>
-			<dt>precision</dt><dd>The optional number of decimal digits to round to.
-				<p>If the precision is positive, num is rounded to precision significant digits after the decimal point.</p>
-				<p>If the precision is negative, num is rounded to precision significant digits before the decimal point, i.e. to the nearest multiple of pow(10, -precision), e.g. for a precision of -1 num is rounded to tens, for a precision of -2 to hundreds, etc.</p></dd>
+			<dt>num</dt><dd>Значення для округлення. Якщо відсутнє, повертається 0.</dd>
+			<dt>precision</dt><dd>Необов\'язкова кількість знаків після десяткової крапки для округлення.
+				<p>Якщо precision додатне, num округлюється до precision значущих цифр після десяткової крапки.</p>
+				<p>Якщо precision від\'ємне, num округлюється до precision значущих цифр перед десятковою крапкою, тобто до найближчого кратного pow(10, -precision), наприклад, при precision -1 num округлюється до десятків, при -2 — до сотень тощо.</p></dd>
 		</dl>
-	<p><h3>Examples</h3><p>
-		<code>round(1.4)</code> is 1<br> 
-		<code>round(5.5)</code> is 6<br> 
-		<code>round(3.1415926, 2)</code> is 3.14<br> 
-		<code>round(587, -2)</code> is 600 </p>',
+	<p><h3>Приклади</h3><p>
+		<code>round(1.4)</code> дорівнює 1<br>
+		<code>round(5.5)</code> дорівнює 6<br>
+		<code>round(3.1415926, 2)</code> дорівнює 3.14<br>
+		<code>round(587, -2)</code> дорівнює 600 </p>',
 
 	'floor' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>floor(num)</code></p>
-		<p>Returns the next lowest integer value by rounding down num if necessary.</p>
-	<h3>Parameters</h3>
+		<p>Повертає найближче менше ціле число, округлюючи num вниз за потреби.</p>
+	<h3>Параметри</h3>
 		<dl>
-			<dt>num</dt><dd>The value to round. If missing, 0 is returned.</dd>
+			<dt>num</dt><dd>Значення для округлення. Якщо відсутнє, повертається 0.</dd>
 		</dl>
-	<h3>Examples</h3>
-		<p><code>floor(1.4)</code> is 1<br> 
-		<code>floor(5.5)</code> is 5<br> 
-		<code>floor(999.99999)</code> is 999<br>',
+	<h3>Приклади</h3>
+		<p><code>floor(1.4)</code> дорівнює 1<br>
+		<code>floor(5.5)</code> дорівнює 5<br>
+		<code>floor(999.99999)</code> дорівнює 999<br>',
 
 	'ceil' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>ceil(num)</code></p>
-		<p>Returns the next highest integer value by rounding down num if necessary.</p>
-	<h3>Parameters</h3>
+		<p>Повертає найближче більше ціле число, округлюючи num вгору за потреби.</p>
+	<h3>Параметри</h3>
 		<dl>
-			<dt>num</dt><dd>The value to round. If missing, 0 is returned.</dd>
+			<dt>num</dt><dd>Значення для округлення. Якщо відсутнє, повертається 0.</dd>
 		</dl>
-	<h3>Examples</h3>
-		<p><code>ceil(1.4)</code> is 1<br> 
-		<code>ceil(5.5)</code> is 5<br> 
-		<code>ceil(999.99999)</code> is 999<br>',
+	<h3>Приклади</h3>
+		<p><code>ceil(1.4)</code> дорівнює 2<br>
+		<code>ceil(5.5)</code> дорівнює 6<br>
+		<code>ceil(999.99999)</code> дорівнює 1000<br>',
 
 	'log' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>log(num, base)</code></p>
-		<p>If the optional base parameter is specified, log() returns log<sub>base</sub>(num), otherwise log() returns the natural logarithm of num.</p>
-	<h3>Parameters</h3>
+		<p>Якщо необов\'язковий параметр base вказано, log() повертає log<sub>base</sub>(num), інакше log() повертає натуральний логарифм num.</p>
+	<h3>Параметри</h3>
 		<dl>
-			<dt>num</dt><dd>The value to calculate the logarithm for.</dd>
-			<dt>base</dt><dd>The optional logarithmic base to use (defaults to \'e\' and so to the natural logarithm).</dd>
+			<dt>num</dt><dd>Значення, для якого обчислюється логарифм.</dd>
+			<dt>base</dt><dd>Необов\'язкова основа логарифму (за замовчуванням \'e\', тобто натуральний логарифм).</dd>
 		</dl>
-	<h3>Examples</h3>
-		<p><code>log(1)</code> is '.log(1).'<br> 
-		<code>log(4,2)</code> is '.log(4,2).'<br> 
-		<code>log(1000,10)</code> is '.log(1000,10).'<br> 
-		<code>log(0)</code> is '.EV_MIN_VALUE.' - this is the minimum value for the evaluator. It represents negative infinity.</p>',
+	<h3>Приклади</h3>
+		<p><code>log(1)</code> дорівнює '.log(1).'<br>
+		<code>log(4,2)</code> дорівнює '.log(4,2).'<br>
+		<code>log(1000,10)</code> дорівнює '.log(1000,10).'<br>
+		<code>log(0)</code> дорівнює '.EV_MIN_VALUE.' — це мінімальне значення для обчислювача. Воно представляє мінус нескінченність.</p>',
 
 	'min' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>min(value1, value2, ...)</code></p>
-		<p>Returns the lowest value between value1, value2, value3, etc...</p>
-	<h3>Parameters</h3>
+		<p>Повертає найменше значення серед value1, value2, value3 тощо...</p>
+	<h3>Параметри</h3>
 		<dl>
-			<dt>valueN</dt><dd>Value to participate in the race for the lowest.</dd>
+			<dt>valueN</dt><dd>Значення, що бере участь у пошуку найменшого.</dd>
 		</dl>
-	<h3>Examples</h3>
-		<p><code>min(1)</code> is 1<br> 
-		<code>min(7.01, 6.99)</code> is 6.99<br> 
-		<code>min(1,2,3,4,5,6)</code> is 1<br> 
-		<code>max(min(value(), 1), 0)</code> - guarantees that the result is between 0 and 1</p>',
+	<h3>Приклади</h3>
+		<p><code>min(1)</code> дорівнює 1<br>
+		<code>min(7.01, 6.99)</code> дорівнює 6.99<br>
+		<code>min(1,2,3,4,5,6)</code> дорівнює 1<br>
+		<code>max(min(value(), 1), 0)</code> — гарантує, що результат знаходиться між 0 та 1</p>',
 
 	'max' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>max(value1, value2, ...)</code></p>
-		<p>Returns the highest value between value1, value2, value3, etc...</p>
-	<h3>Parameters</h3>
+		<p>Повертає найбільше значення серед value1, value2, value3 тощо...</p>
+	<h3>Параметри</h3>
 		<dl>
-			<dt>valueN</dt><dd>Value to participate in the race for the highest.</dd>
+			<dt>valueN</dt><dd>Значення, що бере участь у пошуку найбільшого.</dd>
 		</dl>
-	<h3>Examples</h3>
-		<p><code>max(1)</code> is 1<br> 
-		<code>max(7.01, 6.99)</code> is 7.01<br> 
-		<code>max(1,2,3,4,5,6)</code> is 6<br> 
-		<code>max(min(value(), 1), 0)</code> - guarantees that the result is between 0 and 1</p>',
-		
+	<h3>Приклади</h3>
+		<p><code>max(1)</code> дорівнює 1<br>
+		<code>max(7.01, 6.99)</code> дорівнює 7.01<br>
+		<code>max(1,2,3,4,5,6)</code> дорівнює 6<br>
+		<code>max(min(value(), 1), 0)</code> — гарантує, що результат знаходиться між 0 та 1</p>',
+
 	'counter' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>counter(type, number)</code></p>
-		<p>Returns a value of counter for this player-game. Counter is an object created in the scoring system in the section Counters.<p>
-	<h3>Parameters</h3>
+		<p>Повертає значення лічильника для цієї гри гравця. Лічильник — це об\'єкт, створений у системі підрахунку балів у розділі Лічильники.<p>
+	<h3>Параметри</h3>
 		<dl>
-			<dt>type</dt><dd>Defines how the value of counter is calculated.<br>0 - is for the final value of the counter calculated for all the games played.<br>1 - is for the value of counter calculated only for the games played before the current one (inclusive).</dd>
-			<dt>number</dt><dd>The number of the counter in the order they appear in the scoring editor starting from 0.</dd>
+			<dt>type</dt><dd>Визначає спосіб обчислення значення лічильника.<br>0 — фінальне значення лічильника, обчислене для всіх зіграних партій.<br>1 — значення лічильника, обчислене лише для партій до поточної (включно).</dd>
+			<dt>number</dt><dd>Номер лічильника у порядку їх появи в редакторі підрахунку балів, починаючи з 0.</dd>
 		</dl>
-	<h3>Examples</h3>
-		<p>Suppose we created two counters for our scoring system. The first one (number 0) calculates number of games where a player was shot the first night while being red. The second one (number 1) calculates number of games a player played while being red.</p>
-		<p>Then:<br>
-		<code>counter(0,1)</code> returns the total number of games played while being red.<br> 
-		<code>counter(1,1)</code> returns the number of games played before the current game (inclusive) while being red.<br> 
-		<code>counter(1,1)-matter(8)</code> returns the number of games played before the current game (not inclusive) while being red.<br>
-		<code>counter(0,0)</code> returns the total number of times a player has been shot while being red.<br>
-		<code>counter(1,0) * 100 / counter(1,1)</code> returns the total percentage of first night kills while being red.</p>',
+	<h3>Приклади</h3>
+		<p>Припустимо, ми створили два лічильники для нашої системи підрахунку балів. Перший (номер 0) підраховує кількість партій, у яких гравця було вбито першої ночі, коли він грав за червоних. Другий (номер 1) підраховує кількість партій, зіграних гравцем за червоних.</p>
+		<p>Тоді:<br>
+		<code>counter(0,1)</code> повертає загальну кількість партій, зіграних за червоних.<br>
+		<code>counter(1,1)</code> повертає кількість партій, зіграних до поточної (включно) за червоних.<br>
+		<code>counter(1,1)-matter(8)</code> повертає кількість партій, зіграних до поточної (не включно) за червоних.<br>
+		<code>counter(0,0)</code> повертає загальну кількість разів, коли гравця вбито першої ночі, граючи за червоних.<br>
+		<code>counter(1,0) * 100 / counter(1,1)</code> повертає відсоток вбивств першої ночі, граючи за червоних.</p>',
 
 	'bonus' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>bonus()</code></p>
-		<p>Returns the bonus points assigned to the player in the game by referee.</p>
-	<h3>Examples</h3>
-		<code>bonus()/2</code> bonus multiplied by two.<br> 
-		<code>bonus()*difficulty()</code> Bonus weighted by game difficulty. See the function difficulty.</p',
+		<p>Повертає бонусні бали, присвоєні гравцю у грі суддею.</p>
+	<h3>Приклади</h3>
+		<code>bonus()/2</code> бонус, поділений на два.<br>
+		<code>bonus()*difficulty()</code> Бонус, зважений за складністю гри. Дивіться функцію difficulty.</p',
 
 	'role' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>role()</code></p>
-		<p>Returns the role of the player in the game. The values are:<br>
+		<p>Повертає роль гравця у грі. Значення:<br>
 			<ol start="0">
-				<li>town</li>
-				<li>sheriff</li>
-				<li>mafia</li>
-				<li>don</li>
+				<li>мирний</li>
+				<li>шериф</li>
+				<li>мафія</li>
+				<li>дон</li>
 			</ol>
 		</p>
-	<h3>Examples</h3>
-		<code>role() < 2 ? bonus() : 0</code> bonus if player is red, 0 otherwise. See the function bonus.<br> 
-		<code>role() == 1 || role() == 3 ? 1 : difficulty()*2</code> For special roles 2, for others a value between 0 and 2 depending on game difficulty. See the function difficulty.</p',
+	<h3>Приклади</h3>
+		<code>role() < 2 ? bonus() : 0</code> бонус, якщо гравець червоний, інакше 0. Дивіться функцію bonus.<br>
+		<code>role() == 1 || role() == 3 ? 1 : difficulty()*2</code> Для спеціальних ролей 2, для інших — значення від 0 до 2 залежно від складності гри. Дивіться функцію difficulty.</p',
 
 	'difficulty' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>difficulty()</code></p>
-		<p>Returns the difficulty coefficient of the game. A value between 0 and 1. The total number of games won by the opposite team divided by the total number of games. If the player is red, this is the number of black wins divided by the number of games. If the player is black, it is opposite - number of red wins divided by the number of games.</p>
-	<h3>Examples</h3>
-		<code>difficulty() * 2</code> a number between 0 and 2 depending on the difficulty.</p',
-		
+		<p>Повертає коефіцієнт складності гри. Значення від 0 до 1. Загальна кількість перемог протилежної команди, поділена на загальну кількість партій. Якщо гравець червоний, це кількість перемог чорних, поділена на кількість партій. Якщо гравець чорний, навпаки — кількість перемог червоних, поділена на кількість партій.</p>
+	<h3>Приклади</h3>
+		<code>difficulty() * 2</code> число від 0 до 2 залежно від складності.</p',
+
 	'matter' =>
-	'<h3>Description</h3>
+	'<h3>Опис</h3>
 		<p><code>matter(type)</code></p>
-		<p>Returns 0 or 1 depending on if some event happened in the game.</p>
-	<h3>Parameters</h3>
+		<p>Повертає 0 або 1 залежно від того, чи відбулась певна подія у грі.</p>
+	<h3>Параметри</h3>
 		<dl>
-			<dt>type</dt><dd>The code of the happened event. Codes:<ol start="0">
-				<li>The player played the game</li>
-				<li>The player won</li>
-				<li>The player lost</li>
-				<li>All players killed in a daytime were from another team</li>
-				<li>All players killed in a daytime were from the player\'s team</li>
-				<li>Got the best player status from the referee</li>
-				<li>Got the best move status from the referee</li>
-				<li>Survived in the game</li>
-				<li>Killed in the first night</li>
-				<li>Killed in the night</li>
-				<li>Guessed 3 mafia after being killed first night</li>
-				<li>Guessed 2 mafia after being killed first night</li>
-				<li>Killed by warnings</li>
-				<li>Kicked out</li>
-				<li>Surrendered</li>
-				<li>All votes vs mafia (>3 votings)</li>
-				<li>All votes vs civs (>3 votings)</li>
-				<li>Sheriff was killed the next day after finding by don</li>
-				<li>Sheriff was found first night</li>
-				<li>Sheriff was killed the first night</li>
-				<li>Sheriff did three black checks in a row</li>
-				<li>All sheriff checks were red</li>
-				<li>Bonus was assigned to the player by the referee</li>
-				<li>Guessed 1 mafia after being killed first night</li>
-				<li>Got the worst move status from the referee (aka auto-bonus)</li>
-				<li>Team kicked out (opposite team wins)</li>
-				<li>Tie</li>
+			<dt>type</dt><dd>Код події, що відбулась. Коди:<ol start="0">
+				<li>Гравець взяв участь у грі</li>
+				<li>Гравець переміг</li>
+				<li>Гравець програв</li>
+				<li>Усі гравці, вбиті вдень, були з іншої команди</li>
+				<li>Усі гравці, вбиті вдень, були з команди гравця</li>
+				<li>Отримав статус найкращого гравця від судді</li>
+				<li>Отримав статус найкращого ходу від судді</li>
+				<li>Вижив у грі</li>
+				<li>Вбитий у першу ніч</li>
+				<li>Вбитий вночі</li>
+				<li>Вгадав 3 мафіозних після загибелі першої ночі</li>
+				<li>Вгадав 2 мафіозних після загибелі першої ночі</li>
+				<li>Видалений за попередженнями</li>
+				<li>Видалений</li>
+				<li>Здався</li>
+				<li>Всі голоси проти мафії (>3 голосувань)</li>
+				<li>Всі голоси проти мирних (>3 голосувань)</li>
+				<li>Шерифа вбито наступного дня після визначення доном</li>
+				<li>Шерифа знайдено першої ночі</li>
+				<li>Шерифа вбито першої ночі</li>
+				<li>Шериф зробив три чорні перевірки поспіль</li>
+				<li>Всі перевірки шерифа були червоними</li>
+				<li>Бонус призначено гравцю суддею</li>
+				<li>Вгадав 1 мафіозного після загибелі першої ночі</li>
+				<li>Отримав статус найгіршого ходу від судді (автобонус)</li>
+				<li>Команду видалено (перемагає протилежна команда)</li>
+				<li>Нічия</li>
 			</ol></dd>
 		</dl>
-	<h3>Examples</h3>
-		<p><code>matter(8) && matter(2) ? 0.2 : 0</code> 0.2 if the player was killed the first night and their team lost.<br> 
-		<code>matter(8) && !matter(23) && !matter(10) && !matter(11) ? -0.4 : 0</code> -0.4 if the player was killed the first night and left no black players in the legacy.<br> 
-		<code>matter(12) || matter(13) ? -0.5 : 0</code> -0.5 if the player got 4 warnings, or was mod-killed.</p>',
+	<h3>Приклади</h3>
+		<p><code>matter(8) && matter(2) ? 0.2 : 0</code> 0.2, якщо гравця вбито першої ночі і його команда програла.<br>
+		<code>matter(8) && !matter(23) && !matter(10) && !matter(11) ? -0.4 : 0</code> -0.4, якщо гравця вбито першої ночі і він не залишив чорних гравців у заповіті.<br>
+		<code>matter(12) || matter(13) ? -0.5 : 0</code> -0.5, якщо гравець отримав 4 попередження або був видалений суддею.</p>',
 );
 
 ?>
