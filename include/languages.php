@@ -5,7 +5,7 @@ define('LANG_ENGLISH', 1);
 define('LANG_RUSSIAN', 2);
 define('LANG_UKRAINIAN', 4);
 define('LANG_ALL', 7);
-define('LANG_ALL_VISUAL', 3);
+define('LANG_ALL_VISUAL', 7);
 define('LANG_DEFAULT', 1); // English
 
 function get_lang($langs, $default_lang = -1)
@@ -154,7 +154,7 @@ function get_lang_str($lang, $case = CAPITAL_LETTER, $browser_lang = LANG_NO)
 						case LOWERCASE:
 							return 'українська';
 						case UPPERCASE:
-							return 'УКРАЇНСЬКВА';
+							return 'УКРАЇНСЬКА';
 					}
 					return 'Українська';
 			}
@@ -431,7 +431,7 @@ function get_browser_lang()
 function correct_lang($lang_code)
 {
 	$lang_code = strtolower($lang_code);
-	if ($lang_code == 'en' || $lang_code == 'ru')
+	if ($lang_code == 'en' || $lang_code == 'ru' || $lang_code == 'ua')
 	{
 		return $lang_code;
 	}
