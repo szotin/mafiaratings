@@ -398,7 +398,7 @@ function remember_user($remember = 1)
 		list($auth_key) = Db::record(get_label('user'), 'SELECT auth_key FROM users WHERE id = ?', $_profile->user_id);
 		if ($auth_key == '')
 		{
-			$remember = 0;
+			$remember = 1;
 		}
 	}
 	
@@ -519,7 +519,13 @@ function initiate_session($lang_code = NULL)
 	ini_set('session.gc_maxlifetime', $session_timeout);
 	ini_set('session.cookie_lifetime', $session_timeout);
 	ini_set('session.gc_probability', 0);
-	
+
+	$base_path = ini_get('session.save_path');
+	if (empty($base_path)) $base_path = sys_get_temp_dir();
+	$session_path = rtrim($base_path, '/\\') . '/mafiaratings';
+	if (!is_dir($session_path)) { @mkdir($session_path, 0700); }
+	session_save_path($session_path);
+
     session_start();
 	// localization
 	if (isset($_SESSION['lang_code']))
