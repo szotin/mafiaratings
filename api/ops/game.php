@@ -666,14 +666,10 @@ class ApiPage extends OpsApiPageBase
 				$misc = json_decode($misc);
 				if (isset($misc->seating))
 				{
-					$tables = &$misc->seating;
-					if (is_object($misc->seating))
+					$rounds = $misc->seating->rounds;
+					if ($game_num <= count($rounds) && $table_num <= count($rounds[$game_num - 1]))
 					{
-						$tables = &$tables->rounds;
-					}
-					if ($game_num <= count($tables) && $table_num <= count($tables[$game_num - 1]))
-					{
-						$seating = $tables[$game_num - 1][$table_num - 1];
+						$seating = $rounds[$game_num - 1][$table_num - 1];
 						if (isset($misc->seating->mapping))
 						{
 							for ($i = 0; $i < count($seating); ++$i)

@@ -113,23 +113,28 @@ class Page extends TournamentPageBase
 		{
 			$this->misc = new stdClass();
 		}
-		$this->misc->seating = array();
-		
+		$rounds = array();
+
 		$query = new DbQuery('SELECT p.user_id, p.number, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ? AND g.table_num IS NOT NULL AND g.game_num IS NOT NULL', $this->round_id);
 		while ($row = $query->next())
 		{
 			list ($user_id, $number, $table, $game) = $row;
-			while (count($this->misc->seating) < $game)
+			while (count($rounds) < $game)
 			{
-				$this->misc->seating[] = array();
+				$rounds[] = array();
 			}
-			while (count($this->misc->seating[$game-1]) < $table)
+			while (count($rounds[$game-1]) < $table)
 			{
-				$this->misc->seating[$game-1][] = array(0,0,0,0,0,0,0,0,0,0);
+				$rounds[$game-1][] = array(0,0,0,0,0,0,0,0,0,0);
 			}
-			$this->misc->seating[$game-1][$table-1][$number-1] = (int)$user_id;
+			$rounds[$game-1][$table-1][$number-1] = (int)$user_id;
 		}
-		if (count($this->misc->seating) > 0)
+		if (count($rounds) > 0)
+		{
+			$this->misc->seating = new stdClass();
+			$this->misc->seating->rounds = $rounds;
+		}
+		if (isset($this->misc->seating))
 		{
 			// cashe it for the future
 			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($this->misc), $this->round_id);
@@ -147,37 +152,34 @@ class Page extends TournamentPageBase
 		$this->numbers_pct = null;
 		$this->tables_pct  = null;
 
-		$this->tables = &$this->misc->seating;
-		if (is_object($this->tables))
+		if (isset($this->misc->seating->hash))
 		{
-			if (isset($this->misc->seating->hash))
+			$hash = $this->misc->seating->hash;
+			$srow = (new DbQuery('SELECT players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $hash))->next();
+			if ($srow)
 			{
-				$hash = $this->misc->seating->hash;
-				$srow = (new DbQuery('SELECT players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $hash))->next();
-				if ($srow)
-				{
-					list($ps, $ns, $ts) = $srow;
-					$parts   = explode('_', $hash);
-					$players = isset($parts[0]) ? (int)$parts[0] : 0;
-					$tables  = isset($parts[1]) ? (int)$parts[1] : 0;
-					$games   = isset($parts[2]) ? (int)$parts[2] : 0;
-					$calc_pct = function($score, $max_score) {
-						if ($max_score <= 0) return 100.0;
-						return (1 - min(max($score / $max_score, 0), 1)) * 100;
-					};
-					$this->players_pct = ($players > 10)
-						? $calc_pct($ps, SeatingDef::worst_acceptable_players_score($players, $tables, $games))
-						: null;
-					$this->numbers_pct = $calc_pct($ns, SeatingDef::worst_acceptable_numbers_score($players, $tables, $games));
-					$this->tables_pct  = ($tables >= 3)
-						? $calc_pct($ts, SeatingDef::worst_acceptable_tables_score($players, $tables, $games))
-						: null;
-				}
+				list($ps, $ns, $ts) = $srow;
+				$parts   = explode('_', $hash);
+				$players = isset($parts[0]) ? (int)$parts[0] : 0;
+				$tables  = isset($parts[1]) ? (int)$parts[1] : 0;
+				$games   = isset($parts[2]) ? (int)$parts[2] : 0;
+				$calc_pct = function($score, $max_score) {
+					if ($max_score <= 0) return 100.0;
+					return (1 - min(max($score / $max_score, 0), 1)) * 100;
+				};
+				$this->players_pct = ($players > 10)
+					? $calc_pct($ps, SeatingDef::worst_acceptable_players_score($players, $tables, $games))
+					: null;
+				$this->numbers_pct = $calc_pct($ns, SeatingDef::worst_acceptable_numbers_score($players, $tables, $games));
+				$this->tables_pct  = ($tables >= 3)
+					? $calc_pct($ts, SeatingDef::worst_acceptable_tables_score($players, $tables, $games))
+					: null;
 			}
-			$this->tables = &$this->tables->rounds;
-			if (isset($this->misc->seating->mapping))
-			{
-				$this->mapping = &$this->misc->seating->mapping;
+		}
+		$this->tables = &$this->misc->seating->rounds;
+		if (isset($this->misc->seating->mapping))
+		{
+			$this->mapping = &$this->misc->seating->mapping;
 				for ($i = 0; $i < count($this->tables); ++$i)
 				{
 					$games = &$this->tables[$i];
@@ -204,8 +206,7 @@ class Page extends TournamentPageBase
 					}
 				}
 			}
-		}
-		
+
 		if ($this->options & SHOW_ICONS)
 		{
 			$this->user_pic =

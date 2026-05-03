@@ -26,7 +26,7 @@ try
 
 	$player_ids = array();
 	$misc = is_null($misc_str) ? null : json_decode($misc_str);
-	if (!is_null($misc) && isset($misc->seating) && is_object($misc->seating) && isset($misc->seating->mapping))
+	if (!is_null($misc) && isset($misc->seating) && isset($misc->seating->mapping))
 	{
 		foreach ($misc->seating->mapping as $uid)
 		{

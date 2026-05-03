@@ -128,7 +128,7 @@ class Page extends TournamentPageBase
 				continue;
 			}
 			
-			foreach ($event_misc->seating as $table)
+			foreach ($event_misc->seating->rounds as $table)
 			{
 				if (is_null($table))
 				{
@@ -252,9 +252,9 @@ class Page extends TournamentPageBase
 				
 			if (isset($this->misc->seating))
 			{
-				for ($i = 0; $i < count($this->misc->seating); ++$i)
+				for ($i = 0; $i < count($this->misc->seating->rounds); ++$i)
 				{
-					$table = $this->misc->seating[$i];
+					$table = $this->misc->seating->rounds[$i];
 					echo '<p><center><h2>' . get_label('Table [0]', $i + 1) . '</h2></center></p>';
 					echo '<table class="bordered light" width="100%">';
 					echo '<tr class="darker"><td width="8%"></td>';

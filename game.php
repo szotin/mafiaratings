@@ -266,15 +266,8 @@ class Page extends PageBase
 			$misc = json_decode($misc);
 			if (isset($misc->seating))
 			{
-				if (is_array($misc->seating))
-				{
-					$num_tables = count($misc->seating) > 0 ? count($misc->seating[0]) : 0;
-				}
-				else
-				{
-					$t = $misc->seating->rounds;
-					$num_tables = count($t) > 0 ? count($t[0]) : 0;
-				}
+				$t = $misc->seating->rounds;
+				$num_tables = count($t) > 0 ? count($t[0]) : 0;
 			}
 		}
 		
@@ -376,14 +369,10 @@ class Page extends PageBase
 			$misc = json_decode($misc);
 			if (isset($misc->seating))
 			{
-				$tables = &$misc->seating;
-				if (!is_array($tables))
+				$rounds = $misc->seating->rounds;
+				if (count($rounds) > 0 && $this->table_num <= count($rounds[0]))
 				{
-					$tables = &$tables->rounds;
-				}
-				if (count($tables) > 0 && $this->table_num <= count($tables[0]))
-				{
-					$num_games = count($tables);
+					$num_games = count($rounds);
 				}
 			}
 		}

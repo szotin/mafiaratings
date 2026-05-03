@@ -43,18 +43,14 @@ try
 		throw new Exc('No seating for this event');
 	}
 	
-	$tables = &$misc->seating;
-	if (is_object($tables))
-	{
-		$tables = &$tables->rounds;
-	}
-	$num_tables = count($tables) > 0 ? count($tables[0]) : 0;
+	$rounds = &$misc->seating->rounds;
+	$num_tables = count($rounds) > 0 ? count($rounds[0]) : 0;
 	if ($table_num > $num_tables)
 	{
 		throw new Exc('Table ' . $table_num . ' is invalid. There are only ' . $num_tables . ' tables.' );
 	}
 	$table = array();
-	foreach ($tables as $round)
+	foreach ($rounds as $round)
 	{
 		$table[] = $round[$table_num - 1];
 	}

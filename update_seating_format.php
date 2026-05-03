@@ -13,6 +13,29 @@ class SeatingFormatUpdater extends Updater
 	// SeatingFormatUpdater.events
 	// Migrate events.misc.seating.tables [table][round][seat] → seating.rounds [round][table][seat]
 	//-------------------------------------------------------------------------------------------------------
+	private function transposeSeating($tables)
+	{
+		// Transpose [table][round][seat] → [round][table][seat]
+		$rounds = array();
+		foreach ($tables as $t_idx => $table)
+		{
+			if (is_null($table)) { continue; }
+			foreach ($table as $g_idx => $game)
+			{
+				while (count($rounds) <= $g_idx)
+				{
+					$rounds[] = array();
+				}
+				while (count($rounds[$g_idx]) <= $t_idx)
+				{
+					$rounds[$g_idx][] = null;
+				}
+				$rounds[$g_idx][$t_idx] = $game;
+			}
+		}
+		return $rounds;
+	}
+	
 	function events_task($items_count)
 	{
 		if (!isset($this->vars->event))
@@ -38,34 +61,28 @@ class SeatingFormatUpdater extends Updater
 			list($event_id, $misc_str) = $row;
 			$misc = json_decode($misc_str);
 
-			if (!is_null($misc) && isset($misc->seating) && is_object($misc->seating) && isset($misc->seating->tables))
+			if (!is_null($misc) && isset($misc->seating))
 			{
-				$old_tables = $misc->seating->tables;
-
-				// Transpose [table][round][seat] → [round][table][seat]
-				$rounds = array();
-				foreach ($old_tables as $t_idx => $table)
+				if (is_object($misc->seating) && isset($misc->seating->tables))
 				{
-					if (is_null($table)) { continue; }
-					foreach ($table as $g_idx => $game)
-					{
-						while (count($rounds) <= $g_idx)
-						{
-							$rounds[] = array();
-						}
-						while (count($rounds[$g_idx]) <= $t_idx)
-						{
-							$rounds[$g_idx][] = null;
-						}
-						$rounds[$g_idx][$t_idx] = $game;
-					}
+					$misc->seating->rounds = $this->transposeSeating($misc->seating->tables);
+					unset($misc->seating->tables);
+
+					Db::exec('event', 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+					++$this->vars->real_count;
 				}
-
-				$misc->seating->rounds = $rounds;
-				unset($misc->seating->tables);
-
-				Db::exec('event', 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
-				++$this->vars->real_count;
+				else if (is_array($misc->seating))
+				{
+					$seating = new stdClass();
+					// MWT seating is [game][table][players] — no transposition needed
+					$seating->rounds = isset($misc->mwt_schema)
+						? $misc->seating
+						: $this->transposeSeating($misc->seating);
+					$misc->seating = $seating;
+					
+					Db::exec('event', 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+					++$this->vars->real_count;
+				}
 			}
 
 			$this->vars->event = (int)$event_id;

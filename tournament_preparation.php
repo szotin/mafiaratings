@@ -297,8 +297,8 @@ class Page extends TournamentPageBase
 			echo '<button onclick="swapPlayers(' . $event_id . ')"><img src="images/user_change.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap players') . '</button>';
 			echo ' <button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
 
-			$stored_hash    = is_object($misc->seating) && isset($misc->seating->hash)    ? $misc->seating->hash    : null;
-			$stored_version = is_object($misc->seating) && isset($misc->seating->version) ? $misc->seating->version : null;
+			$stored_hash    = isset($misc->seating->hash)    ? $misc->seating->hash    : null;
+			$stored_version = isset($misc->seating->version) ? $misc->seating->version : null;
 			$current_version = null;
 
 			if (!is_null($stored_hash))
@@ -337,8 +337,8 @@ class Page extends TournamentPageBase
 		}
 
 		$seating = $misc->seating;
-		$tables_data = is_object($seating) && isset($seating->rounds) ? $seating->rounds : $seating;
-		$raw_mapping = is_object($seating) && isset($seating->mapping) ? $seating->mapping : null;
+		$tables_data = $seating->rounds;
+		$raw_mapping = isset($seating->mapping) ? $seating->mapping : null;
 
 		// Build index → user_id lookup from mapping
 		$index_to_uid = array();

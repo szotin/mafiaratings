@@ -281,7 +281,8 @@ class ApiPage extends OpsApiPageBase
 			{
 				$event_misc = new stdClass();
 				$event_misc->mwt_schema = $round;
-				$event_misc->seating = array();
+				$event_misc->seating = new stdClass();
+				$event_misc->seating->rounds = array();
 				$num_tables = count($event_misc->mwt_schema);
 				$num_games = $num_tables > 0 ? count($event_misc->mwt_schema[0]) : 0;
 				for ($g = 0; $g < $num_games; ++$g)
@@ -291,7 +292,7 @@ class ApiPage extends OpsApiPageBase
 					{
 						$round[] = NULL;
 					}
-					$event_misc->seating[] = $round;
+					$event_misc->seating->rounds[] = $round;
 				}
 				$event_misc = json_encode($event_misc);
 				
@@ -412,9 +413,9 @@ class ApiPage extends OpsApiPageBase
 				continue;
 			}
 			
-			for ($t = 0; $t < count($event_misc->seating); ++$t)
+			for ($t = 0; $t < count($event_misc->seating->rounds); ++$t)
 			{
-				$table = $event_misc->seating[$t];
+				$table = $event_misc->seating->rounds[$t];
 				if (is_null($table))
 				{
 					continue;
@@ -549,7 +550,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			update_tournament_stats($tournament_id, $tournament_lat, $tournament_lon, $tournament_flags);
 			
-			$misc->seating[$game_num][$table_num] = $players;
+			$misc->seating->rounds[$game_num][$table_num] = $players;
 			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $round_id);
 			++$progress;
 		}
@@ -647,9 +648,9 @@ class ApiPage extends OpsApiPageBase
 		
 		foreach ($events as $event)
 		{
-			for ($i = 0; $i < count($event->misc->seating); ++$i)
+			for ($i = 0; $i < count($event->misc->seating->rounds); ++$i)
 			{
-				$table = $event->misc->seating[$i];
+				$table = $event->misc->seating->rounds[$i];
 				for ($j = 0; $j < count($table); ++$j)
 				{
 					$game = $table[$j];
@@ -669,7 +670,7 @@ class ApiPage extends OpsApiPageBase
 									$new_game[] = $game[$l];
 								}
 							}
-							$event->misc->seating[$i][$j] = $new_game;
+							$event->misc->seating->rounds[$i][$j] = $new_game;
 							break;
 						}
 					}
