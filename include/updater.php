@@ -322,7 +322,7 @@ class Updater
 			
 			if ($this->isWeb)
 			{
-				$runs = isset($_REQUEST['runs']) ? (int)$_REQUEST['runs'] : 0;
+				$runs = isset($_REQUEST['runs']) ? (int)$_REQUEST['runs'] : 1;
 				switch ($runs)
 				{
 				case 0:
