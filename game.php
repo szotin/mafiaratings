@@ -268,11 +268,12 @@ class Page extends PageBase
 			{
 				if (is_array($misc->seating))
 				{
-					$num_tables = count($misc->seating);
+					$num_tables = count($misc->seating) > 0 ? count($misc->seating[0]) : 0;
 				}
 				else
 				{
-					$num_tables = count($misc->seating->tables);
+					$t = $misc->seating->rounds;
+					$num_tables = count($t) > 0 ? count($t[0]) : 0;
 				}
 			}
 		}
@@ -378,11 +379,11 @@ class Page extends PageBase
 				$tables = &$misc->seating;
 				if (!is_array($tables))
 				{
-					$tables = &$tables->tables;
+					$tables = &$tables->rounds;
 				}
-				if ($this->table_num <= count($tables))
+				if (count($tables) > 0 && $this->table_num <= count($tables[0]))
 				{
-					$num_games = count($tables[$this->table_num - 1]);
+					$num_games = count($tables);
 				}
 			}
 		}

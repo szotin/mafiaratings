@@ -119,15 +119,15 @@ class Page extends TournamentPageBase
 		while ($row = $query->next())
 		{
 			list ($user_id, $number, $table, $game) = $row;
-			while (count($this->misc->seating) < $table)
+			while (count($this->misc->seating) < $game)
 			{
 				$this->misc->seating[] = array();
 			}
-			while (count($this->misc->seating[$table-1]) < $game)
+			while (count($this->misc->seating[$game-1]) < $table)
 			{
-				$this->misc->seating[$table-1][] = array(0,0,0,0,0,0,0,0,0,0);
+				$this->misc->seating[$game-1][] = array(0,0,0,0,0,0,0,0,0,0);
 			}
-			$this->misc->seating[$table-1][$game-1][$number-1] = (int)$user_id;
+			$this->misc->seating[$game-1][$table-1][$number-1] = (int)$user_id;
 		}
 		if (count($this->misc->seating) > 0)
 		{
@@ -174,7 +174,7 @@ class Page extends TournamentPageBase
 						: null;
 				}
 			}
-			$this->tables = &$this->tables->tables;
+			$this->tables = &$this->tables->rounds;
 			if (isset($this->misc->seating->mapping))
 			{
 				$this->mapping = &$this->misc->seating->mapping;
@@ -464,11 +464,11 @@ class Page extends TournamentPageBase
 			{
 				list($t, $g) = $row;
 				if (
-					!is_null($t) && $t > 0 && $t <= count($this->tables) && 
-					$this->tables[$t-1] != NULL &&
-					!is_null($g) && $g > 0 && $g <= count($this->tables[$t-1]))
+					!is_null($g) && $g > 0 && $g <= count($this->tables) &&
+					$this->tables[$g-1] != NULL &&
+					!is_null($t) && $t > 0 && $t <= count($this->tables[$g-1]))
 				{
-					$this->tables[$t-1][$g-1] = NULL;
+					$this->tables[$g-1][$t-1] = NULL;
 					$normalize = true;
 				}
 			}
@@ -599,10 +599,20 @@ class Page extends TournamentPageBase
 	
 	private function showByTable()
 	{
-		for ($i = 0; $i < count($this->tables); ++$i)
+		$num_rounds = count($this->tables);
+		$num_tables = $num_rounds > 0 ? count($this->tables[0]) : 0;
+		for ($i = 0; $i < $num_tables; ++$i)
 		{
-			$table = &$this->tables[$i];
-			if (is_null($table))
+			$has_data = false;
+			for ($j = 0; $j < $num_rounds; ++$j)
+			{
+				if (!is_null($this->tables[$j]) && !is_null($this->tables[$j][$i]))
+				{
+					$has_data = true;
+					break;
+				}
+			}
+			if (!$has_data)
 			{
 				continue;
 			}
@@ -614,9 +624,13 @@ class Page extends TournamentPageBase
 				echo '<td width="9.2%" align="center"><b>'.($k+1).'</b></td>';
 			}
 			echo '</tr>';
-			for ($j = 0; $j < count($table); ++$j)
+			for ($j = 0; $j < $num_rounds; ++$j)
 			{
-				$game = $table[$j];
+				if (is_null($this->tables[$j]))
+				{
+					continue;
+				}
+				$game = $this->tables[$j][$i];
 				if (is_null($game) || count($game) < 10)
 				{
 					continue;
@@ -635,44 +649,43 @@ class Page extends TournamentPageBase
 	private function showTableStats()
 	{
 		if (!is_null($this->tables_pct)) $this->showOptLevelBar($this->tables_pct);
+		$num_rounds = count($this->tables);
+		$num_tables = $num_rounds > 0 ? count($this->tables[0]) : 0;
 		$pl = array();
-		for ($i = 0; $i < count($this->tables); ++$i)
+		for ($i = 0; $i < $num_rounds; ++$i)
 		{
-			$table = &$this->tables[$i];
-			for ($j = 0; $j < count($table); ++$j)
+			$round = &$this->tables[$i];
+			if (is_null($round)) { continue; }
+			for ($j = 0; $j < count($round); ++$j)
 			{
-				for ($k = 0; $k < count($table[$j]) && $k < 10; ++$k)
+				if (is_null($round[$j])) { continue; }
+				for ($k = 0; $k < count($round[$j]) && $k < 10; ++$k)
 				{
-					$user_id = $table[$j][$k];
+					$user_id = $round[$j][$k];
 					if (!array_key_exists($user_id, $pl))
 					{
 						$player = new stdClass();
 						$player->id = $user_id;
 						$player->name = $this->getPlayerName($user_id);
-						$player->tables = array_fill(0, count($this->tables), 0);
+						$player->tables = array_fill(0, $num_tables, 0);
 						$pl[$user_id] = $player;
 					}
-					++$pl[$user_id]->tables[$i];
+					++$pl[$user_id]->tables[$j];
 				}
 			}
 		}
-		
+
 		$players = array();
 		foreach ($pl as $user_id => $player)
 		{
 			$players[] = $player;
 		}
 		usort($players, function($p1, $p2) { return strcmp($p1->name, $p2->name); });
-		
+
 		echo '<table class="bordered light">';
 		echo '<tr class="darker"><td width="120"></td>';
-		for ($i = 0; $i < count($this->tables); ++$i)
+		for ($i = 0; $i < $num_tables; ++$i)
 		{
-			$table = &$this->tables[$i];
-			if (is_null($table))
-			{
-				continue;
-			}
 			echo '<td width="80" align="center"><b>'.get_label('Table [0]', $i + 1).'</b></td>';
 		}
 		echo '</tr>';
@@ -1124,25 +1137,25 @@ class Page extends TournamentPageBase
 		$by_game = array();
 		for ($i = 0; $i < count($this->tables); ++$i)
 		{
-			$table = &$this->tables[$i];
-			if (is_null($table))
+			$round = &$this->tables[$i];
+			if (is_null($round))
 			{
 				continue;
 			}
-			for ($j = 0; $j < count($table); ++$j)
+			for ($j = 0; $j < count($round); ++$j)
 			{
-				while ($j >= count($by_game))
+				while ($i >= count($by_game))
 				{
 					$by_game[] = array();
 				}
-				while ($i >= count($by_game[$j]))
+				while ($j >= count($by_game[$i]))
 				{
-					$by_game[$j][] = NULL;
+					$by_game[$i][] = NULL;
 				}
-				$game = $table[$j];
+				$game = $round[$j];
 				if (!is_null($game) && count($game) >= 10)
 				{
-					$by_game[$j][$i] = $table[$j];
+					$by_game[$i][$j] = $round[$j];
 				}
 			}
 		}

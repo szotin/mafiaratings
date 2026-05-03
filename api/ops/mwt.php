@@ -282,14 +282,16 @@ class ApiPage extends OpsApiPageBase
 				$event_misc = new stdClass();
 				$event_misc->mwt_schema = $round;
 				$event_misc->seating = array();
-				foreach ($event_misc->mwt_schema as $table)
+				$num_tables = count($event_misc->mwt_schema);
+				$num_games = $num_tables > 0 ? count($event_misc->mwt_schema[0]) : 0;
+				for ($g = 0; $g < $num_games; ++$g)
 				{
-					$t = array();
-					foreach ($table as $game)
+					$round = array();
+					for ($t = 0; $t < $num_tables; ++$t)
 					{
-						$t[] = NULL;
+						$round[] = NULL;
 					}
-					$event_misc->seating[] = $t;
+					$event_misc->seating[] = $round;
 				}
 				$event_misc = json_encode($event_misc);
 				
@@ -547,7 +549,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			update_tournament_stats($tournament_id, $tournament_lat, $tournament_lon, $tournament_flags);
 			
-			$misc->seating[$table_num][$game_num] = $players;
+			$misc->seating[$game_num][$table_num] = $players;
 			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $round_id);
 			++$progress;
 		}

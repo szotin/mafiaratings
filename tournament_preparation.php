@@ -282,10 +282,15 @@ class Page extends TournamentPageBase
 		list($event_id, $round_num, $misc_str) = $this->rounds[$round_index];
 		$misc = json_decode($misc_str);
 
+		$has_seating = !empty($misc->seating);
+		$url = 'https://dimtom.github.io/web_schedule';
+
+		echo '<input type="file" id="upload-' . $event_id . '" style="display:none" onchange="doUploadDimTom(' . $event_id . ')">';
 		echo '<p><table width="100%"><tr><td>';
-		if (empty($misc->seating))
+		if (!$has_seating)
 		{
 			echo '<button onclick="makeSeating(' . $event_id . ')"><img src="images/create.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Make seating') . '</button>';
+			echo ' <button onclick="uploadDimTom(' . $event_id . ')" title="' . get_label('Import seating from [0]', $url) . '"><img src="images/save.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Upload seating file') . '</button>';
 		}
 		else
 		{
@@ -332,7 +337,7 @@ class Page extends TournamentPageBase
 		}
 
 		$seating = $misc->seating;
-		$tables_data = is_object($seating) && isset($seating->tables) ? $seating->tables : $seating;
+		$tables_data = is_object($seating) && isset($seating->rounds) ? $seating->rounds : $seating;
 		$raw_mapping = is_object($seating) && isset($seating->mapping) ? $seating->mapping : null;
 
 		// Build index → user_id lookup from mapping
@@ -383,7 +388,9 @@ class Page extends TournamentPageBase
 
 		$pic = new Picture(USER_TOURNAMENT_PICTURE, $this->user_pic);
 
-		foreach ($tables_data as $t_idx => $table)
+		$num_rounds = count($tables_data);
+		$num_tables = $num_rounds > 0 ? count($tables_data[0]) : 0;
+		for ($t_idx = 0; $t_idx < $num_tables; ++$t_idx)
 		{
 			echo '<p><center><h2>' . get_label('Table [0]', $t_idx + 1) . '</h2></center></p>';
 			echo '<table class="bordered light" width="100%">';
@@ -391,8 +398,9 @@ class Page extends TournamentPageBase
 			for ($k = 0; $k < 10; ++$k)
 				echo '<td width="9.2%" align="center"><b>' . ($k + 1) . '</b></td>';
 			echo '</tr>';
-			foreach ($table as $g_idx => $game)
+			for ($g_idx = 0; $g_idx < $num_rounds; ++$g_idx)
 			{
+				$game = isset($tables_data[$g_idx][$t_idx]) ? $tables_data[$g_idx][$t_idx] : null;
 				if (is_null($game) || count((array)$game) < 10) continue;
 				echo '<tr><td align="center" class="dark"><b>' . get_label('Game [0]', $g_idx + 1) . '</b></td>';
 				for ($k = 0; $k < 10; ++$k)
@@ -631,6 +639,23 @@ class Page extends TournamentPageBase
 		function swapPlayers(eventId)
 		{
 			dlg.form("form/seating_swap.php?event_id=" + eventId, refr, 400);
+		}
+
+		function uploadDimTom(eventId)
+		{
+			$('#upload-' + eventId).trigger('click');
+		}
+
+		function doUploadDimTom(eventId)
+		{
+			json.upload('api/ops/event.php',
+			{
+				op: "import_dimtom",
+				event_id: eventId,
+				file: document.getElementById("upload-" + eventId).files[0]
+			},
+			2097152,
+			refr);
 		}
 
 		function createPair()

@@ -690,9 +690,9 @@ function convert_game_to_mwt($game_id)
 			$tables = &$misc->seating;
 			if (!is_array($tables))
 			{
-				$tables = &$tables->tables;
+				$tables = &$tables->rounds;
 			}
-			if ($table_num <= count($tables) && $game_num <= count($tables[$table_num - 1]) && $tables[$table_num - 1][$game_num - 1][$i] != $player->id)
+			if ($game_num <= count($tables) && $table_num <= count($tables[$game_num - 1]) && $tables[$game_num - 1][$table_num - 1][$i] != $player->id)
 			{
 				$replacement = 1;
 			}

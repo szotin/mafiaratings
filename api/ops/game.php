@@ -669,11 +669,11 @@ class ApiPage extends OpsApiPageBase
 					$tables = &$misc->seating;
 					if (is_object($misc->seating))
 					{
-						$tables = &$tables->tables;
+						$tables = &$tables->rounds;
 					}
-					if ($table_num <= count($tables) && $game_num <= count($tables[$table_num - 1]))
+					if ($game_num <= count($tables) && $table_num <= count($tables[$game_num - 1]))
 					{
-						$seating = $tables[$table_num - 1][$game_num - 1];
+						$seating = $tables[$game_num - 1][$table_num - 1];
 						if (isset($misc->seating->mapping))
 						{
 							for ($i = 0; $i < count($seating); ++$i)

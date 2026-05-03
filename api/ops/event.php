@@ -2074,7 +2074,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		$misc->seating = new stdClass();
 		$misc->seating->mapping = array();
-		$misc->seating->tables = array();
+		$misc->seating->rounds = array();
 		
 		foreach ($dimtom->players->people as $p)
 		{
@@ -2083,17 +2083,14 @@ class ApiPage extends OpsApiPageBase
 			$misc->seating->mapping[] = $m;
 		}
 		
-		for ($i = 0; $i < $dimtom->configuration->numTables; ++$i)
-		{
-			$misc->seating->tables[] = array();
-		}
-		
 		foreach ($dimtom->rounds as $r)
 		{
+			$round = array();
 			for ($i = 0; $i < count($r->gameIds); ++$i)
 			{
-				$misc->seating->tables[$i][] = $dimtom->games[$r->gameIds[$i]]->players;
+				$round[] = $dimtom->games[$r->gameIds[$i]]->players;
 			}
+			$misc->seating->rounds[] = $round;
 		}
 
 		db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
@@ -2852,20 +2849,6 @@ class ApiPage extends OpsApiPageBase
 			$final_mapping[$slot] = $reg_users[$reg_idx]->user_id;
 		}
 
-		// --- 11. Transpose seating [round][table][seat] → [table][round][seat] ---
-		$seating_by_table = array();
-		foreach ($seating as $r => $round)
-		{
-			foreach ($round as $t => $table)
-			{
-				if (!isset($seating_by_table[$t]))
-				{
-					$seating_by_table[$t] = array();
-				}
-				$seating_by_table[$t][$r] = $table;
-			}
-		}
-
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
 		list($pr, $pvr, $tr, $tvr, $nr, $nvr) = Db::record(get_label('seating'),
@@ -2875,7 +2858,7 @@ class ApiPage extends OpsApiPageBase
 		$misc->seating          = new stdClass();
 		$misc->seating->hash    = $hash;
 		$misc->seating->version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
-		$misc->seating->tables  = $seating_by_table;
+		$misc->seating->rounds  = $seating;
 		$misc->seating->mapping = $final_mapping;
 
 		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);

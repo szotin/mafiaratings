@@ -297,7 +297,89 @@ class SeatingDef
 	
 	function __construct($hash, $tables = 0, $games = 0, $restrictions = null)
 	{
-		if (is_numeric($hash))
+		if (is_object($hash))
+		{
+			// Copy constructor: accepts a SeatingDef object and clones its values.
+			$this->hash         = $hash->hash;
+			$this->players      = $hash->players;
+			$this->tables       = $hash->tables;
+			$this->games        = $hash->games;
+			$this->restrictions = $hash->restrictions;
+		}
+		else if (is_array($hash))
+		{
+			// Build from a 3D seating array [round][table][seat] with player numbers 0..(players-1).
+			// Counts tables, games per player, and players; then finds all pairs that never
+			// sat at the same table (frequency 0) and adds them to restrictions.
+			$seating = $hash;
+
+			$this->tables = 0;
+			$this->games  = 0;
+			foreach ($seating as $round)
+			{
+				if (is_null($round) || empty($round)) continue;
+				++$this->games;
+				if ($this->tables == 0)
+					$this->tables = count($round);
+			}
+
+			$max_player = -1;
+			foreach ($seating as $round)
+			{
+				if (is_null($round)) continue;
+				foreach ($round as $table)
+				{
+					if (is_null($table)) continue;
+					foreach ($table as $p)
+					{
+						if ((int)$p > $max_player)
+							$max_player = (int)$p;
+					}
+				}
+			}
+			$this->players = $max_player + 1;
+
+			// Count how many times each pair of players sat in the same game.
+			$freq = array();
+			foreach ($seating as $round)
+			{
+				if (is_null($round)) continue;
+				foreach ($round as $table)
+				{
+					if (is_null($table)) continue;
+					$g = array_values((array)$table);
+					$n = count($g);
+					for ($a = 0; $a < $n; ++$a)
+					{
+						for ($b = $a + 1; $b < $n; ++$b)
+						{
+							$lo = min((int)$g[$a], (int)$g[$b]);
+							$hi = max((int)$g[$a], (int)$g[$b]);
+							if (!isset($freq[$lo][$hi]))
+								$freq[$lo][$hi] = 0;
+							++$freq[$lo][$hi];
+						}
+					}
+				}
+			}
+
+			// Pairs that never met (frequency 0) become restrictions.
+			$this->restrictions = array();
+			if ($this->players >= 12)
+			{
+				for ($a = 0; $a < $this->players; ++$a)
+				{
+					for ($b = $a + 1; $b < $this->players; ++$b)
+					{
+						if (empty($freq[$a][$b]))
+							$this->restrictions[] = array($a, $b);
+					}
+				}
+			}
+
+			$this->generateHash();
+		}
+		else if (is_numeric($hash))
 		{
 			$this->players = (int)$hash;
 			$this->tables = (int)$tables;
