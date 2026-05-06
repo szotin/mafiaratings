@@ -1218,6 +1218,168 @@ class SeatingDef
 		return $mapping;
 	}
 
+	// Adjusts event-specific seating to satisfy per-table restrictions such as judge/player
+	// conflicts. Does NOT affect the canonical seatings table — call after the seatings table
+	// insert and before assign_seating_to_event.
+	//
+	// $table_restrictions: array indexed by table number; each element is either null (no
+	//   restriction) or an array of player slot indices forbidden at that table.
+	//   Example: [[4], null, [2, 3]] means slot 4 cannot sit at table 0, slots 2 and 3
+	//   cannot sit at table 2, table 1 has no restriction.
+	//
+	// For each round/violation the method tries (in order):
+	//   1. Swap the whole offending table with another table if it introduces no new violations.
+	//   2. Swap the violating player with the player at the same seat in another table,
+	//      checking both $table_restrictions and $this->restrictions (pair restrictions).
+	// If neither fix works the violation is left as-is.
+	//
+	// Returns the (possibly adjusted) seating.
+	function applyJudgeRestrictions($seating, $table_restrictions)
+	{
+		if ($this->tables < 2 || empty($table_restrictions)) { return $seating; }
+
+		// Build O(1) lookup for pair restrictions (players that must never share a table).
+		$restrict_pairs = array();
+		foreach ($this->restrictions as $group)
+		{
+			$n = count($group);
+			for ($i = 0; $i < $n; $i++)
+			{
+				for ($j = $i + 1; $j < $n; $j++)
+				{
+					$a = $group[$i];
+					$b = $group[$j];
+					$restrict_pairs[$a][$b] = true;
+					$restrict_pairs[$b][$a] = true;
+				}
+			}
+		}
+
+		// Normalise restrictions to $forbidden[$t][$slot] = true for O(1) checks.
+		$forbidden = array();
+		foreach ($table_restrictions as $t => $slots)
+		{
+			if (!empty($slots))
+			{
+				foreach ($slots as $slot)
+				{
+					$forbidden[$t][$slot] = true;
+				}
+			}
+		}
+
+		if (empty($forbidden)) { return $seating; }
+
+		foreach ($seating as $r => $round)
+		{
+			$tc = count($round);
+			if ($tc < 2) { continue; }
+
+			for ($t = 0; $t < $tc; $t++)
+			{
+				if (empty($forbidden[$t])) { continue; }
+
+				foreach ($forbidden[$t] as $forbidden_slot => $_)
+				{
+					// Find this slot in the (possibly already-modified) table $t.
+					$player_seat = array_search($forbidden_slot, $seating[$r][$t]);
+					if ($player_seat === false) { continue; }
+
+					// --- 1. Try a full table swap ---
+					$table_swapped = false;
+					for ($t2 = 0; $t2 < $tc && !$table_swapped; $t2++)
+					{
+						if ($t2 == $t) { continue; }
+
+						$ok = true;
+						// Players moving into table $t must not be forbidden there.
+						if (!empty($forbidden[$t]))
+						{
+							foreach ($seating[$r][$t2] as $slot)
+							{
+								if (isset($forbidden[$t][$slot])) { $ok = false; break; }
+							}
+						}
+						// Players moving into table $t2 must not be forbidden there.
+						if ($ok && !empty($forbidden[$t2]))
+						{
+							foreach ($seating[$r][$t] as $slot)
+							{
+								if (isset($forbidden[$t2][$slot])) { $ok = false; break; }
+							}
+						}
+
+						if ($ok)
+						{
+							$tmp              = $seating[$r][$t];
+							$seating[$r][$t]  = $seating[$r][$t2];
+							$seating[$r][$t2] = $tmp;
+							$table_swapped    = true;
+						}
+					}
+
+					// A full table swap resolves all violations at $t simultaneously.
+					if ($table_swapped) { break; }
+
+					// --- 2. Try swapping the violating player at the same seat position ---
+					for ($t2 = 0; $t2 < $tc; $t2++)
+					{
+						if ($t2 == $t) { continue; }
+
+						$other_slot = $seating[$r][$t2][$player_seat];
+						$ok = true;
+
+						// Table restriction checks for both new positions.
+						if (!empty($forbidden[$t]) && isset($forbidden[$t][$other_slot]))
+						{
+							$ok = false;
+						}
+						if ($ok && !empty($forbidden[$t2]) && isset($forbidden[$t2][$forbidden_slot]))
+						{
+							$ok = false;
+						}
+
+						// Pair restriction: $forbidden_slot moving into table $t2.
+						if ($ok && isset($restrict_pairs[$forbidden_slot]))
+						{
+							foreach ($seating[$r][$t2] as $seat => $slot)
+							{
+								if ($seat != $player_seat && isset($restrict_pairs[$forbidden_slot][$slot]))
+								{
+									$ok = false;
+									break;
+								}
+							}
+						}
+
+						// Pair restriction: $other_slot moving into table $t.
+						if ($ok && isset($restrict_pairs[$other_slot]))
+						{
+							foreach ($seating[$r][$t] as $seat => $slot)
+							{
+								if ($seat != $player_seat && isset($restrict_pairs[$other_slot][$slot]))
+								{
+									$ok = false;
+									break;
+								}
+							}
+						}
+
+						if ($ok)
+						{
+							$seating[$r][$t][$player_seat]  = $other_slot;
+							$seating[$r][$t2][$player_seat] = $forbidden_slot;
+							break;
+						}
+					}
+					// If no fix was found, leave this violation as-is and continue.
+				}
+			}
+		}
+
+		return $seating;
+	}
+
 	// Renumbers free players (those not in any restriction group) in the seating
 	// so that players with better meeting distribution (lower SSQ) get lower numbers.
 	// Restricted players keep their current indices unchanged.

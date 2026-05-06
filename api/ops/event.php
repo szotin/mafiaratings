@@ -2192,11 +2192,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Invalid file [0].', $src_filename));
 		}
 
-		// --- 1. Load registered players and classify pairs ---
-		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs) =
-			$this->load_reg_users_and_pairs($event_id, $tournament_id, $club_id, $event_players, $event_round);
-
-		// --- 2. Parse DimTom seating ---
+		// --- 1. Parse DimTom seating ---
 		$rounds = array();
 		foreach ($dimtom->rounds as $r)
 		{
@@ -2208,17 +2204,17 @@ class ApiPage extends OpsApiPageBase
 			$rounds[] = $round;
 		}
 
-		// --- 3. Validate seating dimensions against event ---
+		// --- 2. Validate seating dimensions against event ---
 		$dimtomDef = new SeatingDef($rounds);
 		if ($dimtomDef->players != $event_players || $dimtomDef->tables != $event_tables || $dimtomDef->games != $event_games)
 		{
 			if (!get_optional_param('update_event', 0))
 			{
 				$changes = array();
-				if ($dimtomDef->players != $event_players) { $changes[] = get_label('players') . ': ' . $event_players . ' \xe2\x86\x92 ' . $dimtomDef->players; }
-				if ($dimtomDef->tables  != $event_tables)  { $changes[] = get_label('tables') . ': ' . $event_tables . ' \xe2\x86\x92 ' . $dimtomDef->tables; }
-				if ($dimtomDef->games   != $event_games)   { $changes[] = get_label('rounds') . ': ' . $event_games . ' \xe2\x86\x92 ' . $dimtomDef->games; }
-				$this->response['confirm'] = get_label('Seating dimensions do not match: [0]. Update the event?', implode(', ', $changes));
+				if ($dimtomDef->players != $event_players) { $changes[] = get_label('Players [0] instead of [1]', $dimtomDef->players, $event_players); }
+				if ($dimtomDef->tables  != $event_tables)  { $changes[] = get_label('Tables [0] instead of [1]',  $dimtomDef->tables,  $event_tables); }
+				if ($dimtomDef->games   != $event_games)   { $changes[] = get_label('Rounds [0] instead of [1]',  $dimtomDef->games,   $event_games); }
+				$this->response['confirm'] = get_label('The seating you are importing does not match the round parameters. [0]. Do you want to apply it anyway?', implode('. ', $changes));
 				return;
 			}
 			Db::exec(get_label('event'), 'UPDATE events SET players = ?, tables = ?, games = ? WHERE id = ?',
@@ -2227,6 +2223,10 @@ class ApiPage extends OpsApiPageBase
 			$event_tables  = $dimtomDef->tables;
 			$event_games   = $dimtomDef->games;
 		}
+
+		// --- 3. Load registered players and classify pairs (after dimensions are finalised) ---
+		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs) =
+			$this->load_reg_users_and_pairs($event_id, $tournament_id, $club_id, $event_players, $event_round);
 
 		// --- 6. Normalize restrictions and renumber seating to canonical form ---
 		$restrict_mapping = $dimtomDef->normalizeRestrictions();
@@ -2248,8 +2248,15 @@ class ApiPage extends OpsApiPageBase
 		}
 		Db::commit();
 
-		// --- 8. Build final mapping and assign to event ---
+		// --- 8. Build final mapping ---
 		$final_mapping = $this->build_slot_mapping($rounds, $event_players, $restrict_mapping, $reg_users, $welcome_pairs, $avoid_pairs);
+
+		// --- 9. Apply event-specific judge restrictions (not stored in seatings table) ---
+		$table_restrictions = $this->build_judge_table_restrictions($tournament_id, $club_id, $event_tables, $final_mapping);
+		if (!is_null($table_restrictions))
+		{
+			$rounds = $dimtomDef->applyJudgeRestrictions($rounds, $table_restrictions);
+		}
 
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
@@ -2682,6 +2689,85 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// build_judge_table_restrictions — builds per-table slot restrictions from referee/player pairs.
+	// Referees are assigned to tables in reg_order: referee[0] → table 0, referee[1] → table 1, …
+	// Returns array indexed by table number where each value is an array of forbidden slot indices,
+	// or null if there are no judge restrictions at all.
+	//-------------------------------------------------------------------------------------------------------
+	private function build_judge_table_restrictions($tournament_id, $club_id, $event_tables, $final_mapping)
+	{
+		global $_lang;
+
+		if (is_null($tournament_id)) { return null; }
+
+		// Load accepted referees ordered by registration order.
+		$referees = array();
+		$q = new DbQuery(
+			'SELECT tr.user_id FROM tournament_regs tr' .
+			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
+			' ORDER BY tr.reg_order ASC',
+			$tournament_id, USER_PERM_REFEREE, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+		while ($row = $q->next())
+		{
+			$referees[] = (int)$row[0];
+		}
+
+		if (empty($referees)) { return null; }
+
+		// Map referee_user_id → table_index (only up to $event_tables).
+		$referee_to_table = array();
+		for ($i = 0; $i < min(count($referees), $event_tables); $i++)
+		{
+			$referee_to_table[$referees[$i]] = $i;
+		}
+
+		// Invert $final_mapping to user_id → slot.
+		$user_to_slot = array();
+		foreach ($final_mapping as $slot => $user_id)
+		{
+			if ($user_id) { $user_to_slot[$user_id] = $slot; }
+		}
+
+		// Find SEPARATE pairs where one side is a referee and the other is a seated player.
+		$pairs = get_tournament_pairs($tournament_id, $club_id, $_lang, true);
+
+		$table_restrictions = array_fill(0, $event_tables, null);
+		foreach ($pairs as $pair)
+		{
+			if ($pair->policy != PAIR_POLICY_SEPARATE) { continue; }
+
+			$ref_id    = null;
+			$player_id = null;
+			if (isset($referee_to_table[$pair->user1_id]) && isset($user_to_slot[$pair->user2_id]))
+			{
+				$ref_id    = $pair->user1_id;
+				$player_id = $pair->user2_id;
+			}
+			else if (isset($referee_to_table[$pair->user2_id]) && isset($user_to_slot[$pair->user1_id]))
+			{
+				$ref_id    = $pair->user2_id;
+				$player_id = $pair->user1_id;
+			}
+			if (is_null($ref_id)) { continue; }
+
+			$table_idx = $referee_to_table[$ref_id];
+			$slot      = $user_to_slot[$player_id];
+			if (is_null($table_restrictions[$table_idx]))
+			{
+				$table_restrictions[$table_idx] = array();
+			}
+			$table_restrictions[$table_idx][] = $slot;
+		}
+
+		// Return null when nothing was found (avoids needless processing).
+		foreach ($table_restrictions as $r)
+		{
+			if (!empty($r)) { return $table_restrictions; }
+		}
+		return null;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// set_seating
 	//-------------------------------------------------------------------------------------------------------
 	function set_seating_op()
@@ -2747,6 +2833,13 @@ class ApiPage extends OpsApiPageBase
 
 		// --- 8. Build final mapping [seating_slot => user_id] ---
 		$final_mapping = $this->build_slot_mapping($seating, $event_players, $restrict_mapping, $reg_users, $welcome_pairs, $avoid_pairs);
+
+		// --- 9. Apply event-specific judge restrictions (not stored in seatings table) ---
+		$table_restrictions = $this->build_judge_table_restrictions($tournament_id, $club_id, $event_tables, $final_mapping);
+		if (!is_null($table_restrictions))
+		{
+			$seating = $seatingDef->applyJudgeRestrictions($seating, $table_restrictions);
+		}
 
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
