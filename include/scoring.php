@@ -2026,7 +2026,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		
 		Db::begin();
 		$query = new DbQuery('SELECT scores FROM tournament_scores_cache WHERE tournament_id = ? AND flags = ? AND scoring_id = ? AND scoring_version = ? AND normalizer_id = ? AND normalizer_version = ?',
-			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer->id, $normalizer->version); 
+			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer_id, $normalizer_version);
 		if ($row = $query->next())
 		{
 			list ($scores) = $row;
@@ -2035,7 +2035,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		}
 		$scores = _tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options);
 		Db::exec(get_label('score'), 'INSERT INTO tournament_scores_cache (tournament_id, flags, scoring_id, scoring_version, normalizer_id, normalizer_version, scores) VALUES (?, ?, ?, ?, ?, ?, ?)',
-			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer->id, $normalizer->version, json_encode($scores)); 
+			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer_id, $normalizer_version, json_encode($scores));
 		Db::commit();
 		return $scores;
 	}

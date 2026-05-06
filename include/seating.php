@@ -780,7 +780,34 @@ class SeatingDef
 		$this->generateHash();
 		return $mapping;
 	}
-	
+
+	// Applies a player-index mapping to a [round][table][seat] seating array.
+	// If $mapping is partial (from normalizeRestrictions), unmapped indices are assigned
+	// new slots sequentially; $mapping is extended in-place to a full mapping.
+	static function applyMapping($seating, &$mapping)
+	{
+		$next_free = count($mapping);
+		$result = array();
+		foreach ($seating as $r => $round)
+		{
+			$result[$r] = array();
+			foreach ($round as $t => $table)
+			{
+				$result[$r][$t] = array();
+				foreach ($table as $seat)
+				{
+					$idx = (int)$seat;
+					if (!isset($mapping[$idx]))
+					{
+						$mapping[$idx] = $next_free++;
+					}
+					$result[$r][$t][] = $mapping[$idx];
+				}
+			}
+		}
+		return $result;
+	}
+
 	private function _createPlayersExpectations($seating)
 	{
 		if (isset($this->playersExpectations))
@@ -1108,13 +1135,11 @@ class SeatingDef
 		return SeatingDef::worst_tables_score($players, $tables, $games) / 5;
 	}
 
-	// Renumbers free players (those not in any restriction group) in the seating
-	// so that players with better meeting distribution (lower SSQ) get lower numbers.
-	// Restricted players keep their current indices unchanged.
-	// Returns a new seating with renumbered players.
-	function renumberByDistribution($seating)
+	// Returns the distribution mapping: restricted players keep their index; free players
+	// are reassigned so that the one with the best meeting distribution (lowest SSQ) gets
+	// the lowest free index. Returns a full mapping [old_idx => new_idx] for all players.
+	function buildDistributionMapping($seating)
 	{
-		// Collect restricted player indices
 		$restricted = array();
 		foreach ($this->restrictions as $group)
 		{
@@ -1124,7 +1149,6 @@ class SeatingDef
 			}
 		}
 
-		// Collect free player indices (sorted ascending)
 		$free_indices = array();
 		for ($p = 0; $p < $this->players; ++$p)
 		{
@@ -1134,17 +1158,17 @@ class SeatingDef
 			}
 		}
 
+		$mapping = array();
+		for ($p = 0; $p < $this->players; ++$p)
+		{
+			$mapping[$p] = $p;
+		}
+
 		if (count($free_indices) <= 1)
 		{
-			$mapping = array();
-			for ($p = 0; $p < $this->players; ++$p)
-			{
-				$mapping[$p] = $p;
-			}
 			return $mapping;
 		}
 
-		// Count meetings between all pairs of players across all games
 		$meetings = array_fill(0, $this->players * $this->players, 0);
 		foreach ($seating as $round)
 		{
@@ -1163,7 +1187,6 @@ class SeatingDef
 			}
 		}
 
-		// For each free player compute SSQ of meeting-frequency deviations from expected
 		$expected = $this->games * 9 / ($this->players - 1);
 		$ssq = array();
 		foreach ($free_indices as $p)
@@ -1180,7 +1203,6 @@ class SeatingDef
 			$ssq[$p] = $sum;
 		}
 
-		// Sort free players by SSQ ascending: lowest SSQ → lowest index (best distribution = lowest number)
 		$free_players = $free_indices;
 		usort($free_players, function($a, $b) use ($ssq)
 		{
@@ -1188,32 +1210,22 @@ class SeatingDef
 			return abs($diff) < 1e-9 ? 0 : (int)($diff < 0 ? -1 : 1);
 		});
 
-		// Build mapping: restricted players keep their index; free players get reassigned
-		$mapping = array();
-		for ($p = 0; $p < $this->players; ++$p)
-		{
-			$mapping[$p] = $p;
-		}
 		for ($i = 0; $i < count($free_players); ++$i)
 		{
 			$mapping[$free_players[$i]] = $free_indices[$i];
 		}
 
-		// Build and return new seating with remapped player indices
-		$result = array();
-		foreach ($seating as $r => $round)
-		{
-			$result[$r] = array();
-			foreach ($round as $t => $table)
-			{
-				$result[$r][$t] = array();
-				for ($a = 0; $a < 10; ++$a)
-				{
-					$result[$r][$t][$a] = $mapping[$table[$a]];
-				}
-			}
-		}
-		return $result;
+		return $mapping;
+	}
+
+	// Renumbers free players (those not in any restriction group) in the seating
+	// so that players with better meeting distribution (lower SSQ) get lower numbers.
+	// Restricted players keep their current indices unchanged.
+	// Returns a new seating with renumbered players.
+	function renumberByDistribution($seating)
+	{
+		$mapping = $this->buildDistributionMapping($seating);
+		return self::applyMapping($seating, $mapping);
 	}
 }
 
