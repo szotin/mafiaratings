@@ -2840,7 +2840,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$seating = $seatingDef->applyJudgeRestrictions($seating, $table_restrictions);
 		}
-
+			
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
 		$this->assign_seating_to_event($misc, $hash, $seating, $final_mapping);

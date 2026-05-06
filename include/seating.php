@@ -1238,6 +1238,21 @@ class SeatingDef
 	{
 		if ($this->tables < 2 || empty($table_restrictions)) { return $seating; }
 
+		// Normalise restrictions to $forbidden[$t][$slot] = true for O(1) checks.
+		$forbidden = array();
+		foreach ($table_restrictions as $t => $slots)
+		{
+			if (!empty($slots))
+			{
+				foreach ($slots as $slot)
+				{
+					$forbidden[$t][$slot] = true;
+				}
+			}
+		}
+
+		if (empty($forbidden)) { return $seating; }
+
 		// Build O(1) lookup for pair restrictions (players that must never share a table).
 		$restrict_pairs = array();
 		foreach ($this->restrictions as $group)
@@ -1254,21 +1269,6 @@ class SeatingDef
 				}
 			}
 		}
-
-		// Normalise restrictions to $forbidden[$t][$slot] = true for O(1) checks.
-		$forbidden = array();
-		foreach ($table_restrictions as $t => $slots)
-		{
-			if (!empty($slots))
-			{
-				foreach ($slots as $slot)
-				{
-					$forbidden[$t][$slot] = true;
-				}
-			}
-		}
-
-		if (empty($forbidden)) { return $seating; }
 
 		foreach ($seating as $r => $round)
 		{
