@@ -655,7 +655,28 @@ class Page extends TournamentPageBase
 				file: document.getElementById("upload-" + eventId).files[0]
 			},
 			2097152,
-			refr);
+			function(data)
+			{
+				if (data && isSet(data.confirm))
+				{
+					dlg.yesNo(data.confirm, null, null, function()
+					{
+						json.upload('api/ops/event.php',
+						{
+							op: "import_dimtom",
+							event_id: eventId,
+							update_event: 1,
+							file: document.getElementById("upload-" + eventId).files[0]
+						},
+						2097152,
+						refr);
+					});
+				}
+				else
+				{
+					refr();
+				}
+			});
 		}
 
 		function createPair()
