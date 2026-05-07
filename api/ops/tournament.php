@@ -2134,39 +2134,81 @@ class ApiPage extends OpsApiPageBase
 	function move_registration_up_op()
 	{
 		$tournament_id = (int)get_required_param('tournament_id');
-		$user_id       = (int)get_required_param('user_id');
 		$flags_filter  = (int)get_required_param('flags_filter');
+		$raw_team_id   = get_optional_param('team_id', null);
+		$team_id       = ($raw_team_id !== null) ? (int)$raw_team_id : null;
 
-		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		list($club_id, $team_size) = Db::record(get_label('tournament'), 'SELECT club_id, team_size FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 
-		list($my_order) = Db::record(get_label('registration'),
-			'SELECT reg_order FROM tournament_regs WHERE tournament_id = ? AND user_id = ?',
-			$tournament_id, $user_id);
-		$my_order = (int)$my_order;
+		// Build the current group (whole team or single player)
+		$cur_members = array();
+		if ($team_size > 1 && $team_id !== null)
+		{
+			$q = new DbQuery(
+				'SELECT user_id, reg_order FROM tournament_regs WHERE tournament_id = ? AND team_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0 ORDER BY reg_order ASC',
+				$tournament_id, $team_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+			while ($r = $q->next()) { $cur_members[] = $r; }
+		}
+		else
+		{
+			$user_id = (int)get_required_param('user_id');
+			list($my_order) = Db::record(get_label('registration'),
+				'SELECT reg_order FROM tournament_regs WHERE tournament_id = ? AND user_id = ?',
+				$tournament_id, $user_id);
+			$cur_members[] = array($user_id, (int)$my_order);
+		}
+		if (empty($cur_members)) { return; }
 
-		$row = (new DbQuery(
-			'SELECT user_id, reg_order FROM tournament_regs' .
-			' WHERE tournament_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0 AND reg_order < ?' .
-			' ORDER BY reg_order DESC LIMIT 1',
-			$tournament_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED, $my_order
+		$my_min_order = (int)$cur_members[0][1];
+
+		// Find the player just before this group
+		$prev_row = (new DbQuery(
+			'SELECT user_id, reg_order, team_id FROM tournament_regs WHERE tournament_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0 AND reg_order < ? ORDER BY reg_order DESC LIMIT 1',
+			$tournament_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED, $my_min_order
 		))->next();
-		if (!$row) return;
+		if (!$prev_row) { return; }
 
-		list($prev_user_id, $prev_order) = $row;
+		list($prev_user_id, $prev_order, $prev_team_id) = $prev_row;
+
+		// Build the preceding group (whole team or single player)
+		$prev_members = array();
+		if ($team_size > 1 && $prev_team_id !== null)
+		{
+			$q = new DbQuery(
+				'SELECT user_id, reg_order FROM tournament_regs WHERE tournament_id = ? AND team_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0 ORDER BY reg_order ASC',
+				$tournament_id, $prev_team_id, $flags_filter, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+			while ($r = $q->next()) { $prev_members[] = $r; }
+		}
+		else
+		{
+			$prev_members[] = array($prev_user_id, $prev_order);
+		}
+
+		// Merge and sort all reg_orders, redistribute: current group gets the smallest N
+		$all_orders = array_merge(array_column($cur_members, 1), array_column($prev_members, 1));
+		sort($all_orders);
+		$n = count($cur_members);
 
 		Db::begin();
-		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $prev_order, $tournament_id, $user_id);
-		Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $my_order, $tournament_id, $prev_user_id);
+		foreach ($cur_members as $i => $mem)
+		{
+			Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $all_orders[$i], $tournament_id, $mem[0]);
+		}
+		foreach ($prev_members as $i => $mem)
+		{
+			Db::exec(get_label('registration'), 'UPDATE tournament_regs SET reg_order = ? WHERE tournament_id = ? AND user_id = ?', $all_orders[$n + $i], $tournament_id, $mem[0]);
+		}
 		sync_seating_mapping($tournament_id);
 		Db::commit();
 	}
 
 	function move_registration_up_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Move a registration one position up within its group.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Move a registration one position up within its group. For team tournaments pass team_id to move the whole team.');
 		$help->request_param('tournament_id', 'Tournament id.');
-		$help->request_param('user_id', 'User id to move up.');
+		$help->request_param('user_id', 'User id to move up (ignored when team_id is provided).', 'required unless team_id given');
+		$help->request_param('team_id', 'Team id. If provided and tournament has team_size > 1, moves the whole team up.', 'null');
 		$help->request_param('flags_filter', 'Permission flag to filter group (USER_PERM_PLAYER or USER_PERM_REFEREE etc).');
 		return $help;
 	}

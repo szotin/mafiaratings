@@ -137,7 +137,23 @@ class Page extends TournamentPageBase
 		while ($row = $query->next()) { $referees[] = $row; }
 
 		$players = array();
-		$query = new DbQuery($sel . ' AND (tr.flags & ' . USER_PERM_PLAYER . ') <> 0' . $accepted . ' ORDER BY tr.reg_order ASC, nu.name', $this->id);
+		if ($this->team_size > 1)
+		{
+			$sel_team =
+				'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, ni.name, u.club_id, c.name, c.flags, tr.team_id, t.name FROM tournament_regs tr' .
+				' JOIN users u ON u.id = tr.user_id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
+				' JOIN cities i ON i.id = u.city_id' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
+				' LEFT JOIN clubs c ON c.id = u.club_id' .
+				' LEFT JOIN tournament_teams t ON t.id = tr.team_id' .
+				' WHERE tr.tournament_id = ?';
+			$query = new DbQuery($sel_team . ' AND (tr.flags & ' . USER_PERM_PLAYER . ') <> 0' . $accepted . ' ORDER BY tr.reg_order ASC, nu.name', $this->id);
+		}
+		else
+		{
+			$query = new DbQuery($sel . ' AND (tr.flags & ' . USER_PERM_PLAYER . ') <> 0' . $accepted . ' ORDER BY tr.reg_order ASC, nu.name', $this->id);
+		}
 		while ($row = $query->next()) { $players[] = $row; }
 
 		$unconfirmed = array();
@@ -149,7 +165,14 @@ class Page extends TournamentPageBase
 			$this->showRegTable(get_label('Managers'), $managers, 0, USER_PERM_MANAGER, get_label('Manager'));
 		}
 		$this->showRegTable(get_label('Referees'), $referees, $total_tables, USER_PERM_REFEREE, get_label('Referee'));
-		$this->showRegTable(get_label('Players'), $players, $total_players, USER_PERM_PLAYER, get_label('Player'), true);
+		if ($this->team_size > 1)
+		{
+			$this->showTeamPlayerTable($players, $total_players);
+		}
+		else
+		{
+			$this->showRegTable(get_label('Players'), $players, $total_players, USER_PERM_PLAYER, get_label('Player'), true);
+		}
 
 		if (!empty($unconfirmed))
 		{
@@ -260,6 +283,119 @@ class Page extends TournamentPageBase
 				echo '<td></td>';
 				echo '<td></td>';
 			}
+			echo '</tr>';
+		}
+
+		echo '</table></p>';
+	}
+
+	private function showTeamPlayerTable($regs, $scheme_count)
+	{
+		$pic = new Picture(USER_TOURNAMENT_PICTURE, $this->user_pic);
+		$default_flags = USER_PERM_PLAYER;
+
+		// Group players by team, preserving reg_order-based sequence
+		$groups = array();
+		$group_keys = array();
+		foreach ($regs as $row)
+		{
+			$team_id = $row[9];
+			$key = ($team_id !== null && (int)$team_id > 0) ? 'team_' . (int)$team_id : 'solo_' . $row[0];
+			if (!array_key_exists($key, $groups))
+			{
+				$groups[$key] = array('team_id' => ($team_id !== null ? (int)$team_id : null), 'team_name' => $row[10], 'players' => array());
+				$group_keys[] = $key;
+			}
+			$groups[$key]['players'][] = $row;
+		}
+
+		echo '<p><b>' . get_label('Players') . '</b></p>';
+		echo '<p><table class="bordered light" width="100%">';
+		echo '<tr class="th darker">';
+		echo '<td width="120" align="center"><button class="icon" onclick="dlg.form(\'form/registration_create.php?tournament_id=' . $this->id . '&flags=' . $default_flags . '\', refr, 400)" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button></td>';
+		echo '<td width="40"></td>';
+		echo '<td width="100">' . get_label('Team') . '</td>';
+		echo '<td>' . get_label('Player') . '</td>';
+		echo '<td width="60" align="center">' . get_label('Club') . '</td>';
+		echo '<td width="200">' . get_label('Email') . '</td>';
+		echo '<td width="40"></td>';
+		echo '</tr>';
+
+		$row_num = 0;
+		$is_first_group = true;
+		foreach ($group_keys as $key)
+		{
+			$group = $groups[$key];
+			$team_id = $group['team_id'];
+			$team_name = $group['team_name'];
+			$group_size = count($group['players']);
+			$rowspan = $group_size > 1 ? ' rowspan="' . $group_size . '"' : '';
+			$up_style = $is_first_group ? ' style="visibility:hidden"' : '';
+
+			for ($j = 0; $j < $group_size; ++$j)
+			{
+				$row = $group['players'][$j];
+				list($user_id, $name, $email, $user_flags, $tr_flags, $city, $club_id, $club_name, $club_flags) = $row;
+
+				$overflow = ($scheme_count > 0 && $row_num >= $scheme_count);
+				echo '<tr class="' . ($overflow ? 'darker' : 'light') . '">';
+
+				echo '<td align="center" nowrap>';
+				echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
+				$new_flags = ($tr_flags & USER_PERM_MASK) & ~$default_flags;
+				echo '<button class="icon" onclick="removeTournamentRegFlag(' . $user_id . ', ' . $new_flags . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.tournamentUserPhoto(' . $user_id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
+				echo '<button class="icon" onclick="rollbackTournamentReg(' . $user_id . ')" title="' . get_label('Rollback [0] to not confirmed state.', $name) . '"><img src="images/undo.png" border="0"></button>';
+				echo '</td>';
+
+				echo '<td align="center">' . (++$row_num) . '</td>';
+
+				if ($j == 0)
+				{
+					if ($team_id !== null)
+					{
+						echo '<td' . $rowspan . ' align="center"><b>' . htmlspecialchars((string)$team_name) . '</b></td>';
+					}
+					else
+					{
+						echo '<td' . $rowspan . ' class="dark" align="center">' . get_label('No team') . '</td>';
+					}
+				}
+
+				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
+				echo '<td>' . $email . '</td>';
+
+				if ($j == 0)
+				{
+					echo '<td' . $rowspan . ' align="center">';
+					if ($team_id !== null)
+					{
+						echo '<button class="icon"' . $up_style . ' onclick="moveTeamUp(' . $team_id . ', ' . $default_flags . ')" title="' . get_label('Move up') . '"><img src="images/up.png" border="0"></button>';
+					}
+					else
+					{
+						echo '<button class="icon"' . $up_style . ' onclick="moveRegistration(' . $user_id . ', ' . $default_flags . ')" title="' . get_label('Move up') . '"><img src="images/up.png" border="0"></button>';
+					}
+					echo '</td>';
+				}
+
+				echo '</tr>';
+			}
+
+			$is_first_group = false;
+		}
+
+		for (; $row_num < $scheme_count; ++$row_num)
+		{
+			echo '<tr class="light">';
+			echo '<td></td>';
+			echo '<td align="center">' . ($row_num + 1) . '</td>';
+			echo '<td></td>';
+			echo '<td>' . $this->emptyPersonCell() . '</td>';
+			echo '<td></td>';
+			echo '<td></td>';
+			echo '<td></td>';
 			echo '</tr>';
 		}
 
@@ -606,6 +742,17 @@ class Page extends TournamentPageBase
 				op: 'move_registration_up',
 				tournament_id: <?php echo $this->id; ?>,
 				user_id: userId,
+				flags_filter: flagsFilter,
+			}, refr);
+		}
+
+		function moveTeamUp(teamId, flagsFilter)
+		{
+			json.post('api/ops/tournament.php',
+			{
+				op: 'move_registration_up',
+				tournament_id: <?php echo $this->id; ?>,
+				team_id: teamId,
 				flags_filter: flagsFilter,
 			}, refr);
 		}
