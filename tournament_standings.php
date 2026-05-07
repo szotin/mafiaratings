@@ -856,7 +856,7 @@ class Page extends TournamentPageBase
 			return;
 		}
 		
-		$has_teams = ($this->flags & TOURNAMENT_FLAG_TEAM) != 0;
+		$has_teams = $this->team_size > 1;
 		$has_mvp = ($this->flags & TOURNAMENT_FLAG_MANUAL_SCORE) == 0 && ($this->flags & TOURNAMENT_AWARD_MASK) != 0;
 		$has_tabs = $has_teams || $has_mvp;
 		$view = $has_teams ? VIEW_TEAM : VIEW_NORMAL;

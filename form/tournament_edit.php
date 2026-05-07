@@ -197,13 +197,6 @@ try
 	}
 	echo  '> ' . get_label('registration is closed') . '<br>';
 	
-	echo '<input type="checkbox" id="form-team"';
-	if ($flags & TOURNAMENT_FLAG_TEAM)
-	{
-		echo ' checked';
-	}
-	echo  '> ' . get_label('team tournament') . '<br>';
-	
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"';
 	if ($flags & TOURNAMENT_FLAG_LONG_TERM)
 	{
@@ -503,7 +496,6 @@ try
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-reg").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_REGISTRATION_CLOSED; ?>;
-		if ($("#form-team").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_TEAM; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_MVP; ?>;
 		if ($("#form-award-red").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_RED; ?>;

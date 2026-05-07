@@ -449,14 +449,17 @@ class Page extends TournamentPageBase
 			return;
 		}
 
+		$num_rounds = count($this->rounds);
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
 		echo '<td>' . get_label('Round') . '</td>';
 		echo '<td>' . get_label('Players') . '</td>';
 		echo '<td>' . get_label('Tables') . '</td>';
 		echo '<td>' . get_label('Games per player') . '</td>';
+		echo '<td>' . get_label('Team size') . '</td>';
 		echo '</tr>';
 
+		$first_row = true;
 		foreach ($this->rounds as $row)
 		{
 			list($event_id, $round_num, $misc, $players, $tables, $games) = $row;
@@ -475,6 +478,12 @@ class Page extends TournamentPageBase
 			echo '<td><input' . $inp_base . ' min="10" data-field="players" value="' . $players_val . '"></td>';
 			echo '<td><input' . $inp_base . ' min="1"' . $inp_tables_max . ' data-field="tables"  value="' . $tables_val  . '"></td>';
 			echo '<td><input' . $inp_base . ' min="1" data-field="games"   value="' . $games_val   . '"></td>';
+			if ($first_row)
+			{
+				$rowspan = $num_rounds > 1 ? ' rowspan="' . $num_rounds . '"' : '';
+				echo '<td' . $rowspan . ' align="center"><input id="scheme-team-size" type="number" style="width:60px;" min="1" value="' . (int)$this->team_size . '"></td>';
+				$first_row = false;
+			}
 			echo '</tr>';
 		}
 
@@ -726,6 +735,7 @@ class Page extends TournamentPageBase
 				op: 'set_scheme',
 				tournament_id: <?php echo $this->id; ?>,
 				rounds: JSON.stringify(rounds),
+				team_size: Math.max(1, parseInt($('#scheme-team-size').val()) || 1),
 			}, onSuccess || refr);
 		}
 

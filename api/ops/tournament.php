@@ -1707,8 +1707,8 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('city'), 'UPDATE users SET city_id = ? WHERE id = ?', $city_id, $user_id);
 		}
 		
-		list($club_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
-		
+		list($club_id, $lat, $lon, $tournament_flags, $team_size) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags, t.team_size FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+
 		if (!is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id))
 		{
 			if ($user_id == $owner_id)
@@ -1725,7 +1725,7 @@ class ApiPage extends OpsApiPageBase
 		if ($row = $query->next())
 		{
 			list($old_team_id, $old_team, $old_flags, $old_city_id, $old_rating) = $row;
-			if (($tournament_flags & TOURNAMENT_FLAG_TEAM) != 0 && $team != $old_team)
+			if ($team_size > 1 && $team != $old_team)
 			{
 				if ($team == null || empty($team))
 				{
@@ -1757,7 +1757,7 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(get_label('registration'), 'UPDATE tournament_regs SET flags = ?, city_id = ?, rating = ? WHERE user_id = ? AND tournament_id = ?', $flags, $city_id, $user_rating, $user_id, $tournament_id);
 			}
 		}
-		else if ($tournament_flags & TOURNAMENT_FLAG_TEAM)
+		else if ($team_size > 1)
 		{
 			$team_id = null;
 			if ($team != null && !empty($team))
@@ -1833,10 +1833,10 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_optional_param('user_id', $owner_id);
 		
 		Db::begin();
-		list($club_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+		list($club_id, $lat, $lon, $tournament_flags, $team_size) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags, t.team_size FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
-		
-		list ($old_team_id, $old_team, $old_city_id, $old_city_name, $user_club_id, $old_flags) = Db::record(get_label('user'), 
+
+		list ($old_team_id, $old_team, $old_city_id, $old_city_name, $user_club_id, $old_flags) = Db::record(get_label('user'),
 			'SELECT tu.team_id, t.name, tu.city_id, n.name, u.club_id, tu.flags'.
 			' FROM tournament_regs tu'.
 			' JOIN users u ON u.id = tu.user_id'.
@@ -1869,7 +1869,7 @@ class ApiPage extends OpsApiPageBase
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
 		}
 		
-		if (($tournament_flags & TOURNAMENT_FLAG_TEAM) != 0 && $team != $old_team)
+		if ($team_size > 1 && $team != $old_team)
 		{
 			if ($team == null || empty($team))
 			{
@@ -2087,6 +2087,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$tournament_id = (int)get_required_param('tournament_id');
 		$rounds = json_decode(get_required_param('rounds'));
+		$team_size = max(1, (int)get_optional_param('team_size', 1));
 
 		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
@@ -2109,6 +2110,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET team_size = ? WHERE id = ?', $team_size, $tournament_id);
 		if (!is_null($main_players))
 		{
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET num_players = ? WHERE id = ?', $main_players, $tournament_id);
@@ -2122,6 +2124,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Set players/tables/games scheme for all tournament rounds at once. Also updates tournament num_players from the main round.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('rounds', 'JSON array of round objects: [{event_id, players, tables, games, is_main}, ...].');
+		$help->request_param('team_size', 'Team size. Defaults to 1 (individual tournament). If > 1, the tournament is a team tournament.', '1');
 		return $help;
 	}
 

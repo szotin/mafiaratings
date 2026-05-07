@@ -26,11 +26,11 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('tournament')));
 	}
 	$tournament_id = (int)$_REQUEST['tournament_id'];
-	list($club_id, $name, $flags) = Db::record(get_label('tournament'), 'SELECT club_id, name, flags FROM tournaments WHERE id = ?', $tournament_id);
+	list($club_id, $name, $team_size) = Db::record(get_label('tournament'), 'SELECT club_id, name, team_size FROM tournaments WHERE id = ?', $tournament_id);
 	check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
-	
-	
-	list ($city_id, $city_name, $team_id, $team_name, $flags) = Db::record(get_label('registration'), 
+
+
+	list ($city_id, $city_name, $team_id, $team_name, $flags) = Db::record(get_label('registration'),
 		'SELECT r.city_id, n.name, r.team_id, t.name, r.flags'.
 		' FROM tournament_users r'.
 		' JOIN cities c ON c.id = r.city_id' .
@@ -45,7 +45,7 @@ try
 	show_city_input('form-city', $city_name, -1, 'onCitySelect');
 	echo '</td></tr>';
 	
-	if ($flags & TOURNAMENT_FLAG_TEAM)
+	if ($team_size > 1)
 	{
 		echo '<tr><td>' . get_label('Team') . ':</td><td>';
 		

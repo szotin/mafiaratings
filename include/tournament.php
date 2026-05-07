@@ -98,6 +98,7 @@ class TournamentPageBase extends PageBase
 	protected $normalizer_version;
 	protected $rules_code;
 	protected $flags;
+	protected $team_size;
 	protected $mwt_id;
 	protected $imafia_id;
 	protected $emo_id;
@@ -126,7 +127,7 @@ class TournamentPageBase extends PageBase
 			$this->city_id, $this->city_name, $this->country_id, $this->country_name, $this->timezone,
 			$this->start_time, $this->duration, $this->langs, $this->notes, $this->fee, $this->currency_id, $this->currency_pattern,
 			$this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, 
-			$this->rules_code, $this->flags, $this->mwt_id, $this->imafia_id, $this->emo_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
+			$this->rules_code, $this->flags, $this->mwt_id, $this->imafia_id, $this->emo_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, $this->team_size) =
 		Db::record(
 			get_label('tournament'),
 			'SELECT t.name, c.id, c.name, c.flags,' . 
@@ -134,7 +135,7 @@ class TournamentPageBase extends PageBase
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern,'.
 				' t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options,'.
-				' t.rules, t.flags, t.mwt_id, t.imafia_id, t.emo_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff' .
+				' t.rules, t.flags, t.mwt_id, t.imafia_id, t.emo_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff, t.team_size' .
 				' FROM tournaments t' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN addresses a ON a.id = t.address_id' .
@@ -314,7 +315,7 @@ class TournamentPageBase extends PageBase
 			if (!$done)
 			{
 				echo '<button onclick="mr.attendTournament('.$this->id;
-				if ($this->flags & TOURNAMENT_FLAG_TEAM)
+				if ($this->team_size > 1)
 				{
 					echo ', true';
 				}

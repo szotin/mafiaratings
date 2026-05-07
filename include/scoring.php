@@ -1945,7 +1945,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		set_player_normalization($player, $max_games_played, $max_rounds_played);
 	}
 	
-	if (($tournament_flags & TOURNAMENT_FLAG_TEAM) != 0 && ($lod_flags & SCORING_LOD_TEAMS) != 0)
+	if (($lod_flags & SCORING_LOD_TEAMS) != 0 && (int)Db::record(get_label('tournament'), 'SELECT team_size FROM tournaments WHERE id = ?', $tournament_id)[0] > 1)
 	{
 		// Prepare teams
 		$scores = array();
