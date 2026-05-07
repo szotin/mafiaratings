@@ -2552,6 +2552,41 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 
+		// For team tournaments: players in the same team must not share a table
+		if (!is_null($tournament_id))
+		{
+			list($team_size) = Db::record(get_label('tournament'), 'SELECT team_size FROM tournaments WHERE id = ?', $tournament_id);
+			if ((int)$team_size > 1)
+			{
+				$team_members = array();
+				$q_teams = new DbQuery(
+					'SELECT user_id, team_id FROM tournament_regs WHERE tournament_id = ? AND team_id IS NOT NULL AND (flags & ?) <> 0 AND (flags & ?) = 0',
+					$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+				while ($r = $q_teams->next())
+				{
+					$tid = (int)$r[1];
+					if (!isset($team_members[$tid])) { $team_members[$tid] = array(); }
+					$team_members[$tid][] = (int)$r[0];
+				}
+				foreach ($team_members as $members)
+				{
+					$n = count($members);
+					for ($a = 0; $a < $n - 1; ++$a)
+					{
+						for ($b = $a + 1; $b < $n; ++$b)
+						{
+							$uid1 = $members[$a];
+							$uid2 = $members[$b];
+							if (isset($user_to_reg_idx[$uid1]) && isset($user_to_reg_idx[$uid2]))
+							{
+								$restrictions[] = array($user_to_reg_idx[$uid1], $user_to_reg_idx[$uid2]);
+							}
+						}
+					}
+				}
+			}
+		}
+
 		return array($reg_users, $restrictions, $welcome_pairs, $avoid_pairs);
 	}
 
