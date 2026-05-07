@@ -2832,6 +2832,7 @@ class ApiPage extends OpsApiPageBase
 		$seatingDef = new SeatingDef($event_players, $event_tables, $event_games, $restrictions);
 		$restrict_mapping = $seatingDef->normalizeRestrictions();
 		$hash = $seatingDef->hash;
+		$warning = null;
 
 		// --- 7. Get or create canonical seating from seatings table ---
 		Db::begin();
@@ -2848,13 +2849,13 @@ class ApiPage extends OpsApiPageBase
 			if ($row)
 			{
 				$seating = json_decode($row[0], true);
-				echo get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.');
+				$warning = get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.');
 			}
 			else
 			{
 				$seating = $seatingDef->generateInitialSeating();
 				$seating = $seatingDef->renumberByDistribution($seating);
-				echo get_label('We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.');
+				$warning = get_label('We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.');
 			}
 			$ps = $seatingDef->calculatePlayersScore($seating);
 			$ns = $seatingDef->calculateNumbersScore($seating);
@@ -2864,7 +2865,16 @@ class ApiPage extends OpsApiPageBase
 				' players_state, numbers_state, tables_state) VALUES (?, ?, ?, ?, ?, "", "", "")',
 				$hash, json_encode($seating), $ps, $ns, $ts);
 		}
+		if (!$seatingDef->satisfiesRestrictions($seating))
+		{
+			$warning = get_label('We do not have a good seating arrangement for this configuration. The generated seating is pretty bad. It does not satisfy your tournament restrictions. Some players that should not play together, actually do. We highly recommend to  wait for a few hours and request this seating again, or manually optimize it.');
+		}
 		Db::commit();
+		
+		if ($warning != null)
+		{
+			$this->setUserMessage($warning);
+		}
 
 		// --- 8. Build final mapping [seating_slot => user_id] ---
 		$final_mapping = $this->build_slot_mapping($seating, $event_players, $restrict_mapping, $reg_users, $welcome_pairs, $avoid_pairs);

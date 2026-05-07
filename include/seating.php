@@ -1218,6 +1218,53 @@ class SeatingDef
 		return $mapping;
 	}
 
+	// Returns true if the seating satisfies all restrictions (no two players from the same
+	// restriction group share a table), false otherwise.
+	function satisfiesRestrictions($seating)
+	{
+		if (empty($this->restrictions))
+		{
+			return true;
+		}
+
+		$restrict_pairs = array();
+		foreach ($this->restrictions as $group)
+		{
+			$n = count($group);
+			for ($i = 0; $i < $n; $i++)
+			{
+				for ($j = $i + 1; $j < $n; $j++)
+				{
+					$a = $group[$i];
+					$b = $group[$j];
+					$restrict_pairs[$a][$b] = true;
+					$restrict_pairs[$b][$a] = true;
+				}
+			}
+		}
+
+		foreach ($seating as $round)
+		{
+			foreach ($round as $table)
+			{
+				$seats = array_values((array)$table);
+				$n = count($seats);
+				for ($a = 0; $a < $n; $a++)
+				{
+					for ($b = $a + 1; $b < $n; $b++)
+					{
+						if (isset($restrict_pairs[$seats[$a]][$seats[$b]]))
+						{
+							return false;
+						}
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
 	// Adjusts event-specific seating to satisfy per-table restrictions such as judge/player
 	// conflicts. Does NOT affect the canonical seatings table — call after the seatings table
 	// insert and before assign_seating_to_event.

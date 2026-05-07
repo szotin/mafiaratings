@@ -460,10 +460,10 @@ class Page extends TournamentPageBase
 
 		if (!empty($misc->seating) && !is_null($stored_hash))
 		{
-			echo '<small style="color:gray">' . htmlspecialchars($stored_hash);
+			echo '<small style="color:gray"><a href="seating_optimization.php?time=120&runs=5&loop=1&hash=' . urlencode($stored_hash) . '" target="_blank" title="' . get_label('Optimize seating for 10 minutes') . '">' . htmlspecialchars($stored_hash);
 			if (!is_null($current_version))
 				echo ' &nbsp; v' . htmlspecialchars($current_version);
-			echo '</small>';
+			echo '</a></small>';
 		}
 		echo '</p>';
 

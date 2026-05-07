@@ -46,6 +46,18 @@ class ApiPageBase
 		}
 	}
 	
+	protected function setUserMessage($message)
+	{
+		if (!empty($message))
+		{
+			if (isset($this->response['message']))
+			{
+				$message = $this->response['message'] . '<hr>' . $message;
+			}
+			$this->response['message'] = $message;
+		}
+	}
+	
 	protected function _run($title, $version)
 	{
 		global $_profile;
@@ -162,14 +174,7 @@ class ApiPageBase
 			
 			$message = ob_get_contents();
 			ob_end_clean();
-			if ($message != '')
-			{
-				if (isset($this->response['message']))
-				{
-					$message = $this->response['message'] . '<hr>' . $message;
-				}
-				$this->response['message'] = $message;
-			}
+			$this->setUserMessage($message);
 			
 			if (REQUEST_PROFILING > 0)
 			{
