@@ -2419,9 +2419,9 @@ class ApiPage extends OpsApiPageBase
 		else if ($event_round > 0)
 		{
 			// Playoff round: compute live standings and take top players
-			list($t_flags, $t_scoring_id, $t_scoring_ver, $t_normalizer_id, $t_normalizer_ver, $t_scoring_options) =
+			list($t_flags, $t_scoring_id, $t_scoring_ver, $t_normalizer_id, $t_normalizer_ver, $t_scoring_options, $t_team_size) =
 				Db::record(get_label('tournament'),
-					'SELECT flags, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options FROM tournaments WHERE id = ?',
+					'SELECT flags, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, team_size FROM tournaments WHERE id = ?',
 					$tournament_id);
 
 			list($scoring_json) = Db::record(get_label('scoring'),
@@ -2448,23 +2448,60 @@ class ApiPage extends OpsApiPageBase
 
 			$t_options = json_decode($t_scoring_options);
 
-			$ranked = tournament_scores(
-				$tournament_id, (int)$t_flags, null,
-				SCORING_LOD_PER_GROUP, $t_scoring, $t_normalizer, $t_options);
-
-			$count = 0;
-			foreach ($ranked as $player)
+			if ((int)$t_team_size > 1)
 			{
-				if ($count >= $event_players) { break; }
-				$u = new stdClass();
-				$u->user_id  = (int)$player->id;
-				$u->lat      = isset($player->lat) ? (float)$player->lat : null;
-				$u->lon      = isset($player->lon) ? (float)$player->lon : null;
-				$u->rating   = 0.0;
-				$u->distance = 0.0;
-				$user_to_reg_idx[$u->user_id] = count($reg_users);
-				$reg_users[] = $u;
-				++$count;
+				// Team tournament playoff: rank teams, then take top players from each team.
+				// players_per_team = tables; teams_count = players / tables.
+				list($event_tables) = Db::record(get_label('event'), 'SELECT tables FROM events WHERE id = ?', $event_id);
+				$event_tables    = (int)$event_tables;
+				$players_per_team = $event_tables;
+				$teams_count      = $event_tables > 0 ? (int)floor($event_players / $event_tables) : 0;
+
+				$ranked_teams = tournament_scores(
+					$tournament_id, (int)$t_flags, null,
+					SCORING_LOD_TEAMS | SCORING_LOD_PER_GROUP, $t_scoring, $t_normalizer, $t_options);
+
+				$selected_teams = 0;
+				foreach ($ranked_teams as $team)
+				{
+					if ($selected_teams >= $teams_count) { break; }
+					$team_player_count = 0;
+					foreach ($team->players as $player)
+					{
+						if ($team_player_count >= $players_per_team) { break; }
+						$u = new stdClass();
+						$u->user_id  = (int)$player->id;
+						$u->lat      = isset($player->lat) ? (float)$player->lat : null;
+						$u->lon      = isset($player->lon) ? (float)$player->lon : null;
+						$u->rating   = 0.0;
+						$u->distance = 0.0;
+						$user_to_reg_idx[$u->user_id] = count($reg_users);
+						$reg_users[] = $u;
+						++$team_player_count;
+					}
+					++$selected_teams;
+				}
+			}
+			else
+			{
+				$ranked = tournament_scores(
+					$tournament_id, (int)$t_flags, null,
+					SCORING_LOD_PER_GROUP, $t_scoring, $t_normalizer, $t_options);
+
+				$count = 0;
+				foreach ($ranked as $player)
+				{
+					if ($count >= $event_players) { break; }
+					$u = new stdClass();
+					$u->user_id  = (int)$player->id;
+					$u->lat      = isset($player->lat) ? (float)$player->lat : null;
+					$u->lon      = isset($player->lon) ? (float)$player->lon : null;
+					$u->rating   = 0.0;
+					$u->distance = 0.0;
+					$user_to_reg_idx[$u->user_id] = count($reg_users);
+					$reg_users[] = $u;
+					++$count;
+				}
 			}
 
 			// Load tournament-specific ratings

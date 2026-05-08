@@ -475,63 +475,101 @@ class SeatingDef
 		}
 	}
 	
-	// Assigns $players_list (exactly $this->tables * 10 entries) to $this->tables tables
-	// while minimising the number of cannot_meet constraint violations.
+	// Assigns $players_list (exactly $tables * 10 entries) to $tables tables
+	// while satisfying cannot_meet constraints. Members of each restriction group are
+	// placed at DISTINCT tables (guaranteed when group_size <= $tables), preventing
+	// the violations that the old greedy approach could produce.
 	// Returns an array [$table => [player, ...]].
 	private function _gisAssignPlayersToTables($players_list, $tables, $conflict_map)
 	{
-		// Shuffle first, then sort most-constrained players first so they get optimal placement.
-		shuffle($players_list);
-		usort($players_list, function($a, $b) use ($conflict_map)
+		// Returns table indices sorted by ascending load (full tables last), random tie-break.
+		$sorted_tables = function() use (&$table_load, $tables)
 		{
-			$ca = isset($conflict_map[$a]) ? count($conflict_map[$a]) : 0;
-			$cb = isset($conflict_map[$b]) ? count($conflict_map[$b]) : 0;
-			return $cb - $ca;
-		});
-
-		$tables_arr = array();
-		for ($t = 0; $t < $tables; $t++)
-		{
-			$tables_arr[$t] = array();
-		}
-
-		foreach ($players_list as $player)
-		{
-			$best_table = -1;
-			$best_conflicts = PHP_INT_MAX;
-
-			// Shuffle table order so that tables with equal scores are chosen randomly.
-			$table_order = range(0, $tables - 1);
-			shuffle($table_order);
-
-			foreach ($table_order as $t)
+			$order = range(0, $tables - 1);
+			shuffle($order);
+			usort($order, function($a, $b) use ($table_load)
 			{
-				if (count($tables_arr[$t]) >= 10)
-				{
-					continue;
-				}
+				$fa = ($table_load[$a] >= 10) ? 1 : 0;
+				$fb = ($table_load[$b] >= 10) ? 1 : 0;
+				if ($fa !== $fb) return $fa - $fb;
+				return $table_load[$a] - $table_load[$b];
+			});
+			return $order;
+		};
 
-				$conflicts = 0;
-				foreach ($tables_arr[$t] as $seated)
-				{
-					if (isset($conflict_map[$player][$seated]))
-					{
-						$conflicts++;
-					}
-				}
+		$players_set = array_flip($players_list);
+		$table_load  = array_fill(0, $tables, 0);
+		$tables_arr  = array_fill(0, $tables, array());
+		$assigned    = array();
 
-				if ($conflicts < $best_conflicts)
-				{
-					$best_conflicts = $conflicts;
-					$best_table = $t;
-					if ($conflicts === 0)
-					{
-						break; // Cannot do better than zero conflicts.
-					}
-				}
+		// Pass 1: assign each restriction group's active members to DISTINCT tables.
+		// Taking $order[0..(n-1)] guarantees all n members go to different table indices.
+		foreach ($this->restrictions as $group)
+		{
+			$members = array();
+			foreach ($group as $p)
+				if (isset($players_set[$p]) && !isset($assigned[$p]))
+					$members[] = $p;
+			if (empty($members)) continue;
+
+			shuffle($members);
+			$order = $sorted_tables();
+			$n = min(count($members), $tables);
+
+			for ($i = 0; $i < $n; $i++)
+			{
+				$t = $order[$i];
+				$tables_arr[$t][] = $members[$i];
+				$table_load[$t]++;
+				$assigned[$members[$i]] = true;
 			}
 
-			$tables_arr[$best_table][] = $player;
+			// If group is larger than table count (cannot fully separate), place overflow with minimal conflicts.
+			for ($i = $n; $i < count($members); $i++)
+			{
+				$p = $members[$i];
+				$best_t = -1;
+				$best_conflicts = PHP_INT_MAX;
+				foreach ($sorted_tables() as $t)
+				{
+					if ($table_load[$t] >= 10) continue;
+					$conflicts = 0;
+					foreach ($tables_arr[$t] as $seated)
+						if (isset($conflict_map[$p][$seated])) $conflicts++;
+					if ($conflicts < $best_conflicts)
+					{
+						$best_conflicts = $conflicts;
+						$best_t = $t;
+						if ($conflicts === 0) break;
+					}
+				}
+				if ($best_t >= 0)
+				{
+					$tables_arr[$best_t][] = $p;
+					$table_load[$best_t]++;
+				}
+				$assigned[$p] = true;
+			}
+		}
+
+		// Pass 2: fill remaining slots with free (unrestricted) players, balanced by load.
+		$free_players = array();
+		foreach ($players_list as $p)
+			if (!isset($assigned[$p]))
+				$free_players[] = $p;
+		shuffle($free_players);
+
+		foreach ($free_players as $p)
+		{
+			foreach ($sorted_tables() as $t)
+			{
+				if ($table_load[$t] < 10)
+				{
+					$tables_arr[$t][] = $p;
+					$table_load[$t]++;
+					break;
+				}
+			}
 		}
 
 		return $tables_arr;
@@ -630,17 +668,22 @@ class SeatingDef
 			}
 		}
 
-		// Determine which players are active in each round so that every player
-		// participates in exactly $this->games games total.
-		$round_player_lists = $this->_gisGenerateRoundPlayerLists($round_table_counts, $this->games, 10);
-
-		// Assign the active players in each round to tables, respecting cannot_meet.
-		$result = array();
-		for ($r = 0; $r < $rounds; $r++)
+		// Retry a few times: the round-player selection and table assignment are both
+		// randomised, so a fresh attempt is cheap and covers any residual edge cases.
+		$best_result = null;
+		for ($attempt = 0; $attempt < 5; $attempt++)
 		{
-			$result[$r] = $this->_gisAssignPlayersToTables($round_player_lists[$r], $round_table_counts[$r], $conflict_map);
+			$round_player_lists = $this->_gisGenerateRoundPlayerLists($round_table_counts);
+			$result = array();
+			for ($r = 0; $r < $rounds; $r++)
+				$result[$r] = $this->_gisAssignPlayersToTables(
+					$round_player_lists[$r], $round_table_counts[$r], $conflict_map);
+			if (empty($this->restrictions) || $this->satisfiesRestrictions($result))
+				return $result;
+			if ($best_result === null)
+				$best_result = $result;
 		}
-		return $result;
+		return $best_result;
 	}
 	
 	// Moves all restriction to the lowest possibe munbers. And unites restrictions if possible.
@@ -915,7 +958,7 @@ class SeatingDef
 				else if (array_key_exists($p2, $expectation->players))
 				{
 					$diff -= $expectation->players[$p2];
-					$diff *= 10; // seating restriction should have a stronger influence
+					$diff *= 10; // seating restriction should have a much stronger influence
 				}
 				else
 				{
