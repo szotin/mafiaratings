@@ -2319,10 +2319,11 @@ class ApiPage extends OpsApiPageBase
 					if ((int)$uid === $user1_id) $slot1 = $slot;
 					if ((int)$uid === $user2_id) $slot2 = $slot;
 				}
-				if ($slot1 >= 0 && $slot2 >= 0)
+				if ($slot1 >= 0)
 				{
 					$mapping[$slot1] = $user2_id;
-					$mapping[$slot2] = $user1_id;
+					if ($slot2 >= 0)
+						$mapping[$slot2] = $user1_id;
 					$misc->seating->mapping = array_values($mapping);
 					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
 				}

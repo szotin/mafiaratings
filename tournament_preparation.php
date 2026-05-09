@@ -543,20 +543,27 @@ class Page extends TournamentPageBase
 				{
 					$raw = (int)$game[$k];
 					$uid = is_null($raw_mapping) ? $raw : (isset($index_to_uid[$raw]) ? $index_to_uid[$raw] : 0);
-					echo '<td align="center">';
 					if ($uid > 0 && isset($users[$uid]))
 					{
 						$u = $users[$uid];
+						if ($round_num > 0)
+							echo '<td align="center" style="cursor:pointer" onclick="swapPlayers(' . $event_id . ', ' . $uid . ')">';
+						else
+							echo '<td align="center">';
 						echo '<table class="transp" width="100%">';
 						echo '<tr><td align="center">';
 						$pic->set($uid, $u->name, $u->tr_flags, 't' . $this->id)->set($uid, $u->name, $u->flags);
 						$pic->show(ICONS_DIR, false, 48);
 						echo '</td></tr>';
-						echo '<tr><td align="center"><a href="user_info.php?id=' . $uid . '&bck=1">' . $u->name . '</a></td></tr>';
+						if ($round_num > 0)
+							echo '<tr><td align="center">' . htmlspecialchars($u->name) . '</td></tr>';
+						else
+							echo '<tr><td align="center"><a href="user_info.php?id=' . $uid . '&bck=1">' . htmlspecialchars($u->name) . '</a></td></tr>';
 						echo '</table>';
 					}
 					else
 					{
+						echo '<td align="center">';
 						echo '#' . ($raw + 1);
 					}
 					echo '</td>';
@@ -792,9 +799,11 @@ class Page extends TournamentPageBase
 			}, refr);
 		}
 
-		function swapPlayers(eventId)
+		function swapPlayers(eventId, userId)
 		{
-			dlg.form("form/seating_swap.php?event_id=" + eventId, refr, 400);
+			var url = "form/seating_swap.php?event_id=" + eventId;
+			if (userId) url += "&player1_id=" + userId;
+			dlg.form(url, refr, 400);
 		}
 
 		function uploadDimTom(eventId)

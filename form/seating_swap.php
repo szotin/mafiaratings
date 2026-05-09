@@ -12,39 +12,32 @@ try
 	dialog_title(get_label('Swap players'));
 
 	$event_id = isset($_REQUEST['event_id']) ? (int)$_REQUEST['event_id'] : 0;
+	$player1_id = isset($_REQUEST['player1_id']) ? (int)$_REQUEST['player1_id'] : 0;
 	if ($event_id <= 0)
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('event')));
 	}
 
-	list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
-		'SELECT club_id, tournament_id, misc FROM events WHERE id = ?', $event_id);
+	list($club_id, $tournament_id, $event_round, $misc_str) = Db::record(get_label('event'),
+		'SELECT club_id, tournament_id, round, misc FROM events WHERE id = ?', $event_id);
 	check_permissions(
 		PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
 		PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
 		$club_id, $event_id, $tournament_id);
 
-	$player_ids = array();
 	$misc = is_null($misc_str) ? null : json_decode($misc_str);
-	if (!is_null($misc) && isset($misc->seating) && isset($misc->seating->mapping))
-	{
-		foreach ($misc->seating->mapping as $uid)
-		{
-			$uid = (int)$uid;
-			if ($uid > 0)
-				$player_ids[] = $uid;
-		}
-	}
-
 	$reg_users = array();
-	if (!empty($player_ids))
+
+	if ((int)$event_round > 0)
 	{
+		// Non-main round: all accepted non-referee tournament registrations.
 		$q = new DbQuery(
 			'SELECT u.id, n.name FROM users u' .
 			' JOIN names n ON n.id = u.name_id AND (n.langs & ?) <> 0' .
-			' WHERE u.id IN (' . implode(',', $player_ids) . ')' .
+			' JOIN tournament_regs tr ON tr.user_id = u.id AND tr.tournament_id = ?' .
+			' WHERE (tr.flags & ?) = 0 AND (tr.flags & ?) = 0' .
 			' ORDER BY n.name',
-			$_lang);
+			$_lang, $tournament_id, USER_TOURNAMENT_FLAG_NOT_ACCEPTED, USER_PERM_REFEREE);
 		while ($row = $q->next())
 		{
 			$u = new stdClass();
@@ -53,13 +46,43 @@ try
 			$reg_users[] = $u;
 		}
 	}
+	else
+	{
+		// Main round: only players already assigned in the current seating.
+		$player_ids = array();
+		if (!is_null($misc) && isset($misc->seating) && isset($misc->seating->mapping))
+		{
+			foreach ($misc->seating->mapping as $uid)
+			{
+				$uid = (int)$uid;
+				if ($uid > 0)
+					$player_ids[] = $uid;
+			}
+		}
+		if (!empty($player_ids))
+		{
+			$q = new DbQuery(
+				'SELECT u.id, n.name FROM users u' .
+				' JOIN names n ON n.id = u.name_id AND (n.langs & ?) <> 0' .
+				' WHERE u.id IN (' . implode(',', $player_ids) . ')' .
+				' ORDER BY n.name',
+				$_lang);
+			while ($row = $q->next())
+			{
+				$u = new stdClass();
+				$u->id   = (int)$row[0];
+				$u->name = $row[1];
+				$reg_users[] = $u;
+			}
+		}
+	}
 
 	echo '<table class="dialog_form" width="100%">';
 
 	echo '<tr><td width="120">' . get_label('Player [0]', 1) . ':</td><td>';
 	echo '<select id="form-player1" style="width:100%"><option value="0">' . get_label('Select player.') . '</option>';
 	foreach ($reg_users as $u)
-		echo '<option value="' . $u->id . '">' . htmlspecialchars($u->name) . '</option>';
+		echo '<option value="' . $u->id . '"' . ($u->id == $player1_id ? ' selected' : '') . '>' . htmlspecialchars($u->name) . '</option>';
 	echo '</select></td></tr>';
 
 	echo '<tr><td>' . get_label('Player [0]', 2) . ':</td><td>';
