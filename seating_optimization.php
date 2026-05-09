@@ -65,6 +65,17 @@ class SeatingOptimization extends Updater
 			}
 			++$this->vars->current_round;
 		}
+		
+		if (isset($this->vars->found) && $this->vars->found)
+		{
+			$this->vars->found = false;
+			$this->vars->current_number1 = 0;
+			$this->vars->current_table1 = 0;
+			$this->vars->current_number2 = 0;
+			$this->vars->current_table2 = 1;
+			$this->vars->current_round = 0;
+			return true;
+		}
 		return false;
 	}
 	
@@ -96,17 +107,14 @@ class SeatingOptimization extends Updater
 		
 		for ($count = 0; $count < $items_count && $this->_next_players_itteration(); ++$count)
 		{
+			//$this->log($this->vars->current_round . ': ' . $this->vars->current_table1 . '[' . $this->vars->current_number1 . '] ⇔ ' . $this->vars->current_table2 . '[' . $this->vars->current_number2 . ']');
 			$this->_swap_current_players();
 			$score = $this->seatingDef->calculatePlayersScore($this->vars->seating);
 			if ($score < $this->vars->score)
 			{
 				// echo $this->vars->score . ' ↠ ' . $score . '<br>';
 				$this->vars->score = $score;
-				$this->vars->current_number1 = 0;
-				$this->vars->current_table1 = 0;
-				$this->vars->current_number2 = -1;
-				$this->vars->current_table2 = 1;
-				$this->vars->current_round = 0;
+				$this->vars->found = true;
 			}
 			else
 			{
@@ -145,6 +153,7 @@ class SeatingOptimization extends Updater
 				$this->vars->current_number2 = -1;
 				$this->vars->current_table2 = 1;
 				$this->vars->current_round = 0;
+				$this->vars->found = false;
 			}
 			else
 			{
@@ -155,6 +164,7 @@ class SeatingOptimization extends Updater
 				$this->vars->current_number2 = $state->number2;
 				$this->vars->current_table2 = $state->table2;
 				$this->vars->current_round = $state->round;
+				$this->vars->found = isset($state->found) && $state->found;
 			}
 			$this->vars->score = $this->seatingDef->calculatePlayersScore($this->vars->seating);
 		}
@@ -192,6 +202,7 @@ class SeatingOptimization extends Updater
 			$state->number2 = $this->vars->current_number2;
 			$state->table2 = $this->vars->current_table2;
 			$state->round = $this->vars->current_round;
+			$state->found = isset($this->vars->found) && $this->vars->found;
 			$state = json_encode($state);
 			if ($this->vars->score == 0)
 			{

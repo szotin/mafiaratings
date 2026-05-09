@@ -1360,10 +1360,30 @@ var mr = new function()
 	
 	this.untagVideo = function(userId, videoId)
 	{
-		json.post("api/ops/video.php", { 'op': 'untag', 'video_id': videoId, 'user_id': userId }, function() 
-		{ 
+		json.post("api/ops/video.php", { 'op': 'untag', 'video_id': videoId, 'user_id': userId }, function()
+		{
 			mr.showVideoUsers(videoId);
 		});
+	}
+
+	//--------------------------------------------------------------------------------------
+	// seating
+	//--------------------------------------------------------------------------------------
+
+	this.optimizeSeating = function(task, hash)
+	{
+		var url = 'form/seating_optimize.php';
+		var sep = '?';
+		if (isSet(task) && task !== '')
+		{
+			url += sep + 'task=' + encodeURIComponent(task);
+			sep = '&';
+		}
+		if (isSet(hash) && hash !== '')
+		{
+			url += sep + 'hash=' + encodeURIComponent(hash);
+		}
+		dlg.form(url, null, 350);
 	}
 }
 
@@ -1518,4 +1538,5 @@ class NameControl
 			}
 		}
 	}
+
 }

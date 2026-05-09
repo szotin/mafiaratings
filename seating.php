@@ -190,7 +190,7 @@ class Page extends GeneralPageBase
 		echo '</div>';
 		if ($this->can_optimize && $pct < 100)
 		{
-			echo '<button onclick="startOptimization(\'' . $task . '\')">' . get_label('Optimize') . '</button>';
+			echo '<button onclick="mr.optimizeSeating(\'' . addslashes($task) . '\', \'' . addslashes($this->hash) . '\')">' . get_label('Optimize') . '</button>';
 		}
 		echo '</div></p>';
 	}
@@ -576,47 +576,14 @@ class Page extends GeneralPageBase
 			break;
 		}
 
-		echo '<div id="opt-dialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">';
-		echo '<div class="bordered light" style="background:white;padding:20px;min-width:280px;">';
-		echo '<p>' . get_label('Optimization time (minutes)') . ':</p>';
-		echo '<p><input type="number" id="opt-minutes" value="60" min="3" max="120" step="3" style="width:100%;font-size:1.2em;"></p>';
-		echo '<p style="text-align:right;">';
-		echo '<button onclick="cancelOptimization()" style="margin-right:8px;">' . get_label('Cancel') . '</button>';
-		echo '<button onclick="confirmOptimization()">OK</button>';
-		echo '</p></div></div>';
 	}
 
 	protected function js()
 	{
-		$hash = addslashes($this->hash);
 ?>
 		function highlight(playerIndex)
 		{
 			goTo({hlt: playerIndex});
-		}
-
-		var _opt_task = '';
-
-		function startOptimization(task)
-		{
-			_opt_task = task;
-			document.getElementById('opt-minutes').value = 60;
-			document.getElementById('opt-dialog').style.display = 'flex';
-		}
-
-		function cancelOptimization()
-		{
-			document.getElementById('opt-dialog').style.display = 'none';
-		}
-
-		function confirmOptimization()
-		{
-			var minutes = parseInt(document.getElementById('opt-minutes').value, 10);
-			if (isNaN(minutes) || minutes < 3) minutes = 3;
-			if (minutes > 120) minutes = 120;
-			document.getElementById('opt-dialog').style.display = 'none';
-			var runs = Math.round(minutes / 3);
-			window.open('seating_optimization.php?log_level=info&time=180&runs=' + runs + '&loop=1&task=' + _opt_task + '&hash=<?php echo $hash; ?>', '_blank');
 		}
 <?php
 	}
