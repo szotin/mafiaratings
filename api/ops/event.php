@@ -2887,13 +2887,13 @@ class ApiPage extends OpsApiPageBase
 			if ($row)
 			{
 				$seating = json_decode($row[0], true);
-				$warning = get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.');
+				$warning = get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $hash);
 			}
 			else
 			{
 				$seating = $seatingDef->generateInitialSeating();
 				$seating = $seatingDef->renumberByDistribution($seating);
-				$warning = get_label('We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.');
+				$warning = get_label('We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $hash);
 			}
 			$ps = $seatingDef->calculatePlayersScore($seating);
 			$ns = $seatingDef->calculateNumbersScore($seating);
@@ -2902,10 +2902,6 @@ class ApiPage extends OpsApiPageBase
 				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score,' .
 				' players_state, numbers_state, tables_state) VALUES (?, ?, ?, ?, ?, "", "", "")',
 				$hash, json_encode($seating), $ps, $ns, $ts);
-		}
-		if (!$seatingDef->satisfiesRestrictions($seating))
-		{
-			$warning = get_label('We do not have a good seating arrangement for this configuration. The generated seating is pretty bad. It does not satisfy your tournament restrictions. Some players that should not play together, actually do. We highly recommend to  wait for a few hours and request this seating again, or manually optimize it.');
 		}
 		Db::commit();
 		

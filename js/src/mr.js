@@ -1369,17 +1369,16 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// seating
 	//--------------------------------------------------------------------------------------
-
 	this.optimizeSeating = function(task, hash)
 	{
 		var url = 'form/seating_optimize.php';
 		var sep = '?';
-		if (isSet(task) && task !== '')
+		if (task)
 		{
 			url += sep + 'task=' + encodeURIComponent(task);
 			sep = '&';
 		}
-		if (isSet(hash) && hash !== '')
+		if (hash)
 		{
 			url += sep + 'hash=' + encodeURIComponent(hash);
 		}

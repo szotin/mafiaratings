@@ -10,8 +10,17 @@ try
 	dialog_title(get_label('Optimize seating'));
 	check_permissions(PERMISSION_USER);
 
-	$task = isset($_GET['task']) ? $_GET['task'] : '';
-	$hash = isset($_GET['hash']) ? $_GET['hash'] : '';
+	$url = 'seating_optimization.php?time=120&loop=1';
+	$task = isset($_GET['task']) ? $_GET['task'] : null;
+	if ($task)
+	{
+		$url .= '&task=' . $task;
+	}
+	$hash = isset($_GET['hash']) ? $_GET['hash'] : null;
+	if ($hash)
+	{
+		$url .= '&hash=' . $hash;
+	}
 
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="220">' . get_label('Optimization time (minutes)') . ':</td>';
@@ -26,10 +35,7 @@ try
 		if (isNaN(minutes) || minutes < 2) minutes = 2;
 		if (minutes > 120) minutes = 120;
 		var runs = Math.round(minutes / 2);
-		window.open(
-			'seating_optimization.php?log_level=info&time=120&runs=' + runs +
-			'&loop=1&task=<?php echo urlencode($task); ?>&hash=<?php echo urlencode($hash); ?>',
-			'_blank');
+		window.open('<?php echo $url; ?>&runs=' + runs);
 		onSuccess({});
 	}
 	</script>

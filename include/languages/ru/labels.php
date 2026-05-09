@@ -1894,8 +1894,8 @@ $labelMenu = array (
 'Are you sure you want to delete this seating?' => 'Вы уверены, что хотите удалить эту рассадку?', // seatings.php
 'Seatings' => 'Рассадки', // seatings.php, include/general_page_base.php
 'Seating arrangements' => 'Управление рассадками', // include/general_page_base.php
-'We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.' => 'Мы нашли похожую, но не точно такую рассадку. Она достаточно хорошая, но можно сделать лучше. Если вы подождете пару часов и запросите её снова, то получите улучшенную версию.', // api/ops/event.php, api/ops/seating.php
-'We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.' => 'У нас нет готовой рассадки для этой конфигурации. Мы сгенерировали для вас базовую рассадку, но она нуждается в оптимизации. Если вы подождете пару часов и запросите её снова, то получите существенно улучшенную версию.', // api/ops/event.php, api/ops/seating.php
+'We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better. If you wait for a few hours and request this seating again, you will receive an improved version.' => 'Мы нашли похожую, но не точно такую рассадку. Она достаточно хорошая, но можно сделать лучше. Если вы подождете пару часов и запросите её снова, то получите улучшенную версию.', // api/ops/seating.php
+'We do not have a good seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it. If you wait for a few hours and request this seating again, you will receive an improved version.' => 'У нас нет готовой рассадки для этой конфигурации. Мы сгенерировали для вас базовую рассадку, но она нуждается в оптимизации. Если вы подождете пару часов и запросите её снова, то получите существенно улучшенную версию.', // api/ops/seating.php
 'Create seating' => 'Создать рассадку', // form/seating_create.php
 'Team size' => 'Размер команды', // tournament_preparation.php, form/seating_create.php
 'Players who cannot play together' => 'Игроки, которым нельзя играть вместе', // form/seating_create.php
@@ -1928,8 +1928,7 @@ $labelMenu = array (
 'Swap players' => 'Поменять игроков местами', // tournament_preparation.php, form/seating_swap.php
 '[3] ID [0] is already used by <a href="tournament.php?id=[1]">[2]</a>' => '[3] ID [0] уже используется турниром <a href="tournament.php?id=[1]">[2]</a>', // api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php
 'No team' => 'Без команды', // tournament_preparation.php
-'Optimize seating for 10 minutes' => 'Оптимизировать рассадку 10 минут', // tournament_preparation.php
-'We do not have a good seating arrangement for this configuration. The generated seating is pretty bad. It does not satisfy your tournament restrictions. Some players that should not play together, actually do. We highly recommend to  wait for a few hours and request this seating again, or manually optimize it.' => 'Для данной конфигурации не удалось найти оптимальную рассадку. Сгенерированная рассадка неудовлетворительна и не соответствует ограничениям вашего турнира. Некоторые игроки, которые не должны играть вместе, всё же оказались за одним столом. Рекомендуем подождать несколько часов и запросить рассадку снова, либо оптимизировать её вручную.', // api/ops/event.php
+'Optimize seating' => 'Оптимизировать рассадку', // tournament_preparation.php, form/seating_optimize.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -1945,7 +1944,8 @@ $labelMenu = array (
 'During don\'s check' => 'Во время донской проверки', // game_obs.php
 'During sheriff\'s check' => 'Во время шерифской проверки', // game_obs.php
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
-'Optimize seating' => 'Оптимизировать рассадку', // form/seating_optimize.php
+'We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'Мы нашли похожую, но не совсем такую рассадку. Она вполне хороша, но мы можем сделать лучше.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // api/ops/event.php
+'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас нет готовой рассадки для данной конфигурации. Мы сгенерировали для вас самую базовую начальную рассадку и сейчас её улучшаем и оптимизируем.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // api/ops/event.php
 );
 
 return $labelMenu;
