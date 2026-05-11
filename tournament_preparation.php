@@ -546,19 +546,13 @@ class Page extends TournamentPageBase
 					if ($uid > 0 && isset($users[$uid]))
 					{
 						$u = $users[$uid];
-						if ($round_num > 0)
-							echo '<td align="center" style="cursor:pointer" onclick="swapPlayers(' . $event_id . ', ' . $uid . ')">';
-						else
-							echo '<td align="center">';
+						echo '<td align="center" style="cursor:pointer" onclick="swapPlayers(' . $event_id . ', ' . $uid . ')">';
 						echo '<table class="transp" width="100%">';
 						echo '<tr><td align="center">';
 						$pic->set($uid, $u->name, $u->tr_flags, 't' . $this->id)->set($uid, $u->name, $u->flags);
 						$pic->show(ICONS_DIR, false, 48);
 						echo '</td></tr>';
-						if ($round_num > 0)
-							echo '<tr><td align="center">' . htmlspecialchars($u->name) . '</td></tr>';
-						else
-							echo '<tr><td align="center"><a href="user_info.php?id=' . $uid . '&bck=1">' . htmlspecialchars($u->name) . '</a></td></tr>';
+						echo '<tr><td align="center">' . htmlspecialchars($u->name) . '</td></tr>';
 						echo '</table>';
 					}
 					else

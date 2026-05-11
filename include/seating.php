@@ -442,9 +442,14 @@ class SeatingDef
 		}
 	}
 	
+	public function getNoRestrictionsHash()
+	{
+		return $this->players . '_' . $this->tables . '_' . $this->games;
+	}
+	
 	private function generateHash()
 	{
-		$this->hash = $this->players . '_' . $this->tables . '_' . $this->games;
+		$this->hash = $this->getNoRestrictionsHash();
 		foreach ($this->restrictions as $r)
 		{
 			$i = 0;
@@ -685,7 +690,229 @@ class SeatingDef
 		}
 		return $best_result;
 	}
-	
+
+	// Among the given array of hash strings, finds and returns the one whose stored seating
+	// can be used for this SeatingDef (i.e., satisfies all its restrictions).
+	//
+	// Compatibility: every restriction group of this def must fit inside some restriction group
+	// of the candidate hash. "Fit" means the candidate group is large enough to hold all the
+	// players from one or more of our groups assigned to it (pure size-based bin packing,
+	// since restriction-group players are abstract slots that can be freely renamed).
+	//
+	// Among compatible hashes the one with the lowest score wins, where:
+	//   score = (total size of candidate's restriction groups) - (total size of our restrictions)
+	// A score of 0 means a perfect structural match; higher scores mean more wasted constraints.
+	//
+	// Returns null if no hash in the array is compatible.
+	function findTheMostCompatibleSeating($hashes)
+	{
+		$a_sizes = array();
+		$a_total = 0;
+		foreach ($this->restrictions as $g)
+		{
+			$sz = count($g);
+			$a_sizes[] = $sz;
+			$a_total  += $sz;
+		}
+		rsort($a_sizes); // largest first — helps backtracking prune early
+
+		$best_hash  = null;
+		$best_score = PHP_INT_MAX;
+
+		foreach ($hashes as $hash)
+		{
+			$b = new SeatingDef($hash);
+			if ($b->players !== $this->players ||
+			    $b->tables  !== $this->tables  ||
+			    $b->games   !== $this->games)
+			{
+				continue;
+			}
+
+			if (empty($this->restrictions))
+			{
+				// No restrictions on our side: any B is compatible.
+				// Prefer the B that enforces the fewest extra constraints.
+				$b_total = 0;
+				foreach ($b->restrictions as $g) $b_total += count($g);
+				if ($b_total < $best_score)
+				{
+					$best_score = $b_total;
+					$best_hash  = $hash;
+				}
+				continue;
+			}
+
+			if (empty($b->restrictions))
+			{
+				continue; // B has no restrictions but we need some — incompatible.
+			}
+
+			$b_sizes = array();
+			$b_total = 0;
+			foreach ($b->restrictions as $g)
+			{
+				$sz = count($g);
+				$b_sizes[] = $sz;
+				$b_total  += $sz;
+			}
+
+			if ($b_total < $a_total)
+			{
+				continue; // B cannot absorb all our restriction players — incompatible.
+			}
+
+			rsort($b_sizes); // largest first
+
+			if (!$this->_canPackGroups($a_sizes, $b_sizes, 0))
+			{
+				continue;
+			}
+
+			$score = $b_total - $a_total;
+			if ($score < $best_score)
+			{
+				$best_score = $score;
+				$best_hash  = $hash;
+			}
+		}
+
+		return $best_hash;
+	}
+
+	// Backtracking feasibility check: can the A group sizes (sorted descending) be assigned
+	// one per B bin (also sorted descending) without any bin being overfilled?
+	// Multiple A groups can share a bin; the bin's remaining capacity shrinks each time.
+	private function _canPackGroups($a_sizes, $b_caps, $a_idx)
+	{
+		if ($a_idx >= count($a_sizes)) return true;
+
+		$needed = $a_sizes[$a_idx];
+		$tried  = array();
+
+		for ($j = 0; $j < count($b_caps); $j++)
+		{
+			$cap = $b_caps[$j];
+			if ($cap < $needed) break; // b_caps is descending; no larger cap follows
+			if (isset($tried[$cap])) continue; // skip symmetrically equivalent bins
+			$tried[$cap] = true;
+
+			$new_caps     = $b_caps;
+			$new_caps[$j] -= $needed;
+			rsort($new_caps);
+
+			if ($this->_canPackGroups($a_sizes, $new_caps, $a_idx + 1)) return true;
+		}
+
+		return false;
+	}
+
+	// Converts the player numbers in $b_seating (which was generated for $b_hash) so that
+	// they match the numbering scheme of this SeatingDef.
+	//
+	// How it works:
+	//  1. Assigns each of this def's restriction groups to a restriction group in B
+	//     (same bin-packing as findTheMostCompatibleSeating).
+	//  2. Maps the B players chosen for each A restriction group to the A group's
+	//     actual player indices.
+	//  3. Maps all remaining (unrestricted) B players to the remaining A players.
+	//
+	// Returns the adapted seating array, or null if the hash is not compatible.
+	function adoptSeating($b_hash, $b_seating)
+	{
+		$b = new SeatingDef($b_hash);
+
+		$mapping    = array();
+		$b_assigned = array();
+
+		if (!empty($this->restrictions))
+		{
+			if (empty($b->restrictions)) return null;
+
+			$assignment = $this->_findPackingAssignment($this->restrictions, $b->restrictions);
+			if ($assignment === null) return null;
+
+			foreach ($this->restrictions as $a_idx => $a_group)
+			{
+				$b_idx   = $assignment[$a_idx];
+				$b_group = $b->restrictions[$b_idx];
+				$count   = 0;
+				foreach ($b_group as $b_player)
+				{
+					if (!isset($b_assigned[$b_player]))
+					{
+						$mapping[$b_player]    = $a_group[$count++];
+						$b_assigned[$b_player] = true;
+						if ($count >= count($a_group)) break;
+					}
+				}
+			}
+		}
+
+		// Map remaining (unrestricted) B players to the remaining A players.
+		$a_used = array();
+		foreach ($mapping as $a_player) $a_used[$a_player] = true;
+
+		$a_free = array();
+		for ($p = 0; $p < $this->players; $p++)
+			if (!isset($a_used[$p])) $a_free[] = $p;
+
+		$free_idx = 0;
+		for ($p = 0; $p < $b->players; $p++)
+			if (!isset($mapping[$p]))
+				$mapping[$p] = $a_free[$free_idx++];
+
+		return SeatingDef::applyMapping($b_seating, $mapping);
+	}
+
+	// Returns an assignment array indexed by A group index giving the chosen B group index,
+	// or null if no valid bin-packing assignment exists.
+	private function _findPackingAssignment($a_groups, $b_groups)
+	{
+		$n_a = count($a_groups);
+
+		$a_order = range(0, $n_a - 1);
+		usort($a_order, function($i, $j) use ($a_groups)
+		{
+			return count($a_groups[$j]) - count($a_groups[$i]);
+		});
+
+		$b_remaining = array();
+		foreach ($b_groups as $j => $g) $b_remaining[$j] = count($g);
+
+		$assignment = array_fill(0, $n_a, -1);
+		if ($this->_packBacktrack($a_groups, $a_order, 0, $b_remaining, $assignment))
+			return $assignment;
+		return null;
+	}
+
+	private function _packBacktrack($a_groups, $a_order, $k, &$b_remaining, &$assignment)
+	{
+		if ($k >= count($a_order)) return true;
+
+		$a_idx  = $a_order[$k];
+		$needed = count($a_groups[$a_idx]);
+		$tried  = array();
+
+		foreach ($b_remaining as $b_idx => $cap)
+		{
+			if ($cap < $needed) continue;
+			if (isset($tried[$cap])) continue;
+			$tried[$cap] = true;
+
+			$b_remaining[$b_idx] -= $needed;
+			$assignment[$a_idx]   = $b_idx;
+
+			if ($this->_packBacktrack($a_groups, $a_order, $k + 1, $b_remaining, $assignment))
+				return true;
+
+			$b_remaining[$b_idx] += $needed;
+			$assignment[$a_idx]   = -1;
+		}
+
+		return false;
+	}
+
 	// Moves all restriction to the lowest possibe munbers. And unites restrictions if possible.
 	//
 	// It also builds a unique hash for a seating configuration.
@@ -1478,6 +1705,55 @@ class SeatingDef
 	{
 		$mapping = $this->buildDistributionMapping($seating);
 		return self::applyMapping($seating, $mapping);
+	}
+	
+	function findSeating($create = true)
+	{
+		$result = new stdClass();
+		$row = (new DbQuery('SELECT seating FROM seatings WHERE hash = ?', $this->hash))->next();
+		if ($row)
+		{
+			$result->seating = json_decode($row[0], true);
+			$result->status = 'ok';
+		}
+		else
+		{
+			$hashes = array();
+			$query = new DbQuery('SELECT hash FROM seatings WHERE hash LIKE ?', $this->getNoRestrictionsHash() . '%');
+			while ($row = $query->next())
+			{
+				$hashes[] = $row[0];
+			}
+			$compatible_hash = $this->findTheMostCompatibleSeating($hashes);
+			if ($compatible_hash)
+			{
+				list ($seating_json, $ps, $ns, $ts) = Db::record(get_label('seating'), 'SELECT seating, players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $compatible_hash);
+				$result->seating = $this->adoptSeating($compatible_hash, json_decode($seating_json, true));
+				$result->status = 'similar';
+				$result->warning = get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $this->hash);
+			}
+			else
+			{
+				$result->seating = $this->generateInitialSeating();
+				$result->seating = $this->renumberByDistribution($result->seating);
+				$result->status = 'new';
+				$result->warning = get_label('We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $this->hash);
+				if ($create)
+				{
+					$ps = $this->calculatePlayersScore($result->seating);
+					$ns = $this->calculateNumbersScore($result->seating);
+					$ts = $this->calculateTablesScore($result->seating);
+				}
+			}
+			if ($create)
+			{
+				Db::exec(get_label('seating'),
+					'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score,' .
+					' players_state, numbers_state, tables_state) VALUES (?, ?, ?, ?, ?, "", "", "")',
+					$this->hash, json_encode($result->seating), $ps, $ns, $ts);
+			}
+		}
+		return $result;
 	}
 }
 
