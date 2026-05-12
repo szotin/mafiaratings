@@ -931,15 +931,37 @@ class Game
 							return false;
 						}
 					}
-					else if ($round != 0 || get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING) != RULES_FIRST_DAY_VOTING_TO_TALK)
+					else
 					{
-						$player = $this->data->players[$voting->winner - 1];
-						if (!isset($player->death) || $player->death->round != $round || ($player->death->type == DEATH_TYPE_DAY || $player->death->type == DEATH_TYPE_NIGHT))
+						$should_check_death = ($round != 0);
+						if (!$should_check_death)
 						{
-							if ($this->set_issue($fix, 'Player ' . $voting->winner . ' was voted out in round ' . $round . ' but did not die.', ' All votings are removed.'))
+							$first_day_rule = get_rule($this->get_rules(), RULES_FIRST_DAY_VOTING);
+							if ($first_day_rule == RULES_FIRST_DAY_VOTING_STANDARD)
 							{
-								$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
-								return false;
+								$should_check_death = true;
+							}
+							else if ($first_day_rule == RULES_FIRST_DAY_VOTING_BREAKING_TO_THEMSELF)
+							{
+								$winner_player = $this->data->players[$voting->winner - 1];
+								$vote = (isset($winner_player->voting) && count($winner_player->voting) > $round)
+									? $winner_player->voting[$round]
+									: null;
+								if (is_array($vote))
+									$vote = end($vote);
+								$should_check_death = ($vote == $voting->winner);
+							}
+						}
+						if ($should_check_death)
+						{
+							$player = $this->data->players[$voting->winner - 1];
+							if (!isset($player->death) || $player->death->round != $round || ($player->death->type == DEATH_TYPE_DAY || $player->death->type == DEATH_TYPE_NIGHT))
+							{
+								if ($this->set_issue($fix, 'Player ' . $voting->winner . ' was voted out in round ' . $round . ' but did not die.', ' All votings are removed.'))
+								{
+									$this->remove_flags(GAME_FEATURE_FLAG_VOTING);
+									return false;
+								}
 							}
 						}
 					}
