@@ -222,6 +222,15 @@ require_once '../../include/api.php';
 	</td>
 </tr>
 
+<tr>
+	<td>Seating</td>
+	<td><a href="seating.php?help"><?php echo PRODUCT_URL; ?>/api/get/seating.php</a></td>
+	<td>
+		<p>Returns a seating arrangement for a given number of players, tables and games.</p>
+		<p>Supports player restrictions (groups of players that must never share a table) and table restrictions (players forbidden at specific tables). Does not store any data — read-only.</p>
+	</td>
+</tr>
+
 </table>
 
 </body></html>

@@ -2255,7 +2255,7 @@ class ApiPage extends OpsApiPageBase
 		$table_restrictions = $this->build_judge_table_restrictions($tournament_id, $club_id, $event_tables, $final_mapping);
 		if (!is_null($table_restrictions))
 		{
-			$rounds = $dimtomDef->applyJudgeRestrictions($rounds, $table_restrictions);
+			$rounds = $dimtomDef->applyTableRestrictions($rounds, $table_restrictions);
 		}
 
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
@@ -2869,60 +2869,31 @@ class ApiPage extends OpsApiPageBase
 		// --- 3. Build SeatingDef, normalize restrictions ---
 		$seatingDef = new SeatingDef($event_players, $event_tables, $event_games, $restrictions);
 		$restrict_mapping = $seatingDef->normalizeRestrictions();
-		$hash = $seatingDef->hash;
-		$warning = null;
 
-		// --- 7. Get or create canonical seating from seatings table ---
+		// --- 4. Get or create canonical seating from seatings table ---
 		Db::begin();
-		$row = (new DbQuery('SELECT seating FROM seatings WHERE hash = ?', $hash))->next();
-		if ($row)
-		{
-			$seating = json_decode($row[0], true);
-		}
-		else
-		{
-			$row = (new DbQuery(
-				'SELECT seating FROM seatings WHERE hash LIKE ?',
-				$hash . '%'))->next();
-			if ($row)
-			{
-				$seating = json_decode($row[0], true);
-				$warning = get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $hash);
-			}
-			else
-			{
-				$seating = $seatingDef->generateInitialSeating();
-				$seating = $seatingDef->renumberByDistribution($seating);
-				$warning = get_label('We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $hash);
-			}
-			$ps = $seatingDef->calculatePlayersScore($seating);
-			$ns = $seatingDef->calculateNumbersScore($seating);
-			$ts = $seatingDef->calculateTablesScore($seating);
-			Db::exec(get_label('seating'),
-				'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score,' .
-				' players_state, numbers_state, tables_state) VALUES (?, ?, ?, ?, ?, "", "", "")',
-				$hash, json_encode($seating), $ps, $ns, $ts);
-		}
+		$found = $seatingDef->findSeating();
 		Db::commit();
 		
-		if ($warning != null)
+		$seating = $found->seating;
+		if (isset($found->warning))
 		{
-			$this->setUserMessage($warning);
+			$this->setUserMessage($found->warning);
 		}
-
-		// --- 8. Build final mapping [seating_slot => user_id] ---
+		
+		// --- 5. Build final mapping [seating_slot => user_id] ---
 		$final_mapping = $this->build_slot_mapping($seating, $event_players, $restrict_mapping, $reg_users, $welcome_pairs, $avoid_pairs);
 
-		// --- 9. Apply event-specific judge restrictions (not stored in seatings table) ---
+		// --- 6. Apply event-specific judge restrictions (not stored in seatings table) ---
 		$table_restrictions = $this->build_judge_table_restrictions($tournament_id, $club_id, $event_tables, $final_mapping);
 		if (!is_null($table_restrictions))
 		{
-			$seating = $seatingDef->applyJudgeRestrictions($seating, $table_restrictions);
+			$seating = $seatingDef->applyTableRestrictions($seating, $table_restrictions);
 		}
 			
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
-		$this->assign_seating_to_event($misc, $hash, $seating, $final_mapping);
+		$this->assign_seating_to_event($misc, $seatingDef->hash, $seating, $final_mapping);
 		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
 	}
 

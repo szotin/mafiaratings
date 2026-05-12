@@ -1551,7 +1551,7 @@ class SeatingDef
 	// If neither fix works the violation is left as-is.
 	//
 	// Returns the (possibly adjusted) seating.
-	function applyJudgeRestrictions($seating, $table_restrictions)
+	function applyTableRestrictions($seating, $table_restrictions)
 	{
 		if ($this->tables < 2 || empty($table_restrictions)) { return $seating; }
 
@@ -1710,11 +1710,13 @@ class SeatingDef
 	function findSeating($create = true)
 	{
 		$result = new stdClass();
-		$row = (new DbQuery('SELECT seating FROM seatings WHERE hash = ?', $this->hash))->next();
+		$row = (new DbQuery('SELECT seating, players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs FROM seatings WHERE hash = ?', $this->hash))->next();
 		if ($row)
 		{
 			$result->seating = json_decode($row[0], true);
 			$result->status = 'ok';
+			list(, $pr, $pvr, $tr, $tvr, $nr, $nvr) = $row;
+			$result->seating_version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
 		}
 		else
 		{
@@ -1730,6 +1732,7 @@ class SeatingDef
 				list ($seating_json, $ps, $ns, $ts) = Db::record(get_label('seating'), 'SELECT seating, players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $compatible_hash);
 				$result->seating = $this->adoptSeating($compatible_hash, json_decode($seating_json, true));
 				$result->status = 'similar';
+				$result->seating_version = '0.0.0';
 				$result->warning = get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $this->hash);
 			}
 			else
@@ -1737,6 +1740,7 @@ class SeatingDef
 				$result->seating = $this->generateInitialSeating();
 				$result->seating = $this->renumberByDistribution($result->seating);
 				$result->status = 'new';
+				$result->seating_version = '0.0.0';
 				$result->warning = get_label('We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $this->hash);
 				if ($create)
 				{
