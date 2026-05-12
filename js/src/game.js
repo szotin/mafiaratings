@@ -868,6 +868,7 @@ function _gameIsEnd()
 				let p = game.players[w];
 				if (!isSet(p.death))
 				{
+					p.death = { type: 'day', round: game.time.round };
 					if (isSet(p.role) && (p.role == 'maf' || p.role == 'don'))
 					{
 						--blackAlive;
