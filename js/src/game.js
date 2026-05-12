@@ -2543,7 +2543,7 @@ function gameNext()
 							{
 								gameNext(); // skip this speech, go next - the player is dead already
 							}
-							else if (game.time.round > 0 || r == /*RULES_FIRST_DAY_VOTING_STANDARD*/0 || (r == /*RULES_FIRST_DAY_VOTING_BREAKING_TO_THEMSELF*/3 && player.voting[0] == winners[0]))
+							else if (game.time.round > 0 || r == /*RULES_FIRST_DAY_VOTING_STANDARD*/0 || (r == /*RULES_FIRST_DAY_VOTING_BREAKING_TO_THEMSELF*/3 && (isArray(player.voting[0]) ? player.voting[0][player.voting[0].length - 1] : player.voting[0]) == winners[0]))
 							{
 								player.death = { type: 'day', round: game.time.round };
 								if (!_gameLastSpeechExists())
