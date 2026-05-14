@@ -1761,4 +1761,38 @@ class SeatingDef
 	}
 }
 
+
+// Ensures a canonical seating row exists in the seatings table for the given $seating array.
+// Derives SeatingDef from the seating, normalizes restrictions to get the canonical hash,
+// and inserts a new row only if that hash is absent. Returns the hash on insert, null otherwise.
+function ensure_seating_existance($seating)
+{
+	$seatingDef = new SeatingDef($seating);
+	$mapping = $seatingDef->normalizeRestrictions();
+
+	// Very long hashes encode a huge number of restriction groups and are unlikely to be useful
+	// as standalone seatings — skip to avoid bloating the seatings table.
+	if (strlen($seatingDef->hash) > 200)
+	{
+		return null;
+	}
+
+	$row = (new DbQuery('SELECT hash FROM seatings WHERE hash = ?', $seatingDef->hash))->next();
+	if ($row)
+	{
+		return null;
+	}
+
+	$normalized_seating = SeatingDef::applyMapping($seating, $mapping);
+	$ps = $seatingDef->calculatePlayersScore($normalized_seating);
+	$ns = $seatingDef->calculateNumbersScore($normalized_seating);
+	$ts = $seatingDef->calculateTablesScore($normalized_seating);
+	Db::exec(get_label('seating'),
+		'INSERT INTO seatings (hash, seating, players_score, numbers_score, tables_score,' .
+		' players_state, numbers_state, tables_state) VALUES (?, ?, ?, ?, ?, "", "", "")',
+		$seatingDef->hash, json_encode($normalized_seating), $ps, $ns, $ts);
+
+	return $seatingDef->hash;
+}
+
 ?>

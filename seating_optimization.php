@@ -235,6 +235,11 @@ class SeatingOptimization extends Updater
 				', numbers_runs = 0, numbers_full_runs = 0, numbers_void_runs = 0, numbers_state = "", numbers_score = ?'.
 				', tables_runs = 0, tables_full_runs = 0, tables_void_runs = 0, tables_state = "", tables_score = ?'.
 				' WHERE hash = ?', $state, json_encode($this->vars->seating), $players_full_runs, $this->vars->score, $numbers_score, $tables_score, $this->vars->hash);
+			$new_hash = ensure_seating_existance($this->vars->seating);
+			if ($new_hash !== null)
+			{
+				$this->log('Also created seating for hash: ' . $new_hash);
+			}
 		}
 		else
 		{
