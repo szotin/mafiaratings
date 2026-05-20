@@ -235,10 +235,10 @@ class SeatingOptimization extends Updater
 				', numbers_runs = 0, numbers_full_runs = 0, numbers_void_runs = 0, numbers_state = "", numbers_score = ?'.
 				', tables_runs = 0, tables_full_runs = 0, tables_void_runs = 0, tables_state = "", tables_score = ?'.
 				' WHERE hash = ?', $state, json_encode($this->vars->seating), $players_full_runs, $this->vars->score, $numbers_score, $tables_score, $this->vars->hash);
-			$new_hash = ensure_seating_existance($this->vars->seating);
-			if ($new_hash !== null)
+			$r = ensure_seating_existance($this->vars->seating);
+			if ($r->created)
 			{
-				$this->log('Also created seating for hash: ' . $new_hash);
+				$this->log('Also created seating for hash: ' . $r->hash);
 			}
 		}
 		else
@@ -639,11 +639,345 @@ class SeatingOptimization extends Updater
 				' WHERE hash = ?', $state, $numbers_full_runs, $this->vars->hash);
 		}
 		Db::commit();
-		
+
 		if (isset($this->seatingDef))
 		{
 			unset($this->seatingDef);
 		}
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// SeatingOptimization.extract_seatings
+	// Scan every tournament that has not yet been processed and try to seed the seatings table from
+	// its event data (misc.seating without a version, or raw game records).
+	// Once a tournament is processed (regardless of outcome) it receives TOURNAMENT_FLAG_SEATING_EXTRACTED
+	// so it is never visited again.
+	//-------------------------------------------------------------------------------------------------------
+	function extract_seatings_task_start()
+	{
+		$this->vars->last_id = 0;
+	}
+
+	function extract_seatings_task($items_count)
+	{
+		$count = 0;
+		// Only process finished tournaments that have not yet been visited.
+		$mask = TOURNAMENT_FLAG_FINISHED | TOURNAMENT_FLAG_SEATING_EXTRACTED;
+		$query = new DbQuery(
+			'SELECT id FROM tournaments WHERE id > ? AND (flags & ?) = ? ORDER BY id LIMIT ' . $items_count,
+			$this->vars->last_id, $mask, TOURNAMENT_FLAG_FINISHED);
+		while ($row = $query->next())
+		{
+			++$count;
+			$tid = (int)$row[0];
+			$this->vars->last_id = $tid;
+			$this->_extract_tournament_seating($tid);
+			Db::exec('tournament', 'UPDATE tournaments SET flags = flags | ? WHERE id = ?',
+				TOURNAMENT_FLAG_SEATING_EXTRACTED, $tid);
+			if (!$this->canDoOneMoreItem())
+			{
+				break;
+			}
+		}
+		return $count;
+	}
+
+	// Try to find and store a canonical seating for every event in a tournament
+	// (main round, semifinals, finals — whatever exists).
+	private function _extract_tournament_seating($tid)
+	{
+		$q = new DbQuery('SELECT id, misc FROM events WHERE tournament_id = ? ORDER BY round, id', $tid);
+		while ($row = $q->next())
+		{
+			list($event_id, $misc_str) = $row;
+			$event_id = (int)$event_id;
+			$misc = $misc_str !== null ? json_decode($misc_str) : null;
+
+			if ($misc !== null && isset($misc->seating) && isset($misc->seating->rounds))
+			{
+				if (isset($misc->seating->version))
+				{
+					continue; // Seating was assigned from the seatings table — nothing to do.
+				}
+
+				// Seating exists but was stored without a version (e.g. old DimTom import or
+				// direct assignment before versioning was introduced).  Seed it now.
+				// Values may be user IDs rather than 0-based indices, so normalise first.
+				$rounds = json_decode(json_encode($misc->seating->rounds), true);
+				if (is_array($rounds))
+				{
+					$rounds = normalize_seating_to_indices($rounds);
+					$this->_log_extracted($tid, $event_id, 'misc', ensure_seating_existance($rounds));
+					continue;
+				}
+			}
+
+			// No misc.seating — try to reconstruct the seating from individual game records.
+			$extracted = $this->_seating_from_games($tid, $event_id);
+			if ($extracted !== null)
+			{
+				$r = ensure_seating_existance($extracted->rounds);
+				$this->_log_extracted($tid, $event_id, 'games', $r);
+				if ($r->hash !== null)
+				{
+					$this->_write_seating_to_event_misc($event_id, $misc, $r->hash, $extracted->rounds, $extracted->mapping);
+				}
+			}
+		}
+	}
+
+	// Build misc.seating from the extracted seating and persist it on the event so future
+	// runs (and other code that reads misc.seating) can use it directly.
+	private function _write_seating_to_event_misc($event_id, $misc, $hash, $rounds, $mapping)
+	{
+		list($pr, $pvr, $tr, $tvr, $nr, $nvr) = Db::record(get_label('seating'),
+			'SELECT players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs FROM seatings WHERE hash = ?',
+			$hash);
+		if ($misc === null)
+		{
+			$misc = new stdClass();
+		}
+		$misc->seating          = new stdClass();
+		$misc->seating->hash    = $hash;
+		$misc->seating->version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
+		$misc->seating->rounds  = $rounds;
+		$misc->seating->mapping = $mapping;
+		Db::exec('event', 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+	}
+
+	private function _log_extracted($tid, $event_id, $source, $r)
+	{
+		$prefix = 'Tournament ' . $tid . ' event ' . $event_id;
+		if ($r->hash === null)
+		{
+			$this->log($prefix . ' has invalid seating in ' . $source . ' (unequal play counts).');
+		}
+		else if ($r->created)
+		{
+			$this->log($prefix . ' extracted seating ' . $r->hash . ' from ' . $source . '.');
+		}
+		else
+		{
+			$this->log($prefix . ' extracted seating ' . $r->hash . ' from ' . $source . ' — already exists.');
+		}
+	}
+
+	// Reconstruct a [round][table][seat]=slot seating from the games of one event.
+	// Returns null when no valid uniform seating can be built.
+	private function _seating_from_games($tid, $event_id)
+	{
+		// Load all rated, non-canceled games with their seated players in one query.
+		// $games[i] = ['tnum' => ?, 'gnum' => ?, 'seats' => [0..9 => user_id]]
+		$games = array();
+		$q = new DbQuery(
+			'SELECT g.id, g.table_num, g.game_num, p.number, p.user_id' .
+			' FROM games g JOIN players p ON p.game_id = g.id' .
+			' WHERE g.event_id = ? AND (g.flags & ' . (GAME_FLAG_CANCELED | GAME_FLAG_RATING) . ') = ' . GAME_FLAG_RATING .
+			' ORDER BY g.id, p.number',
+			$event_id);
+		while ($row = $q->next())
+		{
+			$gid = (int)$row[0];
+			if (!isset($games[$gid]))
+			{
+				$games[$gid] = array(
+					'tnum'  => $row[1] !== null ? (int)$row[1] : null,
+					'gnum'  => $row[2] !== null ? (int)$row[2] : null,
+					'seats' => array(),
+				);
+			}
+			$games[$gid]['seats'][(int)$row[3] - 1] = (int)$row[4];
+		}
+		// Keep only games with a full table of 10 players, re-index sequentially.
+		foreach ($games as $gid => $g)
+		{
+			if (count($g['seats']) != 10)
+			{
+				unset($games[$gid]);
+			}
+		}
+		$games = array_values($games);
+		if (empty($games))
+		{
+			$this->log('Tournament ' . $tid . ' event ' . $event_id . ' has no rated games with a full table.');
+			return null;
+		}
+
+		if ($games[0]['tnum'] === null || $games[0]['gnum'] === null)
+		{
+			$this->log('Tournament ' . $tid . ' event ' . $event_id . ' has no table/game numbers — seating cannot be extracted.');
+			return null;
+		}
+
+		// Build raw seating: [round][table][seat] = user_id
+		$raw = array();
+		foreach ($games as $g)
+		{
+			if ($g['tnum'] !== null && $g['gnum'] !== null)
+			{
+				$raw[$g['gnum'] - 1][$g['tnum'] - 1] = $g['seats'];
+			}
+		}
+
+		if (empty($raw))
+		{
+			$this->log('Tournament ' . $tid . ' event ' . $event_id . ' produced no rounds.');
+			return null;
+		}
+		ksort($raw);
+		foreach ($raw as &$round)
+		{
+			ksort($round);
+		}
+		unset($round);
+
+		// Count how many rounds each user participated in.
+		$user_rounds = array(); // user_id → [round => true]
+		foreach ($raw as $r => $round)
+		{
+			foreach ($round as $table)
+			{
+				foreach ($table as $uid)
+				{
+					$user_rounds[$uid][$r] = true;
+				}
+			}
+		}
+
+		$round_counts = array_map('count', $user_rounds);
+
+		if (count(array_unique($round_counts)) != 1)
+		{
+			// Substitute players: merge users with disjoint round sets summing to expected.
+			$merge_map = $this->_merge_substitute_players($user_rounds, $round_counts, max($round_counts));
+			if ($merge_map === null)
+			{
+				$this->log('Tournament ' . $tid . ' event ' . $event_id . ' unable to merge players with different number of games.');
+				return null;
+			}
+
+			foreach ($raw as $r => $round)
+			{
+				foreach ($round as $t => $table)
+				{
+					foreach ($table as $seat => $uid)
+					{
+						if (isset($merge_map[$uid]))
+						{
+							$raw[$r][$t][$seat] = $merge_map[$uid];
+						}
+					}
+				}
+			}
+
+			// Remap user_rounds via merge_map.
+			$merged = array();
+			foreach ($user_rounds as $uid => $rounds)
+			{
+				$canonical = isset($merge_map[$uid]) ? $merge_map[$uid] : $uid;
+				$merged[$canonical] = isset($merged[$canonical]) ? $merged[$canonical] + $rounds : $rounds;
+			}
+			$user_rounds = $merged;
+			if (count(array_unique(array_map('count', $user_rounds))) != 1)
+			{
+				$this->log('Tournament ' . $tid . ' event ' . $event_id . ' player round counts still uneven after merge.');
+				return null;
+			}
+		}
+
+		// Convert user_ids to 0-based slot indices.
+		$users = array_keys($user_rounds);
+		sort($users);
+		$u2s = array_flip($users);
+
+		$seating = array();
+		foreach ($raw as $r => $round)
+		{
+			$seating[$r] = array();
+			foreach ($round as $t => $table)
+			{
+				$seating[$r][$t] = array();
+				foreach ($table as $uid)
+				{
+					$seating[$r][$t][] = $u2s[$uid];
+				}
+			}
+		}
+		$result = new stdClass();
+		$result->rounds  = $seating;
+		$result->mapping = $users; // slot → user_id
+		return $result;
+	}
+
+	// Greedy merge for substitute players.
+	// Partial users (< $expected rounds) are grouped so that each group's round sets are
+	// pairwise disjoint and their combined round count equals $expected.
+	// Returns merge_map [user_id → canonical_user_id] for non-canonical members, or null on failure.
+	private function _merge_substitute_players($user_rounds, $round_counts, $expected)
+	{
+		$partial = array_keys(array_filter($round_counts, function($c) use ($expected) {
+			return $c < $expected;
+		}));
+
+		$merge_map = array();
+		$assigned  = array();
+
+		foreach ($partial as $uid)
+		{
+			if (isset($assigned[$uid]))
+			{
+				continue;
+			}
+			$group      = array($uid);
+			$grp_rounds = $user_rounds[$uid];
+			$grp_count  = $round_counts[$uid];
+			$assigned[$uid] = true;
+
+			while ($grp_count < $expected)
+			{
+				$found = false;
+				foreach ($partial as $uid2)
+				{
+					if (isset($assigned[$uid2]))
+					{
+						continue;
+					}
+					if ($grp_count + $round_counts[$uid2] > $expected)
+					{
+						continue;
+					}
+					// Round sets must be disjoint.
+					if (!empty(array_intersect_key($grp_rounds, $user_rounds[$uid2])))
+					{
+						continue;
+					}
+					$group[]    = $uid2;
+					$grp_rounds += $user_rounds[$uid2];
+					$grp_count  += $round_counts[$uid2];
+					$assigned[$uid2] = true;
+					$found = true;
+					break;
+				}
+				if (!$found)
+				{
+					return null;
+				}
+			}
+			if ($grp_count !== $expected)
+			{
+				return null;
+			}
+
+			$canonical = $group[0];
+			foreach ($group as $gm)
+			{
+				if ($gm !== $canonical)
+				{
+					$merge_map[$gm] = $canonical;
+				}
+			}
+		}
+		return $merge_map;
 	}
 }
 

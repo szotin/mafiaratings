@@ -314,30 +314,34 @@ class SeatingDef
 			$seating = $hash;
 
 			$this->tables = 0;
-			$this->games  = 0;
+			$total_seats  = 0;
+			$max_player   = -1;
 			foreach ($seating as $round)
 			{
 				if (is_null($round) || empty($round)) continue;
-				++$this->games;
 				if ($this->tables == 0)
+				{
 					$this->tables = count($round);
-			}
-
-			$max_player = -1;
-			foreach ($seating as $round)
-			{
-				if (is_null($round)) continue;
+				}
 				foreach ($round as $table)
 				{
 					if (is_null($table)) continue;
+					$total_seats += count($table);
 					foreach ($table as $p)
 					{
 						if ((int)$p > $max_player)
+						{
 							$max_player = (int)$p;
+						}
 					}
 				}
 			}
 			$this->players = $max_player + 1;
+			// games = games-per-player = total seats / players.
+			// 0 indicates an invalid (unequal) seating that ensure_seating_existance will reject.
+			$this->games = ($this->players > 0 && $total_seats % $this->players === 0)
+				? (int)($total_seats / $this->players)
+				: 0;
 
 			// Count how many times each pair of players sat in the same game.
 			$freq = array();
@@ -450,15 +454,15 @@ class SeatingDef
 	private function generateHash()
 	{
 		$this->hash = $this->getNoRestrictionsHash();
-		foreach ($this->restrictions as $r)
+		foreach ($this->restrictions as $idx => $r)
 		{
 			$i = 0;
 			$rCount = count($r);
 			$h = '';
-			while ($i < $rCount) 
+			while ($i < $rCount)
 			{
 				$start = $i;
-				
+
 				// Look ahead to find the end of a consecutive sequence
 				while ($i + 1 < $rCount && $r[$i + 1] === $r[$i] + 1)
 				{
@@ -475,6 +479,14 @@ class SeatingDef
 					$h .= '-' . $r[$i];
 				}
 				++$i;
+			}
+			// seatings.hash is VARCHAR(255). Skip this restriction (and all that follow)
+			// if appending would overflow. normalizeRestrictions sorts groups most-to-least
+			// significant, so we keep the most meaningful ones.
+			if (strlen($this->hash) + 1 + strlen($h) > 255)
+			{
+				$this->restrictions = array_slice($this->restrictions, 0, $idx);
+				break;
 			}
 			$this->hash .= '_' . $h;
 		}
@@ -1765,22 +1777,59 @@ class SeatingDef
 // Ensures a canonical seating row exists in the seatings table for the given $seating array.
 // Derives SeatingDef from the seating, normalizes restrictions to get the canonical hash,
 // and inserts a new row only if that hash is absent. Returns the hash on insert, null otherwise.
+// Remaps whatever values are in a [round][table][seat] seating array to a dense 0-based
+// integer range. Use this before ensure_seating_existance when the seating may contain
+// raw user/player IDs rather than already-compact slot indices.
+function normalize_seating_to_indices($seating)
+{
+	$all_values = array();
+	foreach ($seating as $round)
+		foreach ($round as $table)
+			foreach ($table as $v)
+				$all_values[(int)$v] = true;
+	ksort($all_values);
+	$remap = array_flip(array_keys($all_values));
+	$result = array();
+	foreach ($seating as $r => $round)
+	{
+		$result[$r] = array();
+		foreach ($round as $t => $table)
+		{
+			$result[$r][$t] = array();
+			foreach ($table as $v)
+				$result[$r][$t][] = $remap[(int)$v];
+		}
+	}
+	return $result;
+}
+
+// Returns an object with:
+//   ->hash    — canonical hash of the seating
+//   ->created — true if a new row was inserted into seatings, false otherwise
 function ensure_seating_existance($seating)
 {
 	$seatingDef = new SeatingDef($seating);
-	$mapping = $seatingDef->normalizeRestrictions();
 
-	// Very long hashes encode a huge number of restriction groups and are unlikely to be useful
-	// as standalone seatings — skip to avoid bloating the seatings table.
-	if (strlen($seatingDef->hash) > 200)
+	$result = new stdClass();
+	$result->hash    = null;
+	$result->created = false;
+
+	// Reject impossible configurations: players * games_per_player must be a positive
+	// multiple of 10 (each game has 10 seats). games == 0 means the array constructor
+	// detected unequal play counts.
+	$total_slots = $seatingDef->players * $seatingDef->games;
+	if ($total_slots <= 0 || $total_slots % 10 !== 0)
 	{
-		return null;
+		return $result;
 	}
+
+	$mapping = $seatingDef->normalizeRestrictions();
+	$result->hash = $seatingDef->hash;
 
 	$row = (new DbQuery('SELECT hash FROM seatings WHERE hash = ?', $seatingDef->hash))->next();
 	if ($row)
 	{
-		return null;
+		return $result;
 	}
 
 	$normalized_seating = SeatingDef::applyMapping($seating, $mapping);
@@ -1792,7 +1841,8 @@ function ensure_seating_existance($seating)
 		' players_state, numbers_state, tables_state) VALUES (?, ?, ?, ?, ?, "", "", "")',
 		$seatingDef->hash, json_encode($normalized_seating), $ps, $ns, $ts);
 
-	return $seatingDef->hash;
+	$result->created = true;
+	return $result;
 }
 
 ?>

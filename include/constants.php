@@ -265,7 +265,7 @@ define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during t
 //  6 - 0x00000020 -        32 - single games from non-tournament events can be assigned to the tournament.
 //  7 - 0x00000040 -        64 - tournament is pinned to the front page of the site (only site admins can do it)
 //  8 - 0x00000080 -       128 - tournament is finished - all scoring is complete
-//  9 - 0x00000100 -       256 - available, should be cleaned up before using
+//  9 - 0x00000100 -       256 - seating extraction from this tournament has been attempted
 // 10 - 0x00000200 -       512 - we have no games information about this tournament - scores are entered manually
 // 11 - 0x00000400 -      1024 - this tournament has MVP as an award
 // 12 - 0x00000800 -      2096 - this tournament has best red as an award
@@ -291,6 +291,7 @@ define('TOURNAMENT_FLAG_LONG_TERM', 0x10);
 define('TOURNAMENT_FLAG_SINGLE_GAME', 0x20);
 define('TOURNAMENT_FLAG_PINNED', 0x40);
 define('TOURNAMENT_FLAG_FINISHED', 0x80);
+define('TOURNAMENT_FLAG_SEATING_EXTRACTED', 0x100);
 define('TOURNAMENT_FLAG_MANUAL_SCORE', 0x200);
 define('TOURNAMENT_FLAG_AWARD_MVP', 0x400);
 define('TOURNAMENT_FLAG_AWARD_RED', 0x800);

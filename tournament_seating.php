@@ -95,55 +95,6 @@ class Page extends TournamentPageBase
 		}
 	}
 	
-	private function generateSeating()
-	{
-		if (!is_null($this->misc) && isset($this->misc->seating))
-		{
-			return true;
-		}			
-		
-		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
-		{
-			return false;
-		}
-		
-		// generates seating using existing games if needed
-		$old_misc = $this->misc;
-		if ($this->misc == null)
-		{
-			$this->misc = new stdClass();
-		}
-		$rounds = array();
-
-		$query = new DbQuery('SELECT p.user_id, p.number, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = ? AND g.table_num IS NOT NULL AND g.game_num IS NOT NULL', $this->round_id);
-		while ($row = $query->next())
-		{
-			list ($user_id, $number, $table, $game) = $row;
-			while (count($rounds) < $game)
-			{
-				$rounds[] = array();
-			}
-			while (count($rounds[$game-1]) < $table)
-			{
-				$rounds[$game-1][] = array(0,0,0,0,0,0,0,0,0,0);
-			}
-			$rounds[$game-1][$table-1][$number-1] = (int)$user_id;
-		}
-		if (count($rounds) > 0)
-		{
-			$this->misc->seating = new stdClass();
-			$this->misc->seating->rounds = $rounds;
-		}
-		if (isset($this->misc->seating))
-		{
-			// cashe it for the future
-			Db::exec(get_label('round'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($this->misc), $this->round_id);
-			return true;
-		}
-		$this->misc = $old_misc;
-		return false;
-	}
-	
 	private function initVars()
 	{
 		global $_lang;
@@ -343,9 +294,7 @@ class Page extends TournamentPageBase
 			}
 		}
 		
-		$seating_exists = $this->generateSeating();
-
-		if (!$seating_exists)
+		if (is_null($this->misc) || !isset($this->misc->seating))
 		{
 			echo '<p>' . get_label('Seating is not generated for this round') . '</p>';
 			return;
