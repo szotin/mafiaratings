@@ -8,14 +8,45 @@ define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
 class Page extends GeneralPageBase
 {
+	protected function prepare()
+	{
+		parent::prepare();
+		$this->flt_players = isset($_REQUEST['players']) && $_REQUEST['players'] !== '' ? (int)$_REQUEST['players'] : 0;
+		$this->flt_tables  = isset($_REQUEST['tables'])  && $_REQUEST['tables']  !== '' ? (int)$_REQUEST['tables']  : 0;
+		$this->flt_games   = isset($_REQUEST['games'])   && $_REQUEST['games']   !== '' ? (int)$_REQUEST['games']   : 0;
+	}
+
 	protected function show_body()
 	{
 		global $_page;
 
-		list($count) = Db::record(get_label('seating'), 'SELECT count(*) FROM seatings');
+		// Hash is "{players}_{tables}_{games}[_restrictions...]" — extract the first three
+		// underscore-separated parts to filter by.
+		$condition = new SQL(' FROM seatings WHERE 1');
+		if ($this->flt_players > 0)
+		{
+			$condition->add(' AND CAST(SUBSTRING_INDEX(hash, \'_\', 1) AS UNSIGNED) = ?', $this->flt_players);
+		}
+		if ($this->flt_tables > 0)
+		{
+			$condition->add(' AND CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(hash, \'_\', 2), \'_\', -1) AS UNSIGNED) = ?', $this->flt_tables);
+		}
+		if ($this->flt_games > 0)
+		{
+			$condition->add(' AND CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(hash, \'_\', 3), \'_\', -1) AS UNSIGNED) = ?', $this->flt_games);
+		}
+
+		echo '<p><table class="transp"><tr>';
+		echo '<td>' . get_label('Players') . ': <input type="number" min="0" step="1" style="width:55px;" id="flt-players" value="' . ($this->flt_players > 0 ? $this->flt_players : '') . '" onchange="applyFilter()"></td>';
+		echo '<td>&emsp;' . get_label('Tables') . ': <input type="number" min="0" step="1" style="width:55px;" id="flt-tables" value="' . ($this->flt_tables > 0 ? $this->flt_tables : '') . '" onchange="applyFilter()"></td>';
+		echo '<td>&emsp;' . get_label('Games per player') . ': <input type="number" min="0" step="1" style="width:55px;" id="flt-games" value="' . ($this->flt_games > 0 ? $this->flt_games : '') . '" onchange="applyFilter()"></td>';
+		echo '</tr></table></p>';
+
+		list($count) = Db::record(get_label('seating'), 'SELECT count(*)', $condition);
 
 		$seatings = array();
-		$query = new DbQuery('SELECT hash, players_score, numbers_score, tables_score FROM seatings ORDER BY hash LIMIT ' . ((int)$_page * PAGE_SIZE) . ', ' . PAGE_SIZE);
+		$query = new DbQuery('SELECT hash, players_score, numbers_score, tables_score', $condition);
+		$query->add(' ORDER BY hash LIMIT ' . ((int)$_page * PAGE_SIZE) . ', ' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			list ($hash, $players_score, $numbers_score, $tables_score) = $row;
@@ -136,6 +167,16 @@ class Page extends GeneralPageBase
 			dlg.yesNo("<?php echo get_label('Are you sure you want to delete this seating?'); ?>", null, null, function()
 			{
 				json.post("api/ops/seating.php", { op: 'delete', hash: hash }, refr);
+			});
+		}
+
+		function applyFilter()
+		{
+			goTo({
+				players: $('#flt-players').val(),
+				tables:  $('#flt-tables').val(),
+				games:   $('#flt-games').val(),
+				page:    0
 			});
 		}
 <?php
