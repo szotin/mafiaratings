@@ -228,7 +228,20 @@ class Page extends EventPageBase
 		
 		foreach ($this->player->games as $game)
 		{
-			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->id . '&id=' . $game->game_id . $this->show_all . '&bck=1">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
+			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->id . '&id=' . $game->game_id . $this->show_all . '&bck=1">';
+			if (!isset($game->game_num))
+			{
+				echo get_label('Game #[0]', $game->game_id);
+			}
+			else if (!isset($game->table_num))
+			{
+				echo get_label('Game [0]', $game->game_num);
+			}
+			else
+			{
+				echo get_label('Table [0], Game [1]', $game->table_num, $game->game_num);
+			}
+			echo '</a></td>';
 			echo '<td align="right" width="50">';
 			switch ($game->role)
 			{

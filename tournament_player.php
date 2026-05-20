@@ -265,7 +265,20 @@ class Page extends TournamentPageBase
 		
 		foreach ($this->player->games as $game)
 		{
-			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&tournament_id=' . $this->id . '&id=' . $game->game_id . '&bck=1' . $this->show_all . '">' . get_label('Game #[0]', $game->game_id) . '</a></td>';
+			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&tournament_id=' . $this->id . '&id=' . $game->game_id . '&bck=1' . $this->show_all . '">';
+			if (!isset($game->game_num))
+			{
+				echo get_label('Game #[0]', $game->game_id);
+			}
+			else if (!isset($game->table_num))
+			{
+				echo get_label('Game [0]', $game->game_num);
+			}
+			else
+			{
+				echo get_label('Table [0], Game [1]', $game->table_num, $game->game_num);
+			}
+			echo '</a></td>';
 			echo '<td align="right">';
 			if (isset($game->event_name) && is_string($game->event_name))
 			{

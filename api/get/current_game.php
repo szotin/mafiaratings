@@ -58,7 +58,7 @@ class ApiPage extends GetApiPageBase
 		{
 			if (isset($game->table))
 			{
-				$game->name = get_label('Table [0] / Game [1]', $game->table, $game->tour);
+				$game->name = get_label('Table [0], Game [1]', $game->table, $game->tour);
 			}
 			else
 			{

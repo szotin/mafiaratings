@@ -62,7 +62,7 @@ class Page extends AddressPageBase
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
-			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, c.name, c.flags, e.id, e.name, e.flags FROM videos v' .
+			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM videos v' .
 			' JOIN events e ON e.id = v.event_id' .
 			' JOIN clubs c ON c.id = e.club_id' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
@@ -70,7 +70,7 @@ class Page extends AddressPageBase
 		$query->add(' ORDER BY v.video_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		while ($row = $query->next())
 		{
-			list($video_id, $video, $title, $lang, $type, $game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags) = $row;
+			list($video_id, $video, $title, $lang, $type, $game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $table_num, $game_num) = $row;
 			if ($column_count == 0)
 			{
 				if ($video_count == 0)
@@ -92,9 +92,17 @@ class Page extends AddressPageBase
 			{
 				echo get_video_title($type);
 			}
+			else if (is_null($game_num))
+			{
+				echo get_label('Game #[0]', $game_id);
+			}
+			else if (is_null($table_num))
+			{
+				echo get_label('Game [0]', $game_num);
+			}
 			else
 			{
-				echo get_label('Game [0]', $game_id);
+				echo get_label('Table [0], Game [1]', $table_num, $game_num);
 			}
 			echo '</b></td></tr>';
 			

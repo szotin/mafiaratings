@@ -19,14 +19,14 @@ class Page extends GeneralPageBase
 		$event_pic = new Picture(EVENT_PICTURE);
 
 
-		$query = new DbQuery('SELECT g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, i.issues, i.feature_flags, i.new_feature_flags FROM game_issues i JOIN games g ON g.id = i.game_id JOIN events e ON e.id = g.event_id JOIN clubs c ON c.id = g.club_id ORDER BY i.game_id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query = new DbQuery('SELECT g.id, g.table_num, g.game_num, c.id, c.name, c.flags, e.id, e.name, e.flags, i.issues, i.feature_flags, i.new_feature_flags FROM game_issues i JOIN games g ON g.id = i.game_id JOIN events e ON e.id = g.event_id JOIN clubs c ON c.id = g.club_id ORDER BY i.game_id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 	
 		$count = 0;
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td width="32"></td><td width="84"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="90">' . get_label('Game') . '</td><td width="90">' . get_label('Features') . '</td><td width="90">' . get_label('Removed features') . '</td><td>' . get_label('Issues') . '</td></tr>';
 		while ($row = $query->next())
 		{
-			list ($game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $issues, $feature_flags, $new_feature_flags) = $row;
+			list ($game_id, $table_num, $game_num, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $issues, $feature_flags, $new_feature_flags) = $row;
 			$removed_feature_flags = (((int)$feature_flags ^ (int)$new_feature_flags) & (int)$feature_flags);
 		
 			echo '<tr>';
@@ -48,7 +48,20 @@ class Page extends GeneralPageBase
 			$event_pic->set($event_id, $event_name, $event_flags);
 			$event_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
-			echo '<td align="center"><a href="view_game.php?id=' . $game_id . '&bck=1">' . get_label('Game #[0]', $game_id) . '</a></td>';
+			echo '<td align="center"><a href="view_game.php?id=' . $game_id . '&bck=1">';
+			if (is_null($game_num))
+			{
+				echo get_label('Game #[0]', $game_id);
+			}
+			else if (is_null($table_num))
+			{
+				echo get_label('Game [0]', $game_num);
+			}
+			else
+			{
+				echo get_label('Table [0], Game [1]', $table_num, $game_num);
+			}
+			echo '</a></td>';
 			echo '<td align="center">' . Game::feature_flags_to_leters($feature_flags) . '</td>';
 			echo '<td align="center">' . Game::feature_flags_to_leters($removed_feature_flags) . '</td>';
 			echo '<td>' . $issues . '</td>';
