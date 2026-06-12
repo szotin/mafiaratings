@@ -338,8 +338,13 @@ class SeatingDef
 			}
 			$this->players = $max_player + 1;
 			// games = games-per-player = total seats / players.
-			// 0 indicates an invalid (unequal) seating that ensure_seating_existance will reject.
-			$this->games = ($this->players > 0 && $total_seats % $this->players === 0)
+			// 0 indicates an invalid seating (unequal play, or tables × 10 > players which is
+			// physically impossible since a player can occupy only one table per round).
+			$this->games = (
+				$this->players > 0 &&
+				$total_seats % $this->players === 0 &&
+				$this->tables * 10 <= $this->players
+			)
 				? (int)($total_seats / $this->players)
 				: 0;
 
@@ -1814,11 +1819,12 @@ function ensure_seating_existance($seating)
 	$result->hash    = null;
 	$result->created = false;
 
-	// Reject impossible configurations: players * games_per_player must be a positive
-	// multiple of 10 (each game has 10 seats). games == 0 means the array constructor
-	// detected unequal play counts.
+	// Reject impossible configurations:
+	// - players * games_per_player must be a positive multiple of 10 (10 seats per game).
+	// - tables * 10 must not exceed players (a player can occupy only one table per round).
+	// games == 0 from the array constructor already signals invalid input.
 	$total_slots = $seatingDef->players * $seatingDef->games;
-	if ($total_slots <= 0 || $total_slots % 10 !== 0)
+	if ($total_slots <= 0 || $total_slots % 10 !== 0 || $seatingDef->tables * 10 > $seatingDef->players)
 	{
 		return $result;
 	}

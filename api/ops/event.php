@@ -2206,6 +2206,12 @@ class ApiPage extends OpsApiPageBase
 
 		// --- 2. Validate seating dimensions against event ---
 		$dimtomDef = new SeatingDef($rounds);
+		// Refuse malformed input: games == 0 (unequal play / total seats not divisible by 10),
+		// or tables * 10 > players (impossible — a player can occupy only one table per round).
+		if ($dimtomDef->games <= 0 || $dimtomDef->tables * 10 > $dimtomDef->players)
+		{
+			throw new Exc(get_label('The imported seating is invalid: [0] players, [1] tables, [2] games per player.', $dimtomDef->players, $dimtomDef->tables, $dimtomDef->games));
+		}
 		if ($dimtomDef->players != $event_players || $dimtomDef->tables != $event_tables || $dimtomDef->games != $event_games)
 		{
 			if (!get_optional_param('update_event', 0))
@@ -2861,6 +2867,12 @@ class ApiPage extends OpsApiPageBase
 		$event_tables  = (int)$event_tables;
 		$event_games   = (int)$event_games;
 		$event_round   = (int)$event_round;
+
+		// Reject configurations that cannot exist (more table-seats per round than players).
+		if ($event_tables * 10 > $event_players)
+		{
+			throw new Exc(get_label('[0] players cannot be seated at [1] tables.', $event_players, $event_tables));
+		}
 
 		// --- 2. Load registered players and classify pairs ---
 		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs) =

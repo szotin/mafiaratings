@@ -13,6 +13,12 @@ class ApiPage extends GetApiPageBase
 		$tables  = (int)get_required_param('tables');
 		$games   = (int)get_required_param('games');
 
+		// Reject configurations that cannot exist (more table-seats per round than players).
+		if ($tables * 10 > $players)
+		{
+			throw new Exc(get_label('[0] players cannot be seated at [1] tables.', $players, $tables));
+		}
+
 		$restrictions_raw      = get_optional_param('restrictions', '');
 		$table_restrictions_raw = get_optional_param('table_restrictions', '');
 
