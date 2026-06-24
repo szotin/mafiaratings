@@ -171,7 +171,7 @@ return array
 			'The player has the right to nominate only one or zero candidates in each game «day».', // 7.6.
 			'Players are not entitled to receive information about nominated players.', // 7.7.
 			'Nominated players are voted on in the order they were nominated during the «day» discussion.', // 7.8.
-			'The Moderator must announce the nominations in the right order before voting.Then, the Moderator announces «Who wants to kill/lynch player number #...?» for each nominee. Players can vote for the announced candidate until the Moderator says «Stop» or «Thank you». The time to vote is 2 seconds, the vote will only count if it is placed in time, late votes will not be considered.', // 7.9.
+			'The Moderator must announce the nominations in the right order before voting.Then, the Moderator announces «Who wants to kill player number #...?» for each nominee. Players can vote for the announced candidate until the Moderator says «Stop» or «Thank you». The time to vote is 2 seconds, the vote will only count if it is placed in time, late votes will not be considered.', // 7.9.
 			'Players must remove their hands from the gaming table before voting. Players put the fist with the thumb up on the gaming table in order to vote. In some versions players put the elbow of one hand on the table before voting. Players put this hand’s fist with the thumb up on the gaming table in order to vote.', // 7.10.
 			'Players must keep their fists on the surface of the table until the Moderator announces the number of voters.', // 7.11.
 			'A player can vote only once at the time of voting.', // 7.12.
@@ -218,7 +218,7 @@ return array
 			array // 7.21.
 			(
 				RULES_KILL_ALL,
-				'Lynching all players',
+				'Killing all players',
 				array
 				(
 					'If as a result of voting and then re-voting the table is shared between all the players in the game, the night is announced. No one leaves the table.',
@@ -233,7 +233,7 @@ return array
 			array // 7.22.
 			(
 				RULES_SPLIT_ON_FOUR,
-				'Lynching two on four',
+				'Killing two on four',
 				array
 				(
 					'If there are four players in the game and two of them get the same number of votes twice, then the split is treated like all other splits.. The moderator asks if both players should leave the game. If more than two players vote for it, both players become killed.',
@@ -248,7 +248,7 @@ return array
 			array // 7.23.
 			(
 				RULES_SPLIT_ON_NINE,
-				'Lynching three on nine',
+				'Killing three on nine',
 				array
 				(
 					'If there are nine players in the game and three of them are in the split twice, then the split is treated like all other splits. The moderator asks if all three players should leave the game. If more than four players vote for it, all three players become killed.',
