@@ -76,8 +76,9 @@ try
 	echo '<input type="checkbox" id="form-manager"' . (($flags & USER_PERM_MANAGER) ? ' checked' : '') . '> '.get_label('Manager');
 	echo '<br><input type="checkbox" id="form-referee"' . (($flags & USER_PERM_REFEREE) ? ' checked' : '') . '> '.get_label('Referee');
 	echo '<br><input type="checkbox" id="form-player"' . (($flags & USER_PERM_PLAYER) ? ' checked' : '') . '> '.get_label('Player');
+	echo '<br><input type="checkbox" id="form-exhibition"' . (($flags & USER_FLAG_EXHIBITION_PLAYER) ? ' checked' : '') . '> '.get_label('Exhibition player');
 	echo '</td></tr>';
-	
+
 	echo '</table>';
 
 ?>
@@ -87,14 +88,14 @@ try
 	{
 		cityId = _city.id;
 	}
-	
+
 	function commit(onSuccess)
 	{
 		var flags = 0;
 		if ($("#form-manager").attr("checked")) flags |= <?php echo USER_PERM_MANAGER; ?>;
 		if ($("#form-referee").attr("checked")) flags |= <?php echo USER_PERM_REFEREE; ?>;
 		if ($("#form-player").attr("checked")) flags |= <?php echo USER_PERM_PLAYER; ?>;
-		
+
 		json.post("api/ops/tournament.php",
 		{
 			op: "edit_registration"
@@ -103,6 +104,7 @@ try
 			, city_id: cityId
 			, team: $('#form-team').val()
 			, access_flags: flags
+			, exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
 		}, onSuccess);
 	}
 	</script>

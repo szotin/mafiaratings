@@ -110,6 +110,10 @@ try
 	echo '<input type="checkbox" id="form-manager"' . (($default_flags & USER_PERM_MANAGER) ? ' checked' : '') . '> '.get_label('Manager');
 	echo '<br><input type="checkbox" id="form-referee"' . (($default_flags & USER_PERM_REFEREE) ? ' checked' : '') . '> '.get_label('Referee');
 	echo '<br><input type="checkbox" id="form-player"' . (($default_flags & USER_PERM_PLAYER) ? ' checked' : '') . '> '.get_label('Player');
+	if (isset($event_id) || isset($tournament_id))
+	{
+		echo '<br><input type="checkbox" id="form-exhibition"> '.get_label('Exhibition player');
+	}
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -169,6 +173,7 @@ try
 			, user_id: userId
 			, event_id: <?php echo $event_id; ?>
 			, access_flags: flags
+			, exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
 		}, onSuccess);
 <?php
 	}
@@ -185,6 +190,7 @@ try
 				, tournament_id: <?php echo $tournament_id; ?>
 				, team: $('#form-team').val()
 				, access_flags: flags
+				, exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
 			}, onSuccess);
 <?php
 		}
@@ -198,6 +204,7 @@ try
 				, city_id: cityId
 				, tournament_id: <?php echo $tournament_id; ?>
 				, access_flags: flags
+				, exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
 			}, onSuccess);
 <?php
 		}

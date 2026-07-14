@@ -22,11 +22,13 @@ try
 		' WHERE u.id = ?', $user_id);
 	
 	$club_id = 0;
+	$exhibition_flag = 0;
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
 		list($club_id, $tour_id, $name, $user_flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, e.name, eu.flags FROM event_regs eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
+		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
 	}
 	else if (isset($_REQUEST['tournament_id']))
@@ -34,6 +36,15 @@ try
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list($club_id, $name, $user_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, tu.flags FROM tournament_regs tu JOIN tournaments t ON t.id = tu.tournament_id WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
+		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
+	}
+	else if (isset($_REQUEST['series_id']))
+	{
+		$series_id = (int)$_REQUEST['series_id'];
+		list($league_id, $name, $user_flags) = Db::record(get_label('series'), 'SELECT s.league_id, s.name, sr.flags FROM series_regs sr JOIN series s ON s.id = sr.series_id WHERE sr.series_id = ? AND sr.user_id = ?', $series_id, $user_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
 	}
 	else if (isset($_REQUEST['club_id']))
@@ -49,14 +60,18 @@ try
 		dialog_title(get_label('[0] permissions', $user_name));
 	}
 	
-	if ($club_id > 0)
+	if ($club_id > 0 || isset($series_id))
 	{
 		echo '<input type="checkbox" id="form-manager" value="1"' . ((($user_flags & USER_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager');
 		echo '<br><input type="checkbox" id="form-referee" value="1"' . ((($user_flags & USER_PERM_REFEREE) != 0) ? ' checked' : '') . '> '.get_label('Referee');
 		echo '<br><input type="checkbox" id="form-player" value="1"' . ((($user_flags & USER_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player');
+		if ($exhibition_flag != 0)
+		{
+			echo '<br><input type="checkbox" id="form-exhibition" value="1"' . ((($user_flags & $exhibition_flag) != 0) ? ' checked' : '') . '> '.get_label('Exhibition player');
+		}
 		if (isset($event_id))
 		{
-?>	
+?>
 			<script>
 			function commit(onSuccess)
 			{
@@ -67,7 +82,8 @@ try
 					event_id: <?php echo $event_id; ?>,
 					manager: ($("#form-manager").attr("checked") ? 1 : 0),
 					moder: ($("#form-referee").attr("checked") ? 1 : 0),
-					player: ($("#form-player").attr("checked") ? 1 : 0)
+					player: ($("#form-player").attr("checked") ? 1 : 0),
+					exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
 				},
 				onSuccess);
 			}
@@ -76,7 +92,7 @@ try
 		}
 		else if (isset($tournament_id))
 		{
-?>	
+?>
 			<script>
 			function commit(onSuccess)
 			{
@@ -87,7 +103,29 @@ try
 					tournament_id: <?php echo $tournament_id; ?>,
 					manager: ($("#form-manager").attr("checked") ? 1 : 0),
 					moder: ($("#form-referee").attr("checked") ? 1 : 0),
-					player: ($("#form-player").attr("checked") ? 1 : 0)
+					player: ($("#form-player").attr("checked") ? 1 : 0),
+					exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
+				},
+				onSuccess);
+			}
+			</script>
+<?php
+		}
+		else if (isset($series_id))
+		{
+?>
+			<script>
+			function commit(onSuccess)
+			{
+				json.post("api/ops/user.php",
+				{
+					op: 'access',
+					user_id: <?php echo $user_id; ?>,
+					series_id: <?php echo $series_id; ?>,
+					manager: ($("#form-manager").attr("checked") ? 1 : 0),
+					moder: ($("#form-referee").attr("checked") ? 1 : 0),
+					player: ($("#form-player").attr("checked") ? 1 : 0),
+					exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
 				},
 				onSuccess);
 			}
@@ -96,7 +134,7 @@ try
 		}
 		else
 		{
-?>	
+?>
 			<script>
 			function commit(onSuccess)
 			{
@@ -118,7 +156,7 @@ try
 	else
 	{
 		echo '<input type="checkbox" id="form-admin" value="1"' . ((($user_flags & USER_PERM_ADMIN) != 0) ? ' checked' : '') . '> '.get_label('Admin');
-?>	
+?>
 		<script>
 		function commit(onSuccess)
 		{

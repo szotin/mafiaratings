@@ -194,7 +194,7 @@ class Page extends TournamentPageBase
 				echo '<button onclick="mr.acceptTournamentReg(' . $this->id . ',' . $user_id . ')">' . get_label('Accept application') . '</button>';
 				echo '</td>';
 				echo '<td align="center">' . ($i + 1) . '</td>';
-				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
 				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 				echo '</tr>';
@@ -214,6 +214,15 @@ class Page extends TournamentPageBase
 		echo '<td valign="middle"><a href="user_info.php?id=' . $user_id . '&bck=1"><b>' . $name . '</b></a><br>' . $city . '</td>';
 		echo '</tr></table>';
 		return ob_get_clean();
+	}
+
+	private function exhibitionBadge($tr_flags)
+	{
+		if (($tr_flags & USER_FLAG_EXHIBITION_PLAYER) == 0)
+		{
+			return '';
+		}
+		return '<span title="' . get_label('Excluded from tournament standings and series scoring.') . '" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#a06060;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;">' . get_label('exhibition player') . '</span>';
 	}
 
 	private function clubCell($club_id, $club_name, $club_flags)
@@ -268,7 +277,7 @@ class Page extends TournamentPageBase
 				}
 				echo '</td>';
 				echo '<td align="center">' . ($i + 1) . '</td>';
-				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
 				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 				$up_style = ($i == 0) ? ' style="visibility:hidden"' : '';
@@ -362,7 +371,7 @@ class Page extends TournamentPageBase
 					}
 				}
 
-				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
 				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 

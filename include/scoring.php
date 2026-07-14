@@ -1202,7 +1202,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 			' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
 			' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
 			' WHERE g.event_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.
-			' AND (eu.flags IS NULL OR (eu.flags & '.USER_EVENT_FLAG_EXHIBITION_PLAYER.') = 0)', $event_id, $condition);
+			' AND (eu.flags IS NULL OR (eu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $event_id, $condition);
     $query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
@@ -1247,7 +1247,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 	
 	// Calculate final values for counters
 	$games = array();
-	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = g.event_id WHERE g.event_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND (eu.flags IS NULL OR (eu.flags & '.USER_EVENT_FLAG_EXHIBITION_PLAYER.') = 0)', $event_id, $condition);
+	$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = g.event_id WHERE g.event_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND (eu.flags IS NULL OR (eu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $event_id, $condition);
     $query->add(' ORDER BY g.end_time');
 	while ($row = $query->next())
 	{
@@ -1657,8 +1657,8 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 			' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 			' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' .
 			' WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.
-			' AND (tu.flags IS NULL OR (tu.flags & '.USER_TOURNAMENT_FLAG_EXHIBITION_PLAYER.') = 0)'.
-			' AND (eu.flags IS NULL OR (eu.flags & '.USER_EVENT_FLAG_EXHIBITION_PLAYER.') = 0)', $tournament_id, $condition);
+			' AND (tu.flags IS NULL OR (tu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)'.
+			' AND (eu.flags IS NULL OR (eu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $tournament_id, $condition);
 	$query->add(' GROUP BY u.id');
 	while ($row = $query->next())
 	{
@@ -1722,7 +1722,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		
 		// Calculate final values for counters
 		$games = array();
-		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, e.name, e.round, p.rating_before, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND (tu.flags IS NULL OR (tu.flags & '.USER_TOURNAMENT_FLAG_EXHIBITION_PLAYER.') = 0) AND (eu.flags IS NULL OR (eu.flags & '.USER_EVENT_FLAG_EXHIBITION_PLAYER.') = 0)', $tournament_id, $condition);
+		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, e.name, e.round, p.rating_before, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND (tu.flags IS NULL OR (tu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0) AND (eu.flags IS NULL OR (eu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $tournament_id, $condition);
 		$query->add(' ORDER BY g.end_time');
 		while ($row = $query->next())
 		{
@@ -1873,8 +1873,8 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id'.
 				' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id'.
 				' WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.
-				' AND (tu.flags IS NULL OR (tu.flags & '.USER_TOURNAMENT_FLAG_EXHIBITION_PLAYER.') = 0)'.
-				' AND (eu.flags IS NULL OR (eu.flags & '.USER_EVENT_FLAG_EXHIBITION_PLAYER.') = 0)' . $group->cond, $tournament_id, $condition);
+				' AND (tu.flags IS NULL OR (tu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)'.
+				' AND (eu.flags IS NULL OR (eu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)' . $group->cond, $tournament_id, $condition);
             $query->add(' ORDER BY g.end_time');
             while ($row = $query->next())
             {

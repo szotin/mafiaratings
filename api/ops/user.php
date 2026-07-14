@@ -11,7 +11,7 @@ require_once '../../include/tournament.php';
 
 define('CURRENT_VERSION', 0);
 
-function access_flags($flags)
+function access_flags($flags, $exhibition_bit = 0)
 {
 	if (isset($_REQUEST['manager']))
 	{
@@ -24,7 +24,7 @@ function access_flags($flags)
 			$flags &= ~USER_PERM_MANAGER;
 		}
 	}
-	
+
 	if (isset($_REQUEST['moder']))
 	{
 		if ((int)$_REQUEST['moder'])
@@ -36,7 +36,7 @@ function access_flags($flags)
 			$flags &= ~USER_PERM_REFEREE;
 		}
 	}
-	
+
 	if (isset($_REQUEST['player']))
 	{
 		if ((int)$_REQUEST['player'])
@@ -46,6 +46,18 @@ function access_flags($flags)
 		else
 		{
 			$flags &= ~USER_PERM_PLAYER;
+		}
+	}
+
+	if ($exhibition_bit != 0 && isset($_REQUEST['exhibition']))
+	{
+		if ((int)$_REQUEST['exhibition'])
+		{
+			$flags |= $exhibition_bit;
+		}
+		else
+		{
+			$flags &= ~$exhibition_bit;
 		}
 	}
 	return $flags;
@@ -280,14 +292,15 @@ class ApiPage extends OpsApiPageBase
 		$club_id = (int)get_optional_param('club_id', 0);
 		$event_id = (int)get_optional_param('event_id', 0);
 		$tournament_id = (int)get_optional_param('tournament_id', 0);
-		
+		$series_id = (int)get_optional_param('series_id', 0);
+
 		Db::begin();
 		if ($event_id > 0)
 		{
-			list($club_id, $tour_id, $flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, eu.flags FROM event_regs eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
+			list($club_id, $tour_id, $old_flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, eu.flags FROM event_regs eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
-			$flags = access_flags($flags);
-			
+			$flags = access_flags($old_flags, USER_FLAG_EXHIBITION_PLAYER);
+
 			Db::exec(get_label('user'), 'UPDATE event_regs SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
 			if (Db::affected_rows() > 0)
 			{
@@ -295,19 +308,32 @@ class ApiPage extends OpsApiPageBase
 				$log_details->event_id = $event_id;
 				$log_details->event_flags = $flags;
 				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
+
+				// If exhibition-player flag flipped, invalidate scoring caches and re-run event/tournament
+				// so event_places and (if applicable) tournament_places get rebuilt without the player.
+				if ((($flags ^ $old_flags) & USER_FLAG_EXHIBITION_PLAYER) != 0)
+				{
+					Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+					Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ~' . EVENT_FLAG_FINISHED . ' WHERE id = ?', $event_id);
+					if ($tour_id > 0)
+					{
+						Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tour_id);
+						Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tour_id);
+					}
+				}
 			}
 		}
 		else if ($tournament_id > 0)
 		{
-			list($club_id, $flags, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 
+			list($club_id, $old_flags, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'),
 				'SELECT t.club_id, tu.flags, a.lat, a.lon, t.flags'.
 				' FROM tournament_regs tu'.
 				' JOIN tournaments t ON t.id = tu.tournament_id'.
 				' JOIN addresses a ON a.id = t.address_id'.
 				' WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
-			$flags = access_flags($flags);
-			
+			$flags = access_flags($old_flags, USER_FLAG_EXHIBITION_PLAYER);
+
 			Db::exec(get_label('user'), 'UPDATE tournament_regs SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
 			if (Db::affected_rows() > 0)
 			{
@@ -315,8 +341,36 @@ class ApiPage extends OpsApiPageBase
 				$log_details->tournament_id = $tournament_id;
 				$log_details->tournament_flags = $flags;
 				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id);
-				
+
 				update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+
+				// If exhibition-player flag flipped, invalidate scoring cache and re-run tournament.
+				if ((($flags ^ $old_flags) & USER_FLAG_EXHIBITION_PLAYER) != 0)
+				{
+					Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+				}
+			}
+		}
+		else if ($series_id > 0)
+		{
+			list($league_id, $old_flags) = Db::record(get_label('series'), 'SELECT s.league_id, sr.flags FROM series_regs sr JOIN series s ON s.id = sr.series_id WHERE sr.series_id = ? AND sr.user_id = ?', $series_id, $user_id);
+			check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+			$flags = access_flags($old_flags, USER_FLAG_EXHIBITION_PLAYER);
+
+			Db::exec(get_label('user'), 'UPDATE series_regs SET flags = ? WHERE user_id = ? AND series_id = ?', $flags, $user_id, $series_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = new stdClass();
+				$log_details->series_id = $series_id;
+				$log_details->series_flags = $flags;
+				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, NULL, $league_id);
+
+				// If exhibition-player flag flipped, mark series dirty to force series_places rebuild.
+				if ((($flags ^ $old_flags) & USER_FLAG_EXHIBITION_PLAYER) != 0)
+				{
+					Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $series_id);
+				}
 			}
 		}
 		else if ($club_id > 0)
@@ -365,11 +419,13 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('user_id', 'User id.');
 		$help->request_param('event_id', 'Event id.', 'whole site access is controlled (admin permission is requred for it).');
 		$help->request_param('tournament_id', 'Tournament id.', 'whole site access is controlled (admin permission is requred for it).');
+		$help->request_param('series_id', 'Series id.', 'whole site access is controlled (admin permission is requred for it).');
 		$help->request_param('club_id', 'Club id.', 'whole site access is controlled (admin permission is requred for it).');
-		$help->request_param('player', 'Player permission in the club. 1 to grand the permission, 0 to revoke it. Does not work when none of club_id, event_id, or tournament_id is set.', 'remains the same');
-		$help->request_param('moder', 'Moderator permission in the club. 1 to grand the permission, 0 to revoke it. Does not work when none of club_id, event_id, or tournament_id is set.', 'remains the same');
-		$help->request_param('manager', 'Manager permission in the club. 1 to grand the permission, 0 to revoke it. Does not work when none of club_id, event_id, or tournament_id is set.', 'remains the same');
-		$help->request_param('admin', 'Administrator permission for the site. 1 to grand the permission, 0 to revoke it. Does not work when club_id, event_id, or tournament_id is set.', 'remains the same');
+		$help->request_param('player', 'Player permission. 1 to grant, 0 to revoke. Does not work when none of club_id, event_id, tournament_id, or series_id is set.', 'remains the same');
+		$help->request_param('moder', 'Moderator/referee permission. 1 to grant, 0 to revoke. Does not work when none of club_id, event_id, tournament_id, or series_id is set.', 'remains the same');
+		$help->request_param('manager', 'Manager permission. 1 to grant, 0 to revoke. Does not work when none of club_id, event_id, tournament_id, or series_id is set.', 'remains the same');
+		$help->request_param('exhibition', 'Exhibition player flag. 1 to mark, 0 to unmark. Excludes the player from standings and scoring while their games still count in overall statistics. Only accepted with event_id, tournament_id, or series_id.', 'remains the same');
+		$help->request_param('admin', 'Administrator permission for the site. 1 to grant, 0 to revoke. Does not work when club_id, event_id, tournament_id, or series_id is set.', 'remains the same');
 		return $help;
 	}
 	

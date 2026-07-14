@@ -1695,6 +1695,10 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please choose at least one role for the user.'));
 		}
 		$flags += USER_TOURNAMENT_NEW_PLAYER_FLAGS;
+		if (isset($_REQUEST['exhibition']) && (int)$_REQUEST['exhibition'])
+		{
+			$flags |= USER_FLAG_EXHIBITION_PLAYER;
+		}
 		
 		Db::begin();
 		list ($user_city_id, $user_rating, $user_club_id) = Db::record(get_label('user'), 'SELECT city_id, rating, club_id FROM users WHERE id = ?', $user_id);
@@ -1794,6 +1798,13 @@ class ApiPage extends OpsApiPageBase
 		
 		update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
 		sync_seating_mapping($tournament_id);
+
+		// If exhibition-player flag is set, invalidate scoring cache and re-run tournament.
+		if (($flags & USER_FLAG_EXHIBITION_PLAYER) != 0)
+		{
+			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+		}
 		Db::commit();
 
 		$this->response['tournament_id'] = $tournament_id;
@@ -1813,9 +1824,10 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('city_id', 'City where this user lives. If the caller is authorized to change user profile, this city becomes the user home city.', 'The city from user profile is used.');
 		$help->response_param('team', 'Team name for this user. Works for team tournaments only.', 'user is registered without a team.');
 		$help->response_param('access_flags', 'A bit-set of user permissions for this toournament. 1 - player; 2 - referee; 4 - manager.', '1 - player.');
+		$help->request_param('exhibition', 'Exhibition-player flag. 1 to mark. Excludes the player from tournament standings and series scoring while their games still count in overall statistics.', 'not set.');
 		return $help;
 	}
-	
+
 	//-------------------------------------------------------------------------------------------------------
 	// edit_registration
 	//-------------------------------------------------------------------------------------------------------
@@ -1852,12 +1864,32 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
 			sync_seating_mapping($tournament_id);
+
+			// If the removed registration was an exhibition player, invalidate scoring cache
+			// and re-run tournament so standings reflect the change.
+			if (($old_flags & USER_FLAG_EXHIBITION_PLAYER) != 0)
+			{
+				Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+			}
 			Db::commit();
 			$this->response['tournament_id'] = $tournament_id;
 			$this->response['user_id'] = $user_id;
 			return;
 		}
 		$flags += ($old_flags & ~USER_PERM_MASK);
+
+		if (isset($_REQUEST['exhibition']))
+		{
+			if ((int)$_REQUEST['exhibition'])
+			{
+				$flags |= USER_FLAG_EXHIBITION_PLAYER;
+			}
+			else
+			{
+				$flags &= ~USER_FLAG_EXHIBITION_PLAYER;
+			}
+		}
 
 		if ($city_id != $old_city_id || $flags != $old_flags)
 		{
@@ -1867,6 +1899,13 @@ class ApiPage extends OpsApiPageBase
 			}
 			Db::exec(get_label('registration'), 'UPDATE tournament_regs SET city_id = ?, flags = ? WHERE user_id = ? AND tournament_id = ?', $city_id, $flags, $user_id, $tournament_id);
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+
+			// If exhibition flag flipped, invalidate scoring cache and re-run tournament.
+			if ((($flags ^ $old_flags) & USER_FLAG_EXHIBITION_PLAYER) != 0)
+			{
+				Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+			}
 		}
 		
 		if ($team_size > 1 && $team != $old_team)
@@ -1908,6 +1947,7 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('city_id', 'City where this user lives. If the caller is authorized to change user profile, this city becomes the user home city.', 'the city is not changed.');
 		$help->response_param('team', 'Team name for this user. Works for team tournaments only.', 'user is registered without a team.');
 		$help->response_param('access_flags', 'A bit-set of user permissions for this toournament. 1 - player; 2 - referee; 4 - manager.', 'remain the same.');
+		$help->request_param('exhibition', 'Exhibition-player flag. 1 to mark, 0 to unmark. Excludes the player from tournament standings and series scoring while their games still count in overall statistics.', 'remain the same.');
 		return $help;
 	}
 	
@@ -1931,15 +1971,23 @@ class ApiPage extends OpsApiPageBase
 		list($club_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
 		
-		list($team_id) = Db::record(get_label('registration'), 'SELECT team_id FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
+		list($team_id, $reg_flags) = Db::record(get_label('registration'), 'SELECT team_id, flags FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		Db::exec(get_label('registration'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id = ?', $user_id, $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
 			$log_details->tournament_id = $tournament_id;
 			db_log(LOG_OBJECT_USER, 'left tournament', $log_details, $user_id, $club_id);
-			
+
 			update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+
+			// If the removed registration was an exhibition player, invalidate scoring cache
+			// and re-run tournament so standings include the player's games.
+			if (($reg_flags & USER_FLAG_EXHIBITION_PLAYER) != 0)
+			{
+				Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+			}
 		}
 		if (!is_null($team_id))
 		{

@@ -1807,11 +1807,15 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please choose at least one role for the user.'));
 		}
 		$flags += USER_EVENT_NEW_PLAYER_FLAGS;
-		
+		if (isset($_REQUEST['exhibition']) && (int)$_REQUEST['exhibition'])
+		{
+			$flags |= USER_FLAG_EXHIBITION_PLAYER;
+		}
+
 		Db::begin();
 		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
-		
+
 		list ($count) = Db::record(get_label('registration'), 'SELECT count(*) FROM event_regs WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if ($count == 0)
 		{
@@ -1823,6 +1827,19 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			Db::exec(get_label('registration'), 'UPDATE event_regs SET flags = ? WHERE user_id = ? AND event_id = ?', $flags, $user_id, $event_id);
+		}
+
+		// If exhibition-player flag is set, invalidate scoring cache and re-run event/tournament
+		// so event_places and (if applicable) tournament_places rebuild without the player.
+		if (($flags & USER_FLAG_EXHIBITION_PLAYER) != 0)
+		{
+			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+			Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ~' . EVENT_FLAG_FINISHED . ' WHERE id = ?', $event_id);
+			if ($tournament_id > 0)
+			{
+				Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+				Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+			}
 		}
 		Db::commit();
 		
@@ -1838,9 +1855,10 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('user_id', 'User id.');
 		$help->response_param('event_id', 'Event id.');
 		$help->response_param('access_flags', 'A bit-set of user permissions for this toournament. 1 - player; 2 - referee; 4 - manager.', '1 - player.');
+		$help->request_param('exhibition', 'Exhibition-player flag. 1 to mark. Excludes the player from event standings while their games still count in overall statistics.', 'not set.');
 		return $help;
 	}
-	
+
 	//-------------------------------------------------------------------------------------------------------
 	// remove_registration
 	//-------------------------------------------------------------------------------------------------------
@@ -1860,13 +1878,27 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_REFEREE, $user_id, $club_id, $event_id, $tournament_id);
-		
+
+		list($reg_flags) = Db::record(get_label('registration'), 'SELECT flags FROM event_regs WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		Db::exec(get_label('registration'), 'DELETE FROM event_regs WHERE user_id = ? AND event_id = ?', $user_id, $event_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
 			$log_details->event_id = $event_id;
 			db_log(LOG_OBJECT_USER, 'left event', $log_details, $user_id, $club_id);
+
+			// If the removed registration was an exhibition player, invalidate scoring caches
+			// and re-run event/tournament so standings include (or reflect the absence of) the player.
+			if (($reg_flags & USER_FLAG_EXHIBITION_PLAYER) != 0)
+			{
+				Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+				Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ~' . EVENT_FLAG_FINISHED . ' WHERE id = ?', $event_id);
+				if ($tournament_id > 0)
+				{
+					Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+				}
+			}
 		}
 		Db::commit();
 		

@@ -184,7 +184,7 @@ class CompleteCompetitions extends Updater
 					'DELETE tp FROM tournament_places tp'.
 					' JOIN tournament_regs tr ON tr.tournament_id = tp.tournament_id AND tr.user_id = tp.user_id'.
 					' WHERE tp.tournament_id = ? AND (tr.flags & ?) <> 0',
-					$tournament_id, USER_TOURNAMENT_FLAG_EXHIBITION_PLAYER);
+					$tournament_id, USER_FLAG_EXHIBITION_PLAYER);
 
 				$players = array();
 				$query1 = new DbQuery(
@@ -488,7 +488,7 @@ class CompleteCompetitions extends Updater
 				' JOIN tournaments t ON t.id = p.tournament_id'.
 				' LEFT OUTER JOIN series_regs sr ON sr.series_id = st.series_id AND sr.user_id = p.user_id'.
 				' WHERE (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
-				' AND (sr.flags IS NULL OR (sr.flags & '.USER_SERIES_FLAG_EXHIBITION_PLAYER.') = 0)'.
+				' AND (sr.flags IS NULL OR (sr.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)'.
 				' ORDER BY t.id', $series_id);
 			while ($row = $query->next())
 			{
@@ -562,7 +562,7 @@ class CompleteCompetitions extends Updater
 				' JOIN series s ON s.id = sp.series_id'.
 				' LEFT OUTER JOIN series_regs sr ON sr.series_id = ss.parent_id AND sr.user_id = sp.user_id'.
 				' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
-				' AND (sr.flags IS NULL OR (sr.flags & '.USER_SERIES_FLAG_EXHIBITION_PLAYER.') = 0)'.
+				' AND (sr.flags IS NULL OR (sr.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)'.
 				' ORDER BY sp.series_id', $series_id);
 			while ($row = $query->next())
 			{
@@ -628,7 +628,7 @@ class CompleteCompetitions extends Updater
 				'SELECT ep.user_id, ep.points FROM series_extra_points ep'.
 				' LEFT OUTER JOIN series_regs sr ON sr.series_id = ep.series_id AND sr.user_id = ep.user_id'.
 				' WHERE ep.series_id = ?'.
-				' AND (sr.flags IS NULL OR (sr.flags & '.USER_SERIES_FLAG_EXHIBITION_PLAYER.') = 0)', $series_id);
+				' AND (sr.flags IS NULL OR (sr.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $series_id);
 			while ($row = $query->next())
 			{
 				list($player_id, $points) = $row;

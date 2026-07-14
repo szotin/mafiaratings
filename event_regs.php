@@ -67,7 +67,12 @@ class Page extends EventPageBase
 				set($id, $name, $user_flags);
 			$event_reg_pic->show(ICONS_DIR, true, 50);
 			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
+			echo '<td style="position:relative;">';
+			if ($event_reg_flags & USER_FLAG_EXHIBITION_PLAYER)
+			{
+				echo '<span title="' . get_label('Excluded from event standings.') . '" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#a06060;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;">' . get_label('exhibition player') . '</span>';
+			}
+			echo '<a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
 			echo '<td width="200">';
 			if ($_profile->is_club_manager($club_id))
 			{
