@@ -18,7 +18,7 @@ try
 	
 	list($user_id, $series_id, $league_id, $reason, $details, $points, $time) = 
 		Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, s.league_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
-	check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td>' . get_label('Date').':</td><td><input type="date" id="form-time" value="' . timestamp_to_string($time, get_timezone(), false) . '"></td></tr>';

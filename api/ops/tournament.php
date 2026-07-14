@@ -1613,7 +1613,7 @@ class ApiPage extends OpsApiPageBase
 			' JOIN series s ON s.id = st.series_id'.
 			' JOIN tournaments t ON t.id = st.tournament_id'.
 			' WHERE st.series_id = ? AND st.tournament_id = ?', $series_id, $tournament_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 		if (is_null($payment))
 		{
 			$payment = (int)$old_payment;

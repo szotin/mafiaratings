@@ -125,7 +125,7 @@ function get_profile_series_permissions($series_id, $required_mask = 0)
 		{
 			$required_flags = ($required_mask & PERMISSION_MASK_SERIES) >> PERMISSION_OFFSET_SERIES;
 			$query = new DbQuery(
-				'SELECT su.flags FROM series_users su JOIN series s ON s.id = su.series_id' .
+				'SELECT su.flags FROM series_regs su JOIN series s ON s.id = su.series_id' .
 				' WHERE su.user_id = ? AND (s.flags & ?) = 0 AND (su.flags & ?) != 0 LIMIT 1',
 				$_profile->user_id, SERIES_FLAG_FINISHED | SERIES_FLAG_CANCELED, $required_flags);
 			if ($row = $query->next())
@@ -136,7 +136,7 @@ function get_profile_series_permissions($series_id, $required_mask = 0)
 		}
 		else if (is_numeric($series_id) && $series_id > 0)
 		{
-			$query = new DbQuery('SELECT flags FROM series_users WHERE series_id = ? AND user_id = ?', $series_id, $_profile->user_id);
+			$query = new DbQuery('SELECT flags FROM series_regs WHERE series_id = ? AND user_id = ?', $series_id, $_profile->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;

@@ -146,10 +146,10 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) = 
+		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
 			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
-		
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 		list($league_name, $league_rules, $league_langs, $league_flags) = Db::record(get_label('league'), 'SELECT name, rules, langs, flags FROM leagues WHERE id = ?', $league_id);
 		
 		$gaining_id = (int)get_optional_param('gaining_id', $old_gaining_id);
@@ -376,7 +376,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Change series.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Change series.');
 		$help->request_param('series_id', 'Series id.');
 		$help->request_param('name', 'Series name.', 'remains the same.');
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
@@ -405,8 +405,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+
 		Db::exec(get_label('sеriеs'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
 		if (Db::affected_rows() > 0)
 		{
@@ -417,7 +417,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function cancel_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Cancel series.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Cancel series.');
 		$help->request_param('series_id', 'Series id.');
 		return $help;
 	}
@@ -431,8 +431,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+
 		Db::exec(get_label('sеriеs'), 'UPDATE series SET flags = (flags & ~' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
 		if (Db::affected_rows() > 0)
 		{
@@ -443,7 +443,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function restore_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Restore canceled series.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Restore canceled series.');
 		$help->request_param('series_id', 'Series id.');
 		return $help;
 	}
@@ -460,7 +460,7 @@ class ApiPage extends OpsApiPageBase
 		if ($series_id > 0)
 		{
 			list ($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 			Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $series_id);
 		}
 		else
@@ -474,7 +474,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function rebuild_places_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Schedules series places for rebuild. It is needed when in user series view the place taken is wrong.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Schedules series places for rebuild. It is needed when in user series view the place taken is wrong.');
 		$help->request_param('series_id', 'Series id to rebuild places.', 'places are rebuilt for all series.');
 		return $help;
 	}
@@ -608,8 +608,8 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		
 		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+
 		Db::exec(get_label('points'), 'INSERT INTO series_extra_points (time, series_id, user_id, reason, details, points) VALUES (?, ?, ?, ?, ?, ?)', $time, $series_id, $user_id, $reason, $details, $points);
 		list ($points_id) = Db::record(get_label('points'), 'SELECT LAST_INSERT_ID()');
 		
@@ -636,7 +636,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function add_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Add extra points.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Add extra points.');
 		$help->request_param('series_id', 'Series id.');
 		$help->request_param('user_id', 'User id. The user who is receiving or loosing points.');
 		$help->request_param('time', 'Time when point are rewarded. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
@@ -660,8 +660,8 @@ class ApiPage extends OpsApiPageBase
 			Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, e.league_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series e ON e.id = p.series_id WHERE p.id = ?', $points_id);
 			
 		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+
 		$reason = get_optional_param('reason', $old_reason);
 		if (empty($reason))
 		{
@@ -702,7 +702,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Change extra points.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Change extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
 		$help->request_param('time', 'Time when point are rewarded. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract.', 'remains the same');
@@ -720,7 +720,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		list($league_id, $series_id) = Db::record(get_label('points'), 'SELECT s.league_id, s.id FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
 		
 		Db::exec(get_label('points'), 'DELETE FROM series_extra_points WHERE id = ?', $points_id);
 		if (Db::affected_rows() > 0)
@@ -733,7 +733,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function delete_extra_points_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Delete extra points.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Delete extra points.');
 		$help->request_param('points_id', 'Id of extra points object.');
 		return $help;
 	}

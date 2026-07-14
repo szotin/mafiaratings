@@ -56,6 +56,8 @@ define('USER_CLUB_ICON_MAX_VERSION', 7);
 // 05 - 0x0010 -     16 - icon mask
 // 06 - 0x0020 -     32 - icon mask
 // 07 - 0x0040 -     64 - icon mask
+// 11 - 0x0400 -   1024 - exhibition player (excluded from standings)
+define('USER_EVENT_FLAG_EXHIBITION_PLAYER', 0x400);
 define('USER_EVENT_NEW_PLAYER_FLAGS', 0);
 
 define('USER_EVENT_ICON_MASK', 0x70);
@@ -70,10 +72,12 @@ define('USER_EVENT_ICON_MAX_VERSION', 7);
 // 05 - 0x0010 -     16 - icon mask
 // 06 - 0x0020 -     32 - icon mask
 // 07 - 0x0040 -     64 - icon mask
-// 08 - 0x0080 -    128 - user applied by themself. They is not accepted for the tournament yet. 
+// 08 - 0x0080 -    128 - user applied by themself. They is not accepted for the tournament yet.
 // 09 - 0x0100 -    256 - tournament management is notified about this registration. It is checked only when USER_TOURNAMENT_FLAG_NOT_ACCEPTED is set.
+// 11 - 0x0400 -   1024 - exhibition player (excluded from standings and series scoring)
 define('USER_TOURNAMENT_FLAG_NOT_ACCEPTED', 0x80);
 define('USER_TOURNAMENT_MANAGER_NOTIFIED', 0x100);
+define('USER_TOURNAMENT_FLAG_EXHIBITION_PLAYER', 0x400);
 define('USER_TOURNAMENT_NEW_PLAYER_FLAGS', 0x0); // permissions are set in the request parameters
 
 define('USER_TOURNAMENT_ICON_MASK', 0x70);
@@ -88,6 +92,8 @@ define('USER_TOURNAMENT_ICON_MAX_VERSION', 7);
 // 05 - 0x0800 -     16 - icon mask
 // 06 - 0x1000 -     32 - icon mask
 // 07 - 0x2000 -     64 - icon mask
+// 11 - 0x0400 -   1024 - exhibition player (excluded from series standings)
+define('USER_SERIES_FLAG_EXHIBITION_PLAYER', 0x400);
 define('USER_SERIES_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
 
 define('USER_SERIES_ICON_MASK', 0x70);

@@ -16,7 +16,7 @@ class Page extends SeriesPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $this->league_id);
+		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $this->league_id, $this->id);
 		
 		list ($count) = Db::record(get_label('extra points'), 'SELECT count(*) FROM series_extra_points WHERE series_id = ?', $this->id);
 		show_pages_navigation(PAGE_SIZE, $count);
