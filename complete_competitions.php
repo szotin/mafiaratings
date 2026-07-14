@@ -179,6 +179,13 @@ class CompleteCompetitions extends Updater
 			}
 			else if ($tournament_flags & TOURNAMENT_FLAG_MANUAL_SCORE)
 			{
+				// Drop exhibition players before scoring — they must not appear in tournament standings.
+				Db::exec(get_label('tournament'),
+					'DELETE tp FROM tournament_places tp'.
+					' JOIN tournament_regs tr ON tr.tournament_id = tp.tournament_id AND tr.user_id = tp.user_id'.
+					' WHERE tp.tournament_id = ? AND (tr.flags & ?) <> 0',
+					$tournament_id, USER_TOURNAMENT_FLAG_EXHIBITION_PLAYER);
+
 				$players = array();
 				$query1 = new DbQuery(
 					'SELECT tp.user_id, tp.place, uc.id, uc.lat, uc.lon, tc.id, tc.lat, tc.lon, p.rating_before'.
@@ -479,7 +486,9 @@ class CompleteCompetitions extends Updater
 				' FROM tournament_places p'.
 				' JOIN series_tournaments st ON st.tournament_id = p.tournament_id AND st.series_id = ?'.
 				' JOIN tournaments t ON t.id = p.tournament_id'.
+				' LEFT OUTER JOIN series_regs sr ON sr.series_id = st.series_id AND sr.user_id = p.user_id'.
 				' WHERE (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
+				' AND (sr.flags IS NULL OR (sr.flags & '.USER_SERIES_FLAG_EXHIBITION_PLAYER.') = 0)'.
 				' ORDER BY t.id', $series_id);
 			while ($row = $query->next())
 			{
@@ -551,7 +560,9 @@ class CompleteCompetitions extends Updater
 				' FROM series_places sp'.
 				' JOIN series_series ss ON ss.child_id = sp.series_id'.
 				' JOIN series s ON s.id = sp.series_id'.
+				' LEFT OUTER JOIN series_regs sr ON sr.series_id = ss.parent_id AND sr.user_id = sp.user_id'.
 				' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
+				' AND (sr.flags IS NULL OR (sr.flags & '.USER_SERIES_FLAG_EXHIBITION_PLAYER.') = 0)'.
 				' ORDER BY sp.series_id', $series_id);
 			while ($row = $query->next())
 			{
@@ -613,7 +624,11 @@ class CompleteCompetitions extends Updater
 				$player->wins += $wins;
 			}
 			
-			$query = new DbQuery('SELECT user_id, points FROM series_extra_points WHERE series_id = ?', $series_id);
+			$query = new DbQuery(
+				'SELECT ep.user_id, ep.points FROM series_extra_points ep'.
+				' LEFT OUTER JOIN series_regs sr ON sr.series_id = ep.series_id AND sr.user_id = ep.user_id'.
+				' WHERE ep.series_id = ?'.
+				' AND (sr.flags IS NULL OR (sr.flags & '.USER_SERIES_FLAG_EXHIBITION_PLAYER.') = 0)', $series_id);
 			while ($row = $query->next())
 			{
 				list($player_id, $points) = $row;
