@@ -1256,9 +1256,12 @@ function _dochecks()
 	// Check mbstring overloading
 	if(ini_get('mbstring.func_overload') & 2)
 		$this->Error('mbstring overloading must be disabled');
-	// Ensure runtime magic quotes are disabled
-	if(get_magic_quotes_runtime())
+	// Ensure runtime magic quotes are disabled. They are gone since PHP 5.4 and the functions
+	// themselves are removed in PHP 8, so they are only touched when they still exist.
+	if(function_exists('get_magic_quotes_runtime') && get_magic_quotes_runtime())
+	{
 		@set_magic_quotes_runtime(0);
+	}
 }
 
 function _getfontpath()

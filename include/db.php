@@ -8,7 +8,9 @@ class SQL
 {
 	protected $sql;
 	protected $params;
-	private $parsed_sql;
+	// Must stay protected: DbQuery assigns it in its constructor, and a private property here
+	// would silently create a separate dynamic property on the subclass instead.
+	protected $parsed_sql;
 	
 	protected function _add_param($param)
 	{
@@ -174,21 +176,22 @@ class DbQuery extends SQL
 		{
 			$param = json_encode($param);
 		}
-		return '\'' . mysql_real_escape_string($param) . '\'';
+		return '\'' . Db::_escape($param) . '\'';
 	}
-	
+
 	protected function _reset()
 	{
-		SQL::_reset();
+		parent::_reset();
 		$this->query = NULL;
 	}
-	
+
 	function __construct($obj = '')
 	{
 		$this->query = NULL;
+		$this->sql = '';
 		$this->parsed_sql = NULL;
 		$this->params = NULL;
-		
+
 		$args = func_get_args();
 		$this->_add($args);
 	}
@@ -198,7 +201,7 @@ class DbQuery extends SQL
 		Db::connect();
 		$parsed_sql = $this->get_parsed_sql();
 		
-		$this->query = mysql_query($parsed_sql);
+		$this->query = Db::_query($parsed_sql);
 		if (!$this->query)
 		{
 			if ($obj_name != NULL)
@@ -224,41 +227,41 @@ class DbQuery extends SQL
 			{
 				$message = get_label('Query failed');
 			}
-			throw new FatalExc($message, $parsed_sql . '<br>' . mysql_error(), true);
+			throw new FatalExc($message, $parsed_sql . '<br>' . Db::_error(), true);
 		}
 		return $this;
 	}
-	
+
 	function next($obj_name = '')
 	{
 		if ($this->query == NULL)
 		{
 			$this->exec($obj_name);
 		}
-		return mysql_fetch_row($this->query);
+		return Db::_fetch_row($this->query);
 	}
-	
+
 	function record($obj_name)
 	{
 		$row = $this->next($obj_name);
 		if (!$row)
 		{
-			throw new FatalExc(get_label('Unable to find [0].', $obj_name), $this->get_parsed_sql() . '<br>' . mysql_error(), true);
+			throw new FatalExc(get_label('Unable to find [0].', $obj_name), $this->get_parsed_sql() . '<br>' . Db::_error(), true);
 		}
 		return $row;
 	}
-	
+
 	function num_rows($obj_name = NULL)
 	{
 		if ($this->query == NULL)
 		{
 			$this->exec($obj_name);
 		}
-		
-		$row = mysql_num_rows($this->query);
+
+		$row = Db::_num_rows($this->query);
 		if ($row === false)
 		{
-			throw new FatalExc(get_label('Unable to get number of records'), $this->get_parsed_sql() . '<br>' . mysql_error(), true);
+			throw new FatalExc(get_label('Unable to get number of records'), $this->get_parsed_sql() . '<br>' . Db::_error(), true);
 		}
 		return $row;
 	}
@@ -284,29 +287,143 @@ class Db
 	private static $name;
 	private static $user;
 	private static $password;
-	
+	private static $link = NULL;
+	private static $use_mysqli = NULL;
+
 	static function init($name, $user, $password)
 	{
 		Db::$name = $name;
 		Db::$user = $user;
 		Db::$password = $password;
 	}
-	
+
+	// The legacy ext/mysql extension is removed in PHP 7, while mysqli is available since PHP 5.0.
+	// So mysqli is used whenever it is present, and ext/mysql stays as a fallback for old installations
+	// that were built without mysqli. The driver is resolved once and cached, so that the per-query
+	// cost is a boolean check rather than a function_exists() lookup.
+	static function _use_mysqli()
+	{
+		if (Db::$use_mysqli === NULL)
+		{
+			Db::$use_mysqli = function_exists('mysqli_connect');
+			if (!Db::$use_mysqli && !function_exists('mysql_connect'))
+			{
+				throw new FatalExc(get_label('Can not connect to the database'), 'Neither the mysqli nor the mysql PHP extension is available.', true);
+			}
+		}
+		return Db::$use_mysqli;
+	}
+
+	static function _escape($str)
+	{
+		Db::connect();
+		if (Db::$use_mysqli)
+		{
+			return mysqli_real_escape_string(Db::$link, $str);
+		}
+		return mysql_real_escape_string($str);
+	}
+
+	static function _query($sql)
+	{
+		Db::connect();
+		if (Db::$use_mysqli)
+		{
+			return mysqli_query(Db::$link, $sql);
+		}
+		return mysql_query($sql);
+	}
+
+	static function _error()
+	{
+		// Resolved through the accessor rather than the field, because this can be reached
+		// before the driver was picked, and on PHP 7+ the mysql_* branch would be fatal.
+		if (Db::_use_mysqli())
+		{
+			if (Db::$link == NULL)
+			{
+				return mysqli_connect_error();
+			}
+			return mysqli_error(Db::$link);
+		}
+		return mysql_error();
+	}
+
+	static function _fetch_row($query)
+	{
+		if (Db::$use_mysqli)
+		{
+			// Queries that return no result set (INSERT/UPDATE/...) give true rather than a result
+			// object. ext/mysql only warned about that, mysqli would raise a TypeError, so it is
+			// filtered out here to keep the old behaviour.
+			if (!($query instanceof mysqli_result))
+			{
+				return false;
+			}
+			$row = mysqli_fetch_row($query);
+			// mysqli returns NULL when there are no more rows, ext/mysql returned false.
+			if ($row === NULL)
+			{
+				return false;
+			}
+			return $row;
+		}
+		return mysql_fetch_row($query);
+	}
+
+	static function _num_rows($query)
+	{
+		if (Db::$use_mysqli)
+		{
+			if (!($query instanceof mysqli_result))
+			{
+				return false;
+			}
+			return mysqli_num_rows($query);
+		}
+		return mysql_num_rows($query);
+	}
+
 	static function connect()
 	{
 		if (!Db::$connected)
 		{
-			if (!@mysql_connect('127.0.0.1', Db::$user, Db::$password))
-			{	
-				throw new FatalExc(get_label('Can not connect to the database'), mysql_error(), true);
-			}
-			
-			if (!mysql_select_db(Db::$name))
+			if (Db::_use_mysqli())
 			{
-				throw new FatalExc(get_label('Can not use mafia database'), mysql_error(), true);
-			}
+				// Since PHP 8.1 mysqli throws exceptions on errors by default. Reporting is turned off
+				// so that it keeps returning false and every error is reported through FatalExc below,
+				// identically on all PHP versions.
+				mysqli_report(MYSQLI_REPORT_OFF);
 
-			mysql_query("set names utf8");
+				Db::$link = @mysqli_connect('127.0.0.1', Db::$user, Db::$password);
+				if (!Db::$link)
+				{
+					throw new FatalExc(get_label('Can not connect to the database'), mysqli_connect_error(), true);
+				}
+
+				if (!mysqli_select_db(Db::$link, Db::$name))
+				{
+					throw new FatalExc(get_label('Can not use mafia database'), mysqli_error(Db::$link), true);
+				}
+
+				// set_charset is used instead of a "set names" query because it also tells the client
+				// library which charset is in use, which is what real_escape_string relies on.
+				mysqli_set_charset(Db::$link, 'utf8');
+			}
+			else
+			{
+				if (!@mysql_connect('127.0.0.1', Db::$user, Db::$password))
+				{
+					throw new FatalExc(get_label('Can not connect to the database'), mysql_error(), true);
+				}
+
+				if (!mysql_select_db(Db::$name))
+				{
+					throw new FatalExc(get_label('Can not use mafia database'), mysql_error(), true);
+				}
+
+				mysql_query("set names utf8");
+			}
 			Db::$connected = true;
 		}
 	}
@@ -317,10 +434,18 @@ class Db
 		{
 			if (Db::$trans_count > 0)
 			{
-				mysql_query('ROLLBACK');
+				Db::_query('ROLLBACK');
 			}
 			Db::$trans_count = 0;
-			mysql_close();
+			if (Db::$use_mysqli)
+			{
+				mysqli_close(Db::$link);
+				Db::$link = NULL;
+			}
+			else
+			{
+				mysql_close();
+			}
 			Db::$connected = false;
 		}
 	}
@@ -349,9 +474,9 @@ class Db
 		{
 			Db::$trans_count = 0;
 			Db::connect();
-			if (!mysql_query('BEGIN'))
+			if (!Db::_query('BEGIN'))
 			{
-				throw new FatalExc(get_label('Unable to start transaction.'), mysql_error(), true);
+				throw new FatalExc(get_label('Unable to start transaction.'), Db::_error(), true);
 			}
 		}
 		++Db::$trans_count;
@@ -370,9 +495,9 @@ class Db
 		else if (Db::$trans_count == 0)
 		{
 			Db::connect();
-			if (!mysql_query('COMMIT'))
+			if (!Db::_query('COMMIT'))
 			{
-				throw new FatalExc(get_label('Failed to commit transaction. Please try again.'), mysql_error(), true);
+				throw new FatalExc(get_label('Failed to commit transaction. Please try again.'), Db::_error(), true);
 			}
 			
 			if (Db::$commiters != NULL)
@@ -393,7 +518,7 @@ class Db
 		{
 			Db::$trans_count = 0;
 			Db::connect();
-			mysql_query('ROLLBACK');
+			Db::_query('ROLLBACK');
 			if (Db::$commiters != NULL)
 			{
 				foreach (Db::$commiters as $commiter)
@@ -435,6 +560,11 @@ class Db
 	
 	static function affected_rows()
 	{
+		Db::connect();
+		if (Db::$use_mysqli)
+		{
+			return mysqli_affected_rows(Db::$link);
+		}
 		return mysql_affected_rows();
 	}
 }
