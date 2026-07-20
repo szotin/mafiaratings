@@ -119,7 +119,7 @@ function get_server_url($https = true)
 {
 	if (is_testing_server())
 	{
-		return 'http://127.0.0.1/projects/mafiaratings';
+		return 'http://127.0.0.1/mafiaratings';
 	}
 	if ($https)
 	{
