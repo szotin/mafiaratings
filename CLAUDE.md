@@ -75,6 +75,7 @@ if ($condition)
 
 - **Never commit or deploy without an explicit user request for that specific changeset.** Finishing a task or the user saying "yes"/"да" to a fix does not authorize `git commit`, `git push`, or any deploy step — stop after the code change and wait for an explicit instruction (e.g. "commit", "deploy", "коммит", "деплой"). Authorization for one task does not carry over to another task, even later in the same session.
 - **Never deploy `CLAUDE.md` to production** — it contains development-only instructions for Claude Code and is not part of the application; exclude it from any deployment file list.
+- **Never deploy `create_sample_db.bat`** — it's local dev tooling (builds the sample database) and is not part of the deployed application; exclude it from any deployment file list, same as `CLAUDE.md` and anything under `db/`.
 
 ## Localization
 
