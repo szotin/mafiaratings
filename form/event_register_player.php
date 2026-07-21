@@ -55,6 +55,10 @@ try
 			' JOIN cities ct ON ct.id = u.city_id'.
 			' WHERE u.id = ?', $_profile->user_id);
 	}
+	if (is_null($area_id))
+	{
+		$area_id = $city_id;
+	}
 	
 	dialog_title(get_label('Register player'));
 	echo '<table class="dialog_form" width="100%">';

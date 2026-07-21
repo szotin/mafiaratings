@@ -11,7 +11,7 @@ Local development URL: `http://127.0.0.1/projects/mafiaratings`
 ## Development Environment
 
 - **Server:** EasyPHP DevServer 14.1 VC11 (required for local dev)
-- **Database:** MySQL — schema in `db/create_tables.sql`, 180+ incremental migrations in `db/alter*.sql`
+- **Database:** MySQL — no single file holds the full current schema; it's the cumulative result of `db/alter1.sql` through the latest `db/alter*.sql`. `db/create_sample_db.sql` embeds a schema snapshot, but only for building the local sample dataset, not as a source of truth.
 - **PHP 7+**, **Node.js/npm** (for Angular plugin), **Java 8+** (for JS compiler)
 
 ## Build Commands
@@ -55,7 +55,26 @@ Bit-flag based, defined in `include/constants.php`. Eight levels from player to 
 - i18n via ngx-translate.
 
 ### Database Migrations
-Apply migration scripts sequentially: `db/alter1.sql` through `db/alter180.sql`. New migrations go in `db/alter181.sql`, etc.
+Apply migration scripts sequentially: `db/alter1.sql` through the latest `db/alter*.sql`. New migrations go in the next `db/alterNNN.sql`, etc. There is no base `db/create_tables.sql` — the schema exists only as the cumulative result of applying every `alter*.sql` in order (or as already-applied state in a live database).
+
+**Whenever a migration changes the database structure** (new/dropped table, new/dropped/renamed column, new index, etc.), also update in the same changeset:
+- `db/drop_all.sql` — add/remove the corresponding `DROP TABLE IF EXISTS` line.
+- `db/create_sample_db.sql` — this file embeds its own full copy of the schema (`CREATE TABLE`, keys/indexes, `AUTO_INCREMENT`, foreign keys) plus a small sample dataset; keep it in sync so it keeps loading cleanly and matching production shape.
+
+## Coding Standards
+
+- Always use curly braces after `if`, `else`, `foreach`, `while`, etc. — even when the body is a single line:
+```php
+if ($condition)
+{
+    statement;
+}
+```
+
+## Working with Claude Code on this repo
+
+- **Never commit or deploy without an explicit user request for that specific changeset.** Finishing a task or the user saying "yes"/"да" to a fix does not authorize `git commit`, `git push`, or any deploy step — stop after the code change and wait for an explicit instruction (e.g. "commit", "deploy", "коммит", "деплой"). Authorization for one task does not carry over to another task, even later in the same session.
+- **Never deploy `CLAUDE.md` to production** — it contains development-only instructions for Claude Code and is not part of the application; exclude it from any deployment file list.
 
 ## Localization
 

@@ -222,7 +222,7 @@ function build_photo_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL)
 	$t_dir = $dir . TNAILS_DIR;
 	if (!is_dir($t_dir))
 	{
-		mkdir($t_dir);
+		mkdir($t_dir, 0777, true);
 	}
 	imagejpeg($t_img, $t_dir . $id . '.jpg');
 	imagedestroy($t_img);
@@ -232,7 +232,7 @@ function upload_photo($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT)
 {
 	if (!is_dir($dir))
 	{
-		mkdir($dir);
+		mkdir($dir, 0777, true);
 	}
 	$img = upload_image($input_name, $dir . $id . '.jpg');
 	build_photo_tnail($dir, $id, $t_option, $img);
@@ -269,16 +269,16 @@ function build_pic_tnail($dir, $id, $t_option = TNAIL_OPTION_FIT, $img = NULL, $
 	$t_dir = $dir . TNAILS_DIR;
 	if (!is_dir($t_dir))
 	{
-		mkdir($t_dir);
+		mkdir($t_dir, 0777, true);
 	}
 	imagepng($t_img, $t_dir . $filename);
 	imagedestroy($t_img);
-	
+
 	$t_img = generate_thumbnail($img, ICON_WIDTH, ICON_HEIGHT, $t_option);
 	$t_dir = $dir . ICONS_DIR;
 	if (!is_dir($t_dir))
 	{
-		mkdir($t_dir);
+		mkdir($t_dir, 0777, true);
 	}
 	imagepng($t_img, $t_dir . $filename);
 	imagedestroy($t_img);
@@ -293,7 +293,7 @@ function upload_logo($input_name, $dir, $id, $t_option = TNAIL_OPTION_FIT, $seco
 {
 	if (!is_dir($dir))
 	{
-		mkdir($dir);
+		mkdir($dir, 0777, true);
 	}
 	if (is_null($secondary_id))
 	{
