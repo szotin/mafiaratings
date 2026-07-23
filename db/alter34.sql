@@ -11,12 +11,12 @@ ALTER TABLE `games`
 
 
 
-/*
+-- Re-enabled: alter47 and later migrations depend on players.won existing.
+-- (The best_player_id block above stays disabled because alter33 already adds it.)
 ALTER TABLE players
   ADD COLUMN won TINYINT(1) NOT NULL;
 
 UPDATE players SET won = IF(rating > 0, 1, 0);
-*/
 
 ALTER TABLE players
   DROP COLUMN announced_sheriff;

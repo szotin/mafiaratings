@@ -2,6 +2,11 @@ use mafia;
 
 RENAME TABLE forum_messages TO messages;
 
+-- Drop the message_user FK before dropping its backing index (`user_id`); it is
+-- re-created at the end. Without this, dropping the index fails on modern MySQL.
+ALTER TABLE messages
+  DROP FOREIGN KEY message_user;
+
 ALTER TABLE messages
   DROP KEY on_object;
 ALTER TABLE messages
@@ -29,6 +34,10 @@ ALTER TABLE messages
 ALTER TABLE messages
   ADD KEY (`send_time`);
 
+-- Re-create the FK dropped above, now backed by the new (user_id, send_time) index.
+ALTER TABLE messages
+  ADD CONSTRAINT `message_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
+
 CREATE TABLE `messages_tree` (
   `message_id` INT(11) NOT NULL,
   `parent_id` INT(11) NOT NULL,
@@ -43,6 +52,9 @@ CREATE TABLE `messages_tree` (
 
 UPDATE messages SET obj = obj + 1;
 
+-- Abandoned forum_responses migration; the original file had a dangling comment
+-- terminator here with no opening. Left disabled:
+/*
 INSERT INTO messages (obj, obj_id, vis, vis_id, user_id, body, language, send_time, update_time)
   SELECT 0, message_id, 0, NULL, user_id, body, language, send_time, send_time
   FROM forum_responses;*/

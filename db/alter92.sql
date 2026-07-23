@@ -10,7 +10,7 @@ ALTER TABLE `league_clubs` ADD COLUMN `rules` CHAR(32) NOT NULL;
 
 UPDATE `leagues` SET `rules` = '{}';
 
-...
+-- (left-over "..." placeholder from the original file; no data migration needed here)
 
 ALTER TABLE `leagues` DROP FOREIGN KEY `league_rules`;
 ALTER TABLE `leagues` DROP COLUMN `rules_id`;

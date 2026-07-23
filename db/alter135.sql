@@ -1,5 +1,5 @@
-// ALTER TABLE users DROP INDEX user_name;
-// CREATE UNIQUE INDEX user_name ON users (name, city_id);
+-- ALTER TABLE users DROP INDEX user_name;
+-- CREATE UNIQUE INDEX user_name ON users (name, city_id);
 
 CREATE TABLE `names` (
 `id` INT(11) NOT NULL AUTO_INCREMENT,

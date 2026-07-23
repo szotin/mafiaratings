@@ -19,6 +19,10 @@ CREATE TABLE `event_comments` (
 
 INSERT INTO event_comments (`time`, `user_id`, `comment`, `event_id`, `lang`) SELECT send_time, user_id, body, obj_id, language FROM messages WHERE obj = 2;
 
+-- Replace the old photo_comments (created in alter12); this migration rebuilds it
+-- from the messages table below. alter16 was meant to drop it but had it commented out.
+DROP TABLE IF EXISTS photo_comments;
+
 CREATE TABLE `photo_comments` (
 
   `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -57,6 +61,7 @@ CREATE TABLE `game_comments` (
 
 INSERT INTO game_comments (`time`, `user_id`, `comment`, `game_id`, `lang`) SELECT send_time, user_id, body, obj_id, language FROM messages WHERE obj = 4;
 
+DROP TABLE forum_responses; -- abandoned forum feature; forum_messages became `messages` above
 DROP TABLE messages_tree;
 DROP TABLE messages;
 ALTER TABLE users DROP COLUMN forum_last_view;

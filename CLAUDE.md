@@ -11,7 +11,7 @@ Local development URL: `http://127.0.0.1/projects/mafiaratings`
 ## Development Environment
 
 - **Server:** EasyPHP DevServer 14.1 VC11 (required for local dev)
-- **Database:** MySQL — no single file holds the full current schema; it's the cumulative result of `db/alter1.sql` through the latest `db/alter*.sql`. `db/create_sample_db.sql` embeds a schema snapshot, but only for building the local sample dataset, not as a source of truth.
+- **Database:** MySQL — the full schema is built from scratch by running `db/create_database.sql` (the initial pre-`alter1` base) followed by `db/alter1.sql` through the latest `db/alter*.sql` in order. This chain is **verified to build cleanly and reproduce the production schema exactly** (same 82 tables and all columns; only a few auto-generated index names differ cosmetically). `db/create_sample_db.sql` embeds an equivalent schema snapshot plus sample data for quickly seeding a local database.
 - **PHP 7+**, **Node.js/npm** (for Angular plugin), **Java 8+** (for JS compiler)
 
 ## Build Commands
@@ -55,7 +55,9 @@ Bit-flag based, defined in `include/constants.php`. Eight levels from player to 
 - i18n via ngx-translate.
 
 ### Database Migrations
-Apply migration scripts sequentially: `db/alter1.sql` through the latest `db/alter*.sql`. New migrations go in the next `db/alterNNN.sql`, etc. There is no base `db/create_tables.sql` — the schema exists only as the cumulative result of applying every `alter*.sql` in order (or as already-applied state in a live database).
+Build a fresh database by running `db/create_database.sql` (the initial base schema) and then applying `db/alter1.sql` through the latest `db/alter*.sql` in order. New migrations go in the next `db/alterNNN.sql`, etc.
+
+This full chain is **verified to build cleanly from scratch and reproduce the production schema** (82 tables, all columns matching; a few auto-generated index names differ cosmetically). It relies on `SET FOREIGN_KEY_CHECKS=0` during the run (some tables self-reference / are created before their referents). When adding a migration, keep it replayable from scratch: make FK/index-dependent `DROP`s FK-safe, drop a column's FK before the column, don't duplicate an earlier migration, and only reference columns/tables that exist at that point.
 
 **Whenever a migration changes the database structure** (new/dropped table, new/dropped/renamed column, new index, etc.), also update in the same changeset:
 - `db/drop_all.sql` — add/remove the corresponding `DROP TABLE IF EXISTS` line.

@@ -19,12 +19,15 @@ CREATE TABLE `cities` (
   `name_ru` VARCHAR(128) NOT NULL,
   `timezone` VARCHAR(64) NOT NULL,
   `flags` INT(11) NOT NULL,
+  `near_id` INT(11) NULL, -- nearest larger city; migrated to area_id and dropped in alter73
 
   PRIMARY KEY (`id`),
   UNIQUE INDEX (`name_en`),
   UNIQUE INDEX (`name_ru`),
   KEY (`country_id`),
-  CONSTRAINT `city_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`)
+  KEY `near_city` (`near_id`),
+  CONSTRAINT `city_country` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
+  CONSTRAINT `near_city` FOREIGN KEY (`near_id`) REFERENCES `cities` (`id`)
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -37,17 +40,17 @@ ALTER TABLE addresses
 ALTER TABLE users
   ADD COLUMN city_id INT(11) NOT NULL;
 
-INSERT INTO countries (name_en, name_ru, flags) VALUES ('Canada', '??????', 0);
+INSERT INTO countries (name_en, name_ru, flags) VALUES ('Canada', 'Канада', 0);
 SET @country_id = LAST_INSERT_ID();
-INSERT INTO cities (country_id, name_en, name_ru, timezone, flags) VALUES (@country_id, 'Vancouver', '????????', 'America/Vancouver', 0);
+INSERT INTO cities (country_id, name_en, name_ru, timezone, flags) VALUES (@country_id, 'Vancouver', 'Ванкувер', 'America/Vancouver', 0);
 SET @city_id = LAST_INSERT_ID();
 UPDATE clubs SET city_id = @city_id;
 UPDATE addresses SET city_id = @city_id;
 UPDATE users SET city_id = @city_id;
 
-INSERT INTO countries (name_en, name_ru, flags) VALUES ('Russia', '??????', 0);
+INSERT INTO countries (name_en, name_ru, flags) VALUES ('Russia', 'Россия', 0);
 SET @country_id = LAST_INSERT_ID();
-INSERT INTO cities (country_id, name_en, name_ru, timezone, flags) VALUES (@country_id, 'Moscow', '??????', 'Europe/Moscow', 0);
+INSERT INTO cities (country_id, name_en, name_ru, timezone, flags) VALUES (@country_id, 'Moscow', 'Москва', 'Europe/Moscow', 0);
 SET @city_id = LAST_INSERT_ID();
 UPDATE clubs SET city_id = @city_id WHERE timezone = 'Europe/Moscow';
 UPDATE addresses SET city_id = @city_id WHERE timezone = 'Europe/Moscow';

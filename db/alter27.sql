@@ -26,6 +26,8 @@ CREATE TABLE `event_emails` (
   `send_time` INT(11) NOT NULL,
   `send_count` INT(11) NOT NULL,
   `status` TINYINT(1) NOT NULL, -- 0 - waiting; 1 - sending; 2 - completed; 3 - canceled
+  `flags` INT(11) NOT NULL,
+  `lang` INT(11) NOT NULL, -- dropped in alter103 in favour of `langs`
 
   PRIMARY KEY (`id`),
   KEY (`event_id`, `send_time`),

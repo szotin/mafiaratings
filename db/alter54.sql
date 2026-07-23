@@ -15,4 +15,5 @@ CREATE TABLE `changelists` (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-DROP table signup;
+-- signup was already dropped in alter25; guard so a fresh replay does not error.
+DROP TABLE IF EXISTS signup;

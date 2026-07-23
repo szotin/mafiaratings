@@ -45,6 +45,6 @@ UPDATE tournaments SET expected_players_count = 20 WHERE expected_players_count 
 UPDATE tournaments SET expected_players_count = 15 WHERE expected_players_count <= -2;
 UPDATE tournaments SET expected_players_count = 10 WHERE expected_players_count <= 0;
 
-//-----
-UPDATE clubs SET c.currency_id = (SELECT co.currency_id FROM cities ci JOIN countries co ON co.id = ci.country_id WHERE ci.id = c.city_id);
+-- -----
+UPDATE clubs c SET c.currency_id = (SELECT co.currency_id FROM cities ci JOIN countries co ON co.id = ci.country_id WHERE ci.id = c.city_id);
 UPDATE tournaments t SET t.currency_id = (SELECT c.currency_id FROM clubs c WHERE c.id = t.club_id);

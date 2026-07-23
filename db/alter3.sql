@@ -39,6 +39,7 @@ CREATE TABLE `event_users` (
   `user_id` INT(11) NOT NULL,
   `coming_odds` TINYINT(2) NOT NULL,
   `people_with_me` TINYINT(2) NOT NULL,
+  `late` INT(11) NULL, -- carried into the rebuilt event_users in alter125
 
   PRIMARY KEY (`event_id`, `user_id`),
   CONSTRAINT `user_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`),
