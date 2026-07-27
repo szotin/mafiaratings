@@ -11,7 +11,7 @@ require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 
-function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $league_flags, $league_id)
+function show_series_buttons($id, $start_time, $duration, $flags, $league_id, $league_flags)
 {
 	global $_profile;
 
@@ -172,8 +172,7 @@ class SeriesPageBase extends PageBase
 			$this->duration,
 			$this->flags,
 			$this->league_id,
-			$this->league_flags,
-			$this->league_id);
+			$this->league_flags);
 		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
 		$series_pic = new Picture(SERIES_PICTURE);
 		$series_pic->set($this->id, $this->name, $this->flags);

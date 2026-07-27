@@ -69,7 +69,7 @@ class Page extends LeaguePageBase
 			if ($_profile != NULL)
 			{
 				echo '<tr><td class="dark" style="padding:2px;">';
-				show_series_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags, $this->id);
+				show_series_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags);
 				echo '</td></tr>';	
 			}
 			
