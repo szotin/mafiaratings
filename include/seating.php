@@ -1733,7 +1733,7 @@ class SeatingDef
 		$row = (new DbQuery('SELECT seating, players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs FROM seatings WHERE hash = ?', $this->hash))->next();
 		if ($row)
 		{
-			$result->seating = json_decode($row[0], true);
+			$result->seating = reindex_seating(json_decode($row[0], true));
 			$result->status = 'ok';
 			list(, $pr, $pvr, $tr, $tvr, $nr, $nvr) = $row;
 			$result->seating_version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
@@ -1750,7 +1750,7 @@ class SeatingDef
 			if ($compatible_hash)
 			{
 				list ($seating_json, $ps, $ns, $ts) = Db::record(get_label('seating'), 'SELECT seating, players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $compatible_hash);
-				$result->seating = $this->adoptSeating($compatible_hash, json_decode($seating_json, true));
+				$result->seating = $this->adoptSeating($compatible_hash, reindex_seating(json_decode($seating_json, true)));
 				$result->status = 'similar';
 				$result->seating_version = '0.0.0';
 				$result->warning = get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>', $this->hash);
@@ -1782,6 +1782,33 @@ class SeatingDef
 }
 
 
+// Reindexes a [round][table][seat] seating so every level is a dense, ascending,
+// 0-based array. Seatings extracted from game records are keyed by (game_num - 1) /
+// (table_num - 1), so a tournament whose numbering does not start at 1 yields
+// non-contiguous keys; json_encode then serializes those as a JSON object
+// ({"11":...}) instead of an array. Reloaded without assoc mode such objects become
+// stdClass, and the optimizers' count()/index access then fail under PHP 8. Running
+// every seating through this on creation and on load keeps the stored form a proper
+// array. Accepts arrays or stdClass at any level; rounds/tables are ordered by key.
+function reindex_seating($seating)
+{
+	$seating = (array)$seating;
+	ksort($seating, SORT_NUMERIC);
+	$rounds = array();
+	foreach ($seating as $round)
+	{
+		$round = (array)$round;
+		ksort($round, SORT_NUMERIC);
+		$tables = array();
+		foreach ($round as $table)
+		{
+			$tables[] = array_values((array)$table);
+		}
+		$rounds[] = $tables;
+	}
+	return $rounds;
+}
+
 // Ensures a canonical seating row exists in the seatings table for the given $seating array.
 // Derives SeatingDef from the seating, normalizes restrictions to get the canonical hash,
 // and inserts a new row only if that hash is absent. Returns the hash on insert, null otherwise.
@@ -1790,6 +1817,7 @@ class SeatingDef
 // raw user/player IDs rather than already-compact slot indices.
 function normalize_seating_to_indices($seating)
 {
+	$seating = reindex_seating($seating);
 	$all_values = array();
 	foreach ($seating as $round)
 		foreach ($round as $table)
@@ -1798,15 +1826,17 @@ function normalize_seating_to_indices($seating)
 	ksort($all_values);
 	$remap = array_flip(array_keys($all_values));
 	$result = array();
-	foreach ($seating as $r => $round)
+	foreach ($seating as $round)
 	{
-		$result[$r] = array();
-		foreach ($round as $t => $table)
+		$new_round = array();
+		foreach ($round as $table)
 		{
-			$result[$r][$t] = array();
+			$new_table = array();
 			foreach ($table as $v)
-				$result[$r][$t][] = $remap[(int)$v];
+				$new_table[] = $remap[(int)$v];
+			$new_round[] = $new_table;
 		}
+		$result[] = $new_round;
 	}
 	return $result;
 }
@@ -1816,6 +1846,8 @@ function normalize_seating_to_indices($seating)
 //   ->created — true if a new row was inserted into seatings, false otherwise
 function ensure_seating_existance($seating)
 {
+	// Guarantee a dense 0-based structure so the stored JSON is an array, never an object.
+	$seating = reindex_seating($seating);
 	$seatingDef = new SeatingDef($seating);
 
 	$result = new stdClass();

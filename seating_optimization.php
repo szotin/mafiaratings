@@ -158,7 +158,7 @@ class SeatingOptimization extends Updater
 			else
 			{
 				$state = json_decode($state);
-				$this->vars->seating = $state->seating;
+				$this->vars->seating = reindex_seating($state->seating);
 				$this->vars->current_number1 = $state->number1;
 				$this->vars->current_table1 = $state->table1;
 				$this->vars->current_number2 = $state->number2;
@@ -370,7 +370,7 @@ class SeatingOptimization extends Updater
 			$this->seatingDef = new SeatingDef($this->vars->hash);
 			if (empty($state))
 			{
-				$this->vars->seating = json_decode($seating);
+				$this->vars->seating = reindex_seating(json_decode($seating, true));
 				$this->vars->current_table1 = 0;
 				$this->vars->current_table2 = 0;
 				$this->vars->current_round = 0;
@@ -379,7 +379,7 @@ class SeatingOptimization extends Updater
 			else
 			{
 				$state = json_decode($state);
-				$this->vars->seating = $state->seating;
+				$this->vars->seating = reindex_seating($state->seating);
 				$this->vars->current_table1 = $state->table1;
 				$this->vars->current_table2 = $state->table2;
 				$this->vars->current_round = $state->round;
@@ -563,7 +563,7 @@ class SeatingOptimization extends Updater
 			$this->seatingDef = new SeatingDef($this->vars->hash);
 			if (empty($state))
 			{
-				$this->vars->seating = json_decode($seating);
+				$this->vars->seating = reindex_seating(json_decode($seating, true));
 				$this->vars->current_number1 = 0;
 				$this->vars->current_number2 = 0;
 				$this->vars->current_table = 0;
@@ -573,7 +573,7 @@ class SeatingOptimization extends Updater
 			else
 			{
 				$state = json_decode($state);
-				$this->vars->seating = $state->seating;
+				$this->vars->seating = reindex_seating($state->seating);
 				$this->vars->current_number1 = $state->number1;
 				$this->vars->current_number2 = $state->number2;
 				$this->vars->current_table = $state->table;
@@ -904,7 +904,7 @@ class SeatingOptimization extends Updater
 			}
 		}
 		$result = new stdClass();
-		$result->rounds  = $seating;
+		$result->rounds  = reindex_seating($seating); // dense 0-based; games may be numbered from >1
 		$result->mapping = $users; // slot → user_id
 		return $result;
 	}
