@@ -474,7 +474,10 @@ class SeatingDef
 					++$i;
 				}
 
-				if (!empty($h))
+				// Note: use strict '' comparison, not empty(), because empty("0") is true
+				// in PHP — a segment whose accumulated value is exactly "0" would otherwise
+				// skip the separator and produce a malformed hash like "02" instead of "0:2".
+				if ($h !== '')
 				{
 					$h .= ':';
 				}
