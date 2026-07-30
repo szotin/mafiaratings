@@ -16,6 +16,34 @@ class SeatingOptimization extends Updater
 		parent::__construct(__FILE__);
 	}
 
+	// Failure isolation for the optimizer queue. The three optimizers each pick one hash
+	// per run (lowest *_void_runs, *_runs) and only advance that row's counters in
+	// *_task_end, on normal completion. If processing a row throws, the run dies before
+	// task_end, so the row keeps its counters and is re-picked first next run — one bad
+	// row silently freezes ALL optimization behind it (this is exactly how object-keyed
+	// seatings, which threw a TypeError from count() under PHP 8, stopped every numbers
+	// run so rows like 10_1_5 were never reached). $kind is 'players' | 'numbers' | 'tables'.
+	// This demotes the offending row (advance its counters, clear any partial state) so it
+	// rotates to the back of the queue, letting the rest proceed. Nulling the hash makes the
+	// subsequent *_task_end a no-op.
+	private function _optimization_failed($kind, $e)
+	{
+		$hash = is_null($this->vars->hash) ? '(none)' : $this->vars->hash;
+		$this->error($kind . ' optimization failed for hash ' . $hash . ': ' . $e->getMessage());
+		if (!is_null($this->vars->hash))
+		{
+			Db::exec('seating',
+				'UPDATE seatings SET ' . $kind . '_runs = ' . $kind . '_runs + 1, ' .
+				$kind . '_void_runs = ' . $kind . '_void_runs + 1, ' . $kind . '_state = "" WHERE hash = ?',
+				$this->vars->hash);
+			$this->vars->hash = null;
+		}
+		if (isset($this->seatingDef))
+		{
+			unset($this->seatingDef);
+		}
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// SeatingOptimization.seatings
 	//-------------------------------------------------------------------------------------------------------
@@ -89,6 +117,19 @@ class SeatingOptimization extends Updater
 	
 	function players_task($items_count)
 	{
+		try
+		{
+			return $this->_players_task($items_count);
+		}
+		catch (\Throwable $e)
+		{
+			$this->_optimization_failed('players', $e);
+			return 0;
+		}
+	}
+
+	private function _players_task($items_count)
+	{
 		if (is_null($this->vars->hash) || $this->vars->score <= 0 || $this->itemsProcessed() >= MAX_ITEMS_IN_RUN)
 		{
 			return 0;
@@ -134,7 +175,7 @@ class SeatingOptimization extends Updater
 		$hash = $this->getArg('hash');
 		if ($hash == null)
 		{
-			$query = new DbQuery('SELECT hash, players_state FROM seatings WHERE players_full_runs < ' . SEATING_MAX_PLAYERS_OPTIMIZATIONS . ' AND players_score > 0 ORDER BY players_void_runs, players_runs LIMIT 1');
+			$query = new DbQuery('SELECT hash, players_state FROM seatings WHERE players_full_runs < ' . SEATING_MAX_PLAYERS_OPTIMIZATIONS . ' AND players_score > 0 ORDER BY players_void_runs, players_runs, hash LIMIT 1');
 		}
 		else
 		{
@@ -318,6 +359,19 @@ class SeatingOptimization extends Updater
 	
 	function tables_task($items_count)
 	{
+		try
+		{
+			return $this->_tables_task($items_count);
+		}
+		catch (\Throwable $e)
+		{
+			$this->_optimization_failed('tables', $e);
+			return 0;
+		}
+	}
+
+	private function _tables_task($items_count)
+	{
 		if (is_null($this->vars->hash) || $this->vars->score <= 0 || $this->itemsProcessed() >= MAX_ITEMS_IN_RUN)
 		{
 			return 0;
@@ -357,7 +411,7 @@ class SeatingOptimization extends Updater
 		$hash = $this->getArg('hash');
 		if ($hash == null)
 		{
-			$query = new DbQuery('SELECT hash, seating, tables_state FROM seatings WHERE tables_full_runs < ' . SEATING_MAX_TABLES_OPTIMIZATIONS . ' AND tables_score > 0 AND numbers_state = "" ORDER BY tables_void_runs, tables_runs LIMIT 1');
+			$query = new DbQuery('SELECT hash, seating, tables_state FROM seatings WHERE tables_full_runs < ' . SEATING_MAX_TABLES_OPTIMIZATIONS . ' AND tables_score > 0 AND numbers_state = "" ORDER BY tables_void_runs, tables_runs, hash LIMIT 1');
 		}
 		else
 		{
@@ -509,6 +563,19 @@ class SeatingOptimization extends Updater
 	
 	function numbers_task($items_count)
 	{
+		try
+		{
+			return $this->_numbers_task($items_count);
+		}
+		catch (\Throwable $e)
+		{
+			$this->_optimization_failed('numbers', $e);
+			return 0;
+		}
+	}
+
+	private function _numbers_task($items_count)
+	{
 		if (is_null($this->vars->hash) || $this->vars->score <= 0 || $this->itemsProcessed() >= MAX_ITEMS_IN_RUN)
 		{
 			return 0;
@@ -550,7 +617,7 @@ class SeatingOptimization extends Updater
 		$hash = $this->getArg('hash');
 		if ($hash == null)
 		{
-			$query = new DbQuery('SELECT hash, seating, numbers_state FROM seatings WHERE numbers_full_runs < ' . SEATING_MAX_NUMBERS_OPTIMIZATIONS . ' AND numbers_score > 0 AND tables_state = "" ORDER BY numbers_void_runs, numbers_runs LIMIT 1');
+			$query = new DbQuery('SELECT hash, seating, numbers_state FROM seatings WHERE numbers_full_runs < ' . SEATING_MAX_NUMBERS_OPTIMIZATIONS . ' AND numbers_score > 0 AND tables_state = "" ORDER BY numbers_void_runs, numbers_runs, hash LIMIT 1');
 		}
 		else
 		{
