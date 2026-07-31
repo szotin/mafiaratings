@@ -58,18 +58,8 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	}
 }
 
-function create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags, $num_players = 0)
+function create_rounds($type, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags, $num_players = 0)
 {
-	global $_lang;
-	if (is_valid_lang($langs))
-	{
-		$lang_code = get_lang_code($langs);
-	}
-	else
-	{
-		$lang_code = get_lang_code($_lang);
-	}
-
 	// Scheme values for main round
 	$main_players = ($num_players > 0) ? $num_players : null;
 	$main_tables  = ($num_players >= 10) ? (int)floor($num_players / 10) : null;
@@ -445,7 +435,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->parent_series = json_encode($parent_series);
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
-		create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $players);
+		create_rounds($type, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $players);
 
 		// create parent series records
 		foreach ($parent_series as $s)
@@ -801,7 +791,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('round'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
 			Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?', $tournament_id);
 			
-			create_rounds($type, $langs, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $num_players);
+			create_rounds($type, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $num_players);
 		}
 		else
 		{
