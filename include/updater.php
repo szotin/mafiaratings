@@ -758,7 +758,20 @@ class Updater
 	{
 		$this->log($str, $flags, LOG_LEVEL_DEBUG);
 	}
-	
+
+	// Closes the per-task log file that log() keeps open in append mode; the next log() call
+	// reopens it automatically. A task can call this before archiving or deleting the log
+	// files so its own currently-open log is not held open (and can be zipped/removed).
+	protected function closeLogFile()
+	{
+		if (!is_null($this->logFile))
+		{
+			fclose($this->logFile);
+			$this->logFile = null;
+		}
+		$this->logTask = null;
+	}
+
 	//------------------------------------------------------------------------------------------------------
 	// Stats functions
 	//------------------------------------------------------------------------------------------------------
