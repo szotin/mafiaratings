@@ -1010,8 +1010,23 @@ INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`) VALUES 
 INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) VALUES (1, 1, '{\"night1\":[{\"matter\":260,\"roles\":3,\"points\":\"max(min(counter(0,1)*1.2\\/counter(0,0)-0.18,0.3),0)\"}],\"counters\":[{\"matter\":1},{\"matter\":256,\"roles\":3}],\"main\":[{\"matter\":1,\"points\":1}],\"extra\":[{\"matter\":4194304,\"points\":\"bonus\",\"mvp\":true},{\"matter\":1,\"points\":\"mr_points\",\"mvp\":true,\"name\":\"MR\"}],\"penalty\":[{\"matter\":1,\"points\":\"matter(12) || matter(13) || matter(14) ? -0.8 : (matter(25) ? -1 : 0)\",\"mvp\":true}]}'
 , 3312);
 
--- Gaining (reused verbatim from gaining 'Серийник', id 4 v1)
-INSERT INTO `gainings` (`id`, `league_id`, `name`, `version`) VALUES (1, 1, 'Sample Gaining', 1);
+-- Default scoring system. include/scoring.php hardcodes SCORING_DEFAULT_ID = 19, which is
+-- what club/league/tournament creation falls back to, so the sample database has to contain
+-- that exact id. club_id and league_id are NULL because show_scoring_selector() lists only
+-- "club_id = ? OR club_id IS NULL" - without a global scoring the selector on the club
+-- creation page is empty and the form posts an empty scoring_id. Definition copied verbatim
+-- from db/alter106.sql, which created this scoring in production. functions = 0: the formula
+-- uses plain numbers only, no scoring functions.
+INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`) VALUES (19, NULL, 'ФИИМ', NULL, 1);
+INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) VALUES (19, 1, '{\"main\":[{\"matter\":2,\"points\":1}],\"prima_nocta\":[{\"matter\":1024,\"roles\":3,\"points\":0.4},{\"matter\":2048,\"roles\":3,\"points\":0.25}],\"penalty\":[{\"matter\":4096,\"points\":-0.5},{\"matter\":8192,\"points\":-0.5}]}', 0);
+
+-- Gaining (formula reused verbatim from gaining 'Серийник', id 4 v1). This row also has to be the
+-- default gaining system: include/gaining.php hardcodes GAINING_DEFAULT_ID = 1, which every
+-- league creation is assigned, so it must exist under exactly that id. league_id is NULL
+-- (global) because the gaining selectors list only "league_id IS NULL OR league_id = ?" -
+-- scoped to a single league it is invisible to every other league, leaving an empty dropdown
+-- that posts an empty gaining_id into the NOT NULL series.gaining_id column.
+INSERT INTO `gainings` (`id`, `league_id`, `name`, `version`) VALUES (1, NULL, 'Sample Gaining', 1);
 INSERT INTO `gaining_versions` (`gaining_id`, `version`, `gaining`, `functions`) VALUES (1, 1, '{\"maxTournaments\":1,\"points\":\"table(stars-1, place-1)\",\"table\":[[20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1],[40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21],[60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41]]}'
 , 576);
 
