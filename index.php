@@ -263,7 +263,10 @@ class Page extends GeneralPageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
-			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND ', $condition);
+			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0', $condition);
+		// $condition already carries its own leading " AND ...", so the WHERE above must not
+		// end with a dangling AND and this clause has to supply its own.
+		$query->add(' AND');
 		if (!$in_series)
 		{
 			$query->add(' NOT');
