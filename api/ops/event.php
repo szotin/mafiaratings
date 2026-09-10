@@ -2677,12 +2677,16 @@ class ApiPage extends OpsApiPageBase
 		$final_mapping     = array_fill(0, $event_players, 0);
 		$assigned_slots    = array_fill(0, $event_players, false);
 		$assigned_reg_idxs = $num_regs > 0 ? array_fill(0, $num_regs, false) : array();
+		// Slot each registered player ended up in, so a welcome/avoid rule can still be applied
+		// relative to a partner that was already pinned down by a separate-pair restriction.
+		$reg_slot          = $num_regs > 0 ? array_fill(0, $num_regs, -1) : array();
 
 		foreach ($restrict_mapping as $reg_idx => $slot)
 		{
 			$final_mapping[$slot]        = $reg_users[$reg_idx]->user_id;
 			$assigned_slots[$slot]       = true;
 			$assigned_reg_idxs[$reg_idx] = true;
+			$reg_slot[$reg_idx]          = $slot;
 		}
 
 		if (!empty($welcome_pairs) || !empty($avoid_pairs))
@@ -2732,32 +2736,69 @@ class ApiPage extends OpsApiPageBase
 				return array($best_s1, $best_s2);
 			};
 
-			foreach ($welcome_pairs as $up)
+			// Free slot that shares the fewest games with $slot (the most when $want_max).
+			$pick_slot_for = function($slot, $want_max)
+				use (&$assigned_slots, &$meetings, $event_players)
 			{
-				list($ri1, $ri2) = $up;
-				if ($assigned_reg_idxs[$ri1] || $assigned_reg_idxs[$ri2]) { continue; }
-				list($s1, $s2) = $pick_slot_pair(true);
-				if ($s1 < 0) { break; }
-				$final_mapping[$s1]      = $reg_users[$ri1]->user_id;
-				$final_mapping[$s2]      = $reg_users[$ri2]->user_id;
-				$assigned_slots[$s1]     = true;
-				$assigned_slots[$s2]     = true;
-				$assigned_reg_idxs[$ri1] = true;
-				$assigned_reg_idxs[$ri2] = true;
-			}
+				$best_s    = -1;
+				$best_freq = $want_max ? -1 : PHP_INT_MAX;
+				for ($s = 0; $s < $event_players; ++$s)
+				{
+					if ($assigned_slots[$s]) { continue; }
+					$freq = isset($meetings[$slot][$s]) ? $meetings[$slot][$s] : 0;
+					if ($want_max ? ($freq > $best_freq) : ($freq < $best_freq))
+					{
+						$best_freq = $freq;
+						$best_s    = $s;
+					}
+				}
+				return $best_s;
+			};
 
-			foreach ($avoid_pairs as $up)
+			// Welcome pairs first so they get the pick of the slots, then avoid pairs.
+			foreach (array(array($welcome_pairs, true), array($avoid_pairs, false)) as $kind)
 			{
-				list($ri1, $ri2) = $up;
-				if ($assigned_reg_idxs[$ri1] || $assigned_reg_idxs[$ri2]) { continue; }
-				list($s1, $s2) = $pick_slot_pair(false);
-				if ($s1 < 0) { break; }
-				$final_mapping[$s1]      = $reg_users[$ri1]->user_id;
-				$final_mapping[$s2]      = $reg_users[$ri2]->user_id;
-				$assigned_slots[$s1]     = true;
-				$assigned_slots[$s2]     = true;
-				$assigned_reg_idxs[$ri1] = true;
-				$assigned_reg_idxs[$ri2] = true;
+				list($kind_pairs, $want_max) = $kind;
+				foreach ($kind_pairs as $up)
+				{
+					list($ri1, $ri2) = $up;
+					$placed1 = $assigned_reg_idxs[$ri1];
+					$placed2 = $assigned_reg_idxs[$ri2];
+
+					// Both already pinned by separate-pair restrictions: their slots are fixed
+					// and nothing here can change how often they meet.
+					if ($placed1 && $placed2) { continue; }
+
+					if (!$placed1 && !$placed2)
+					{
+						list($s1, $s2) = $pick_slot_pair($want_max);
+						if ($s1 < 0) { continue; }
+						$final_mapping[$s1]      = $reg_users[$ri1]->user_id;
+						$final_mapping[$s2]      = $reg_users[$ri2]->user_id;
+						$assigned_slots[$s1]     = true;
+						$assigned_slots[$s2]     = true;
+						$reg_slot[$ri1]          = $s1;
+						$reg_slot[$ri2]          = $s2;
+						$assigned_reg_idxs[$ri1] = true;
+						$assigned_reg_idxs[$ri2] = true;
+						continue;
+					}
+
+					// Exactly one of them already has a slot, normally because a separate-pair
+					// restriction pinned them there. That slot is a hard constraint, so keep it
+					// and place the partner in the free slot that meets it least (avoid) or most
+					// (welcome), instead of dropping the rule for this pair entirely.
+					$fixed_ri   = $placed1 ? $ri1 : $ri2;
+					$free_ri    = $placed1 ? $ri2 : $ri1;
+					$fixed_slot = $reg_slot[$fixed_ri];
+					if ($fixed_slot < 0) { continue; }
+					$s = $pick_slot_for($fixed_slot, $want_max);
+					if ($s < 0) { continue; }
+					$final_mapping[$s]           = $reg_users[$free_ri]->user_id;
+					$assigned_slots[$s]          = true;
+					$reg_slot[$free_ri]          = $s;
+					$assigned_reg_idxs[$free_ri] = true;
+				}
 			}
 		}
 
