@@ -284,7 +284,10 @@ function _find_longest_groups($players)
 			$groups = $next;
 		}
 	}
-	return $groups;
+	// _generate_next_restriction_group_level() signals "nothing left" with null. Normalize that
+	// to an empty array: the caller counts the result, and while PHP 7 silently treated
+	// count(null) as 0, PHP 8 throws a TypeError, which killed the whole request.
+	return is_array($groups) ? $groups : array();
 }
 
 class SeatingDef
