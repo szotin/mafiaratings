@@ -1,5 +1,3 @@
-use mafia;
-
 UPDATE users SET flags = (flags & ~0x10);
 
 ALTER TABLE users

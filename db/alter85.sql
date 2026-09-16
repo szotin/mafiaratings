@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `rounds` (
   `event_id` INT(11) NOT NULL,
   `num` INT(11) NOT NULL,

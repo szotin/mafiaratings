@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE cities ADD area_id INT(11) NULL;
 
 UPDATE cities SET area_id = near_id;

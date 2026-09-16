@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE clubs
   ADD COLUMN `rating_limit` INT(11) NOT NULL;
 

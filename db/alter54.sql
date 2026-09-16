@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `changelists` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `club_id` INT(11) NOT NULL,

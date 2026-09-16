@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `registrations`
   ADD COLUMN `start_time1` INT(11);
 

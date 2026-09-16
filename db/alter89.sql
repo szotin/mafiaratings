@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `log` ADD COLUMN `league_id` INT(11) NULL;
 
 ALTER TABLE `log`

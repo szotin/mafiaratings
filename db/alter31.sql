@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `gate_sessions` (
   `token` VARCHAR(32) NOT NULL,
   `user_id` INT(11) NOT NULL,

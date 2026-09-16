@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `leagues` ADD COLUMN `rules` TEXT NOT NULL;
 ALTER TABLE `tournaments` ADD COLUMN `rules` CHAR(32) NOT NULL;
 ALTER TABLE `games` ADD COLUMN `rules` CHAR(32) NOT NULL;

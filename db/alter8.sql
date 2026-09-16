@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `events`
   ADD COLUMN `email_subject` VARCHAR(128) NOT NULL;
 

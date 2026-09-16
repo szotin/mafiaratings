@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE club_info
    ADD COLUMN `pos` INT(11) NOT NULL;
 

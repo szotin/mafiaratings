@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE events ADD COLUMN scoring_flags INT(11) NOT NULL;
 UPDATE events SET scoring_flags = 0 WHERE scoring_options = '{"main-1":true,"night1-0":true}';
 UPDATE events SET scoring_flags = 1 WHERE scoring_options = '{"main-1":true}';

@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE users ADD games INT(11) NOT NULL;
 ALTER TABLE users ADD games_won INT(11) NOT NULL;
 ALTER TABLE users ADD rating DOUBLE NOT NULL;

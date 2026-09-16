@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE photo_albums
    ADD COLUMN `flags` INT(11) NOT NULL;
 

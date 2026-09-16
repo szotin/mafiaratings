@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `user_clubs`(
   `user_id` INT(11) NOT NULL,
   `club_id` INT(11) NOT NULL,

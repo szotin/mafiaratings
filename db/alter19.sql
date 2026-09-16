@@ -1,5 +1,3 @@
-use mafia;
-
 RENAME TABLE event_emails TO emails;
 
 ALTER TABLE emails

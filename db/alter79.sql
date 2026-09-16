@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `event_comments` (
 
   `id` INT(11) NOT NULL AUTO_INCREMENT,

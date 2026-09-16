@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `systems` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `club_id` INT(11) NOT NULL,

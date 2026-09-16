@@ -1,5 +1,3 @@
-use mafia;
-
 DROP TABLE rounds;
 
 UPDATE clubs SET scoring_id = 21 WHERE scoring_id = 15;

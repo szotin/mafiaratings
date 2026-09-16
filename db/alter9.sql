@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `events`
   ADD COLUMN `duration` TINYINT(2) NOT NULL;
 

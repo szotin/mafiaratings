@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `users`
   ADD COLUMN `games_moderated` INT(11);
 

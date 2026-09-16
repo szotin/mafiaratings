@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE users
   ADD COLUMN `languages` INT(11) NOT NULL; -- bit flags 1 - English; 2 - Russian; 30 others can be added
 

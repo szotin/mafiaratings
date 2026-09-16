@@ -1,5 +1,3 @@
-use mafia;
-
 UPDATE clubs SET system_id = (SELECT id FROM scoring_systems WHERE name = '') WHERE system_id IS NULL;
 
 ALTER TABLE `clubs` DROP FOREIGN KEY `club_system`;

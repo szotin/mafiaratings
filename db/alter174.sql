@@ -1,4 +1,3 @@
-
 CREATE TABLE `maintenance_tasks` (
 	`name` VARCHAR(200) NOT NULL,
 	`batches` BIGINT NOT NULL,

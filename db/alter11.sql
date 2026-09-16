@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE users
   ADD COLUMN `flags` INT(11) NOT NULL;
 

@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE videos
   ADD COLUMN user_id INT(11) NOT NULL;
 

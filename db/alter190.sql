@@ -1,5 +1,3 @@
-use mafia;
-
 -- Remove seating rows whose `seating` is a JSON object ({"11":...}) instead of a
 -- 0-based JSON array. These arose because _seating_from_games (seating_optimization.php)
 -- keyed rounds/tables by (game_num - 1)/(table_num - 1) without reindexing, so a

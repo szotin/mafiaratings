@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `country_names` (
   `country_id` INT(11) NOT NULL,
   `name` VARCHAR(128) NOT NULL,

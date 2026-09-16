@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE clubs
    ADD COLUMN email varchar(256) NOT NULL;
 

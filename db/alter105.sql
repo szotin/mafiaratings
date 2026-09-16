@@ -1,5 +1,3 @@
-use mafia;
-
 UPDATE events SET tournament_id = NULL;
 DELETE FROM tournaments;
 

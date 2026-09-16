@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `signup` (
   `name` VARCHAR(128) NOT NULL,
   `password` VARCHAR(32) NOT NULL,

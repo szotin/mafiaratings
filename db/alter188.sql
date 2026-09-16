@@ -1,5 +1,3 @@
-use mafia;
-
 -- Reconcile a from-scratch build with the live/production schema. These columns
 -- were removed from production out-of-band (no earlier migration recorded the
 -- drops), and two columns had their nullability changed there. Applying this

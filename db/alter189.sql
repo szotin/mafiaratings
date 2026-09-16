@@ -1,5 +1,3 @@
-use mafia;
-
 -- Repair seating hashes corrupted by the empty("0") separator bug in
 -- SeatingDef::generateHash() (include/seating.php). When a restriction group's
 -- lowest normalized player index was 0 and its next member was >= 2 (a gap after

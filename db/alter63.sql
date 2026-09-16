@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE news
   ADD COLUMN `expires` INT(11) NOT NULL;
 

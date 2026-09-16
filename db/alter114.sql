@@ -1,5 +1,3 @@
-use mafia;
-
 UPDATE scoring_versions SET scoring = '{"main":[{"matter":2,"roles":5,"points":1},{"matter":2,"roles":10,"points":2}],"legacy":[{"matter":1024,"roles":3,"points":1}],"extra":[{"matter":32,"points":1},{"matter":64,"points":1}]}' WHERE version = 1 AND scoring_id = 2;
 UPDATE scoring_versions SET scoring = '{"main":[{"matter":2,"points":1}],"legacy":[{"matter":1024,"roles":3,"points":0.1}],"extra":[{"matter":32,"points":0.3},{"matter":64,"points":0.2},{"matter":32768,"roles":1,"points":0.2},{"matter":131072,"roles":12,"points":0.1},{"matter":524288,"roles":8,"points":0.1},{"matter":1048576,"roles":2,"points":0.2}]}' WHERE version = 1 AND scoring_id = 3;
 UPDATE scoring_versions SET scoring = '{"main":[{"matter":2,"points":3,"roles":1},{"matter":2,"roles":6,"points":4},{"matter":2,"roles":8,"points":5},{"matter":4,"roles":10,"points":-1}],"legacy":[{"matter":1024,"roles":3,"points":1}],"extra":[{"matter":32,"points":1},{"matter":64,"points":1},{"matter":131072,"roles":8,"points":1},{"matter":1048576,"roles":2,"points":1}]}' WHERE version = 1 AND scoring_id = 5;

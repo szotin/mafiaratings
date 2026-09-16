@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `rebuild_stats` (
   `time` INT(11),
   `action` VARCHAR(128) NOT NULL,

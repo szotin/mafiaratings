@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE mafiosos
    ADD COLUMN `is_don` BOOL NOT NULL;
 

@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `photo_albums` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(128) NOT NULL,

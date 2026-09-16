@@ -1,5 +1,3 @@
-use mafia;
-
 RENAME TABLE forum_messages TO messages;
 
 -- Drop the message_user FK before dropping its backing index (`user_id`); it is

@@ -1,5 +1,3 @@
-use mafia;
-
 DROP TABLE `email_templates`;
 
 ALTER TABLE event_emails DROP COLUMN subject;

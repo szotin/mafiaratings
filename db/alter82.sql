@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE players
   DROP COLUMN club_points;
 

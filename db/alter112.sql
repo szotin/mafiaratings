@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE events ADD COLUMN scoring_ops VARCHAR(256) NOT NULL;
 UPDATE events SET scoring_ops = '{}' WHERE scoring_options = 0;
 UPDATE events SET scoring_ops = '{"flags":1}' WHERE scoring_options = 1;

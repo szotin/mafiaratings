@@ -1,5 +1,3 @@
-use mafia;
-
 -- Remove single-table seatings whose schedule is invalid. Two kinds of damage were found,
 -- both produced by an older version of generateInitialSeating() (the current one builds valid
 -- schedules for all of these configurations - verified over repeated generations):

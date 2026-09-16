@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `ratings` (
   `user_id` INT(11) NOT NULL,
   `role` TINYINT(1) NOT NULL, -- 0 all; 1 red; 2 dark; 3 civil; 4 sheriff; 5 mafia; 6 don

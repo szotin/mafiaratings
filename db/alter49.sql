@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE club_requests
    DROP COLUMN `country`;
 

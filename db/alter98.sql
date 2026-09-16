@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE events DROP FOREIGN KEY event_address;
 ALTER TABLE events DROP FOREIGN KEY event_club;
 ALTER TABLE events DROP FOREIGN KEY event_scoring;

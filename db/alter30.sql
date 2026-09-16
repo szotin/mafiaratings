@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE games
   ADD COLUMN log_version INT(11) NOT NULL;
 

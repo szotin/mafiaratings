@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `users`
   ADD COLUMN `is_subscribed` BOOL NOT NULL;
 

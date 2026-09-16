@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE `clubs`
   ADD COLUMN `timezone` VARCHAR(64) NOT NULL;
 

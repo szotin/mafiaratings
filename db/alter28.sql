@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE emails
   DROP INDEX obj;
 

@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `snapshots` (
 
   `time` INT(11) NOT NULL,

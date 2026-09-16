@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `game_settings` (
   `user_id` INT(11) NOT NULL,
   `autosave` INT(11) NOT NULL,

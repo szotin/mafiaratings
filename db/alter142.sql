@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `series_extra_points` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `time` INT(11) NOT NULL,

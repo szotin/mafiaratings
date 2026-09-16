@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE email_templates
   ADD COLUMN `default_for` INT(11) NOT NULL;
 

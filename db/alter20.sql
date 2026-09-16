@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE user_photos
   ADD COLUMN email_sent BOOL NOT NULL;
 

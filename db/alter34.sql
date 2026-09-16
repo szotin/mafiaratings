@@ -1,5 +1,3 @@
-use mafia;
-
 /*ALTER TABLE games
   ADD COLUMN best_player_id INT(11) NULL;
 

@@ -1,5 +1,3 @@
-use mafia;
-
 -- st stands for speak time
 -- spt stands for speak prompt time
 CREATE TABLE `rules` (

@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE users
   ADD COLUMN phone VARCHAR(64) NOT NULL;
 

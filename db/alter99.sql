@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE tournaments ADD COLUMN request_league_id INT(11) NULL;
 ALTER TABLE tournaments ADD KEY i_tournaments_request_league (request_league_id);
 ALTER TABLE tournaments ADD CONSTRAINT fk_tournaments_request_league FOREIGN KEY (request_league_id) REFERENCES leagues(id);

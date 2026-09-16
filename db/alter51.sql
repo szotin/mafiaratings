@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE log
    ADD COLUMN `message` VARCHAR(256) NOT NULL;
 

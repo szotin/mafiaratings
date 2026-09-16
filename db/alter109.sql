@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE games DROP FOREIGN KEY objection_user;
 ALTER TABLE games DROP COLUMN `objection_user_id`;
 ALTER TABLE games DROP COLUMN `objection`;

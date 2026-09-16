@@ -1,5 +1,3 @@
-use mafia;
-
 CREATE TABLE `league_accept_tournament` (
   `user_id` INT(11) NOT NULL,
   `league_id` INT(11) NOT NULL,

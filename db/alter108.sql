@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE games ADD COLUMN `table_name` VARCHAR(32) NULL;
 ALTER TABLE games ADD COLUMN `game_number` INT(11) NULL;
 ALTER TABLE games ADD COLUMN `objection_user_id` INT(11) NULL;

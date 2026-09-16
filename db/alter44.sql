@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE photo_albums
    ADD COLUMN `viewers` TINYINT(2) NOT NULL;
 

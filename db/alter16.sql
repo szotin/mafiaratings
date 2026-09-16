@@ -1,5 +1,3 @@
-use mafia;
-
 -- DROP table photo_comments;
 
 CREATE TABLE `forum_messages` (

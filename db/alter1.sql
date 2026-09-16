@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE users
    ADD COLUMN `last_game_id` INT(11) NULL;
 

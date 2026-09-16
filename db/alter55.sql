@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE cities
   DROP INDEX name_en;
 

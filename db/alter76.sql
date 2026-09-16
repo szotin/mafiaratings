@@ -1,33 +1,35 @@
-use mafia;
-
 ALTER TABLE seasons
   CHANGE name name VARCHAR(256) NOT NULL;
   
+-- events.vis and events.vis_id are NOT NULL without a default (added by alter27), so these
+-- inserts have to supply them explicitly. Without that the statement only works where
+-- strict mode is off, and fails with "Field 'vis' doesn't have a default value" otherwise.
+-- 0/0 is what alter27 itself sets for every existing row.
 INSERT INTO events 
-(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id)
-VALUES ('Regular game', '', 1, 1, 1284782440, '', 21600, 17, 2, 1, 10);
+(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id, vis, vis_id)
+VALUES ('Regular game', '', 1, 1, 1284782440, '', 21600, 17, 2, 1, 10, 0, 0);
 SET @event_id = LAST_INSERT_ID();
 UPDATE games SET event_id = @event_id WHERE id = 1;
 UPDATE games SET event_id = @event_id WHERE id = 4;
 UPDATE games SET event_id = @event_id WHERE id = 6;
 
 INSERT INTO events 
-(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id)
-VALUES ('Regular game', '', 3, 1, 1290924025, '', 21600, 17, 2, 1, 10);
+(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id, vis, vis_id)
+VALUES ('Regular game', '', 3, 1, 1290924025, '', 21600, 17, 2, 1, 10, 0, 0);
 SET @event_id = LAST_INSERT_ID();
 UPDATE games SET event_id = @event_id WHERE id = 57;
 UPDATE games SET event_id = @event_id WHERE id = 58;
 
 INSERT INTO events 
-(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id)
-VALUES ('Regular game', '', 3, 1, 1292212842, '', 21600, 17, 2, 1, 10);
+(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id, vis, vis_id)
+VALUES ('Regular game', '', 3, 1, 1292212842, '', 21600, 17, 2, 1, 10, 0, 0);
 SET @event_id = LAST_INSERT_ID();
 UPDATE games SET event_id = @event_id WHERE id = 80;
 UPDATE games SET event_id = @event_id WHERE id = 81;
 
 INSERT INTO events 
-(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id)
-VALUES ('Regular game', '', 2, 1, 1292716825, '', 21600, 17, 2, 1, 10);
+(name, price, address_id, club_id, start_time, notes, duration, flags, languages, rules_id, scoring_id, vis, vis_id)
+VALUES ('Regular game', '', 2, 1, 1292716825, '', 21600, 17, 2, 1, 10, 0, 0);
 SET @event_id = LAST_INSERT_ID();
 UPDATE games SET event_id = @event_id WHERE id = 88;
 UPDATE games SET event_id = @event_id WHERE id = 89;

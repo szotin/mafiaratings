@@ -1,5 +1,3 @@
-use mafia;
-
 ALTER TABLE game_settings
   ADD COLUMN `l_autosave` INT(11) NOT NULL;
 
