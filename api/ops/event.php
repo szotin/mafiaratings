@@ -2951,6 +2951,32 @@ class ApiPage extends OpsApiPageBase
 		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs) =
 			$this->load_reg_users_and_pairs($event_id, $tournament_id, $club_id, $event_players, $event_round);
 
+		// A "separate these players" rule can be impossible to honour. With a single table
+		// everybody seated in a round meets everybody else, so two players who each play
+		// $event_games of the rounds must share some of them (see SeatingDef::forced_meetings).
+		// Baking such a rule into the seating only produces a seating that breaks it, plus a
+		// canonical row the optimizer can never improve. Instead drop the offending rules one
+		// pair at a time, re-checking after each, and hand them to the much weaker "minimize
+		// games together" rule, which build_slot_mapping() honours as well as the maths allows.
+		//
+		// The check depends only on the configuration, so when it fails every pair is equally
+		// impossible and the loop drains them all. It is written as a loop so that a finer check
+		// added later keeps as many of the original rules as it can.
+		$forced_meetings = SeatingDef::forced_meetings($event_players, $event_tables, $event_games);
+		$downgraded_pairs = 0;
+		while (!empty($restrictions) &&
+			SeatingDef::forced_meetings($event_players, $event_tables, $event_games) > 0)
+		{
+			$avoid_pairs[] = array_pop($restrictions);
+			++$downgraded_pairs;
+		}
+		if ($downgraded_pairs > 0)
+		{
+			$this->setUserMessage(get_label(
+				'Some players you asked to separate cannot be separated: with one table they are forced to share at least [0] games. They have been seated so that they share as few games as possible.',
+				$forced_meetings));
+		}
+
 		// --- 3. Build SeatingDef, normalize restrictions ---
 		$seatingDef = new SeatingDef($event_players, $event_tables, $event_games, $restrictions);
 		$restrict_mapping = $seatingDef->normalizeRestrictions();
@@ -2964,6 +2990,27 @@ class ApiPage extends OpsApiPageBase
 		if (isset($found->warning))
 		{
 			$this->setUserMessage($found->warning);
+		}
+
+		// The seating is applied either way, but the organizer must be told when a "separate
+		// these players" rule could not be honoured, otherwise they run the tournament assuming
+		// it was. With one table it can be impossible in principle: two players who each play
+		// $games of the rounds are forced to share at least (2 * games - rounds) of them, and the
+		// seating above is already arranged so they share no more than that minimum.
+		if (!$seatingDef->satisfiesRestrictions($seating))
+		{
+			$forced_meetings = $seatingDef->forcedMeetings();
+			if ($forced_meetings > 0)
+			{
+				$this->setUserMessage(get_label(
+					'Some players you asked to separate cannot be separated: with one table they are forced to share at least [0] games. They have been seated so that they share as few games as possible.',
+					$forced_meetings));
+			}
+			else
+			{
+				$this->setUserMessage(get_label(
+					'Some players you asked to separate ended up at the same table. They have been seated so that they share as few games as possible.'));
+			}
 		}
 		
 		// --- 5. Build final mapping [seating_slot => user_id] ---

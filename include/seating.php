@@ -699,6 +699,7 @@ class SeatingDef
 		// Retry a few times: the round-player selection and table assignment are both
 		// randomised, so a fresh attempt is cheap and covers any residual edge cases.
 		$best_result = null;
+		$best_score  = 0;
 		for ($attempt = 0; $attempt < 5; $attempt++)
 		{
 			$round_player_lists = $this->_gisGenerateRoundPlayerLists($round_table_counts);
@@ -708,10 +709,87 @@ class SeatingDef
 					$round_player_lists[$r], $round_table_counts[$r], $conflict_map);
 			if (empty($this->restrictions) || $this->satisfiesRestrictions($result))
 				return $result;
-			if ($best_result === null)
+			$result_score = $this->calculatePlayersScore($result);
+			if ($best_result === null || $result_score < $best_score)
+			{
 				$best_result = $result;
+				$best_score  = $result_score;
+			}
 		}
-		return $best_result;
+
+		// No attempt satisfied the restrictions. With a single table that can be impossible in
+		// principle (see forcedMeetings()), so at least drive the restricted players down to the
+		// fewest shared games, which happens exactly when their idle rounds do not coincide.
+		return $this->minimizeSingleTableViolations($best_result);
+	}
+
+	// Hill climbs using the single-table participation move: take a player who plays in one round
+	// but not in another, and a player in the opposite situation, and exchange their rounds. Both
+	// keep exactly the same number of games, so the schedule stays valid.
+	//
+	// Used when the restrictions can not be honoured, to at least minimise how often the
+	// restricted players share a table. The work is bounded by wall time rather than by a number
+	// of moves, because the cost of one move grows with the number of rounds (each one rescores
+	// the whole seating): the small configurations where restrictions are impossible converge in
+	// a few milliseconds, while a long single-table schedule would otherwise take seconds inside
+	// a web request. Whatever is left is picked up by the background optimizer afterwards.
+	function minimizeSingleTableViolations($seating, $max_seconds = 0.3)
+	{
+		if ($this->tables > 1 || empty($this->restrictions) || !is_array($seating))
+		{
+			return $seating;
+		}
+
+		$deadline = microtime(true) + $max_seconds;
+		$rounds   = count($seating);
+		$score    = $this->calculatePlayersScore($seating);
+		$improved = true;
+
+		while ($improved)
+		{
+			$improved = false;
+			for ($r1 = 0; $r1 < $rounds - 1; ++$r1)
+			{
+				for ($r2 = $r1 + 1; $r2 < $rounds; ++$r2)
+				{
+					for ($i = 0; $i < 10; ++$i)
+					{
+						for ($j = 0; $j < 10; ++$j)
+						{
+							if (microtime(true) >= $deadline)
+							{
+								return $seating;
+							}
+
+							$a = $seating[$r1][0][$i];
+							$b = $seating[$r2][0][$j];
+							// A moves into round 2 and B into round 1, so neither may be there yet.
+							if ($a == $b ||
+								in_array($a, $seating[$r2][0]) ||
+								in_array($b, $seating[$r1][0]))
+							{
+								continue;
+							}
+
+							$seating[$r1][0][$i] = $b;
+							$seating[$r2][0][$j] = $a;
+							$new_score = $this->calculatePlayersScore($seating);
+							if ($new_score < $score)
+							{
+								$score    = $new_score;
+								$improved = true;
+							}
+							else
+							{
+								$seating[$r1][0][$i] = $a;
+								$seating[$r2][0][$j] = $b;
+							}
+						}
+					}
+				}
+			}
+		}
+		return $seating;
 	}
 
 	// Among the given array of hash strings, finds and returns the one whose stored seating
@@ -1434,6 +1512,36 @@ class SeatingDef
 	static function worst_acceptable_tables_score($players, $tables, $games)
 	{
 		return SeatingDef::worst_tables_score($players, $tables, $games) / 5;
+	}
+
+	// With a single table everybody seated in a round meets everybody else, so two players who
+	// each play $games of the $rounds rounds must share at least (2 * games - rounds) of them.
+	// When that is positive, no seating can keep any two players apart, so a "separate these
+	// players" rule is impossible for this configuration and the players score carries a penalty
+	// no optimization can ever remove - which is why such a seating shows a permanent 0%.
+	// Returns 0 when restrictions can be honoured, and always 0 for more than one table, where
+	// restricted players can simply be split across tables.
+	//
+	// The result depends only on the configuration, not on which players are restricted, so when
+	// it is positive every pair is equally impossible and no subset of the rules can survive.
+	static function forced_meetings($players, $tables, $games)
+	{
+		if ($tables != 1 || $players <= 0 || $games <= 0)
+		{
+			return 0;
+		}
+		$rounds = $players * $games / 10;
+		$forced = 2 * $games - $rounds;
+		return $forced > 0 ? (int)ceil($forced) : 0;
+	}
+
+	public function forcedMeetings()
+	{
+		if (empty($this->restrictions))
+		{
+			return 0;
+		}
+		return SeatingDef::forced_meetings($this->players, $this->tables, $this->games);
 	}
 
 	// Returns the distribution mapping: restricted players keep their index; free players

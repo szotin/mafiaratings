@@ -63,6 +63,16 @@ class Page extends GeneralPageBase
 			$seating->games   = (int)$parts[2];
 			$restriction_parts = array_slice($parts, 3);
 			$seating->restrictions = format_seating_restrictions($restriction_parts);
+			// A single table can not honour a pair restriction unless there are enough rounds to
+			// keep the two players apart. Mark that, otherwise the 0% optimization level below
+			// looks like a defect rather than something no seating can avoid.
+			$forced_meetings = (new SeatingDef($hash))->forcedMeetings();
+			if ($forced_meetings > 0)
+			{
+				$seating->restrictions .= ' <b style="color:#c00;" title="' .
+					htmlspecialchars(get_label('Impossible with one table: these players are forced to share at least [0] games. That is why the optimization level stays at 0%.', $forced_meetings)) .
+					'">(!)</b>';
+			}
 			$players_max_score = SeatingDef::worst_acceptable_players_score($seating->players, $seating->tables, $seating->games);
 			$numbers_max_score = SeatingDef::worst_acceptable_numbers_score($seating->players, $seating->tables, $seating->games);
 			$tables_max_score = SeatingDef::worst_acceptable_tables_score($seating->players, $seating->tables, $seating->games);

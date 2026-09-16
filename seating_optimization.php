@@ -110,11 +110,126 @@ class SeatingOptimization extends Updater
 	private function _swap_current_players()
 	{
 		$tmp = $this->vars->seating[$this->vars->current_round][$this->vars->current_table1][$this->vars->current_number1];
-		$this->vars->seating[$this->vars->current_round][$this->vars->current_table1][$this->vars->current_number1] = 
+		$this->vars->seating[$this->vars->current_round][$this->vars->current_table1][$this->vars->current_number1] =
 			$this->vars->seating[$this->vars->current_round][$this->vars->current_table2][$this->vars->current_number2];
 		$this->vars->seating[$this->vars->current_round][$this->vars->current_table2][$this->vars->current_number2] = $tmp;
 	}
-	
+
+	//-------------------------------------------------------------------------------------------------------
+	// Single table optimization.
+	//
+	// With one table there is no second table to swap a player with inside a round, so the
+	// players optimizer did nothing at all and single-table seatings kept whatever score the
+	// initial generation happened to produce. The only freedom left is WHICH players sit out
+	// each round, so the move used here takes player A, who plays in round1 but not in round2,
+	// and player B, who plays in round2 but not in round1, and exchanges their participation.
+	// Each of them loses one game and gains one, so everybody still plays the same number of
+	// games and the schedule stays valid.
+	//
+	// The cursor is (current_round = round1, current_round2, current_number1, current_number2).
+	//-------------------------------------------------------------------------------------------------------
+	private function _next_bench_itteration()
+	{
+		$rounds = count($this->vars->seating);
+		if ($this->vars->current_round >= $rounds)
+		{
+			return false;
+		}
+
+		++$this->vars->current_number2;
+		if ($this->vars->current_number2 < 10)
+		{
+			return true;
+		}
+		$this->vars->current_number2 = 0;
+
+		++$this->vars->current_number1;
+		if ($this->vars->current_number1 < 10)
+		{
+			return true;
+		}
+		$this->vars->current_number1 = 0;
+
+		++$this->vars->current_round2;
+		if ($this->vars->current_round2 < $rounds)
+		{
+			return true;
+		}
+
+		++$this->vars->current_round;
+		if ($this->vars->current_round < $rounds - 1)
+		{
+			$this->vars->current_round2 = $this->vars->current_round + 1;
+			return true;
+		}
+
+		// The pass is over. Go round again if it improved anything, otherwise leave the round
+		// past the end, which is what players_task_end reads as "a full scan is complete".
+		if (isset($this->vars->found) && $this->vars->found)
+		{
+			$this->vars->found = false;
+			$this->vars->current_number1 = 0;
+			$this->vars->current_number2 = 0;
+			$this->vars->current_round = 0;
+			$this->vars->current_round2 = 1;
+			return true;
+		}
+		$this->vars->current_round = $rounds;
+		return false;
+	}
+
+	// Not every cursor position is a legal move: a player may only move into a round they are
+	// not already playing in, otherwise they would appear at the table twice.
+	private function _bench_swap_is_valid()
+	{
+		$r1 = $this->vars->current_round;
+		$r2 = $this->vars->current_round2;
+		if ($r1 == $r2 || !isset($this->vars->seating[$r1][0]) || !isset($this->vars->seating[$r2][0]))
+		{
+			return false;
+		}
+
+		$t1 = $this->vars->seating[$r1][0];
+		$t2 = $this->vars->seating[$r2][0];
+		if (!isset($t1[$this->vars->current_number1]) || !isset($t2[$this->vars->current_number2]))
+		{
+			return false;
+		}
+
+		$a = $t1[$this->vars->current_number1];
+		$b = $t2[$this->vars->current_number2];
+		if ($a == $b)
+		{
+			return false;
+		}
+
+		foreach ($t2 as $p)
+		{
+			if ($p == $a)
+			{
+				return false;
+			}
+		}
+		foreach ($t1 as $p)
+		{
+			if ($p == $b)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private function _swap_current_bench_players()
+	{
+		$r1 = $this->vars->current_round;
+		$r2 = $this->vars->current_round2;
+		$tmp = $this->vars->seating[$r1][0][$this->vars->current_number1];
+		$this->vars->seating[$r1][0][$this->vars->current_number1] =
+			$this->vars->seating[$r2][0][$this->vars->current_number2];
+		$this->vars->seating[$r2][0][$this->vars->current_number2] = $tmp;
+	}
+
 	function players_task($items_count)
 	{
 		try
@@ -140,16 +255,33 @@ class SeatingOptimization extends Updater
 			$this->seatingDef = new SeatingDef($this->vars->hash);
 		}
 		
-		if ($this->seatingDef->tables <= 1)
+		// One table means there is no second table to swap against, so the only thing that can
+		// be changed is who sits out which round. See _next_bench_itteration().
+		$single_table = ($this->seatingDef->tables <= 1);
+
+		for ($count = 0; $count < $items_count; ++$count)
 		{
-			$this->vars->current_round = count($this->vars->seating);
-			return 0;
-		}
-		
-		for ($count = 0; $count < $items_count && $this->_next_players_itteration(); ++$count)
-		{
-			//$this->log($this->vars->current_round . ': ' . $this->vars->current_table1 . '[' . $this->vars->current_number1 . '] ⇔ ' . $this->vars->current_table2 . '[' . $this->vars->current_number2 . ']');
-			$this->_swap_current_players();
+			if ($single_table)
+			{
+				if (!$this->_next_bench_itteration())
+				{
+					break;
+				}
+				if (!$this->_bench_swap_is_valid())
+				{
+					continue;
+				}
+				$this->_swap_current_bench_players();
+			}
+			else
+			{
+				if (!$this->_next_players_itteration())
+				{
+					break;
+				}
+				$this->_swap_current_players();
+			}
+
 			$score = $this->seatingDef->calculatePlayersScore($this->vars->seating);
 			if ($score < $this->vars->score)
 			{
@@ -157,10 +289,15 @@ class SeatingOptimization extends Updater
 				$this->vars->score = $score;
 				$this->vars->found = true;
 			}
+			else if ($single_table)
+			{
+				$this->_swap_current_bench_players();
+			}
 			else
 			{
 				$this->_swap_current_players();
 			}
+
 			if (!$this->canDoOneMoreItem())
 			{
 				break;
@@ -194,6 +331,7 @@ class SeatingOptimization extends Updater
 				$this->vars->current_number2 = -1;
 				$this->vars->current_table2 = 1;
 				$this->vars->current_round = 0;
+				$this->vars->current_round2 = 1; // second round of the single-table move
 				$this->vars->found = false;
 			}
 			else
@@ -205,6 +343,8 @@ class SeatingOptimization extends Updater
 				$this->vars->current_number2 = $state->number2;
 				$this->vars->current_table2 = $state->table2;
 				$this->vars->current_round = $state->round;
+				// Absent in states saved before the single-table move existed.
+				$this->vars->current_round2 = isset($state->round2) ? $state->round2 : 1;
 				$this->vars->found = isset($state->found) && $state->found;
 			}
 			$this->vars->score = $this->seatingDef->calculatePlayersScore($this->vars->seating);
@@ -243,6 +383,7 @@ class SeatingOptimization extends Updater
 			$state->number2 = $this->vars->current_number2;
 			$state->table2 = $this->vars->current_table2;
 			$state->round = $this->vars->current_round;
+			$state->round2 = $this->vars->current_round2;
 			$state->found = isset($this->vars->found) && $this->vars->found;
 			$state = json_encode($state);
 			if ($this->vars->score == 0)

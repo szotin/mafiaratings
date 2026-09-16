@@ -522,6 +522,13 @@ class Page extends GeneralPageBase
 		if (!empty($restrictions_html))
 		{
 			echo '<p>' . get_label('Restrictions') . ': ' . $restrictions_html . '</p>';
+			// See SeatingDef::forcedMeetings(): with one table the restricted players can be
+			// unavoidably seated together, which pins the players optimization level at 0%.
+			$forced_meetings = (new SeatingDef($this->hash))->forcedMeetings();
+			if ($forced_meetings > 0)
+			{
+				echo '<p style="color:#c00;">' . get_label('Impossible with one table: these players are forced to share at least [0] games. That is why the optimization level stays at 0%.', $forced_meetings) . '</p>';
+			}
 		}
 
 		// Pre-compute optimization level percentages (same formula as seatings.php).
