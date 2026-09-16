@@ -1418,9 +1418,17 @@ class SeatingDef
 		return SeatingDef::worst_players_score($players, $tables, $games) * 4 / ($games + 2);
 	}
 	
+	// Only used to render the optimization percentage, never by the optimizer itself.
+	// calculateNumbersScore() returns 0 when every deviation is below 1 and the full sum
+	// otherwise, and that full sum can not go below roughly 12.6 per player. The previous
+	// threshold of 12 per player sat under that floor, so every seating that missed the
+	// "perfect" band was clamped to 0% no matter how well it was actually optimized.
+	// 60 per player keeps optimized seatings in the 64-98% range (median 79%, in line with
+	// the players and tables percentages) while a freshly generated one, which scores around
+	// 90-114 per player, still shows 0%.
 	static function worst_acceptable_numbers_score($players, $tables, $games)
 	{
-		return $players * 12;
+		return $players * 60;
 	}
 
 	static function worst_acceptable_tables_score($players, $tables, $games)
