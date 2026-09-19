@@ -186,7 +186,19 @@ function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = 
 	}
 
 	$result = array_values(array_filter($pairs_map, function($pair) { return $pair->policy != PAIR_POLICY_NOTHING; }));
-	usort($result, function($a, $b) { return $a->user1_id - $b->user1_id; });
+	// Order by both user ids. Sorting by user1_id alone left pairs that share user1_id in the
+	// fill order of $pairs_map, which comes from four queries (pairs, league_pairs, club_pairs,
+	// tournament_pairs) that have no ORDER BY, so it shifted whenever rows were added or edited.
+	// SeatingDef::normalizeRestrictions() derives its player renumbering from this order, so an
+	// unstable order produced a different seating hash for an unchanged set of rules.
+	usort($result, function($a, $b)
+	{
+		if ($a->user1_id != $b->user1_id)
+		{
+			return $a->user1_id - $b->user1_id;
+		}
+		return $a->user2_id - $b->user2_id;
+	});
 	return $result;
 }
 
@@ -274,7 +286,61 @@ function _generate_next_restriction_group_level($players, $groups = null)
 	return $next;
 }
 
-function _find_longest_groups($players) 
+// Assigns every player a "color" describing the shape of the restriction graph around them,
+// by color refinement (1-dimensional Weisfeiler-Leman): start from the number of players each
+// one must be kept apart from, then repeatedly replace a color by the pair (own color, sorted
+// colors of the neighbours) until the partition stops getting finer. The result depends only
+// on the graph, never on the player indices, so SeatingDef::normalizeRestrictions() can use it
+// to break ties in a way that survives a change of registration order.
+// $restrictions_by_player maps a player index to the list of players they must not meet.
+function _refine_player_colors($restrictions_by_player)
+{
+	$colors = array();
+	foreach ($restrictions_by_player as $player => $neighbours)
+	{
+		$colors[$player] = count($neighbours);
+	}
+
+	$distinct_count = count(array_unique($colors));
+	$rounds = count($colors);
+	for ($round = 0; $round < $rounds; ++$round)
+	{
+		$signatures = array();
+		foreach ($restrictions_by_player as $player => $neighbours)
+		{
+			$neighbour_colors = array();
+			foreach ($neighbours as $neighbour)
+			{
+				$neighbour_colors[] = $colors[$neighbour];
+			}
+			sort($neighbour_colors, SORT_NUMERIC);
+			$signatures[$player] = $colors[$player] . '|' . implode(',', $neighbour_colors);
+		}
+
+		// Renumber the signatures to small integers, ordered so that the numbering itself
+		// stays reproducible from one run to the next.
+		$distinct = array_unique(array_values($signatures));
+		sort($distinct, SORT_STRING);
+		$rank = array_flip($distinct);
+
+		$new_colors = array();
+		foreach ($signatures as $player => $signature)
+		{
+			$new_colors[$player] = $rank[$signature];
+		}
+		$colors = $new_colors;
+
+		$new_distinct_count = count($distinct);
+		if ($new_distinct_count == $distinct_count)
+		{
+			break;
+		}
+		$distinct_count = $new_distinct_count;
+	}
+	return $colors;
+}
+
+function _find_longest_groups($players)
 {
 	$groups = _generate_next_restriction_group_level($players);
 	if ($groups != null)
@@ -1030,7 +1096,40 @@ class SeatingDef
 	// returns { "3": 0, "2": 1, "1": 2, "5": 3, "4": 4, "9": 5 }
 	// the hash is "20_2_10_0-2_2-4_1:5" after that
 	// restrictions: [[0, 1, 2], [2, 3, 4], [1, 5]]
+	// Puts the restrictions into the canonical form the hash is built from, and returns the
+	// mapping from the player numbers that came in to the ones the hash uses.
+	//
+	// One pass is not always enough. _normalizeRestrictionsOnce() splits the rules into groups
+	// before it renumbers the players, so the split it makes depends on the numbering it was
+	// given, while the numbering it produces depends on the split - feed its own output back in
+	// and it can settle on a different answer. That mattered: reading a stored hash back and
+	// normalizing it again could give a different hash, so a row saved under one of them could
+	// never be found under the other. Repeating until the hash stops changing removes the
+	// difference; measured over every hash in the database it takes two passes at most, and the
+	// loop gives up after a few in case some graph refuses to settle.
 	function normalizeRestrictions()
+	{
+		$mapping = $this->_normalizeRestrictionsOnce();
+		for ($pass = 0; $pass < 4; ++$pass)
+		{
+			$previous_hash = $this->hash;
+			$next = $this->_normalizeRestrictionsOnce();
+			if ($this->hash === $previous_hash)
+			{
+				break;
+			}
+			foreach ($mapping as $original => $current)
+			{
+				if (isset($next[$current]))
+				{
+					$mapping[$original] = $next[$current];
+				}
+			}
+		}
+		return $mapping;
+	}
+
+	private function _normalizeRestrictionsOnce()
 	{
 		$restrictions_by_player = array();
 		for ($i = 0; $i < count($this->restrictions); ++$i)
@@ -1064,6 +1163,47 @@ class SeatingDef
 			}
 		}
 		
+		// _find_longest_groups() below walks this structure greedily, so the order the players
+		// and their neighbours sit in decides which groups it carves out. Built as it is above,
+		// that order is the order the pairs came in, which means the same set of rules could be
+		// split into different groups - and a hash records the groups, so reading a hash back
+		// and normalizing it again could produce a different hash. Ordering players and their
+		// neighbour lists by index makes the split depend only on the rules themselves.
+		ksort($restrictions_by_player);
+		foreach ($restrictions_by_player as $player => $neighbours)
+		{
+			sort($neighbours, SORT_NUMERIC);
+			$restrictions_by_player[$player] = $neighbours;
+		}
+
+		// Structural colors of the players, used from here on to order everything without
+		// reference to the player numbers themselves. See _refine_player_colors().
+		$player_colors = _refine_player_colors($restrictions_by_player);
+		$compare_lists = function($a, $b)
+		{
+			$countA = count($a);
+			$countB = count($b);
+			$n = min($countA, $countB);
+			for ($i = 0; $i < $n; ++$i)
+			{
+				if ($a[$i] !== $b[$i])
+				{
+					return $a[$i] < $b[$i] ? -1 : 1;
+				}
+			}
+			return $countA - $countB;
+		};
+		$color_key = function($group) use ($player_colors)
+		{
+			$key = array();
+			foreach ($group as $i)
+			{
+				$key[] = $player_colors[$i];
+			}
+			sort($key, SORT_NUMERIC);
+			return $key;
+		};
+
 		$restrictions = array();
 		$restrictions_by_player_copy = $restrictions_by_player;
 		while(count($groups = _find_longest_groups($restrictions_by_player_copy)) > 0)
@@ -1093,7 +1233,14 @@ class SeatingDef
 				}
 			}
 		}
-		usort($restrictions, function($a, $b) use ($restrictions_by_player)
+		// The player renumbering below follows the order of these two sorts, so any comparison
+		// they leave tied would let the incoming order of the pairs decide the hash: the same
+		// set of rules then produced a different hash (and a fresh seatings row, optimized from
+		// scratch) every time the pairs happened to arrive in a different order. Both sorts
+		// therefore end in a total order. The tie-breaks compare structural colors first, so
+		// they also survive a change of registration order, which shifts every player index;
+		// the index comparison is only a last resort for fully symmetric cases.
+		usort($restrictions, function($a, $b) use ($restrictions_by_player, $color_key, $compare_lists)
 		{
 			$countA = count($a);
 			$countB = count($b);
@@ -1101,7 +1248,7 @@ class SeatingDef
 			{
 				return $countB - $countA;
 			}
-			
+
 			$aSum = 0;
 			$aMax = 0;
 			foreach ($a as $i)
@@ -1110,7 +1257,7 @@ class SeatingDef
 				$aSum += $count;
 				$aMax = max($aMax, $count);
 			}
-			
+
 			$bSum = 0;
 			$bMax = 0;
 			foreach ($b as $i)
@@ -1119,17 +1266,44 @@ class SeatingDef
 				$bSum += $count;
 				$bMax = max($bMax, $count);
 			}
-			
+
 			if ($aSum !== $bSum)
 			{
 				return $bSum - $aSum;
 			}
-			return $bMax - $aMax;
+			if ($aMax !== $bMax)
+			{
+				return $bMax - $aMax;
+			}
+
+			$cmp = $compare_lists($color_key($a), $color_key($b));
+			if ($cmp !== 0)
+			{
+				return $cmp;
+			}
+			$aIdx = $a;
+			$bIdx = $b;
+			sort($aIdx, SORT_NUMERIC);
+			sort($bIdx, SORT_NUMERIC);
+			return $compare_lists($aIdx, $bIdx);
 		});
-		
+
 		for ($i = 0; $i < count($restrictions); ++$i)
 		{
-			usort($restrictions[$i], function($a, $b) use ($restrictions_by_player) { return count($restrictions_by_player[$a]) - count($restrictions_by_player[$b]); });
+			usort($restrictions[$i], function($a, $b) use ($restrictions_by_player, $player_colors)
+			{
+				$countA = count($restrictions_by_player[$a]);
+				$countB = count($restrictions_by_player[$b]);
+				if ($countA !== $countB)
+				{
+					return $countA - $countB;
+				}
+				if ($player_colors[$a] !== $player_colors[$b])
+				{
+					return $player_colors[$a] - $player_colors[$b];
+				}
+				return $a - $b;
+			});
 		}
 		$mapping = array();
 		$this->restrictions = array();
@@ -1149,6 +1323,34 @@ class SeatingDef
 			$this->restrictions[] = $a;
 		}
 		$this->generateHash();
+		return $mapping;
+	}
+
+	// Extends a partial mapping (as returned by normalizeRestrictions, which only covers the
+	// players named in a restriction) to every player index, giving the players it does not
+	// mention the remaining numbers in ascending order. applyMapping() can complete a mapping
+	// too, but it does so from the order the players appear in the seating it is given, so two
+	// seatings of the same definition would come out numbered differently. Completing the
+	// mapping up front keeps one definition's seatings on one numbering.
+	static function completeMapping($mapping, $players)
+	{
+		$taken = array_flip($mapping);
+		$free = array();
+		for ($i = 0; $i < $players; ++$i)
+		{
+			if (!isset($taken[$i]))
+			{
+				$free[] = $i;
+			}
+		}
+		$next = 0;
+		for ($i = 0; $i < $players; ++$i)
+		{
+			if (!isset($mapping[$i]))
+			{
+				$mapping[$i] = $free[$next++];
+			}
+		}
 		return $mapping;
 	}
 
@@ -1934,6 +2136,49 @@ function reindex_seating($seating)
 // Remaps whatever values are in a [round][table][seat] seating array to a dense 0-based
 // integer range. Use this before ensure_seating_existance when the seating may contain
 // raw user/player IDs rather than already-compact slot indices.
+// Checks a seating that is still written in user IDs, before normalize_seating_to_indices()
+// turns its values into player numbers. That function numbers every distinct value it finds,
+// so anything that is not a real user ID becomes a player of its own. An event was stored
+// with an unfilled round written as ten zeros; the zero was numbered like everybody else,
+// which invented a fourteenth player who sat alone in that round - and since he never shared
+// a table with any of the real thirteen, SeatingDef inferred a "keep apart" rule between him
+// and every one of them. None of it was real. A user ID is always positive, and one person
+// cannot take two seats in the same round, so both of those are rejected here.
+function seating_has_valid_player_ids($seating)
+{
+	if (!is_array($seating) || count($seating) == 0)
+	{
+		return false;
+	}
+
+	foreach ($seating as $round)
+	{
+		if (!is_array($round) || count($round) == 0)
+		{
+			return false;
+		}
+
+		$seated_this_round = array();
+		foreach ($round as $table)
+		{
+			if (!is_array($table) || count($table) != 10)
+			{
+				return false;
+			}
+			foreach ($table as $seat)
+			{
+				$user_id = (int)$seat;
+				if ($user_id <= 0 || isset($seated_this_round[$user_id]))
+				{
+					return false;
+				}
+				$seated_this_round[$user_id] = true;
+			}
+		}
+	}
+	return true;
+}
+
 function normalize_seating_to_indices($seating)
 {
 	$seating = reindex_seating($seating);
@@ -1963,6 +2208,61 @@ function normalize_seating_to_indices($seating)
 // Returns an object with:
 //   ->hash    — canonical hash of the seating
 //   ->created — true if a new row was inserted into seatings, false otherwise
+// Checks that a seating really is an instance of the definition it claims to be: every table
+// seats ten players, nobody sits down twice in the same round, and every player plays exactly
+// $games games. The games count is part of the seating's identity - it is written into the
+// hash - so a seating where players play different numbers of games is not that seating at
+// all, and storing it under that hash makes the row describe something it is not.
+//
+// Extraction from historical game records produces such rows: real events have players who
+// missed rounds, and one extracted seating had a whole round filled by a single player
+// repeated ten times, which kept his total at the expected ten games while nine other players
+// were simply absent from that round - so a plain per-player total is not enough to catch it.
+function seating_is_well_formed($seating, $players, $tables, $games)
+{
+	if (!is_array($seating) || count($seating) == 0 || $players <= 0 || $tables <= 0 || $games <= 0)
+	{
+		return false;
+	}
+
+	$played = array_fill(0, $players, 0);
+	foreach ($seating as $round)
+	{
+		if (!is_array($round) || count($round) < 1 || count($round) > $tables)
+		{
+			return false;
+		}
+
+		$seated_this_round = array();
+		foreach ($round as $table)
+		{
+			if (!is_array($table) || count($table) != 10)
+			{
+				return false;
+			}
+			foreach ($table as $seat)
+			{
+				$player = (int)$seat;
+				if ($player < 0 || $player >= $players || isset($seated_this_round[$player]))
+				{
+					return false;
+				}
+				$seated_this_round[$player] = true;
+				++$played[$player];
+			}
+		}
+	}
+
+	foreach ($played as $games_played)
+	{
+		if ($games_played != $games)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 function ensure_seating_existance($seating)
 {
 	// Guarantee a dense 0-based structure so the stored JSON is an array, never an object.
@@ -1979,6 +2279,14 @@ function ensure_seating_existance($seating)
 	// games == 0 from the array constructor already signals invalid input.
 	$total_slots = $seatingDef->players * $seatingDef->games;
 	if ($total_slots <= 0 || $total_slots % 10 !== 0 || $seatingDef->tables * 10 > $seatingDef->players)
+	{
+		return $result;
+	}
+
+	// The parameters promise that every player plays $games games; a seating that does not keep
+	// that promise is rejected rather than stored under a hash that misdescribes it. Extracted
+	// historical seatings are the ones that fail this - see seating_is_well_formed().
+	if (!seating_is_well_formed($seating, $seatingDef->players, $seatingDef->tables, $seatingDef->games))
 	{
 		return $result;
 	}

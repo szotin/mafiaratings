@@ -2451,7 +2451,12 @@ class ApiPage extends OpsApiPageBase
 				' JOIN users u ON u.id = er.user_id' .
 				' LEFT JOIN cities c ON c.id = u.city_id' .
 				' WHERE er.event_id = ? AND er.coming_odds > 0' .
-				' ORDER BY er.coming_odds DESC' .
+				// The position in this list is the player's number in the seating restrictions,
+				// and the seating hash is derived from those numbers, so the order has to be
+				// reproducible. coming_odds alone leaves most rows tied (and decides which ones
+				// the LIMIT keeps), which made an unchanged set of rules hash differently from
+				// one run to the next and pile up seatings rows. user_id breaks every tie.
+				' ORDER BY er.coming_odds DESC, er.user_id' .
 				' LIMIT ' . $event_players,
 				$event_id);
 		}
@@ -2574,7 +2579,12 @@ class ApiPage extends OpsApiPageBase
 				' FROM tournament_regs tr' .
 				' LEFT JOIN cities c ON c.id = tr.city_id' .
 				' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
-				' ORDER BY reg_order' .
+				// reg_order is 0 for nearly every registration, so on its own it is no ordering
+				// at all: the rows came back in whatever order the storage happened to give,
+				// which shifts on any write to the table. Since the position in this list is the
+				// player's number in the seating restrictions, that renumbered everyone and
+				// produced a brand new seating hash for an unchanged tournament.
+				' ORDER BY tr.reg_order, tr.user_id' .
 				' LIMIT ' . $event_players,
 				$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
 		}
@@ -2857,7 +2867,9 @@ class ApiPage extends OpsApiPageBase
 		$q = new DbQuery(
 			'SELECT tr.user_id FROM tournament_regs tr' .
 			' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0' .
-			' ORDER BY tr.reg_order ASC',
+			// reg_order is 0 for nearly every registration; add user_id so referees are assigned
+			// to tables in a reproducible order rather than in storage order.
+			' ORDER BY tr.reg_order ASC, tr.user_id ASC',
 			$tournament_id, USER_PERM_REFEREE, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
 		while ($row = $q->next())
 		{

@@ -2,6 +2,7 @@
 
 require_once 'include/updater.php';
 require_once 'include/game.php';
+require_once 'include/seating.php';
 
 define('ONE_YEAR', 31536000);
 define('ONE_WEEK', 604800);
@@ -314,6 +315,145 @@ class GarbageCollector extends Updater
 		}
 
 		return $count;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// GarbageCollector.seating_rehash
+	//
+	// Brings seatings rows onto the current canonical hash.
+	//
+	// The hash of a seating encodes the restriction graph with the players renumbered by
+	// SeatingDef::normalizeRestrictions(), so that one set of rules always maps to one row.
+	// That renumbering used to depend on the order the pairs happened to arrive in, so the
+	// same rules produced different hashes on different runs and piled up duplicate rows.
+	// Now that the ordering is total, rows written by the old code carry hashes the code no
+	// longer generates: nothing will ever look them up again, and the optimizers would keep
+	// spending runs on seatings nobody can request.
+	//
+	// Such a row is not thrown away - the seating in it is still a good seating for the same
+	// rules, it is only numbered the old way. Renumbering it onto the new hash keeps all the
+	// optimization that went into it. The scores are recalculated rather than carried over:
+	// calculatePlayersScore() reads the expectation of the lower-numbered player of each pair,
+	// so it is very slightly sensitive to the numbering (about 0.03% on measured rows), and
+	// recalculating costs nothing here.
+	//
+	// Idempotent: a row already on the canonical hash is skipped, so once the table is
+	// converted this task finds nothing to do.
+	//-------------------------------------------------------------------------------------------------------
+	function seating_rehash_task($items_count)
+	{
+		if (!isset($this->vars->rehash_hash))
+		{
+			$this->vars->rehash_hash = '';
+		}
+
+		// Read the batch out before touching the table: the updates below change the primary
+		// key of the very rows this query walks.
+		$rows = array();
+		$query = new DbQuery(
+			'SELECT hash, seating, players_state, numbers_state, tables_state'.
+			' FROM seatings WHERE hash > ? ORDER BY hash LIMIT '.$items_count,
+			$this->vars->rehash_hash);
+		while ($row = $query->next())
+		{
+			$rows[] = $row;
+		}
+
+		$count = 0;
+		foreach ($rows as $row)
+		{
+			list ($old_hash, $seating_json, $players_state, $numbers_state, $tables_state) = $row;
+			$this->vars->rehash_hash = $old_hash;
+			++$count;
+
+			$old_def = new SeatingDef($old_hash);
+			$new_def = new SeatingDef($old_def->players, $old_def->tables, $old_def->games, $old_def->restrictions);
+			$mapping = $new_def->normalizeRestrictions();
+			if ($new_def->hash == $old_hash)
+			{
+				continue;
+			}
+			$mapping = SeatingDef::completeMapping($mapping, $old_def->players);
+
+			$seating = reindex_seating(json_decode($seating_json, true));
+			if (!is_array($seating) || count($seating) == 0)
+			{
+				// No seating to carry over - the row holds nothing worth keeping under either
+				// hash, and findSeating() rebuilds it on demand.
+				Db::begin();
+				Db::exec('seating', 'DELETE FROM seatings WHERE hash = ?', $old_hash);
+				Db::commit();
+				continue;
+			}
+			$seating = SeatingDef::applyMapping($seating, $mapping);
+
+			Db::begin();
+			$keep = true;
+			$rival = new DbQuery('SELECT players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $new_def->hash);
+			if ($rival_row = $rival->next())
+			{
+				// Two rows that the old numbering told apart turn out to be the same task.
+				// Keep the better optimized one - lower scores are better - and drop the other.
+				list ($r_players, $r_numbers, $r_tables) = $rival_row;
+				$mine = $new_def->calculatePlayersScore($seating) + $new_def->calculateNumbersScore($seating) + $new_def->calculateTablesScore($seating);
+				$theirs = (float)$r_players + (float)$r_numbers + (float)$r_tables;
+				if ($mine < $theirs)
+				{
+					Db::exec('seating', 'DELETE FROM seatings WHERE hash = ?', $new_def->hash);
+				}
+				else
+				{
+					$keep = false;
+				}
+			}
+
+			if ($keep)
+			{
+				Db::exec('seating',
+					'UPDATE seatings SET hash = ?, seating = ?,'.
+					' players_score = ?, numbers_score = ?, tables_score = ?,'.
+					' players_state = ?, numbers_state = ?, tables_state = ?'.
+					' WHERE hash = ?',
+					$new_def->hash, json_encode($seating),
+					$new_def->calculatePlayersScore($seating),
+					$new_def->calculateNumbersScore($seating),
+					$new_def->calculateTablesScore($seating),
+					$this->_rehash_state($players_state, $mapping),
+					$this->_rehash_state($numbers_state, $mapping),
+					$this->_rehash_state($tables_state, $mapping),
+					$old_hash);
+			}
+			else
+			{
+				Db::exec('seating', 'DELETE FROM seatings WHERE hash = ?', $old_hash);
+			}
+			Db::commit();
+		}
+		return $count;
+	}
+
+	// Renumbers the working seating an optimizer left in its saved state. The other fields of
+	// the state are seat/table/round cursors, which say nothing about who sits there and so
+	// survive the renumbering untouched. A state that cannot be read is dropped: the optimizer
+	// starts a fresh pass, which costs one run and never corrupts the seating.
+	private function _rehash_state($state_json, $mapping)
+	{
+		if (is_null($state_json) || $state_json === '')
+		{
+			return '';
+		}
+		$state = json_decode($state_json, true);
+		if (!is_array($state) || !isset($state['seating']))
+		{
+			return '';
+		}
+		$seating = reindex_seating($state['seating']);
+		if (!is_array($seating) || count($seating) == 0)
+		{
+			return '';
+		}
+		$state['seating'] = SeatingDef::applyMapping($seating, $mapping);
+		return json_encode($state);
 	}
 
 	//-------------------------------------------------------------------------------------------------------

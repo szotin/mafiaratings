@@ -914,6 +914,14 @@ class SeatingOptimization extends Updater
 				$rounds = json_decode(json_encode($misc->seating->rounds), true);
 				if (is_array($rounds))
 				{
+					// Check the IDs before normalising them: afterwards a placeholder value is
+					// indistinguishable from a player number. See seating_has_valid_player_ids().
+					if (!seating_has_valid_player_ids($rounds))
+					{
+						$this->log('Tournament ' . $tid . ' event ' . $event_id .
+							' has a damaged seating in misc (a seat holds no real player, or a player sits twice in one round) - skipped.');
+						continue;
+					}
 					$rounds = normalize_seating_to_indices($rounds);
 					$this->_log_extracted($tid, $event_id, 'misc', ensure_seating_existance($rounds));
 					continue;
