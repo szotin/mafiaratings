@@ -5,10 +5,24 @@ require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/user.php';
 require_once __DIR__ . '/picture.php';
 
-define('PROMPT_TYPE_NONE', 0); 
-define('PROMPT_TYPE_INFO', 1); 
-define('PROMPT_TYPE_ERROR', 2); 
-define('PROMPT_TYPE_WARNING', 3); 
+// Adds the file's modification time to its address, so that a browser - and anything caching
+// in front of the site - fetches it again after a deploy instead of serving the copy it
+// already has. Without it a changed script can go on being served from a cache for hours:
+// Cloudflare sits in front of the site with a four hour cache on static files, which is long
+// enough for a deploy to look like it did nothing while the pages run new code against an old
+// script. The number only changes when the file does, so the caching still works the rest of
+// the time. A file that cannot be found is left alone - better an unversioned address than none.
+function versioned_asset($path)
+{
+	$full = __DIR__ . '/../' . $path;
+	$time = @filemtime($full);
+	return $time ? ($path . '?v=' . $time) : $path;
+}
+
+define('PROMPT_TYPE_NONE', 0);
+define('PROMPT_TYPE_INFO', 1);
+define('PROMPT_TYPE_ERROR', 2);
+define('PROMPT_TYPE_WARNING', 3);
 
 define('INDEXING_POLICY_NONE', 0);
 define('INDEXING_POLICY_INDEX', 1);
@@ -197,10 +211,10 @@ class PageBase
 		echo '<script src="js/jquery.min.js"></script>';
 		echo '<script src="js/jquery-ui.min.js"></script>';
 		echo '<script src="js/jquery.ui.menubar.js"></script>';
-		echo '<script src="js/labels_' . get_lang_code($_lang) . '.js"></script>';
-		echo '<script src="js/common.js"></script>';
-		echo '<script src="js/md5.js"></script>';
-		echo '<script src="js/mr.js"></script>';
+		echo '<script src="' . versioned_asset('js/labels_' . get_lang_code($_lang) . '.js') . '"></script>';
+		echo '<script src="' . versioned_asset('js/common.js') . '"></script>';
+		echo '<script src="' . versioned_asset('js/md5.js') . '"></script>';
+		echo '<script src="' . versioned_asset('js/mr.js') . '"></script>';
 		echo '<link rel="stylesheet" href="jquery-ui.css" />';
 		
 		echo '<meta property="og:title" content="' . PRODUCT_NAME . '" />';
@@ -209,8 +223,8 @@ class PageBase
 		echo '<meta property="og:site_name" content="' . PRODUCT_NAME . '" />';
 		echo '<meta property="fb:admins" content="' . PRODUCT_FB_ADMINS . '" />';
 		
-		echo '<link rel="stylesheet" href="desktop.css" type="text/css" media="screen" />';
-		echo '<link rel="stylesheet" href="common.css" type="text/css" media="screen" />';
+		echo '<link rel="stylesheet" href="' . versioned_asset('desktop.css') . '" type="text/css" media="screen" />';
+		echo '<link rel="stylesheet" href="' . versioned_asset('common.css') . '" type="text/css" media="screen" />';
 		$this->add_headers();
 		echo '</head>';
 		

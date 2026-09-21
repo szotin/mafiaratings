@@ -70,9 +70,9 @@ try
 		echo '<head>';
 		echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
 		echo '<meta name="robots" content="noindex, nofollow">';
-		echo '<script src="js/labels_' . get_lang_code($_lang) . '.js"></script>';
-		echo '<link rel="stylesheet" href="desktop.css" type="text/css" media="screen" />';
-		echo '<link rel="stylesheet" href="common.css" type="text/css" media="screen" />';
+		echo '<script src="' . versioned_asset('js/labels_' . get_lang_code($_lang) . '.js') . '"></script>';
+		echo '<link rel="stylesheet" href="' . versioned_asset('desktop.css') . '" type="text/css" media="screen" />';
+		echo '<link rel="stylesheet" href="' . versioned_asset('common.css') . '" type="text/css" media="screen" />';
 		
 		echo '</head><body>';
 		
