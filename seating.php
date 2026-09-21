@@ -174,25 +174,7 @@ class Page extends GeneralPageBase
 
 	private function showOptLevelBar($percent, $task)
 	{
-		$pct = round($percent);
-		echo '<p><div style="display:flex;align-items:center;gap:8px;">';
-		echo '<span style="white-space:nowrap;">' . get_label('Quality') . ':</span>';
-		echo '<div style="position:relative;flex:1;height:24px;line-height:24px;overflow:hidden;">';
-		if ($pct > 0)
-		{
-			echo '<img src="images/red_dot.png" style="position:absolute;left:0;top:0;width:' . $pct . '%;height:24px;opacity:0.6;">';
-		}
-		if ($pct < 100)
-		{
-			echo '<img src="images/black_dot.png" style="position:absolute;left:' . $pct . '%;top:0;width:' . (100 - $pct) . '%;height:24px;opacity:0.6;">';
-		}
-		echo '<b style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';
-		echo '</div>';
-		if ($this->can_optimize && $pct < 100)
-		{
-			echo '<button onclick="mr.optimizeSeating(\'' . addslashes($task) . '\', \'' . addslashes($this->hash) . '\')">' . get_label('Optimize') . '</button>';
-		}
-		echo '</div></p>';
+		show_seating_quality_bar($percent, $task, $this->hash, $this->can_optimize);
 	}
 
 	private function showTableStats()
@@ -432,6 +414,7 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
+		show_seating_optimizer_labels();
 		if (empty($this->hash))
 		{
 			echo '<p>' . get_label('No seating hash specified.') . '</p>';

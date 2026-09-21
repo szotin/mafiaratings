@@ -102,29 +102,49 @@ class Page extends TournamentPageBase
 		$this->players_pct = null;
 		$this->numbers_pct = null;
 		$this->tables_pct  = null;
+		$this->seating_hash = null;
+		$this->seating_runs = -1;
+		$this->better_version = null;
+		$this->can_optimize = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID);
 
-		if (isset($this->misc->seating->hash))
+		if (isset($this->misc->seating->hash) && isset($this->misc->seating->rounds))
 		{
 			$hash = $this->misc->seating->hash;
-			$srow = (new DbQuery('SELECT players_score, numbers_score, tables_score FROM seatings WHERE hash = ?', $hash))->next();
+			$this->seating_hash = $hash;
+
+			// Score the seating this page actually shows, not the canonical row it came from.
+			// The event keeps a copy taken when the seating was assigned, while the optimizer
+			// goes on improving the canonical one - so the two drift apart, and reading the
+			// quality from the row would put a number on the page that describes a seating
+			// nobody is looking at. Do it before the rounds below are rewritten from player
+			// numbers into user ids.
+			$def = new SeatingDef($hash);
+			$shown = reindex_seating(json_decode(json_encode($this->misc->seating->rounds), true));
+			if (is_array($shown) && count($shown) > 0)
+			{
+				$quality = seating_quality($hash,
+					$def->calculatePlayersScore($shown),
+					$def->calculateNumbersScore($shown),
+					$def->calculateTablesScore($shown));
+				$this->players_pct = $quality->players;
+				$this->numbers_pct = $quality->numbers;
+				$this->tables_pct  = $quality->tables;
+			}
+
+			// Whether the canonical seating has since been optimized past the copy held here.
+			$srow = (new DbQuery(
+				'SELECT players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs'.
+				' FROM seatings WHERE hash = ?', $hash))->next();
 			if ($srow)
 			{
-				list($ps, $ns, $ts) = $srow;
-				$hash_parts = seating_hash_parts($hash);
-				$players = $hash_parts->players;
-				$tables  = $hash_parts->tables;
-				$games   = $hash_parts->games;
-				$calc_pct = function($score, $max_score) {
-					if ($max_score <= 0) return 100.0;
-					return (1 - min(max($score / $max_score, 0), 1)) * 100;
-				};
-				$this->players_pct = ($players > 10)
-					? $calc_pct($ps, SeatingDef::worst_acceptable_players_score($players, $tables, $games))
-					: null;
-				$this->numbers_pct = $calc_pct($ns, SeatingDef::worst_acceptable_numbers_score($players, $tables, $games));
-				$this->tables_pct  = ($tables >= 3)
-					? $calc_pct($ts, SeatingDef::worst_acceptable_tables_score($players, $tables, $games))
-					: null;
+				list($pr, $pvr, $tr, $tvr, $nr, $nvr) = $srow;
+				$this->seating_runs = (int)$pr + (int)$tr + (int)$nr;
+				$current_version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
+				$stored_version = isset($this->misc->seating->version) ? $this->misc->seating->version : null;
+				if (!is_null($stored_version) && $stored_version !== $current_version)
+				{
+					$this->better_version = $current_version;
+				}
 			}
 		}
 		$this->tables = &$this->misc->seating->rounds;
@@ -214,22 +234,23 @@ class Page extends TournamentPageBase
 		$this->hideGames();
 	}
 	
-	private function showOptLevelBar($percent)
+	private function showOptLevelBar($percent, $task)
 	{
-		$pct = round($percent);
-		echo '<p><div style="display:flex;align-items:center;gap:8px;">';
-		echo '<span style="white-space:nowrap;">' . get_label('Quality') . ':</span>';
-		echo '<div style="position:relative;flex:1;height:24px;line-height:24px;overflow:hidden;">';
-		if ($pct > 0)
+		// The percentage above describes the copy of the seating this event holds. When the
+		// canonical one has been optimized further since, saying "optimize" would be wrong
+		// advice - the work is already done, this event just has not picked it up.
+		$note = '';
+		$update_event_id = null;
+		if (!is_null($this->better_version))
 		{
-			echo '<img src="images/red_dot.png" style="position:absolute;left:0;top:0;width:' . $pct . '%;height:24px;opacity:0.6;">';
+			$note = get_label('A better seating is ready (version [0]).', $this->better_version);
+			$update_event_id = $this->round_id;
 		}
-		if ($pct < 100)
+		else if ($this->seating_runs === 0)
 		{
-			echo '<img src="images/black_dot.png" style="position:absolute;left:' . $pct . '%;top:0;width:' . (100 - $pct) . '%;height:24px;opacity:0.6;">';
+			$note = get_label('This seating has just been created and not optimized yet. It is first in line for the background optimizer, or you can run it now.');
 		}
-		echo '<b style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';
-		echo '</div></div></p>';
+		show_seating_quality_bar($percent, $task, $this->seating_hash, $this->can_optimize, $note, $update_event_id);
 	}
 
 	private function showSeatingTop()
@@ -249,6 +270,7 @@ class Page extends TournamentPageBase
 	
 	protected function show_body()
 	{
+		show_seating_optimizer_labels();
 		$this->misc = NULL;
 		$this->round_num = 0;
 		echo '<div class="tab">';
@@ -598,7 +620,7 @@ class Page extends TournamentPageBase
 	
 	private function showTableStats()
 	{
-		if (!is_null($this->tables_pct)) $this->showOptLevelBar($this->tables_pct);
+		if (!is_null($this->tables_pct)) $this->showOptLevelBar($this->tables_pct, 'tables');
 		$num_rounds = count($this->tables);
 		$num_tables = $num_rounds > 0 ? count($this->tables[0]) : 0;
 		$pl = array();
@@ -664,7 +686,7 @@ class Page extends TournamentPageBase
 	
 	private function showPvpStats()
 	{
-		if (!is_null($this->players_pct)) $this->showOptLevelBar($this->players_pct);
+		if (!is_null($this->players_pct)) $this->showOptLevelBar($this->players_pct, 'players');
 		$highlight_id = -1;
 		$pl = array();
 		for ($i = 0; $i < count($this->tables); ++$i)
@@ -829,7 +851,7 @@ class Page extends TournamentPageBase
 	
 	private function showNumbersStats()
 	{
-		if (!is_null($this->numbers_pct)) $this->showOptLevelBar($this->numbers_pct);
+		if (!is_null($this->numbers_pct)) $this->showOptLevelBar($this->numbers_pct, 'numbers');
 		$pl = array();
 		for ($i = 0; $i < count($this->tables); ++$i)
 		{

@@ -207,6 +207,84 @@ function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = 
 // Use this rather than slicing explode('_', $hash) by hand: the team size sits between the
 // games and the restrictions, and older hashes written before it existed do not have it, so a
 // fixed offset is right for one of the two and wrong for the other.
+// The quality bar both seating pages show, with the button that optimizes the very measure the
+// bar is about - the user is looking at the seat numbers, so the button improves the seat
+// numbers. $hash is what gets optimized; pass null for $hash or false for $can_optimize to draw
+// the bar alone. $note is shown under it, for saying things the bare percentage does not, like
+// that a seating this new has not been optimized at all yet.
+// $update_event_id turns on the button that pulls the improved canonical seating into that
+// event; pass null when there is nothing better to pull, or when the page has no event to
+// pull it into.
+function show_seating_quality_bar($percent, $task, $hash, $can_optimize, $note = '', $update_event_id = null)
+{
+	$pct = round($percent);
+	echo '<p><div style="display:flex;align-items:center;gap:8px;">';
+	echo '<span style="white-space:nowrap;">' . get_label('Quality') . ':</span>';
+	echo '<div style="position:relative;flex:1;height:24px;line-height:24px;overflow:hidden;">';
+	echo '<img id="opt-fill-' . $task . '" src="images/red_dot.png" style="position:absolute;left:0;top:0;width:' . $pct . '%;height:24px;opacity:0.6;">';
+	echo '<img id="opt-rest-' . $task . '" src="images/black_dot.png" style="position:absolute;left:' . $pct . '%;top:0;width:' . (100 - $pct) . '%;height:24px;opacity:0.6;">';
+	echo '<b id="opt-pct-' . $task . '" style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';
+	echo '</div>';
+	if ($can_optimize && !is_null($update_event_id))
+	{
+		// An improved seating is already waiting, so taking it is the thing to do here -
+		// optimizing again would only redo work that is done.
+		$confirm = addslashes(get_label('Apply the improved seating? Players will be seated anew.'));
+		echo '<button onclick="mr.updateEventSeating(' . (int)$update_event_id . ', \'' . $confirm . '\')">' . get_label('Update seating') . '</button>';
+	}
+	else if ($can_optimize && !is_null($hash) && $pct < 100)
+	{
+		echo '<button id="opt-btn-' . $task . '" onclick="mr.optimizeSeating(\'' . addslashes($task) . '\', \'' . addslashes($hash) . '\')">' . get_label('Optimize') . '</button>';
+	}
+	echo '</div>';
+	echo '<div id="opt-msg-' . $task . '" style="color:#666;font-size:90%;">' . $note . '</div>';
+	echo '</p>';
+}
+
+// The texts mr.optimizeSeating() puts on the page while it works. It runs in the browser and has
+// no way to reach get_label(), so the page hands them over.
+function show_seating_optimizer_labels()
+{
+	echo '<script>mr.seatingOptLabels = {';
+	echo 'working: ' . json_encode(get_label('Optimizing... pass [0]')) . ',';
+	echo 'better: ' . json_encode(get_label('Pass [0]: found a better seating')) . ',';
+	echo 'nothing: ' . json_encode(get_label('Pass [0]: nothing better found')) . ',';
+	echo 'searching: ' . json_encode(get_label('Pass [0]: improving, not saved yet')) . ',';
+	echo 'done: ' . json_encode(get_label('Nothing left to improve')) . ',';
+	echo 'enough: ' . json_encode(get_label('Stopped. Better seatings found: [0]')) . ',';
+	echo 'stop: ' . json_encode(get_label('Stop')) . ',';
+	echo 'start: ' . json_encode(get_label('Optimize'));
+	echo '};</script>';
+}
+
+// Quality of a stored seating as the percentages the pages show: how far each score is from the
+// worst one still considered acceptable, as a number from 0 (no better than the worst) to 100
+// (nothing left to improve). players and tables come back null where the measure says nothing -
+// a ten player seating has only one way to seat everyone, and tables mean nothing below three.
+// Kept in one place so seating.php, tournament_seating.php and the api all agree.
+function seating_quality($hash, $players_score, $numbers_score, $tables_score)
+{
+	$parts = seating_hash_parts($hash);
+	$percent = function($score, $worst)
+	{
+		if ($worst <= 0)
+		{
+			return 100.0;
+		}
+		return (1 - min(max($score / $worst, 0), 1)) * 100;
+	};
+
+	$result = new stdClass();
+	$result->players = ($parts->players > 10)
+		? $percent($players_score, SeatingDef::worst_acceptable_players_score($parts->players, $parts->tables, $parts->games))
+		: null;
+	$result->numbers = $percent($numbers_score, SeatingDef::worst_acceptable_numbers_score($parts->players, $parts->tables, $parts->games));
+	$result->tables = ($parts->tables >= 3)
+		? $percent($tables_score, SeatingDef::worst_acceptable_tables_score($parts->players, $parts->tables, $parts->games))
+		: null;
+	return $result;
+}
+
 function seating_hash_parts($hash)
 {
 	$parts = explode('_', $hash);

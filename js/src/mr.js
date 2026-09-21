@@ -1369,20 +1369,128 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// seating
 	//--------------------------------------------------------------------------------------
+	// Optimizing runs in slices right on the page: a slice of the optimizer, then a look at the
+	// new quality, then the next slice, with the bar moving as it goes. The optimizer script is
+	// the same one the background collector runs - asking it for a few seconds at a time is what
+	// lets the page stay in charge, so the user can watch it work and stop when it is good
+	// enough, instead of being sent to another tab to watch a log and told to leave it open.
+	var seatingOptimizers = {};
+
 	this.optimizeSeating = function(task, hash)
 	{
-		var url = 'form/seating_optimize.php';
-		var sep = '?';
-		if (task)
+		if (seatingOptimizers[task])
 		{
-			url += sep + 'task=' + encodeURIComponent(task);
-			sep = '&';
+			// Already running - the button says Stop.
+			seatingOptimizers[task].stop = true;
+			return;
 		}
-		if (hash)
+
+		var state = { stop: false, passes: 0, improvements: 0 };
+		seatingOptimizers[task] = state;
+		mr.setSeatingOptimizerUI(task, true, null);
+
+		var sliceSeconds = 8;
+		var maxPasses = 60;
+
+		function finish(message)
 		{
-			url += sep + 'hash=' + encodeURIComponent(hash);
+			delete seatingOptimizers[task];
+			mr.setSeatingOptimizerUI(task, false, message);
 		}
-		dlg.form(url, null, 350);
+
+		function readQuality(afterwards)
+		{
+			json.get('api/get/seating_quality.php?hash=' + encodeURIComponent(hash), function(data)
+			{
+				var pct = (data && isSet(data[task])) ? data[task] : null;
+				if (pct !== null)
+				{
+					mr.setSeatingQuality(task, pct);
+				}
+				afterwards(data, pct);
+			},
+			function() { afterwards(null, null); });
+		}
+
+		// What the pass just finished actually did. The optimizer keeps improving a copy of the
+		// seating and only writes it out when a sweep ends, so a score that has not moved does
+		// not mean the pass was wasted - the void count is what separates "found nothing" from
+		// "found something, not saved yet".
+		function describePass(before, after)
+		{
+			if (!before || !after) { return mr.seatingOptLabels.working.replace('[0]', state.passes); }
+			var scoreBefore = before.scores ? before.scores[task] : null;
+			var scoreAfter = after.scores ? after.scores[task] : null;
+			var voidBefore = before.void_runs ? before.void_runs[task] : null;
+			var voidAfter = after.void_runs ? after.void_runs[task] : null;
+
+			if (scoreBefore !== null && scoreAfter !== null && scoreAfter < scoreBefore)
+			{
+				++state.improvements;
+				return mr.seatingOptLabels.better.replace('[0]', state.passes);
+			}
+			if (voidBefore !== null && voidAfter !== null && voidAfter > voidBefore)
+			{
+				return mr.seatingOptLabels.nothing.replace('[0]', state.passes);
+			}
+			return mr.seatingOptLabels.searching.replace('[0]', state.passes);
+		}
+
+		function runSlice(before)
+		{
+			if (state.stop) { readQuality(function() { finish(mr.seatingOptLabels.enough.replace('[0]', state.improvements)); }); return; }
+			if (state.passes >= maxPasses) { readQuality(function() { finish(mr.seatingOptLabels.enough.replace('[0]', state.improvements)); }); return; }
+			++state.passes;
+			mr.setSeatingOptimizerUI(task, true, mr.seatingOptLabels.working.replace('[0]', state.passes));
+
+			$.ajax({
+				url: 'seating_optimization.php',
+				data: { task: task, hash: hash, time: sliceSeconds, runs: 1 },
+				timeout: (sliceSeconds + 30) * 1000,
+				complete: function()
+				{
+					readQuality(function(after, pct)
+					{
+						mr.setSeatingOptimizerUI(task, true, describePass(before, after));
+						if (pct !== null && pct >= 100) { finish(mr.seatingOptLabels.done); return; }
+						runSlice(after);
+					});
+				}
+			});
+		}
+
+		readQuality(function(data) { runSlice(data); });
+	}
+
+	// Replaces the event's copy of the seating with the canonical one, which the optimizer has
+	// improved since the copy was taken. It is the same call the tournament preparation page
+	// makes, and it reseats the players, so it asks first.
+	this.updateEventSeating = function(eventId, confirmMessage)
+	{
+		dlg.yesNo(confirmMessage, null, null, function()
+		{
+			json.post('api/ops/event.php', { op: 'set_seating', event_id: eventId }, function()
+			{
+				window.location.reload();
+			});
+		});
+	}
+
+	// Texts are filled in by the page, which has the translations.
+	this.seatingOptLabels = { working: 'Optimizing... pass [0]', better: 'Pass [0]: found a better seating', nothing: 'Pass [0]: nothing better found', searching: 'Pass [0]: improving, not saved yet', done: 'Nothing left to improve', enough: 'Stopped. Improvements found: [0]', stop: 'Stop', start: 'Optimize' };
+
+	this.setSeatingQuality = function(task, pct)
+	{
+		var rounded = Math.round(pct);
+		$('#opt-fill-' + task).css('width', rounded + '%');
+		$('#opt-rest-' + task).css('left', rounded + '%').css('width', (100 - rounded) + '%');
+		$('#opt-pct-' + task).text(rounded + '%');
+	}
+
+	this.setSeatingOptimizerUI = function(task, running, message)
+	{
+		$('#opt-btn-' + task).text(running ? mr.seatingOptLabels.stop : mr.seatingOptLabels.start);
+		$('#opt-msg-' + task).text(message ? message : '');
 	}
 }
 
