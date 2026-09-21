@@ -460,7 +460,6 @@ class Page extends GeneralPageBase
 
 		// seating_data[round][table][seat] = player_index
 		// Reorganize into $this->tables[table][game] = [seat0..seat9]
-		$parts = explode('_', $this->hash);
 		$this->num_tables = count($seating_data[0]);
 		$this->num_games  = count($seating_data);
 
@@ -507,11 +506,18 @@ class Page extends GeneralPageBase
 		$this->all_players = $all_players;
 
 		// Parse hash for display info.
-		$players = isset($parts[0]) ? (int)$parts[0] : 0;
-		$tables  = isset($parts[1]) ? (int)$parts[1] : 0;
-		$games   = isset($parts[2]) ? (int)$parts[2] : 0;
-		$restriction_parts = array_slice($parts, 3);
-		$restrictions_html = format_seating_restrictions($restriction_parts);
+		$hash_parts = seating_hash_parts($this->hash);
+		$players   = $hash_parts->players;
+		$tables    = $hash_parts->tables;
+		$games     = $hash_parts->games;
+		$team_size = $hash_parts->team_size;
+		$restrictions_html = format_seating_restrictions($hash_parts->restrictions);
+		if ($team_size > 1)
+		{
+			$teams_note = get_label('Teams of [0]', $team_size);
+			$restrictions_html = ($restrictions_html === '' || is_null($restrictions_html))
+				? $teams_note : $teams_note . ', ' . $restrictions_html;
+		}
 		$version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
 		echo '<p style="display:flex;justify-content:space-between;align-items:center;">';
 		echo '<span>' . get_label('Players') . ': <b>' . $players . '</b> &nbsp; ';

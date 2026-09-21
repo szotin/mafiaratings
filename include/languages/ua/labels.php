@@ -483,6 +483,7 @@ $labelMenu = array (
 'Start the game' => 'Почати гру', // menu.php, menu.php
 'Change my profile options' => 'Змінити налаштування користувача', // menu.php, menu.php, menu.php, menu.php
 'My profile' => 'Налаштування', // menu.php, menu.php, menu.php, menu.php
+'Teams of [0]' => 'Команди по [0]', // seating.php, seatings.php
 'Logout from [0]' => 'Вихід з [0]', // menu.php, menu.php, include/page_base.php, menu.php, menu.php, include/page_base.php
 'Log out' => 'Вихід', // menu.php, menu.php, include/page_base.php, menu.php, menu.php, include/page_base.php
 'General' => 'Загальне', // menu.php, menu.php, menu.php, menu.php

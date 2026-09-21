@@ -110,10 +110,10 @@ class Page extends TournamentPageBase
 			if ($srow)
 			{
 				list($ps, $ns, $ts) = $srow;
-				$parts   = explode('_', $hash);
-				$players = isset($parts[0]) ? (int)$parts[0] : 0;
-				$tables  = isset($parts[1]) ? (int)$parts[1] : 0;
-				$games   = isset($parts[2]) ? (int)$parts[2] : 0;
+				$hash_parts = seating_hash_parts($hash);
+				$players = $hash_parts->players;
+				$tables  = $hash_parts->tables;
+				$games   = $hash_parts->games;
 				$calc_pct = function($score, $max_score) {
 					if ($max_score <= 0) return 100.0;
 					return (1 - min(max($score / $max_score, 0), 1)) * 100;

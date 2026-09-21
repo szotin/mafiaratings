@@ -19,6 +19,10 @@ class ApiPage extends GetApiPageBase
 			throw new Exc(get_label('[0] players cannot be seated at [1] tables.', $players, $tables));
 		}
 
+		// 1 is an individual seating. Greater means the players are divided into teams of that
+		// size by position - 0,1,2 are one team when it is 3 - and teammates never share a table.
+		$team_size = max(1, (int)get_optional_param('team_size', 1));
+
 		$restrictions_raw      = get_optional_param('restrictions', '');
 		$table_restrictions_raw = get_optional_param('table_restrictions', '');
 
@@ -52,7 +56,7 @@ class ApiPage extends GetApiPageBase
 		}
 
 		// Build SeatingDef, normalize restrictions to get the canonical hash.
-		$seatingDef = new SeatingDef($players, $tables, $games, $restrictions);
+		$seatingDef = new SeatingDef($players, $tables, $games, $restrictions, $team_size);
 		$restriction_mapping = $seatingDef->normalizeRestrictions();
 
 		// Get seating from DB (or generate); $create=false so nothing is stored.
@@ -90,7 +94,7 @@ class ApiPage extends GetApiPageBase
 			// Apply table restrictions on the original-numbered seating.
 			if (!empty($table_restrictions))
 			{
-				$origDef = new SeatingDef($players, $tables, $games, $restrictions);
+				$origDef = new SeatingDef($players, $tables, $games, $restrictions, $team_size);
 				$mapped  = $origDef->applyTableRestrictions($mapped, $table_restrictions);
 			}
 
@@ -108,6 +112,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('players', 'Total number of players (required).');
 		$help->request_param('tables', 'Number of tables (required).');
 		$help->request_param('games', 'Number of games per player (required).');
+		$help->request_param('team_size', 'Players per team. 1 is an individual seating. Greater divides the players into teams by position - with 3, players 0,1,2 are one team, 3,4,5 the next - and teammates never share a table.', '1');
 		$help->request_param('restrictions', 'JSON array of player restriction groups. Players in the same group will never share a table. Indices are 0-based. Example: [[0,1],[2,3]]', '[]');
 		$help->request_param('table_restrictions', 'JSON array indexed by table number. Each element is an array of player slot indices forbidden at that table, or null. Example: [[4],null,[2,3]]', '[]');
 		$help->response_param('seating', 'Three-dimensional array [round][table][seat] = player_index (0-based, matching the original input indices).');

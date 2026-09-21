@@ -2263,7 +2263,7 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		// --- 3. Load registered players and classify pairs (after dimensions are finalised) ---
-		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs) =
+		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs, $team_size, $teams) =
 			$this->load_reg_users_and_pairs($event_id, $tournament_id, $club_id, $event_players, $event_round);
 
 		// --- 6. Normalize restrictions and renumber seating to canonical form ---
@@ -2638,42 +2638,38 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 
-		// For team tournaments: players in the same team must not share a table
+		// For team tournaments the teammates must not share a table. That used to be written out
+		// here as one restriction per pair of teammates, which made a long list - thirty pairs
+		// for ten teams of three - that the seating hash then had to spell out in full and often
+		// could not fit. The teams are handed back instead: SeatingDef records only the team
+		// size in the hash and generates the same pairs from it, so the seating is unchanged and
+		// the hash stays short.
+		$team_size = 1;
+		$teams = array();
 		if (!is_null($tournament_id))
 		{
-			list($team_size) = Db::record(get_label('tournament'), 'SELECT team_size FROM tournaments WHERE id = ?', $tournament_id);
-			if ((int)$team_size > 1)
+			list($declared_size) = Db::record(get_label('tournament'), 'SELECT team_size FROM tournaments WHERE id = ?', $tournament_id);
+			$declared_size = (int)$declared_size;
+			if ($declared_size > 1)
 			{
-				$team_members = array();
+				$team_size = $declared_size;
+				$by_team = array();
 				$q_teams = new DbQuery(
-					'SELECT user_id, team_id FROM tournament_regs WHERE tournament_id = ? AND team_id IS NOT NULL AND (flags & ?) <> 0 AND (flags & ?) = 0',
+					'SELECT user_id, team_id FROM tournament_regs'.
+					' WHERE tournament_id = ? AND team_id IS NOT NULL AND (flags & ?) <> 0 AND (flags & ?) = 0'.
+					// Reproducible order, so the same teams always fill the same seats.
+					' ORDER BY team_id, reg_order, user_id',
 					$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
 				while ($r = $q_teams->next())
 				{
-					$tid = (int)$r[1];
-					if (!isset($team_members[$tid])) { $team_members[$tid] = array(); }
-					$team_members[$tid][] = (int)$r[0];
+					$by_team[(int)$r[1]][] = (int)$r[0];
 				}
-				foreach ($team_members as $members)
-				{
-					$n = count($members);
-					for ($a = 0; $a < $n - 1; ++$a)
-					{
-						for ($b = $a + 1; $b < $n; ++$b)
-						{
-							$uid1 = $members[$a];
-							$uid2 = $members[$b];
-							if (isset($user_to_reg_idx[$uid1]) && isset($user_to_reg_idx[$uid2]))
-							{
-								$restrictions[] = array($user_to_reg_idx[$uid1], $user_to_reg_idx[$uid2]);
-							}
-						}
-					}
-				}
+				ksort($by_team);
+				$teams = array_values($by_team);
 			}
 		}
 
-		return array($reg_users, $restrictions, $welcome_pairs, $avoid_pairs);
+		return array($reg_users, $restrictions, $welcome_pairs, $avoid_pairs, $team_size, $teams);
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -2693,6 +2689,12 @@ class ApiPage extends OpsApiPageBase
 
 		foreach ($restrict_mapping as $reg_idx => $slot)
 		{
+			// A team seating maps every position, not just the players named in a restriction,
+			// so there can be positions here that nobody registered for. Leave those empty.
+			if (!isset($reg_users[$reg_idx]) || !isset($final_mapping[$slot]))
+			{
+				continue;
+			}
 			$final_mapping[$slot]        = $reg_users[$reg_idx]->user_id;
 			$assigned_slots[$slot]       = true;
 			$assigned_reg_idxs[$reg_idx] = true;
@@ -2931,6 +2933,75 @@ class ApiPage extends OpsApiPageBase
 		return null;
 	}
 
+	// Turns teams of user ids into teams of registration positions, which is what a seating
+	// works in. Only teams that field exactly $team_size registered players are returned: a
+	// team short of a player cannot fill a block, and one with more than that has substitutes,
+	// who share their team's seats rather than taking seats of their own.
+	private function teamsAsRegIndexes($teams, $reg_users, $team_size)
+	{
+		if ($team_size <= 1)
+		{
+			return array();
+		}
+
+		$user_to_slot = array();
+		foreach ($reg_users as $slot => $u)
+		{
+			$user_to_slot[$u->user_id] = $slot;
+		}
+
+		$result = array();
+		foreach ($teams as $members)
+		{
+			$seated = array();
+			foreach ($members as $user_id)
+			{
+				if (isset($user_to_slot[$user_id]))
+				{
+					$seated[] = $user_to_slot[$user_id];
+				}
+			}
+			if (count($seated) == $team_size)
+			{
+				$result[] = $seated;
+			}
+		}
+		return $result;
+	}
+
+	// Writes the teammate pairs out as ordinary restrictions, the way they were handled before
+	// the team size became part of the seating hash. Used when the field does not divide into
+	// whole teams, where the hash's positional form - teams as blocks of equal size - cannot
+	// describe the teams truthfully.
+	private function addTeamPairsAsRestrictions(&$restrictions, $teams, $reg_users)
+	{
+		$user_to_slot = array();
+		foreach ($reg_users as $slot => $u)
+		{
+			$user_to_slot[$u->user_id] = $slot;
+		}
+
+		foreach ($teams as $members)
+		{
+			$seated = array();
+			foreach ($members as $user_id)
+			{
+				if (isset($user_to_slot[$user_id]))
+				{
+					$seated[] = $user_to_slot[$user_id];
+				}
+			}
+			$n = count($seated);
+			for ($a = 0; $a < $n - 1; ++$a)
+			{
+				for ($b = $a + 1; $b < $n; ++$b)
+				{
+					$restrictions[] = array($seated[$a], $seated[$b]);
+				}
+			}
+		}
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// set_seating
 	//-------------------------------------------------------------------------------------------------------
@@ -2960,7 +3031,7 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		// --- 2. Load registered players and classify pairs ---
-		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs) =
+		list($reg_users, $restrictions, $welcome_pairs, $avoid_pairs, $team_size, $teams) =
 			$this->load_reg_users_and_pairs($event_id, $tournament_id, $club_id, $event_players, $event_round);
 
 		// A "separate these players" rule can be impossible to honour. With a single table
@@ -2990,7 +3061,20 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		// --- 3. Build SeatingDef, normalize restrictions ---
-		$seatingDef = new SeatingDef($event_players, $event_tables, $event_games, $restrictions);
+		// Teams are given as user ids; the seating works in registration positions.
+		$team_slots = $this->teamsAsRegIndexes($teams, $reg_users, $team_size);
+		// The hash puts teams on equal consecutive blocks, which only describes the truth when
+		// the whole field divides into teams of exactly that size. Where it does not - a team
+		// short of a player, or more teams than the field holds - fall back to an individual
+		// seating and write the teammate pairs out one by one, as it worked before team sizes
+		// were recorded at all.
+		if ($team_size > 1 && count($team_slots) * $team_size != $event_players)
+		{
+			$this->addTeamPairsAsRestrictions($restrictions, $teams, $reg_users);
+			$team_size = 1;
+			$team_slots = array();
+		}
+		$seatingDef = new SeatingDef($event_players, $event_tables, $event_games, $restrictions, $team_size, $team_slots);
 		$restrict_mapping = $seatingDef->normalizeRestrictions();
 
 		// --- 4. Get or create canonical seating from seatings table ---

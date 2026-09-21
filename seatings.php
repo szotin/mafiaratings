@@ -56,13 +56,14 @@ class Page extends GeneralPageBase
 				continue;
 			}
 
+			$hash_parts = seating_hash_parts($hash);
 			$seating = new stdClass();
 			$seating->hash = $hash;
-			$seating->players = (int)$parts[0];
-			$seating->tables  = (int)$parts[1];
-			$seating->games   = (int)$parts[2];
-			$restriction_parts = array_slice($parts, 3);
-			$seating->restrictions = format_seating_restrictions($restriction_parts);
+			$seating->players = $hash_parts->players;
+			$seating->tables  = $hash_parts->tables;
+			$seating->games   = $hash_parts->games;
+			$seating->team_size = $hash_parts->team_size;
+			$seating->restrictions = format_seating_restrictions($hash_parts->restrictions);
 			// A single table can not honour a pair restriction unless there are enough rounds to
 			// keep the two players apart. Mark that, otherwise the 0% optimization level below
 			// looks like a defect rather than something no seating can avoid.
@@ -128,6 +129,7 @@ class Page extends GeneralPageBase
 		echo '<td width="70" align="center"><b>' . get_label('Players') . '</b></td>';
 		echo '<td width="70" align="center"><b>' . get_label('Tables') . '</b></td>';
 		echo '<td width="70" align="center"><b>' . get_label('Games per player') . '</b></td>';
+		echo '<td width="70" align="center"><b>' . get_label('Team') . '</b></td>';
 		echo '<td><b>' . get_label('Restrictions') . '</b></td>';
 		echo '<td width="70" align="center"><b>' . get_label('Players opt level') . '</b></td>';
 		echo '<td width="70" align="center"><b>' . get_label('Numbers opt level') . '</b></td>';
@@ -153,6 +155,9 @@ class Page extends GeneralPageBase
 			echo '<td align="center">' . $seating->players . '</td>';
 			echo '<td align="center">' . $seating->tables . '</td>';
 			echo '<td align="center">' . $seating->games . '</td>';
+			// An individual seating has a team size of 1, which says nothing worth a column
+			// full of ones - only real teams are shown.
+			echo '<td align="center">' . ($seating->team_size > 1 ? $seating->team_size : '') . '</td>';
 			echo '<td>' . $seating->restrictions . '</td>';
 			echo '<td align="center">' . $seating->players_opt_level . '</td>';
 			echo '<td align="center">' . $seating->numbers_opt_level . '</td>';

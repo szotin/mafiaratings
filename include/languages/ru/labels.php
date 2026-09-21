@@ -247,6 +247,7 @@ $labelMenu = array (
 'History' => 'История', // menu.php, menu.php
 'Referees statistics' => 'Статистика судей', // include/general_page_base.php
 'Change my profile options' => 'Изменить настройки пользователя', // menu.php, menu.php
+'Teams of [0]' => 'Команды по [0]', // seating.php, seatings.php
 'Logout from [0]' => 'Выход из [0]', // menu.php, menu.php, include/page_base.php
 'Log out' => 'Выход', // menu.php, menu.php, include/page_base.php
 'Repairing broken things' => 'Восстановление сломанного', // include/general_page_base.php

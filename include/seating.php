@@ -202,6 +202,29 @@ function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = 
 	return $result;
 }
 
+// Splits a seating hash into its parts. Returns an object with players, tables, games,
+// team_size and restrictions (the leftover segments, ready for format_seating_restrictions).
+// Use this rather than slicing explode('_', $hash) by hand: the team size sits between the
+// games and the restrictions, and older hashes written before it existed do not have it, so a
+// fixed offset is right for one of the two and wrong for the other.
+function seating_hash_parts($hash)
+{
+	$parts = explode('_', $hash);
+	$result = new stdClass();
+	$result->players      = isset($parts[0]) ? (int)$parts[0] : 0;
+	$result->tables       = isset($parts[1]) ? (int)$parts[1] : 0;
+	$result->games        = isset($parts[2]) ? (int)$parts[2] : 0;
+	$result->team_size    = 1;
+	$first = 3;
+	if (count($parts) > 3 && ctype_digit($parts[3]))
+	{
+		$result->team_size = max(1, (int)$parts[3]);
+		$first = 4;
+	}
+	$result->restrictions = array_slice($parts, $first);
+	return $result;
+}
+
 function format_seating_restrictions($parts)
 {
 	if (empty($parts))
@@ -362,10 +385,27 @@ class SeatingDef
 	public $players;
 	public $tables;
 	public $games;
+	// Number of players per team. 1 means an individual tournament. When it is greater, the
+	// players are divided into teams by position - with a team size of 3, players 0,1,2 are one
+	// team, 3,4,5 the next, and so on - and teammates must never share a table. Those pairs are
+	// added to $restrictions in teamRestrictions(), so everything downstream (the optimizers,
+	// satisfiesRestrictions, the scores) treats them as ordinary restrictions and needs no
+	// changes. The hash records the team size instead of listing the pairs, which keeps it
+	// short: a 30 player team-of-3 tournament has 30 teammate pairs that would otherwise be
+	// spelled out and would overflow the 255 character limit.
+	public $teamSize;
+	// Who is on a team with whom, in the numbering this object currently uses. Read from a hash
+	// the teams are the positional blocks the hash means. Built from a caller's numbers they are
+	// whatever the caller passes, because a tournament's teammates sit at whatever registration
+	// positions they happen to have. normalizeRestrictions() is what moves each team onto a
+	// block of its own, and that is what lets the hash record just the size.
+	public $teams;
 	public $restrictions;
-	
-	function __construct($hash, $tables = 0, $games = 0, $restrictions = null)
+
+	function __construct($hash, $tables = 0, $games = 0, $restrictions = null, $team_size = 1, $teams = null)
 	{
+		$this->teamSize = max(1, (int)$team_size);
+		$this->teams = array();
 		if (is_object($hash))
 		{
 			// Copy constructor: accepts a SeatingDef object and clones its values.
@@ -373,6 +413,8 @@ class SeatingDef
 			$this->players      = $hash->players;
 			$this->tables       = $hash->tables;
 			$this->games        = $hash->games;
+			$this->teamSize     = $hash->teamSize;
+			$this->teams        = $hash->teams;
 			$this->restrictions = $hash->restrictions;
 		}
 		else if (is_array($hash))
@@ -455,6 +497,37 @@ class SeatingDef
 				}
 			}
 
+			// A seating on its own cannot say which of the pairs that never met are teammates
+			// and which merely happened not to meet, so the caller passes the teams in when it
+			// knows them - extraction does, because it reads them from the tournament. With them
+			// the hash records the team size instead of listing every teammate pair.
+			if ($this->teamSize > 1 && is_array($teams))
+			{
+				$usable = array();
+				foreach ($teams as $members)
+				{
+					if (count($members) == $this->teamSize)
+					{
+						$usable[] = array_values($members);
+					}
+				}
+				if (count($usable) * $this->teamSize == $this->players)
+				{
+					$this->teams = $usable;
+					$this->addTeamRestrictions();
+				}
+				else
+				{
+					$this->teamSize = 1;
+					$this->teams = array();
+				}
+			}
+			else
+			{
+				$this->teamSize = 1;
+				$this->teams = array();
+			}
+
 			$this->generateHash();
 		}
 		else if (is_numeric($hash))
@@ -470,6 +543,37 @@ class SeatingDef
 			{
 				$this->restrictions = $restrictions;
 			}
+			// Only whole teams of exactly teamSize can be placed on the hash's equal blocks, and
+			// only if they fill the field exactly. Anything else is not describable that way, so
+			// drop back to an individual seating and let the caller spell the pairs out.
+			if ($this->teamSize > 1)
+			{
+				$usable = array();
+				if (is_array($teams))
+				{
+					foreach ($teams as $members)
+					{
+						if (count($members) == $this->teamSize)
+						{
+							$usable[] = array_values($members);
+						}
+					}
+				}
+				if (empty($usable))
+				{
+					$this->teams = $this->positionalTeams();
+				}
+				else if (count($usable) * $this->teamSize == $this->players)
+				{
+					$this->teams = $usable;
+				}
+				else
+				{
+					$this->teamSize = 1;
+					$this->teams = array();
+				}
+			}
+			$this->addTeamRestrictions();
 			$this->generateHash();
 		}
 		else
@@ -488,9 +592,24 @@ class SeatingDef
 				$this->players      = (int)$parts[0];
 				$this->tables       = (int)$parts[1];
 				$this->games        = (int)$parts[2];
+				// The fourth field is the team size. Hashes written before team sizes existed
+				// have no such field, and they are still readable: a restriction segment always
+				// holds at least two players and so always contains ':' or '-', while the team
+				// size is a bare number, which tells the two apart with no ambiguity. A hash
+				// without it describes an individual tournament, which is a team size of 1.
+				$first_restriction = 3;
+				if (count($parts) > 3 && ctype_digit($parts[3]))
+				{
+					$this->teamSize = max(1, (int)$parts[3]);
+					$first_restriction = 4;
+				}
+				else
+				{
+					$this->teamSize = 1;
+				}
 				if ($this->players >= 12)
 				{
-					for ($i = 3; $i < count($parts); ++$i)
+					for ($i = $first_restriction; $i < count($parts); ++$i)
 					{
 						$group = array();
 						// Each segment is separated by ':'; a segment may be "a" or "a-b" (inclusive range).
@@ -515,14 +634,124 @@ class SeatingDef
 							$this->restrictions[] = $group;
 						}
 					}
+					// The hash leaves out the pairs the team size already implies, so put them
+					// back: from here on the teams are ordinary restrictions like any other.
+					$this->addTeamRestrictions();
 				}
 			}
 		}
 	}
 	
+	// The teams as the hash means them: consecutive blocks of teamSize, so with a size of 3
+	// players 0,1,2 are one team, 3,4,5 the next. Any players past the last whole team are on
+	// no team at all.
+	public function positionalTeams()
+	{
+		$teams = array();
+		if ($this->teamSize <= 1)
+		{
+			return $teams;
+		}
+		$count = (int)floor($this->players / $this->teamSize);
+		for ($team = 0; $team < $count; ++$team)
+		{
+			$members = array();
+			for ($i = $team * $this->teamSize; $i < ($team + 1) * $this->teamSize; ++$i)
+			{
+				$members[] = $i;
+			}
+			$teams[] = $members;
+		}
+		return $teams;
+	}
+
+	// Team of the player seated in this position, or -1 when there are no teams.
+	public function teamOf($player)
+	{
+		if ($this->teamSize <= 1)
+		{
+			return -1;
+		}
+		return (int)floor($player / $this->teamSize);
+	}
+
+	// True when every player of the group is on one team, so the team size in the hash already
+	// says they must be kept apart and spelling the group out would only repeat it.
+	private function isCoveredByTeams($group)
+	{
+		if ($this->teamSize <= 1 || count($group) < 2)
+		{
+			return false;
+		}
+		$team = $this->teamOf($group[0]);
+		foreach ($group as $player)
+		{
+			if ($this->teamOf($player) !== $team)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// Adds the pairs the team size implies - every two players of one team - to the
+	// restrictions, unless they are already there. The optimizers, satisfiesRestrictions() and
+	// the scores then handle teams without knowing anything about them.
+	public function addTeamRestrictions()
+	{
+		if ($this->teamSize <= 1 || $this->players <= 0)
+		{
+			$this->teams = array();
+			return;
+		}
+
+		if (empty($this->teams))
+		{
+			$this->teams = $this->positionalTeams();
+		}
+
+		$known = array();
+		foreach ($this->restrictions as $group)
+		{
+			$n = count($group);
+			for ($i = 0; $i < $n; ++$i)
+			{
+				for ($j = $i + 1; $j < $n; ++$j)
+				{
+					$lo = min($group[$i], $group[$j]);
+					$hi = max($group[$i], $group[$j]);
+					$known[$lo][$hi] = true;
+				}
+			}
+		}
+
+		foreach ($this->teams as $members)
+		{
+			// One group per team rather than a pair at a time: normalizeRestrictions() keeps
+			// groups whose members are all mutually restricted together, which is what a team is.
+			$n = count($members);
+			$missing = false;
+			for ($i = 0; $i < $n && !$missing; ++$i)
+			{
+				for ($j = $i + 1; $j < $n; ++$j)
+				{
+					if (!isset($known[$members[$i]][$members[$j]]))
+					{
+						$missing = true;
+						break;
+					}
+				}
+			}
+			if ($missing && $n > 1)
+			{
+				$this->restrictions[] = $members;
+			}
+		}
+	}
+
 	public function getNoRestrictionsHash()
 	{
-		return $this->players . '_' . $this->tables . '_' . $this->games;
+		return $this->players . '_' . $this->tables . '_' . $this->games . '_' . $this->teamSize;
 	}
 	
 	private function generateHash()
@@ -530,6 +759,13 @@ class SeatingDef
 		$this->hash = $this->getNoRestrictionsHash();
 		foreach ($this->restrictions as $idx => $r)
 		{
+			// Skip what the team size in the hash already says. The group stays in
+			// $this->restrictions, so the optimizers still honour it; it just is not spelled
+			// out again in the hash.
+			if ($this->isCoveredByTeams($r))
+			{
+				continue;
+			}
 			$i = 0;
 			$rCount = count($r);
 			$h = '';
@@ -562,7 +798,18 @@ class SeatingDef
 			// significant, so we keep the most meaningful ones.
 			if (strlen($this->hash) + 1 + strlen($h) > 255)
 			{
-				$this->restrictions = array_slice($this->restrictions, 0, $idx);
+				// Drop the restrictions that did not fit, but keep every group the team size
+				// covers: those cost the hash nothing, and dropping them would quietly let
+				// teammates be seated together.
+				$kept = array_slice($this->restrictions, 0, $idx);
+				for ($rest = $idx; $rest < count($this->restrictions); ++$rest)
+				{
+					if ($this->isCoveredByTeams($this->restrictions[$rest]))
+					{
+						$kept[] = $this->restrictions[$rest];
+					}
+				}
+				$this->restrictions = $kept;
 				break;
 			}
 			$this->hash .= '_' . $h;
@@ -1113,6 +1360,16 @@ class SeatingDef
 		for ($pass = 0; $pass < 4; ++$pass)
 		{
 			$previous_hash = $this->hash;
+			// Carry on from what the hash actually says rather than from the groups still in
+			// memory. The two are not the same thing: the hash leaves the teammate pairs out and
+			// a reader regenerates them as one clean group per team, where the pass before may
+			// have had them merged into larger groups. Comparing the in-memory forms would call
+			// it settled while a reader of that hash normalizes it to something else - and then
+			// nothing would ever look the stored row up again.
+			$reparsed = new SeatingDef($previous_hash);
+			$this->restrictions = $reparsed->restrictions;
+			$this->teamSize     = $reparsed->teamSize;
+			$this->teams        = $reparsed->teams;
 			$next = $this->_normalizeRestrictionsOnce();
 			if ($this->hash === $previous_hash)
 			{
@@ -1214,6 +1471,14 @@ class SeatingDef
 				for ($i = 0; $i < count($group); ++$i)
 				{
 					$n1 = $group[$i];
+					// An earlier group of this same batch can have taken the last of this
+					// player's pairs, and then the line below unset them. PHP 7 quietly treated
+					// the missing entry as an empty list; PHP 8 raises a TypeError out of
+					// array_search() and the whole request dies.
+					if (!isset($restrictions_by_player_copy[$n1]))
+					{
+						continue;
+					}
 					for ($j = 0; $j < count($group); ++$j)
 					{
 						if ($i != $j)
@@ -1305,24 +1570,126 @@ class SeatingDef
 				return $a - $b;
 			});
 		}
-		$mapping = array();
+		if ($this->teamSize > 1)
+		{
+			$mapping = $this->_teamAwareMapping($player_colors);
+		}
+		else
+		{
+			$mapping = array();
+			$playerIndex = 0;
+			foreach ($restrictions as $r)
+			{
+				foreach ($r as $idx)
+				{
+					if (!array_key_exists($idx, $mapping))
+					{
+						$mapping[$idx] = $playerIndex++;
+					}
+				}
+			}
+		}
+
 		$this->restrictions = array();
-		$playerIndex = 0;
 		foreach ($restrictions as $r)
 		{
 			$a = array();
 			foreach ($r as $idx)
 			{
-				if (!array_key_exists($idx, $mapping))
-				{
-					$mapping[$idx] = $playerIndex++;
-				}
-				$a[] = $mapping[$idx];
+				$a[] = isset($mapping[$idx]) ? $mapping[$idx] : $idx;
 			}
 			sort($a);
 			$this->restrictions[] = $a;
 		}
 		$this->generateHash();
+		return $mapping;
+	}
+
+	// Renumbers the players of a team tournament, keeping every team on a block of consecutive
+	// numbers - the one thing the hash relies on, since it records only the team size and lets
+	// the positions say who is on a team with whom. The ordinary renumbering cannot be used
+	// here: it numbers players in the order the restriction groups happen to come in, which
+	// would scatter a team across the field and make the team size in the hash a lie.
+	//
+	// Teams are ordered by the structural colors of their members, and the members within a
+	// team the same way, so that the same tournament always comes out numbered the same way
+	// whatever order the teams were read in. Players outside any team (when the player count is
+	// not a whole number of teams) keep to the end.
+	private function _teamAwareMapping($player_colors)
+	{
+		$key_of = function($player) use ($player_colors)
+		{
+			return isset($player_colors[$player]) ? $player_colors[$player] : -1;
+		};
+		$compare_members = function($a, $b) use ($key_of)
+		{
+			$ka = $key_of($a);
+			$kb = $key_of($b);
+			if ($ka !== $kb)
+			{
+				return $ka - $kb;
+			}
+			return $a - $b;
+		};
+
+		// Members of each team, each team's members put in a reproducible order.
+		$teams = array();
+		$on_a_team = array();
+		foreach ($this->teams as $members)
+		{
+			$members = array_values($members);
+			usort($members, $compare_members);
+			foreach ($members as $player)
+			{
+				$on_a_team[$player] = true;
+			}
+			$teams[] = $members;
+		}
+
+		// Then the teams themselves, by the colors of their members and the lowest number in
+		// the team as the final tie-break.
+		usort($teams, function($a, $b) use ($key_of)
+		{
+			$n = min(count($a), count($b));
+			for ($i = 0; $i < $n; ++$i)
+			{
+				$ka = $key_of($a[$i]);
+				$kb = $key_of($b[$i]);
+				if ($ka !== $kb)
+				{
+					return $ka - $kb;
+				}
+			}
+			return min($a) - min($b);
+		});
+
+		$mapping = array();
+		$next = 0;
+		foreach ($teams as $members)
+		{
+			foreach ($members as $player)
+			{
+				$mapping[$player] = $next++;
+			}
+		}
+
+		// Whoever is left over - players on no team at all.
+		$leftover = array();
+		for ($i = 0; $i < $this->players; ++$i)
+		{
+			if (!isset($on_a_team[$i]))
+			{
+				$leftover[] = $i;
+			}
+		}
+		usort($leftover, $compare_members);
+		foreach ($leftover as $player)
+		{
+			$mapping[$player] = $next++;
+		}
+
+		// From here on the teams are the blocks the hash describes.
+		$this->teams = $this->positionalTeams();
 		return $mapping;
 	}
 
@@ -2179,7 +2546,10 @@ function seating_has_valid_player_ids($seating)
 	return true;
 }
 
-function normalize_seating_to_indices($seating)
+// $value_to_index comes back filled with the translation this made - original value (usually a
+// user id) to the 0-based player number it became - so a caller that knows something about
+// those users, such as which of them are on a team, can say the same thing in player numbers.
+function normalize_seating_to_indices($seating, &$value_to_index = null)
 {
 	$seating = reindex_seating($seating);
 	$all_values = array();
@@ -2189,6 +2559,7 @@ function normalize_seating_to_indices($seating)
 				$all_values[(int)$v] = true;
 	ksort($all_values);
 	$remap = array_flip(array_keys($all_values));
+	$value_to_index = $remap;
 	$result = array();
 	foreach ($seating as $round)
 	{
@@ -2263,11 +2634,14 @@ function seating_is_well_formed($seating, $players, $tables, $games)
 	return true;
 }
 
-function ensure_seating_existance($seating)
+// $team_size and $teams describe a team tournament: how many players are on a team, and which
+// of this seating's player numbers make up each one. Pass them whenever they are known - the
+// seating itself cannot tell a teammate pair from two players who merely never met.
+function ensure_seating_existance($seating, $team_size = 1, $teams = null)
 {
 	// Guarantee a dense 0-based structure so the stored JSON is an array, never an object.
 	$seating = reindex_seating($seating);
-	$seatingDef = new SeatingDef($seating);
+	$seatingDef = new SeatingDef($seating, 0, 0, null, $team_size, $teams);
 
 	$result = new stdClass();
 	$result->hash    = null;

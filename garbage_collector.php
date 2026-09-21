@@ -367,7 +367,7 @@ class GarbageCollector extends Updater
 			++$count;
 
 			$old_def = new SeatingDef($old_hash);
-			$new_def = new SeatingDef($old_def->players, $old_def->tables, $old_def->games, $old_def->restrictions);
+			$new_def = new SeatingDef($old_def->players, $old_def->tables, $old_def->games, $old_def->restrictions, $old_def->teamSize);
 			$mapping = $new_def->normalizeRestrictions();
 			if ($new_def->hash == $old_hash)
 			{

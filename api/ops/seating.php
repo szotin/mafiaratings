@@ -244,6 +244,9 @@ class ApiPage extends OpsApiPageBase
 		$players  = (int)get_required_param('players');
 		$tables   = (int)get_required_param('tables');
 		$games    = (int)get_required_param('games');
+		// 1 is an individual seating. Greater means the players are divided into teams of that
+		// size by position - 0,1,2 are one team when it is 3 - and teammates never share a table.
+		$team_size = max(1, (int)get_optional_param('team_size', 1));
 		$restrictions_json = get_optional_param('restrictions', '[]');
 		$restrictions   = json_decode($restrictions_json, true);
 		if (!is_array($restrictions))
@@ -259,7 +262,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('[0] players cannot be seated at [1] tables.', $players, $tables));
 		}
-		$seatingDef = new SeatingDef($players, $tables, $games, $restrictions);
+		$seatingDef = new SeatingDef($players, $tables, $games, $restrictions, $team_size);
 		$seatingDef->normalizeRestrictions();
 
 		// Make sure it exists.
@@ -280,6 +283,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('players', 'Total number of players (min 10, max 200).');
 		$help->request_param('tables', 'Number of tables per round (min 1).');
 		$help->request_param('games', 'Number of games each player must play (min 1).');
+		$help->request_param('team_size', 'Players per team. 1 is an individual seating. Greater divides the players into teams by position - with 3, players 0,1,2 are one team - and teammates never share a table.', '1');
 		$help->request_param('restrictions', 'JSON array of groups of player numbers that cannot sit together.', '[]');
 		$help->response_param('hash', 'Seating configuration hash (primary key).');
 		return $help;
