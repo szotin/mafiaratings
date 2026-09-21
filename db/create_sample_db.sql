@@ -43,8 +43,8 @@ CREATE TABLE `addresses` (
   `map_url` varchar(1024) NOT NULL,
   `flags` int(11) NOT NULL,
   `city_id` int(11) NOT NULL,
-  `lat` double NOT NULL,
-  `lon` double NOT NULL
+  `lat` double NOT NULL DEFAULT '0',
+  `lon` double NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `bug_reports`;
@@ -324,8 +324,8 @@ CREATE TABLE `games` (
   `game_num` int(11) DEFAULT NULL,
   `tournament_id` int(11) DEFAULT NULL,
   `json` text NOT NULL,
-  `feature_flags` int(11) NOT NULL,
-  `flags` int(11) NOT NULL
+  `feature_flags` int(11) NOT NULL DEFAULT '0',
+  `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `game_comments`;
@@ -696,7 +696,7 @@ CREATE TABLE `series` (
   `rules` text NOT NULL,
   `gaining_id` int(11) NOT NULL,
   `gaining_version` int(11) NOT NULL,
-  `per_player_fee` float NOT NULL,
+  `per_player_fee` float NOT NULL DEFAULT '0',
   `fee` int(11) DEFAULT NULL,
   `currency_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -722,8 +722,8 @@ CREATE TABLE `series_places` (
   `tournaments` int(11) NOT NULL,
   `games` int(11) NOT NULL,
   `wins` int(11) NOT NULL,
-  `total_cut_off` float NOT NULL,
-  `cut_off` float NOT NULL
+  `total_cut_off` float NOT NULL DEFAULT '0',
+  `cut_off` float NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `series_regs`;
@@ -747,7 +747,7 @@ CREATE TABLE `series_tournaments` (
   `tournament_id` int(11) NOT NULL,
   `series_id` int(11) NOT NULL,
   `stars` float DEFAULT NULL,
-  `flags` int(11) NOT NULL,
+  `flags` int(11) NOT NULL DEFAULT '0',
   `fee` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -808,11 +808,11 @@ CREATE TABLE `tournaments` (
   `currency_id` int(11) DEFAULT NULL,
   `mwt_id` int(11) DEFAULT NULL,
   `misc` text,
-  `rating_sum` double NOT NULL,
-  `rating_sum_20` double NOT NULL,
-  `traveling_distance` double NOT NULL,
-  `guest_coeff` double NOT NULL,
-  `num_regs` int(11) NOT NULL,
+  `rating_sum` double NOT NULL DEFAULT '0',
+  `rating_sum_20` double NOT NULL DEFAULT '0',
+  `traveling_distance` double NOT NULL DEFAULT '0',
+  `guest_coeff` double NOT NULL DEFAULT '0',
+  `num_regs` int(11) NOT NULL DEFAULT '0',
   `imafia_id` int(11) DEFAULT NULL,
   `emo_id` int(11) DEFAULT NULL,
   `preparation_stage` int(11) NOT NULL DEFAULT '0',
@@ -901,26 +901,26 @@ CREATE TABLE `users` (
   `password` varchar(32) NOT NULL,
   `auth_key` varchar(32) NOT NULL,
   `email` varchar(256) NOT NULL,
-  `games_moderated` int(11) NOT NULL,
+  `games_moderated` int(11) NOT NULL DEFAULT '0',
   `flags` int(11) NOT NULL,
   `languages` int(11) NOT NULL,
   `reg_time` int(11) NOT NULL,
   `def_lang` int(11) NOT NULL,
   `city_id` int(11) NOT NULL,
-  `phone` varchar(64) NOT NULL,
+  `phone` varchar(64) NOT NULL DEFAULT '',
   `club_id` int(11) DEFAULT NULL,
-  `games` int(11) NOT NULL,
-  `games_won` int(11) NOT NULL,
-  `rating` double NOT NULL,
+  `games` int(11) NOT NULL DEFAULT '0',
+  `games_won` int(11) NOT NULL DEFAULT '0',
+  `rating` double NOT NULL DEFAULT '0',
   `name_id` int(11) NOT NULL,
   `mwt_id` int(11) DEFAULT NULL,
-  `mwt_name` varchar(128) NOT NULL,
-  `red_rating` double NOT NULL,
-  `black_rating` double NOT NULL,
+  `mwt_name` varchar(128) NOT NULL DEFAULT '',
+  `red_rating` double NOT NULL DEFAULT '0',
+  `black_rating` double NOT NULL DEFAULT '0',
   `imafia_id` int(11) DEFAULT NULL,
-  `imafia_name` varchar(128) NOT NULL,
+  `imafia_name` varchar(128) NOT NULL DEFAULT '',
   `emo_id` int(11) DEFAULT NULL,
-  `emo_name` varchar(128) NOT NULL
+  `emo_name` varchar(128) NOT NULL DEFAULT ''
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `user_photos`;

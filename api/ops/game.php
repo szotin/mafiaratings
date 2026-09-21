@@ -194,8 +194,10 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('Unknown [0]', get_label('result')));
 			}
 			Db::exec(get_label('game'),
-				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules) ' .
-					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				// json is NOT NULL and, being TEXT, cannot carry a default, so it has to be
+				// given here: under strict mode leaving it out fails the insert outright.
+				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules, json) ' .
+					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'\')',
 				$game->clubId, $game->eventId, $game->tournamentId, $game->moderator->id, $_profile->user_id, LANG_RUSSIAN,
 				$game->startTime, $game->endTime, $result_code, $game->rules);
 			list ($game->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');

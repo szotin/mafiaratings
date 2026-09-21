@@ -4235,8 +4235,10 @@ class Game
 			
 			Db::begin();
 			Db::exec(get_label('game'),
-				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules, table_num, game_num) ' .
-					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+				// json is NOT NULL and, being TEXT, cannot carry a default, so it has to be
+				// given here: under strict mode leaving it out fails the insert outright.
+				'INSERT INTO games (club_id, event_id, tournament_id, moderator_id, user_id, language, start_time, end_time, result, rules, table_num, game_num, json) ' .
+					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'\')',
 				$data->clubId, $data->eventId, $tournament_id, $data->moderator->id, $_profile->user_id, get_lang_by_code($data->language),
 				$data->startTime, $data->endTime, $result_code, $data->rules, $table_num, $game_num);
 			list ($data->id) = Db::record(get_label('game'), 'SELECT LAST_INSERT_ID()');
