@@ -251,6 +251,7 @@ function show_seating_optimizer_labels()
 	echo 'nothing: ' . json_encode(get_label('Pass [0]: nothing better found')) . ',';
 	echo 'searching: ' . json_encode(get_label('Pass [0]: improving, not saved yet')) . ',';
 	echo 'done: ' . json_encode(get_label('Nothing left to improve')) . ',';
+	echo 'failed: ' . json_encode(get_label('Could not optimize: the seating was not found')) . ',';
 	echo 'enough: ' . json_encode(get_label('Stopped. Better seatings found: [0]')) . ',';
 	echo 'stop: ' . json_encode(get_label('Stop')) . ',';
 	echo 'start: ' . json_encode(get_label('Optimize'));
@@ -2710,6 +2711,62 @@ function seating_is_well_formed($seating, $players, $tables, $games)
 		}
 	}
 	return true;
+}
+
+// Team size of a tournament and the user ids on each team. Returns a size of 1 and no teams for
+// an individual tournament. A seating cannot say which of its players are teammates - a
+// teammate pair and two players who merely never met look alike in it - so whoever builds one
+// has to read that from the tournament.
+function tournament_teams($tournament_id)
+{
+	list($team_size) = Db::record(get_label('tournament'), 'SELECT team_size FROM tournaments WHERE id = ?', $tournament_id);
+	$team_size = (int)$team_size;
+	if ($team_size <= 1)
+	{
+		return array(1, array());
+	}
+
+	$by_team = array();
+	$query = new DbQuery(
+		'SELECT user_id, team_id FROM tournament_regs'.
+		' WHERE tournament_id = ? AND team_id IS NOT NULL AND (flags & ?) <> 0 AND (flags & ?) = 0'.
+		' ORDER BY team_id, reg_order, user_id',
+		$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+	while ($row = $query->next())
+	{
+		$by_team[(int)$row[1]][] = (int)$row[0];
+	}
+	ksort($by_team);
+	return array($team_size, array_values($by_team));
+}
+
+// Says the teams in the player numbers of one particular seating. A team whose players are not
+// all in this seating is dropped: only whole teams can sit on the equal blocks the hash
+// describes, and SeatingDef falls back to an individual seating when they do not add up.
+function teams_in_indexes($teams_by_user, $team_size, $user_to_index)
+{
+	if ($team_size <= 1 || empty($teams_by_user))
+	{
+		return array();
+	}
+
+	$teams = array();
+	foreach ($teams_by_user as $members)
+	{
+		$seated = array();
+		foreach ($members as $user_id)
+		{
+			if (isset($user_to_index[(int)$user_id]))
+			{
+				$seated[] = (int)$user_to_index[(int)$user_id];
+			}
+		}
+		if (count($seated) == $team_size)
+		{
+			$teams[] = $seated;
+		}
+	}
+	return $teams;
 }
 
 // $team_size and $teams describe a team tournament: how many players are on a team, and which

@@ -457,6 +457,124 @@ class GarbageCollector extends Updater
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// GarbageCollector.seating_event_hash
+	//
+	// ONE-OFF. Points events back at their seating.
+	//
+	// An event keeps the hash of the seating it was given. Those hashes were written before the
+	// team size became part of a hash, so they are all of the older shape and none of them
+	// matches a row any more - seating_rehash renamed the rows and left the events naming the
+	// old spelling. Some are older still and carry the ':' that the empty("0") bug used to drop,
+	// which alter189 repaired in the table but not here. Either way the event names a seating
+	// that cannot be found, so the tournament page can say nothing about its quality and has
+	// nothing to optimize.
+	//
+	// The hash is worked out again from the seating the event holds rather than translated from
+	// the old string: the seating is the thing that is certainly right, and deriving from it
+	// covers the renamed, the corrupted and the never-stored alike. ensure_seating_existance()
+	// returns the canonical hash and stores the row when it is not there yet.
+	//
+	// Remove this task once it has run everywhere and reports nothing left to do.
+	//-------------------------------------------------------------------------------------------------------
+	function seating_event_hash_task($items_count)
+	{
+		if (!isset($this->vars->seh_event_id))
+		{
+			$this->vars->seh_event_id = 0;
+			$this->vars->seh_fixed = 0;
+			$this->vars->seh_failed = 0;
+		}
+
+		$rows = array();
+		$query = new DbQuery(
+			'SELECT e.id, e.tournament_id, e.misc FROM events e'.
+			' WHERE e.id > ? AND e.misc LIKE \'%"seating"%\''.
+			' ORDER BY e.id LIMIT '.$items_count,
+			$this->vars->seh_event_id);
+		while ($row = $query->next())
+		{
+			$rows[] = $row;
+		}
+
+		$count = 0;
+		foreach ($rows as $row)
+		{
+			list ($event_id, $tournament_id, $misc_str) = $row;
+			$event_id = (int)$event_id;
+			$this->vars->seh_event_id = $event_id;
+			++$count;
+
+			$misc = $misc_str !== null ? json_decode($misc_str) : null;
+			if ($misc === null || !isset($misc->seating->hash) || !isset($misc->seating->rounds))
+			{
+				continue;
+			}
+
+			$stored_hash = $misc->seating->hash;
+			$known = (new DbQuery('SELECT hash FROM seatings WHERE hash = ?', $stored_hash))->next();
+			if ($known)
+			{
+				continue;
+			}
+
+			$rounds = reindex_seating(json_decode(json_encode($misc->seating->rounds), true));
+			if (!is_array($rounds) || count($rounds) == 0)
+			{
+				++$this->vars->seh_failed;
+				$this->log('Event '.$event_id.' names seating '.$stored_hash.', which is gone, and holds nothing to work it out from - left alone.');
+				continue;
+			}
+
+			// Teammates must not be mistaken for two players who merely never met, so read the
+			// teams from the tournament and say them in this seating's player numbers.
+			$team_size = 1;
+			$teams = array();
+			if (!is_null($tournament_id))
+			{
+				list($team_size, $teams_by_user) = tournament_teams((int)$tournament_id);
+				if ($team_size > 1 && isset($misc->seating->mapping))
+				{
+					$user_to_index = array();
+					foreach ((array)$misc->seating->mapping as $index => $user_id)
+					{
+						$user_to_index[(int)$user_id] = (int)$index;
+					}
+					$teams = teams_in_indexes($teams_by_user, $team_size, $user_to_index);
+				}
+			}
+
+			Db::begin();
+			$result = ensure_seating_existance($rounds, $team_size, $teams);
+			if (is_null($result->hash))
+			{
+				Db::rollback();
+				++$this->vars->seh_failed;
+				$this->log('Event '.$event_id.' names seating '.$stored_hash.', which is gone, and the seating it holds is not a valid one - left alone.');
+				continue;
+			}
+
+			$misc->seating->hash = $result->hash;
+			// The version records how far the canonical seating had been optimized when this
+			// copy was taken. This copy is the event's own, so it is behind whatever the row
+			// holds now - saying 0.0.0 lets the page offer to bring the better one in.
+			$misc->seating->version = '0.0.0';
+			Db::exec('event', 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+			Db::commit();
+
+			++$this->vars->seh_fixed;
+			$this->log('Event '.$event_id.': seating '.$stored_hash.' -> '.$result->hash.
+				($result->created ? ' (row created)' : ''));
+		}
+		return $count;
+	}
+
+	function seating_event_hash_task_end()
+	{
+		$this->log('Event seating hashes repaired: '.(int)$this->vars->seh_fixed.
+			'. Left alone: '.(int)$this->vars->seh_failed.'.');
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// GarbageCollector.log_backup
 	//
 	// Once every three months: dump the whole `log` table to an SQL script, archive that

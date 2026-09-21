@@ -898,7 +898,7 @@ class SeatingOptimization extends Updater
 		// seating itself cannot: a teammate pair and two players who happened never to meet look
 		// exactly alike in it. Reading it here is what lets the extracted hash record the team
 		// size rather than spelling out every teammate pair.
-		list($team_size, $teams_by_user) = $this->_tournament_teams($tid);
+		list($team_size, $teams_by_user) = tournament_teams($tid);
 
 		$q = new DbQuery('SELECT id, misc FROM events WHERE tournament_id = ? ORDER BY round, id', $tid);
 		while ($row = $q->next())
@@ -930,7 +930,7 @@ class SeatingOptimization extends Updater
 					}
 					$user_to_index = array();
 					$rounds = normalize_seating_to_indices($rounds, $user_to_index);
-					$teams = $this->_teams_in_indexes($teams_by_user, $team_size, $user_to_index);
+					$teams = teams_in_indexes($teams_by_user, $team_size, $user_to_index);
 					$this->_log_extracted($tid, $event_id, 'misc',
 						ensure_seating_existance($rounds, $team_size, $teams));
 					continue;
@@ -948,7 +948,7 @@ class SeatingOptimization extends Updater
 				{
 					$user_to_index[(int)$user_id] = (int)$slot;
 				}
-				$teams = $this->_teams_in_indexes($teams_by_user, $team_size, $user_to_index);
+				$teams = teams_in_indexes($teams_by_user, $team_size, $user_to_index);
 				$r = ensure_seating_existance($extracted->rounds, $team_size, $teams);
 				$this->_log_extracted($tid, $event_id, 'games', $r);
 				if ($r->hash !== null)
@@ -957,60 +957,6 @@ class SeatingOptimization extends Updater
 				}
 			}
 		}
-	}
-
-	// Team size of a tournament and the user ids on each team. Returns a size of 1 and no teams
-	// for an individual tournament.
-	private function _tournament_teams($tid)
-	{
-		list($team_size) = Db::record(get_label('tournament'), 'SELECT team_size FROM tournaments WHERE id = ?', $tid);
-		$team_size = (int)$team_size;
-		if ($team_size <= 1)
-		{
-			return array(1, array());
-		}
-
-		$by_team = array();
-		$q = new DbQuery(
-			'SELECT user_id, team_id FROM tournament_regs'.
-			' WHERE tournament_id = ? AND team_id IS NOT NULL AND (flags & ?) <> 0 AND (flags & ?) = 0'.
-			' ORDER BY team_id, reg_order, user_id',
-			$tid, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
-		while ($row = $q->next())
-		{
-			$by_team[(int)$row[1]][] = (int)$row[0];
-		}
-		ksort($by_team);
-		return array($team_size, array_values($by_team));
-	}
-
-	// Says the teams in the player numbers of one particular seating. A team whose players are
-	// not all in this seating is dropped: only whole teams can sit on the equal blocks the hash
-	// describes, and SeatingDef falls back to an individual seating when they do not add up.
-	private function _teams_in_indexes($teams_by_user, $team_size, $user_to_index)
-	{
-		if ($team_size <= 1 || empty($teams_by_user))
-		{
-			return array();
-		}
-
-		$teams = array();
-		foreach ($teams_by_user as $members)
-		{
-			$seated = array();
-			foreach ($members as $user_id)
-			{
-				if (isset($user_to_index[(int)$user_id]))
-				{
-					$seated[] = (int)$user_to_index[(int)$user_id];
-				}
-			}
-			if (count($seated) == $team_size)
-			{
-				$teams[] = $seated;
-			}
-		}
-		return $teams;
 	}
 
 	// Build misc.seating from the extracted seating and persist it on the event so future

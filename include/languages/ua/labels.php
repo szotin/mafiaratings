@@ -493,6 +493,7 @@ $labelMenu = array (
 'Pass [0]: nothing better found' => 'Прохід [0]: кращого не знайдено', // seating.php, tournament_seating.php
 'Pass [0]: improving, not saved yet' => 'Прохід [0]: триває покращення, ще не збережено', // seating.php, tournament_seating.php
 'Stopped. Better seatings found: [0]' => 'Зупинено. Покращень знайдено: [0]', // seating.php, tournament_seating.php
+'Could not optimize: the seating was not found' => 'Оптимізувати не вдалося: розсадку не знайдено', // seating.php, tournament_seating.php
 'Teams of [0]' => 'Команди по [0]', // seating.php, seatings.php
 'Logout from [0]' => 'Вихід з [0]', // menu.php, menu.php, include/page_base.php, menu.php, menu.php, include/page_base.php
 'Log out' => 'Вихід', // menu.php, menu.php, include/page_base.php, menu.php, menu.php, include/page_base.php

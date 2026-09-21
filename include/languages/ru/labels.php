@@ -257,6 +257,7 @@ $labelMenu = array (
 'Pass [0]: nothing better found' => 'Проход [0]: лучше не нашлось', // seating.php, tournament_seating.php
 'Pass [0]: improving, not saved yet' => 'Проход [0]: идёт улучшение, ещё не сохранено', // seating.php, tournament_seating.php
 'Stopped. Better seatings found: [0]' => 'Остановлено. Улучшений найдено: [0]', // seating.php, tournament_seating.php
+'Could not optimize: the seating was not found' => 'Оптимизировать не удалось: рассадка не найдена', // seating.php, tournament_seating.php
 'Teams of [0]' => 'Команды по [0]', // seating.php, seatings.php
 'Logout from [0]' => 'Выход из [0]', // menu.php, menu.php, include/page_base.php
 'Log out' => 'Выход', // menu.php, menu.php, include/page_base.php

@@ -1398,6 +1398,9 @@ var mr = new function()
 			mr.setSeatingOptimizerUI(task, false, message);
 		}
 
+		// Anything going wrong ends the run. The failure is usually the same one every time -
+		// the seating is not in the table, say - and each attempt raises its own dialog, so
+		// carrying on would bury the page under them.
 		function readQuality(afterwards)
 		{
 			json.get('api/get/seating_quality.php?hash=' + encodeURIComponent(hash), function(data)
@@ -1409,7 +1412,11 @@ var mr = new function()
 				}
 				afterwards(data, pct);
 			},
-			function() { afterwards(null, null); });
+			function()
+			{
+				state.stop = true;
+				finish(mr.seatingOptLabels.failed);
+			});
 		}
 
 		// What the pass just finished actually did. The optimizer keeps improving a copy of the
@@ -1477,7 +1484,7 @@ var mr = new function()
 	}
 
 	// Texts are filled in by the page, which has the translations.
-	this.seatingOptLabels = { working: 'Optimizing... pass [0]', better: 'Pass [0]: found a better seating', nothing: 'Pass [0]: nothing better found', searching: 'Pass [0]: improving, not saved yet', done: 'Nothing left to improve', enough: 'Stopped. Improvements found: [0]', stop: 'Stop', start: 'Optimize' };
+	this.seatingOptLabels = { working: 'Optimizing... pass [0]', better: 'Pass [0]: found a better seating', nothing: 'Pass [0]: nothing better found', searching: 'Pass [0]: improving, not saved yet', done: 'Nothing left to improve', failed: 'Could not optimize: the seating was not found', enough: 'Stopped. Improvements found: [0]', stop: 'Stop', start: 'Optimize' };
 
 	this.setSeatingQuality = function(task, pct)
 	{

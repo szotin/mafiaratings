@@ -105,12 +105,21 @@ class Page extends TournamentPageBase
 		$this->seating_hash = null;
 		$this->seating_runs = -1;
 		$this->better_version = null;
-		$this->can_optimize = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID);
+
+		// Changing the seating once the tournament has started would move players who have
+		// already played, so neither optimizing nor taking an improved version is offered any
+		// more. A finished tournament is obviously past that, and so is one where a single game
+		// has been played - the seating it was played under is a record of what happened.
+		list ($games_played) = Db::record(get_label('tournament'),
+			'SELECT COUNT(*) FROM games WHERE tournament_id = ?', $this->id);
+		$this->seating_is_settled = ((int)$games_played > 0) || (($this->flags & TOURNAMENT_FLAG_FINISHED) != 0);
+
+		$this->can_optimize = !$this->seating_is_settled &&
+			is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID);
 
 		if (isset($this->misc->seating->hash) && isset($this->misc->seating->rounds))
 		{
 			$hash = $this->misc->seating->hash;
-			$this->seating_hash = $hash;
 
 			// Score the seating this page actually shows, not the canonical row it came from.
 			// The event keeps a copy taken when the seating was assigned, while the optimizer
@@ -137,6 +146,10 @@ class Page extends TournamentPageBase
 				' FROM seatings WHERE hash = ?', $hash))->next();
 			if ($srow)
 			{
+				// Only now is the hash worth offering to optimize. An event can name a seating
+				// that is no longer in the table - the hash format has changed since some of
+				// them were stored - and pointing the optimizer at one of those just fails.
+				$this->seating_hash = $hash;
 				list($pr, $pvr, $tr, $tvr, $nr, $nvr) = $srow;
 				$this->seating_runs = (int)$pr + (int)$tr + (int)$nr;
 				$current_version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
@@ -241,7 +254,12 @@ class Page extends TournamentPageBase
 		// advice - the work is already done, this event just has not picked it up.
 		$note = '';
 		$update_event_id = null;
-		if (!is_null($this->better_version))
+		if ($this->seating_is_settled)
+		{
+			// Nothing here is actionable any more, so say nothing rather than point at
+			// improvements that will not be taken.
+		}
+		else if (!is_null($this->better_version))
 		{
 			$note = get_label('A better seating is ready (version [0]).', $this->better_version);
 			$update_event_id = $this->round_id;
