@@ -39,6 +39,83 @@ function get_pair_policy_name($policy)
 //   user1_id, user1_name, user1_flags, user1_tournament_flags, user1_club_flags
 //   user2_id, user2_name, user2_flags, user2_tournament_flags, user2_club_flags
 //   policy, source (display string)
+// The pairs a tournament must keep apart, as [user1_id, user2_id] with user1_id < user2_id.
+//
+// Same four sources and the same priority order as get_tournament_pairs(), but without the names
+// and flags that only the UI needs. Those come from a join filtered by language, which silently
+// drops a pair whose players have no name in the language asked for - harmless on a page that is
+// being rendered in that language, wrong here, where this runs from the updater with no language
+// chosen and every rule matters.
+//
+// Unlike get_tournament_pairs() this is not restricted to the tournament's registrations: a
+// seating extracted from a played tournament is matched against the people who actually played,
+// and the caller drops any pair it cannot place.
+function get_tournament_separate_pairs($tournament_id, $club_id)
+{
+	// [key => [policy, priority]], highest priority wins, as in get_tournament_pairs().
+	$policies = array();
+	$add = function($u1, $u2, $policy, $priority) use (&$policies)
+	{
+		$u1 = (int)$u1;
+		$u2 = (int)$u2;
+		if ($u1 == $u2)
+		{
+			return;
+		}
+		$key = min($u1, $u2) . '_' . max($u1, $u2);
+		if (!isset($policies[$key]) || $priority > $policies[$key][1])
+		{
+			$policies[$key] = array((int)$policy, $priority);
+		}
+	};
+
+	// Priority 0: global pairs.
+	$query = new DbQuery('SELECT user1_id, user2_id, policy FROM pairs');
+	while ($row = $query->next())
+	{
+		$add($row[0], $row[1], $row[2], 0);
+	}
+
+	// Priority 1: pairs of every league this tournament runs a series for.
+	$query = new DbQuery(
+		'SELECT p.user1_id, p.user2_id, p.policy FROM league_pairs p'.
+		' WHERE p.league_id IN (SELECT s.league_id FROM series_tournaments st'.
+		' JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?)',
+		$tournament_id);
+	while ($row = $query->next())
+	{
+		$add($row[0], $row[1], $row[2], 1);
+	}
+
+	// Priority 2: pairs of the club running it.
+	if ((int)$club_id > 0)
+	{
+		$query = new DbQuery('SELECT user1_id, user2_id, policy FROM club_pairs WHERE club_id = ?', $club_id);
+		while ($row = $query->next())
+		{
+			$add($row[0], $row[1], $row[2], 2);
+		}
+	}
+
+	// Priority 3: the tournament's own pairs.
+	$query = new DbQuery('SELECT user1_id, user2_id, policy FROM tournament_pairs WHERE tournament_id = ?', $tournament_id);
+	while ($row = $query->next())
+	{
+		$add($row[0], $row[1], $row[2], 3);
+	}
+
+	$result = array();
+	foreach ($policies as $key => $p)
+	{
+		if ($p[0] == PAIR_POLICY_SEPARATE)
+		{
+			list($u1, $u2) = explode('_', $key);
+			$result[] = array((int)$u1, (int)$u2);
+		}
+	}
+	return $result;
+}
+
 function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = false)
 {
 	$players_list = '';
@@ -532,8 +609,8 @@ class SeatingDef
 		else if (is_array($hash))
 		{
 			// Build from a 3D seating array [round][table][seat] with player numbers 0..(players-1).
-			// Counts tables, games per player, and players; then finds all pairs that never
-			// sat at the same table (frequency 0) and adds them to restrictions.
+			// Counts tables, games per player and players, and keeps whichever of the caller's
+			// restrictions this seating bears out.
 			$seating = $hash;
 
 			$this->tables = 0;
@@ -571,8 +648,21 @@ class SeatingDef
 				? (int)($total_seats / $this->players)
 				: 0;
 
-			// Count how many times each pair of players sat in the same game.
-			$freq = array();
+			// Which restrictions this seating bears out.
+			//
+			// A seating cannot say why two players never met - a rule kept them apart, or the
+			// draw simply never put them together - so it used to be read the other way round,
+			// with every pair that never met turned into a restriction. That invented rules
+			// wholesale: in a 10-player single-table seating every pair meets, but at 80 players
+			// over 6 tables most pairs never meet, and the hash ended up asserting thousands of
+			// separations nobody ever asked for.
+			//
+			// The rules are now supplied by the caller, which knows them: they are the separate
+			// pairs of the tournament this seating came from, plus the global, league and club
+			// ones. The seating is only asked to confirm each one. A pair that did share a table
+			// is dropped rather than recorded - a rule added after the tournament was played
+			// cannot be a rule the seating was built under.
+			$met = array();
 			foreach ($seating as $round)
 			{
 				if (is_null($round)) continue;
@@ -587,24 +677,31 @@ class SeatingDef
 						{
 							$lo = min((int)$g[$a], (int)$g[$b]);
 							$hi = max((int)$g[$a], (int)$g[$b]);
-							if (!isset($freq[$lo][$hi]))
-								$freq[$lo][$hi] = 0;
-							++$freq[$lo][$hi];
+							$met[$lo . '_' . $hi] = true;
 						}
 					}
 				}
 			}
 
-			// Pairs that never met (frequency 0) become restrictions.
 			$this->restrictions = array();
-			if ($this->players >= 12)
+			if (is_array($restrictions) && $this->players >= 12)
 			{
-				for ($a = 0; $a < $this->players; ++$a)
+				foreach ($restrictions as $pair)
 				{
-					for ($b = $a + 1; $b < $this->players; ++$b)
+					$pair = array_values((array)$pair);
+					if (count($pair) != 2)
 					{
-						if (empty($freq[$a][$b]))
-							$this->restrictions[] = array($a, $b);
+						continue;
+					}
+					$lo = min((int)$pair[0], (int)$pair[1]);
+					$hi = max((int)$pair[0], (int)$pair[1]);
+					if ($lo < 0 || $hi >= $this->players || $lo == $hi)
+					{
+						continue;
+					}
+					if (!isset($met[$lo . '_' . $hi]))
+					{
+						$this->restrictions[] = array($lo, $hi);
 					}
 				}
 			}
@@ -1988,11 +2085,6 @@ class SeatingDef
 		return $score;
 	}
 	
-	public function worstPlayersScore()
-	{
-		return SeatingDef::worst_players_score($this->players, $this->tables, $this->games);
-	}
-	
 	// returning 0 means we have found a perfect numbers. There is no need to optimize it any more
 	public function calculateNumbersScore($seating)
 	{
@@ -2091,11 +2183,6 @@ class SeatingDef
 		return $score;
 	}
 	
-	public function worstNumbersScore()
-	{
-		return SeatingDef::worst_numbers_score($this->players, $this->tables, $this->games);
-	}
-	
 	// returning 0 means we have found a perfect tables. There is no need to optimize it any more
 	public function calculateTablesScore($seating)
 	{
@@ -2140,11 +2227,6 @@ class SeatingDef
 		return $score;
 	}
 	
-	public function worstTablesScore()
-	{
-		return SeatingDef::worst_tables_score($this->players, $this->tables, $this->games);
-	}
-	
 	static function worst_players_score($players, $tables, $games)
 	{
 		$tens = floor($players / 10);
@@ -2154,18 +2236,6 @@ class SeatingDef
 			($expectation - $games) * ($expectation - $games) * $tens * 45;
 	}
 	
-	static function worst_numbers_score($players, $tables, $games)
-	{
-		$e1 = $games / 10; // expected per single number
-		$e2 = $games / 5;  // expected per pair
-		$e3 = $games / 2;  // expected per half
-		// worst case: player always at position 0 (highest-weighted slot)
-		// part1 single numbers: 1296*e1² (pos0) + 12 + 28 + 8 = 1344*e1²
-		// part2 pairs: pair(0,1) gives 32*e2², four others give 8*e2² → 40*e2²
-		// part3 halves: 2*e3²
-		return $players * ($e1 * $e1 * 1344 + $e2 * $e2 * 40 + 2 * $e3 * $e3);
-	}
-
 	static function worst_tables_score($players, $tables, $games)
 	{
 		$expectation = $games / $tables;
@@ -2773,6 +2843,24 @@ function tournament_teams($tournament_id)
 	return array($team_size, array_values($by_team));
 }
 
+// Says the separate pairs in the player numbers of one particular seating. A pair with a player
+// who did not sit in it is dropped - the rule is about two people, and with one of them absent
+// the seating says nothing about it either way.
+function restrictions_in_indexes($pairs_by_user, $user_to_index)
+{
+	$result = array();
+	foreach ($pairs_by_user as $pair)
+	{
+		$u1 = (int)$pair[0];
+		$u2 = (int)$pair[1];
+		if (isset($user_to_index[$u1]) && isset($user_to_index[$u2]))
+		{
+			$result[] = array((int)$user_to_index[$u1], (int)$user_to_index[$u2]);
+		}
+	}
+	return $result;
+}
+
 // Says the teams in the player numbers of one particular seating. A team whose players are not
 // all in this seating is dropped: only whole teams can sit on the equal blocks the hash
 // describes, and SeatingDef falls back to an individual seating when they do not add up.
@@ -2805,11 +2893,15 @@ function teams_in_indexes($teams_by_user, $team_size, $user_to_index)
 // $team_size and $teams describe a team tournament: how many players are on a team, and which
 // of this seating's player numbers make up each one. Pass them whenever they are known - the
 // seating itself cannot tell a teammate pair from two players who merely never met.
-function ensure_seating_existance($seating, $team_size = 1, $teams = null)
+//
+// $restrictions are the pairs that were meant to be kept apart, in this seating's player numbers
+// - see teams_in_indexes() and restrictions_in_indexes() for turning user ids into those. They
+// are candidates, not facts: SeatingDef keeps only the ones the seating actually bears out.
+function ensure_seating_existance($seating, $team_size = 1, $teams = null, $restrictions = null)
 {
 	// Guarantee a dense 0-based structure so the stored JSON is an array, never an object.
 	$seating = reindex_seating($seating);
-	$seatingDef = new SeatingDef($seating, 0, 0, null, $team_size, $teams);
+	$seatingDef = new SeatingDef($seating, 0, 0, $restrictions, $team_size, $teams);
 
 	$result = new stdClass();
 	$result->hash    = null;

@@ -895,12 +895,29 @@ class SeatingOptimization extends Updater
 		// size rather than spelling out every teammate pair.
 		list($team_size, $teams_by_user) = tournament_teams($tid);
 
-		$q = new DbQuery('SELECT id, misc FROM events WHERE tournament_id = ? ORDER BY round, id', $tid);
+		// Same reasoning for the pairs that had to be kept apart. The seating cannot tell a rule
+		// from a coincidence - most pairs never meet once there is more than one table - so the
+		// rules are read from the tournament, its club, its leagues and the global list, and the
+		// seating is only asked to confirm each one.
+		//
+		// Keyed by club because the rules are read for the event's club, which is what
+		// api/ops/event.php uses when it generates a seating, and an event may belong to a
+		// different club than its tournament. Nearly always there is one club and one lookup.
+		$pairs_by_club = array();
+
+		$q = new DbQuery('SELECT id, misc, club_id FROM events WHERE tournament_id = ? ORDER BY round, id', $tid);
 		while ($row = $q->next())
 		{
-			list($event_id, $misc_str) = $row;
+			list($event_id, $misc_str, $event_club_id) = $row;
 			$event_id = (int)$event_id;
+			$event_club_id = (int)$event_club_id;
 			$misc = $misc_str !== null ? json_decode($misc_str) : null;
+
+			if (!isset($pairs_by_club[$event_club_id]))
+			{
+				$pairs_by_club[$event_club_id] = get_tournament_separate_pairs($tid, $event_club_id);
+			}
+			$pairs_by_user = $pairs_by_club[$event_club_id];
 
 			if ($misc !== null && isset($misc->seating) && isset($misc->seating->rounds))
 			{
@@ -909,24 +926,40 @@ class SeatingOptimization extends Updater
 					continue; // Seating was assigned from the seatings table — nothing to do.
 				}
 
-				// Seating exists but was stored without a version (e.g. old DimTom import or
-				// direct assignment before versioning was introduced).  Seed it now.
-				// Values may be user IDs rather than 0-based indices, so normalise first.
+				// Seating exists but was stored without a version (e.g. old DimTom import, direct
+				// assignment before versioning was introduced, or an earlier run of this task).
+				// Identify it now.
 				$rounds = json_decode(json_encode($misc->seating->rounds), true);
 				if (is_array($rounds))
 				{
-					// Check the IDs before normalising them: afterwards a placeholder value is
-					// indistinguishable from a player number. See seating_has_valid_player_ids().
-					if (!seating_has_valid_player_ids($rounds))
-					{
-						$this->log('Tournament ' . $tid . ' event ' . $event_id .
-							' has a damaged seating in misc (a seat holds no real player, or a player sits twice in one round) - skipped.');
-						continue;
-					}
 					$user_to_index = array();
-					$rounds = normalize_seating_to_indices($rounds, $user_to_index);
+					if (isset($misc->seating->mapping))
+					{
+						// A mapping means the rounds already hold 0-based player numbers and it
+						// says who each number is. Renumbering them would be wrong twice over:
+						// they need none, and 0 is an ordinary player here rather than the empty
+						// seat that seating_has_valid_player_ids() takes it for.
+						foreach ((array)$misc->seating->mapping as $slot => $user_id)
+						{
+							$user_to_index[(int)$user_id] = (int)$slot;
+						}
+					}
+					else
+					{
+						// No mapping: the rounds are written in user ids. Check them before
+						// renumbering, because afterwards a placeholder value is indistinguishable
+						// from a player number. See seating_has_valid_player_ids().
+						if (!seating_has_valid_player_ids($rounds))
+						{
+							$this->log('Tournament ' . $tid . ' event ' . $event_id .
+								' has a damaged seating in misc (a seat holds no real player, or a player sits twice in one round) - skipped.');
+							continue;
+						}
+						$rounds = normalize_seating_to_indices($rounds, $user_to_index);
+					}
 					$teams = teams_in_indexes($teams_by_user, $team_size, $user_to_index);
-					$r = ensure_seating_existance($rounds, $team_size, $teams);
+					$restrictions = restrictions_in_indexes($pairs_by_user, $user_to_index);
+					$r = ensure_seating_existance($rounds, $team_size, $teams, $restrictions);
 					$this->_log_extracted($tid, $event_id, 'misc', $r);
 					$this->_write_hash_to_event_misc($event_id, $misc, $r->hash);
 					continue;
@@ -945,7 +978,8 @@ class SeatingOptimization extends Updater
 					$user_to_index[(int)$user_id] = (int)$slot;
 				}
 				$teams = teams_in_indexes($teams_by_user, $team_size, $user_to_index);
-				$r = ensure_seating_existance($extracted->rounds, $team_size, $teams);
+				$restrictions = restrictions_in_indexes($pairs_by_user, $user_to_index);
+				$r = ensure_seating_existance($extracted->rounds, $team_size, $teams, $restrictions);
 				$this->_log_extracted($tid, $event_id, 'games', $r);
 				if ($r->hash !== null)
 				{
@@ -976,18 +1010,21 @@ class SeatingOptimization extends Updater
 
 	// Build misc.seating from the extracted seating and persist it on the event so future
 	// runs (and other code that reads misc.seating) can use it directly.
+	//
+	// No version is written. A version says the seating was taken from the seatings table at a
+	// given point in its optimization history; this one was read off the game records, which is
+	// a different thing, and the loop above skips any event that carries one. Writing it here
+	// froze the extractor's own output: a hash derived once could never be derived again, so
+	// when the rules for deriving it changed the event kept the old answer for good. Without it
+	// the event is simply identified again on the next run, and corrects itself.
 	private function _write_seating_to_event_misc($event_id, $misc, $hash, $rounds, $mapping)
 	{
-		list($pr, $pvr, $tr, $tvr, $nr, $nvr) = Db::record(get_label('seating'),
-			'SELECT players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs FROM seatings WHERE hash = ?',
-			$hash);
 		if ($misc === null)
 		{
 			$misc = new stdClass();
 		}
 		$misc->seating          = new stdClass();
 		$misc->seating->hash    = $hash;
-		$misc->seating->version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
 		$misc->seating->rounds  = $rounds;
 		$misc->seating->mapping = $mapping;
 		Db::exec('event', 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
