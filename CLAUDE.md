@@ -21,7 +21,12 @@ Local development URL: `http://127.0.0.1/projects/mafiaratings`
 js/src/compile.bat          # Production build via Google Closure Compiler
 js/src/compile-debug.bat    # Debug build
 ```
-Edit source files in `js/src/`, run compile.bat, outputs go to `js/`.
+Edit source files in `js/src/`, run compile.bat, outputs go to `js/`. Most files are compiled
+(`java -jar compiler.jar --js <name>.js --js_output_file ..\<name>.js`, which roughly halves
+them); only `labels_*.js`, `game_*.js` and `seating_*.js` are copied instead, because the
+compiler escapes their Cyrillic to `\uXXXX` and makes them *bigger* — that is what the comment
+at the top of compile.bat is about, and it does not mean the other files are copied too. To
+rebuild a single file, run its one line from inside `js/src`.
 
 ### Angular Plugin (OBS Overlay)
 From `plugins/obs/PlayersOverlayPlugin/`:
@@ -78,6 +83,8 @@ if ($condition)
 - **Never commit or deploy without an explicit user request for that specific changeset.** Finishing a task or the user saying "yes"/"да" to a fix does not authorize `git commit`, `git push`, or any deploy step — stop after the code change and wait for an explicit instruction (e.g. "commit", "deploy", "коммит", "деплой"). Authorization for one task does not carry over to another task, even later in the same session.
 - **Never deploy `CLAUDE.md` to production** — it contains development-only instructions for Claude Code and is not part of the application; exclude it from any deployment file list.
 - **Never deploy `create_sample_db.bat`** — it's local dev tooling (builds the sample database) and is not part of the deployed application; exclude it from any deployment file list, same as `CLAUDE.md` and anything under `db/`.
+- **Build `js/` before deploying it, never copy from `js/src/`.** The pages load `js/mr.js`, which is compiler output — see the JavaScript build section above. `js/*.js` is in `.gitignore`, so a changed script never shows up in `git status` and has to be built and deployed deliberately: after editing anything in `js/src/`, run the build, then include the built `js/<name>.js` in the FTP list alongside the committed source. After building, check that the names the pages call by hand still exist in the output (`mr.optimizeSeating`, `mr.seatingOptLabels`, any `onclick="mr...."`) — property names do survive the default optimization level, but verify rather than assume.
+- **Do not put `use mafia;` at the top of `db/alter*.sql`.** The production database is not called `mafia`, so the statement either targets the wrong schema or aborts the script. Which database a migration is applied to belongs to the invocation, not to the migration file.
 
 ## Localization
 
