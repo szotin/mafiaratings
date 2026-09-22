@@ -926,8 +926,9 @@ class SeatingOptimization extends Updater
 					$user_to_index = array();
 					$rounds = normalize_seating_to_indices($rounds, $user_to_index);
 					$teams = teams_in_indexes($teams_by_user, $team_size, $user_to_index);
-					$this->_log_extracted($tid, $event_id, 'misc',
-						ensure_seating_existance($rounds, $team_size, $teams));
+					$r = ensure_seating_existance($rounds, $team_size, $teams);
+					$this->_log_extracted($tid, $event_id, 'misc', $r);
+					$this->_write_hash_to_event_misc($event_id, $misc, $r->hash);
 					continue;
 				}
 			}
@@ -952,6 +953,25 @@ class SeatingOptimization extends Updater
 				}
 			}
 		}
+	}
+
+	// Name the seating an event already carries, without touching anything else in misc.
+	//
+	// This is for seatings that were already in misc and only had to be identified. Their rounds
+	// are the event's own and stay exactly as they are, so _write_seating_to_event_misc() - which
+	// replaces rounds and mapping - must not be used here. No version is written either: a version
+	// says the seating was taken from the seatings table at that point in its optimization history,
+	// and this one was not. Without it, a later run simply identifies the event again, which is
+	// what makes this self-healing if the hash format changes; the write below is skipped when the
+	// hash still matches, so repeated runs cost nothing.
+	private function _write_hash_to_event_misc($event_id, $misc, $hash)
+	{
+		if ($hash === null || (isset($misc->seating->hash) && $misc->seating->hash === $hash))
+		{
+			return;
+		}
+		$misc->seating->hash = $hash;
+		Db::exec('event', 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
 	}
 
 	// Build misc.seating from the extracted seating and persist it on the event so future

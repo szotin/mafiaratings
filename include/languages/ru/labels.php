@@ -253,6 +253,7 @@ $labelMenu = array (
 'A better seating is ready (version [0]).' => 'Готова улучшенная рассадка (версия [0]).', // tournament_seating.php
 'Apply the improved seating? Players will be seated anew.' => 'Применить улучшенную рассадку? Игроки будут рассажены заново.', // tournament_seating.php
 'Could not optimize: the seating was not found' => 'Оптимизировать не удалось: рассадка не найдена', // seating.php, tournament_seating.php
+'This seating is not used by any tournament.' => 'Эта рассадка не используется ни в одном турнире.', // seating.php
 'Optimizing seating' => 'Оптимизация рассадки', // seating.php, tournament_seating.php
 'Stopping after this pass...' => 'Останавливаемся после этого прохода...', // seating.php, tournament_seating.php
 'Close' => 'Закрыть', // seating.php, tournament_seating.php
