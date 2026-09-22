@@ -46,7 +46,15 @@ class Page extends GeneralPageBase
 
 		$seatings = array();
 		$query = new DbQuery('SELECT hash, players_score, numbers_score, tables_score', $condition);
-		$query->add(' ORDER BY hash LIMIT ' . ((int)$_page * PAGE_SIZE) . ', ' . PAGE_SIZE);
+		// By players, then tables, then games per player - as numbers, which is not what
+		// ordering by the hash gives: as text "10_1_10" comes before "10_1_2". The hash itself
+		// breaks the remaining ties so that paging through the list is stable.
+		$query->add(
+			' ORDER BY CAST(SUBSTRING_INDEX(hash, \'_\', 1) AS UNSIGNED),'.
+			' CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(hash, \'_\', 2), \'_\', -1) AS UNSIGNED),'.
+			' CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(hash, \'_\', 3), \'_\', -1) AS UNSIGNED),'.
+			' hash'.
+			' LIMIT ' . ((int)$_page * PAGE_SIZE) . ', ' . PAGE_SIZE);
 		while ($row = $query->next())
 		{
 			list ($hash, $players_score, $numbers_score, $tables_score) = $row;

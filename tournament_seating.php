@@ -253,7 +253,7 @@ class Page extends TournamentPageBase
 		// canonical one has been optimized further since, saying "optimize" would be wrong
 		// advice - the work is already done, this event just has not picked it up.
 		$note = '';
-		$update_event_id = null;
+		$has_better_version = false;
 		if ($this->seating_is_settled)
 		{
 			// Nothing here is actionable any more, so say nothing rather than point at
@@ -262,13 +262,16 @@ class Page extends TournamentPageBase
 		else if (!is_null($this->better_version))
 		{
 			$note = get_label('A better seating is ready (version [0]).', $this->better_version);
-			$update_event_id = $this->round_id;
+			$has_better_version = true;
 		}
 		else if ($this->seating_runs === 0)
 		{
 			$note = get_label('This seating has just been created and not optimized yet. It is first in line for the background optimizer, or you can run it now.');
 		}
-		show_seating_quality_bar($percent, $task, $this->seating_hash, $this->can_optimize, $note, $update_event_id);
+		// The event goes along either way: to take an improved seating that is already waiting,
+		// or to receive one that optimizing is about to find.
+		show_seating_quality_bar($percent, $task, $this->seating_hash, $this->can_optimize, $note,
+			$this->round_id, $has_better_version);
 	}
 
 	private function showSeatingTop()

@@ -1369,86 +1369,132 @@ var mr = new function()
 	//--------------------------------------------------------------------------------------
 	// seating
 	//--------------------------------------------------------------------------------------
-	// Optimizing runs in slices right on the page: a slice of the optimizer, then a look at the
-	// new quality, then the next slice, with the bar moving as it goes. The optimizer script is
-	// the same one the background collector runs - asking it for a few seconds at a time is what
-	// lets the page stay in charge, so the user can watch it work and stop when it is good
-	// enough, instead of being sent to another tab to watch a log and told to leave it open.
-	var seatingOptimizers = {};
-
-	this.optimizeSeating = function(task, hash)
+	// Optimizing runs in slices, in a dialog of its own. The optimizer script is the one the
+	// background collector runs, and asking it for a few seconds at a time is what lets the page
+	// follow along - rather than sending the user to another tab to watch a log and telling them
+	// to leave it open. The dialog is modal on purpose: the page behind it is showing a seating
+	// that is being rewritten under it, so letting the user wander between tabs meanwhile would
+	// only show them stale numbers.
+	this.optimizeSeating = function(task, hash, applyToEventId)
 	{
-		if (seatingOptimizers[task])
+		var L = mr.seatingOptLabels;
+		var sliceSeconds = 8;
+		// An upper bound, not a plan: the run also ends when there is nothing left to improve,
+		// when the user stops it, or on an error. The bar fills towards this.
+		var maxPasses = 300;
+		var state = { stop: false, passes: 0, improvements: 0, finished: false };
+
+		var body =
+			'<div id="opt-dlg-msg" style="margin-bottom:10px;min-height:1.4em;"></div>' +
+			'<div style="position:relative;height:22px;line-height:22px;border:1px solid #999;overflow:hidden;">' +
+				'<div id="opt-dlg-fill" style="position:absolute;left:0;top:0;height:100%;width:0%;background:#7799aa;opacity:0.55;"></div>' +
+				'<b id="opt-dlg-step" style="position:absolute;left:0;top:0;width:100%;text-align:center;">0 / ' + maxPasses + '</b>' +
+			'</div>' +
+			'<div id="opt-dlg-found" style="margin-top:8px;">' + L.found.replace('[0]', 0) + '</div>' +
+			'<div id="opt-dlg-cost" style="margin-top:8px;color:#a60;"></div>';
+
+		var elem = dlg.custom(body, L.title, 420,
+			[{ text: L.stop, click: function() { state.stop = true; $('#opt-dlg-msg').text(L.stopping); } }],
+			function()
+			{
+				state.stop = true;
+				// The quality on the page behind is out of date now, so let the server redraw it.
+				if (state.passes > 0) { window.location.reload(); }
+			});
+
+		// The bar counts the passes and the line under it counts what they found, which is all
+		// there is to say while the run is going; the message line stays empty until it ends.
+		function show()
 		{
-			// Already running - the button says Stop.
-			seatingOptimizers[task].stop = true;
-			return;
+			var pct = Math.round(100 * Math.min(state.passes, maxPasses) / maxPasses);
+			$('#opt-dlg-fill').css('width', pct + '%');
+			$('#opt-dlg-step').text(state.passes + ' / ' + maxPasses);
+			$('#opt-dlg-found').text(L.found.replace('[0]', state.improvements));
 		}
 
-		var state = { stop: false, passes: 0, improvements: 0 };
-		seatingOptimizers[task] = state;
-		mr.setSeatingOptimizerUI(task, true, null);
+		function allowClose()
+		{
+			elem.dialog('option', 'buttons', [{ text: L.close, click: function() { elem.dialog('close'); } }]);
+		}
 
-		var sliceSeconds = 8;
-		var maxPasses = 60;
-
+		// Only ever called with how the run ended - including a failure, which would otherwise
+		// leave the dialog sitting there with no word of why it stopped.
 		function finish(message)
 		{
-			delete seatingOptimizers[task];
-			mr.setSeatingOptimizerUI(task, false, message);
+			state.finished = true;
+			show();
+			$('#opt-dlg-msg').text(message);
+			// What this run cost the other measures, said once it is known that it cost
+			// anything: the other two are only reset when a better seating was actually stored,
+			// so a run that found nothing has taken nothing away and has nothing to warn about.
+			var cost = (L.costs && state.improvements > 0) ? L.costs[task] : null;
+			if (cost) { $('#opt-dlg-cost').text(cost); }
+
+			// A better seating is of no use to the tournament while it sits in the seatings
+			// table: the event holds its own copy, and that is what the pages show and what the
+			// games are played by. So put it in, rather than leaving the user to notice a
+			// button later. Only ever reached before the first game is played, since the button
+			// that starts all this is not shown after that.
+			if (state.improvements > 0 && applyToEventId)
+			{
+				$('#opt-dlg-msg').text(L.applying);
+				json.post('api/ops/event.php', { op: 'set_seating', event_id: applyToEventId },
+					function()
+					{
+						$('#opt-dlg-msg').text(L.applied);
+						allowClose();
+					},
+					function()
+					{
+						$('#opt-dlg-msg').text(L.applyFailed);
+						allowClose();
+					});
+				return;
+			}
+			allowClose();
 		}
 
-		// Anything going wrong ends the run. The failure is usually the same one every time -
-		// the seating is not in the table, say - and each attempt raises its own dialog, so
-		// carrying on would bury the page under them.
+		// Anything going wrong ends the run. The failure is usually the same one every time - the
+		// seating is not in the table, say - so carrying on would only repeat it sixty times.
 		function readQuality(afterwards)
 		{
 			json.get('api/get/seating_quality.php?hash=' + encodeURIComponent(hash), function(data)
 			{
 				var pct = (data && isSet(data[task])) ? data[task] : null;
-				if (pct !== null)
-				{
-					mr.setSeatingQuality(task, pct);
-				}
+				if (pct !== null) { mr.setSeatingQuality(task, pct); }
 				afterwards(data, pct);
 			},
 			function()
 			{
 				state.stop = true;
-				finish(mr.seatingOptLabels.failed);
+				finish(L.failed);
 			});
 		}
 
-		// What the pass just finished actually did. The optimizer keeps improving a copy of the
-		// seating and only writes it out when a sweep ends, so a score that has not moved does
-		// not mean the pass was wasted - the void count is what separates "found nothing" from
-		// "found something, not saved yet".
-		function describePass(before, after)
+		// A pass counts as having found something when the stored score went down. It does not
+		// go down on every pass that made progress: the optimizer improves a copy and only
+		// writes it out when a sweep ends, so the counter moves in steps rather than smoothly.
+		function countPass(before, after)
 		{
-			if (!before || !after) { return mr.seatingOptLabels.working.replace('[0]', state.passes); }
-			var scoreBefore = before.scores ? before.scores[task] : null;
-			var scoreAfter = after.scores ? after.scores[task] : null;
-			var voidBefore = before.void_runs ? before.void_runs[task] : null;
-			var voidAfter = after.void_runs ? after.void_runs[task] : null;
-
+			if (!before || !after || !before.scores || !after.scores) { return; }
+			var scoreBefore = before.scores[task];
+			var scoreAfter = after.scores[task];
 			if (scoreBefore !== null && scoreAfter !== null && scoreAfter < scoreBefore)
 			{
 				++state.improvements;
-				return mr.seatingOptLabels.better.replace('[0]', state.passes);
 			}
-			if (voidBefore !== null && voidAfter !== null && voidAfter > voidBefore)
-			{
-				return mr.seatingOptLabels.nothing.replace('[0]', state.passes);
-			}
-			return mr.seatingOptLabels.searching.replace('[0]', state.passes);
+		}
+
+		function stopped()
+		{
+			readQuality(function() { finish(L.enough); });
 		}
 
 		function runSlice(before)
 		{
-			if (state.stop) { readQuality(function() { finish(mr.seatingOptLabels.enough.replace('[0]', state.improvements)); }); return; }
-			if (state.passes >= maxPasses) { readQuality(function() { finish(mr.seatingOptLabels.enough.replace('[0]', state.improvements)); }); return; }
+			if (state.stop || state.passes >= maxPasses) { stopped(); return; }
 			++state.passes;
-			mr.setSeatingOptimizerUI(task, true, mr.seatingOptLabels.working.replace('[0]', state.passes));
+			show();
 
 			$.ajax({
 				url: 'seating_optimization.php',
@@ -1456,10 +1502,12 @@ var mr = new function()
 				timeout: (sliceSeconds + 30) * 1000,
 				complete: function()
 				{
+					if (state.finished) { return; }
 					readQuality(function(after, pct)
 					{
-						mr.setSeatingOptimizerUI(task, true, describePass(before, after));
-						if (pct !== null && pct >= 100) { finish(mr.seatingOptLabels.done); return; }
+						if (state.finished) { return; }
+						countPass(before, after); show();
+						if (pct !== null && pct >= 100) { finish(L.done); return; }
 						runSlice(after);
 					});
 				}
@@ -1484,7 +1532,7 @@ var mr = new function()
 	}
 
 	// Texts are filled in by the page, which has the translations.
-	this.seatingOptLabels = { working: 'Optimizing... pass [0]', better: 'Pass [0]: found a better seating', nothing: 'Pass [0]: nothing better found', searching: 'Pass [0]: improving, not saved yet', done: 'Nothing left to improve', failed: 'Could not optimize: the seating was not found', enough: 'Stopped. Improvements found: [0]', stop: 'Stop', start: 'Optimize' };
+	this.seatingOptLabels = { title: 'Optimizing seating', done: 'Nothing left to improve', failed: 'Could not optimize: the seating was not found', enough: 'Finished', found: 'Better seatings found: [0]', stopping: 'Stopping after this pass...', stop: 'Stop', close: 'Close', applying: 'Applying the new seating to the tournament...', applied: 'Done. The new seating is now used by the tournament.', applyFailed: 'The seating was improved, but applying it to the tournament failed.', costs: {} };
 
 	this.setSeatingQuality = function(task, pct)
 	{
@@ -1492,12 +1540,6 @@ var mr = new function()
 		$('#opt-fill-' + task).css('width', rounded + '%');
 		$('#opt-rest-' + task).css('left', rounded + '%').css('width', (100 - rounded) + '%');
 		$('#opt-pct-' + task).text(rounded + '%');
-	}
-
-	this.setSeatingOptimizerUI = function(task, running, message)
-	{
-		$('#opt-btn-' + task).text(running ? mr.seatingOptLabels.stop : mr.seatingOptLabels.start);
-		$('#opt-msg-' + task).text(message ? message : '');
 	}
 }
 

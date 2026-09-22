@@ -212,10 +212,34 @@ function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = 
 // numbers. $hash is what gets optimized; pass null for $hash or false for $can_optimize to draw
 // the bar alone. $note is shown under it, for saying things the bare percentage does not, like
 // that a seating this new has not been optimized at all yet.
-// $update_event_id turns on the button that pulls the improved canonical seating into that
-// event; pass null when there is nothing better to pull, or when the page has no event to
-// pull it into.
-function show_seating_quality_bar($percent, $task, $hash, $can_optimize, $note = '', $update_event_id = null)
+// $event_id is the event this seating belongs to, or null on a page looking at a seating on its
+// own. It does two jobs: with $has_better_version it offers to pull the improved canonical
+// seating into the event, and otherwise it lets an optimization run that finds something better
+// put the result into the event straight away.
+// What optimizing one measure costs the others, so it can be said before the button is pressed
+// rather than discovered afterwards.
+//
+// Only the players optimizer takes anything away. Its move exchanges two players sitting at
+// different tables, which changes both who sits at which table and who holds which seat number,
+// so neither of the other two measures still describes the seating afterwards - which is why
+// players_task_end resets both of them outright.
+//
+// The other two do not disturb each other. The tables optimizer exchanges two whole tables
+// within a round, so every player keeps the seat number they had; the numbers optimizer
+// exchanges two players at one table, so every player keeps the table they were at. Each clears
+// the other's saved cursor, but that is only a place to resume from - the score it had earned
+// still holds. Measured on a real seating: after a tables move the numbers score stayed at
+// 80.0, and after a numbers move the tables score stayed at 128.0.
+function seating_optimization_cost($task)
+{
+	if ($task == 'players')
+	{
+		return get_label('Optimizing the players resets the tables and numbers optimization. You will have to run those again afterwards.');
+	}
+	return '';
+}
+
+function show_seating_quality_bar($percent, $task, $hash, $can_optimize, $note = '', $event_id = null, $has_better_version = false)
 {
 	$pct = round($percent);
 	echo '<p><div style="display:flex;align-items:center;gap:8px;">';
@@ -225,16 +249,21 @@ function show_seating_quality_bar($percent, $task, $hash, $can_optimize, $note =
 	echo '<img id="opt-rest-' . $task . '" src="images/black_dot.png" style="position:absolute;left:' . $pct . '%;top:0;width:' . (100 - $pct) . '%;height:24px;opacity:0.6;">';
 	echo '<b id="opt-pct-' . $task . '" style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';
 	echo '</div>';
-	if ($can_optimize && !is_null($update_event_id))
+	if ($can_optimize && $has_better_version && !is_null($event_id))
 	{
 		// An improved seating is already waiting, so taking it is the thing to do here -
 		// optimizing again would only redo work that is done.
 		$confirm = addslashes(get_label('Apply the improved seating? Players will be seated anew.'));
-		echo '<button onclick="mr.updateEventSeating(' . (int)$update_event_id . ', \'' . $confirm . '\')">' . get_label('Update seating') . '</button>';
+		echo '<button onclick="mr.updateEventSeating(' . (int)$event_id . ', \'' . $confirm . '\')">' . get_label('Update seating') . '</button>';
 	}
 	else if ($can_optimize && !is_null($hash) && $pct < 100)
 	{
-		echo '<button id="opt-btn-' . $task . '" onclick="mr.optimizeSeating(\'' . addslashes($task) . '\', \'' . addslashes($hash) . '\')">' . get_label('Optimize') . '</button>';
+		// The event id goes along so that a run which finds something better can put it into the
+		// event straight away. Optimizing improves the canonical seating, which the event only
+		// holds a copy of, so without this the tournament would go on using the old one until
+		// somebody noticed and pressed a button.
+		$apply_to = is_null($event_id) ? 'null' : (int)$event_id;
+		echo '<button id="opt-btn-' . $task . '" onclick="mr.optimizeSeating(\'' . addslashes($task) . '\', \'' . addslashes($hash) . '\', ' . $apply_to . ')">' . get_label('Optimize') . '</button>';
 	}
 	echo '</div>';
 	echo '<div id="opt-msg-' . $task . '" style="color:#666;font-size:90%;">' . $note . '</div>';
@@ -246,15 +275,19 @@ function show_seating_quality_bar($percent, $task, $hash, $can_optimize, $note =
 function show_seating_optimizer_labels()
 {
 	echo '<script>mr.seatingOptLabels = {';
-	echo 'working: ' . json_encode(get_label('Optimizing... pass [0]')) . ',';
-	echo 'better: ' . json_encode(get_label('Pass [0]: found a better seating')) . ',';
-	echo 'nothing: ' . json_encode(get_label('Pass [0]: nothing better found')) . ',';
-	echo 'searching: ' . json_encode(get_label('Pass [0]: improving, not saved yet')) . ',';
+	echo 'title: ' . json_encode(get_label('Optimizing seating')) . ',';
 	echo 'done: ' . json_encode(get_label('Nothing left to improve')) . ',';
 	echo 'failed: ' . json_encode(get_label('Could not optimize: the seating was not found')) . ',';
-	echo 'enough: ' . json_encode(get_label('Stopped. Better seatings found: [0]')) . ',';
+	echo 'enough: ' . json_encode(get_label('Finished')) . ',';
+	echo 'found: ' . json_encode(get_label('Better seatings found: [0]')) . ',';
+	echo 'stopping: ' . json_encode(get_label('Stopping after this pass...')) . ',';
 	echo 'stop: ' . json_encode(get_label('Stop')) . ',';
-	echo 'start: ' . json_encode(get_label('Optimize'));
+	echo 'close: ' . json_encode(get_label('Close')) . ',';
+	echo 'applying: ' . json_encode(get_label('Applying the new seating to the tournament...')) . ',';
+	echo 'applied: ' . json_encode(get_label('Done. The new seating is now used by the tournament.')) . ',';
+	echo 'applyFailed: ' . json_encode(get_label('The seating was improved, but applying it to the tournament failed.')) . ',';
+	// Only the players optimizer costs anything; the others get nothing to say.
+	echo 'costs: {players: ' . json_encode(seating_optimization_cost('players')) . '}';
 	echo '};</script>';
 }
 
