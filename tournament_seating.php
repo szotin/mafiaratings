@@ -75,11 +75,30 @@ class Page extends TournamentPageBase
 			}
 		}
 		
-		$query = new DbQuery('SELECT id, round, misc FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
+		// The event's own name labels its tab, so it is fetched here along with the date that
+		// tells two identically named events apart, and the address the date is read in.
+		// Ordering within a round used to be left to the database; a tournament's main round
+		// often holds dozens of events, and they belong in the order they were played.
+		$query = new DbQuery(
+			'SELECT e.id, e.round, e.misc, e.name, e.start_time, ct.timezone'.
+			' FROM events e'.
+			' JOIN addresses a ON a.id = e.address_id'.
+			' JOIN cities ct ON ct.id = a.city_id'.
+			' WHERE e.tournament_id = ? ORDER BY e.round, e.start_time, e.id', $this->id);
 		$tmp_rounds = array();
 		$this->rounds = array();
 		while ($row = $query->next())
 		{
+			// A round with no seating has nothing for this page to show - clicking its tab only
+			// ever reached "Seating is not generated for this round", and a club season can carry
+			// dozens of them. The test is the same one show_body() uses to decide whether there
+			// is anything to display, so the tabs and the page below them cannot disagree.
+			$misc = $row[2] !== null ? json_decode($row[2]) : null;
+			if (is_null($misc) || !isset($misc->seating))
+			{
+				continue;
+			}
+
 			if ($row[1] == 0)
 			{
 				$this->rounds[] = $row;
@@ -121,6 +140,14 @@ class Page extends TournamentPageBase
 		{
 			$hash = $this->misc->seating->hash;
 
+			// Rounds in misc are not always a dense 0-based array. Seatings rebuilt from game
+			// records before c8716bd7 were keyed by game number, and a canceled or unrated game
+			// left a gap, so json_decode hands back an object rather than a list. Normalize once,
+			// here, and everything below - including the reference taken into it - works on a
+			// real array.
+			$this->misc->seating->rounds = reindex_seating(
+				json_decode(json_encode($this->misc->seating->rounds), true));
+
 			// Score the seating this page actually shows, not the canonical row it came from.
 			// The event keeps a copy taken when the seating was assigned, while the optimizer
 			// goes on improving the canonical one - so the two drift apart, and reading the
@@ -128,8 +155,22 @@ class Page extends TournamentPageBase
 			// nobody is looking at. Do it before the rounds below are rewritten from player
 			// numbers into user ids.
 			$def = new SeatingDef($hash);
-			$shown = reindex_seating(json_decode(json_encode($this->misc->seating->rounds), true));
-			if (is_array($shown) && count($shown) > 0)
+			$shown = $this->misc->seating->rounds;
+			if (!isset($this->misc->seating->mapping))
+			{
+				// A seating assigned from the seatings table keeps player numbers and a mapping
+				// to user ids; one extracted from the event in place holds the user ids directly
+				// and has no mapping - the same distinction the rewrite below turns on. Scores
+				// are defined on player numbers, so renumber first. This is the renumbering the
+				// hash was derived from, so the score describes the seating the hash names.
+				$shown = normalize_seating_to_indices($shown);
+			}
+
+			// Score only a seating whose shape is the one the hash claims. A damaged seating
+			// renumbers into more players than the hash names, and the scorers index by player
+			// number - so without this the page reads past the end of its own tables.
+			if (is_array($shown) && count($shown) > 0 &&
+				seating_is_well_formed($shown, $def->players, $def->tables, $def->games))
 			{
 				$quality = seating_quality($hash,
 					$def->calculatePlayersScore($shown),
@@ -289,15 +330,37 @@ class Page extends TournamentPageBase
 		echo '</p>';
 	}
 	
+	// The bare name of a round's tab, before any date is added to disambiguate it. Falls back to
+	// the round number for an event with no name of its own.
+	private function roundName($row)
+	{
+		list($event_id, $round_num, $misc, $event_name, $start_time, $timezone) = $row;
+		$event_name = trim((string)$event_name);
+		return $event_name === '' ? get_round_name($round_num) : $event_name;
+	}
+
 	protected function show_body()
 	{
 		show_seating_optimizer_labels();
 		$this->misc = NULL;
 		$this->round_num = 0;
+
+		// A tab is named after its event. Most tournaments name their events usefully, but a
+		// club season often runs dozens of them through create_tournament_round(), which names
+		// an event after its round - so a tournament can hold fourteen events all called "main
+		// round". Only those ambiguous names get a date appended; a name that already identifies
+		// its event is left to speak for itself.
+		$name_counts = array();
+		foreach ($this->rounds as $row)
+		{
+			$name = $this->roundName($row);
+			$name_counts[$name] = isset($name_counts[$name]) ? $name_counts[$name] + 1 : 1;
+		}
+
 		echo '<div class="tab">';
 		foreach ($this->rounds as $row)
 		{
-			list($event_id, $round_num, $misc) = $row;
+			list($event_id, $round_num, $misc, $event_name, $start_time, $timezone) = $row;
 			if ($this->round_id <= 0)
 			{
 				$this->round_id = $event_id;
@@ -321,8 +384,14 @@ class Page extends TournamentPageBase
 				$active = ' class="active"';
 			}
 			
+			$name = $this->roundName($row);
+			if ($name_counts[$name] > 1)
+			{
+				$name .= ' (' . format_date((int)$start_time, $timezone) . ')';
+			}
+
 			echo '<button' . $active . ' onclick="goTo({round_id:' . $event_id . '})"' . $disabled . '>';
-			echo get_round_name($round_num);
+			echo htmlspecialchars($name);
 			echo '</button>';
 		}
 		echo '</div>';

@@ -192,14 +192,19 @@ class Page extends GeneralPageBase
 	// in a column, if the link were ever moved into one.
 	private function showTournaments()
 	{
+		// Everything here is the event's own: its date, its address for the timezone that date is
+		// read in, and its club. A tournament's rounds run on different days, and a round can be
+		// held somewhere other than where the tournament is registered - the tournament's date
+		// would be the same for every row and wrong for most of them.
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, e.id, e.round, t.start_time, ct.timezone'.
+			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, e.id, e.round, e.start_time, ct.timezone'.
 			' FROM events e'.
 			' JOIN tournaments t ON t.id = e.tournament_id'.
-			' JOIN addresses a ON a.id = t.address_id'.
+			' JOIN clubs c ON c.id = e.club_id'.
+			' JOIN addresses a ON a.id = e.address_id'.
 			' JOIN cities ct ON ct.id = a.city_id'.
 			' WHERE e.misc LIKE ? AND JSON_UNQUOTE(JSON_EXTRACT(e.misc, \'$.seating.hash\')) = ?'.
-			' ORDER BY t.start_time DESC, t.id, e.round, e.id',
+			' ORDER BY e.start_time DESC, t.id, e.round, e.id',
 			'%"' . $this->hash . '"%', $this->hash);
 
 		$rows = array();
@@ -214,6 +219,7 @@ class Page extends GeneralPageBase
 			return;
 		}
 
+		$club_pic = new Picture(CLUB_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 
 		echo '<p></p>'; // Keeps the table off the tab bar.
@@ -221,11 +227,14 @@ class Page extends GeneralPageBase
 		echo '<tr class="darker">';
 		echo '<td width="120"><b>' . get_label('Date') . '</b></td>';
 		echo '<td colspan="2"><b>' . get_label('Tournament') . '</b></td>';
+		echo '<td width="50" align="center"><b>' . get_label('Club') . '</b></td>';
 		echo '<td width="120" align="center"><b>' . get_label('Round') . '</b></td>';
 		echo '</tr>';
 		foreach ($rows as $row)
 		{
-			list($tournament_id, $tournament_name, $tournament_flags, $event_id, $round, $start_time, $timezone) = $row;
+			list($tournament_id, $tournament_name, $tournament_flags,
+				$club_id, $club_name, $club_flags,
+				$event_id, $round, $start_time, $timezone) = $row;
 			$url = 'tournament_seating.php?bck=1&id=' . $tournament_id . '&round_id=' . $event_id;
 			echo '<tr>';
 			echo '<td>' . format_date((int)$start_time, $timezone) . '</td>';
@@ -235,6 +244,11 @@ class Page extends GeneralPageBase
 			$tournament_pic->show(ICONS_DIR, false, 40);
 			echo '</a></td>';
 			echo '<td><a href="' . $url . '">' . htmlspecialchars($tournament_name) . '</a></td>';
+			echo '<td align="center" valign="center">';
+			$club_pic->set($club_id, $club_name, $club_flags);
+			echo '<a href="club_main.php?bck=1&id=' . $club_id . '">';
+			$club_pic->show(ICONS_DIR, false, 40);
+			echo '</a></td>';
 			echo '<td align="center">' . get_round_name((int)$round) . '</td>';
 			echo '</tr>';
 		}
