@@ -124,6 +124,8 @@ class Page extends TournamentPageBase
 		$this->seating_hash = null;
 		$this->seating_runs = -1;
 		$this->better_version = null;
+		$this->seating_is_manual = false;
+		$this->is_seating_manager = false;
 
 		// Changing the seating once the tournament has started would move players who have
 		// already played, so neither optimizing nor taking an improved version is offered any
@@ -133,8 +135,14 @@ class Page extends TournamentPageBase
 			'SELECT COUNT(*) FROM games WHERE tournament_id = ?', $this->id);
 		$this->seating_is_settled = ((int)$games_played > 0) || (($this->flags & TOURNAMENT_FLAG_FINISHED) != 0);
 
-		$this->can_optimize = !$this->seating_is_settled &&
+		// Who is allowed to act on the seating at all. Kept separate from can_optimize, which is
+		// also false when there is simply nothing to act on: the notes below are about work only
+		// a manager can do, and a spectator has no business reading about the state of the
+		// optimizer or being told a seating was edited by hand.
+		$this->is_seating_manager =
 			is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID);
+
+		$this->can_optimize = !$this->seating_is_settled && $this->is_seating_manager;
 
 		if (isset($this->misc->seating->hash) && isset($this->misc->seating->rounds))
 		{
@@ -200,6 +208,17 @@ class Page extends TournamentPageBase
 					$this->better_version = $current_version;
 				}
 			}
+		}
+
+		// A seating somebody has arranged by hand is not a candidate for either offer. Taking an
+		// improved version replaces the whole arrangement, and optimizing puts the result into
+		// the event when it finds something better - both would throw the edit away without
+		// saying so. The quality is still worth showing; it is only the offers that go.
+		if (isset($this->misc->seating->manual) && $this->misc->seating->manual)
+		{
+			$this->seating_is_manual = true;
+			$this->better_version = null;
+			$this->can_optimize = false;
 		}
 		$this->tables = &$this->misc->seating->rounds;
 		if (isset($this->misc->seating->mapping))
@@ -295,10 +314,29 @@ class Page extends TournamentPageBase
 		// advice - the work is already done, this event just has not picked it up.
 		$note = '';
 		$has_better_version = false;
-		if ($this->seating_is_settled)
+		if (!$this->is_seating_manager)
+		{
+			// Every note below points at something only a manager can do, so to anybody else the
+			// bar is just the quality and nothing more.
+		}
+		else if ($this->seating_is_settled)
 		{
 			// Nothing here is actionable any more, so say nothing rather than point at
 			// improvements that will not be taken.
+		}
+		else if ($this->seating_is_manual)
+		{
+			// The buttons are gone on purpose; without a word here that looks like a bug. Not at
+			// 100% though - "not optimized" next to a full bar only reads as a contradiction.
+			// Same test show_seating_quality_bar() uses to drop the Optimize button.
+			//
+			// The branch stays ahead of the ones below even when it says nothing, so a
+			// hand-edited seating is never offered an improved version or told it is fresh out
+			// of the generator.
+			if (round($percent) < 100)
+			{
+				$note = get_label('This seating has been edited by hand, so it is not optimized any more. Clear it and generate it again to go back to an optimized one.');
+			}
 		}
 		else if (!is_null($this->better_version))
 		{

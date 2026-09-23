@@ -445,6 +445,10 @@ class Page extends TournamentPageBase
 			$stored_hash    = isset($misc->seating->hash)    ? $misc->seating->hash    : null;
 			$stored_version = isset($misc->seating->version) ? $misc->seating->version : null;
 			$current_version = null;
+			// Arranged by hand: taking an improved version would replace the whole arrangement
+			// and throw the edit away, so that button is not offered. Same rule as on
+			// tournament_seating.php.
+			$is_manual = isset($misc->seating->manual) && $misc->seating->manual;
 
 			if (!is_null($stored_hash))
 			{
@@ -455,7 +459,7 @@ class Page extends TournamentPageBase
 				{
 					list($pr, $pvr, $tr, $tvr, $nr, $nvr) = $srow;
 					$current_version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
-					if (!is_null($stored_version) && $stored_version !== $current_version && ($nr - $nvr) != 0)
+					if (!$is_manual && !is_null($stored_version) && $stored_version !== $current_version && ($nr - $nvr) != 0)
 					{
 						$title = htmlspecialchars(get_label('An improved seating version [0] is available.', $current_version));
 						echo ' <button onclick="makeSeating(' . $event_id . ')" title="' . $title . '"><img src="images/refresh.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Update seating') . '</button>';

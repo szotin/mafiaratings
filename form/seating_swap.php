@@ -91,6 +91,26 @@ try
 		echo '<option value="' . $u->id . '">' . htmlspecialchars($u->name) . '</option>';
 	echo '</select></td></tr>';
 
+	// Swapping in every game exchanges the two players outright, which is what this dialog has
+	// always done. Swapping in one game exchanges only their seats there, and is offered only
+	// when there is a seating to pick a game from.
+	$games_count = 0;
+	if (!is_null($misc) && isset($misc->seating) && isset($misc->seating->rounds) && is_array($misc->seating->rounds))
+	{
+		$games_count = count($misc->seating->rounds);
+	}
+	if ($games_count > 0)
+	{
+		echo '<tr><td>' . get_label('Game') . ':</td><td>';
+		echo '<select id="form-game" style="width:100%">';
+		echo '<option value="0" selected>' . get_label('All games') . '</option>';
+		for ($i = 1; $i <= $games_count; ++$i)
+		{
+			echo '<option value="' . $i . '">' . get_label('Game [0]', $i) . '</option>';
+		}
+		echo '</select></td></tr>';
+	}
+
 	echo '</table>';
 ?>
 	<script>
@@ -118,6 +138,7 @@ try
 				event_id: <?php echo $event_id; ?>,
 				user1_id: player1Id,
 				user2_id: player2Id,
+				game: parseInt($("#form-game").val()) || 0,
 			},
 			onSuccess);
 		}

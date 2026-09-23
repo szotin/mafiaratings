@@ -2346,6 +2346,8 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		$user1_id = (int)get_required_param('user1_id');
 		$user2_id = (int)get_required_param('user2_id');
+		// 1-based, as the dialog and the seating pages number the games. 0 means every game.
+		$game = (int)get_optional_param('game', 0);
 
 		Db::begin();
 		list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
@@ -2368,17 +2370,88 @@ class ApiPage extends OpsApiPageBase
 					if ((int)$uid === $user1_id) $slot1 = $slot;
 					if ((int)$uid === $user2_id) $slot2 = $slot;
 				}
-				if ($slot1 >= 0)
+
+				if ($game > 0)
 				{
+					$this->swap_players_in_one_game($misc, $game, $slot1, $slot2);
+					$misc->seating->manual = true;
+					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+				}
+				else if ($slot1 >= 0)
+				{
+					// Swapping the mapping exchanges the two players everywhere at once, which is
+					// what the whole seating is: the rounds hold slots and the mapping says who
+					// each slot is. It also lets a player who is not seated at all take another's
+					// place, which is how a substitute is put in.
 					$mapping[$slot1] = $user2_id;
 					if ($slot2 >= 0)
 						$mapping[$slot2] = $user1_id;
 					$misc->seating->mapping = array_values($mapping);
-					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+					// Hand-arranged from here on. The version is kept - this copy really did come
+					// from the seatings table at that point in its history - but nothing may now
+					// offer to replace the seating, because replacing it would throw the edit
+					// away. See show_seating_quality_bar() and tournament_preparation.php.
+					$misc->seating->manual = true;
+					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
 				}
 			}
 		}
 		Db::commit();
+	}
+
+	// Exchanges two players' seats in a single game, leaving every other game alone.
+	//
+	// The mapping stays as it is - both players keep their slots - and the slots themselves are
+	// exchanged where they sit in that one game. So each plays the same number of games as
+	// before, in a different seat.
+	//
+	// That only works when both of them are actually at a table in that game. If one sits it out
+	// and the other does not, the swap would hand one of them a game and take one from the other,
+	// which is not a swap of seats but a change of who plays how much - and the seating's whole
+	// promise is that everybody plays the same number of games. Refused rather than done quietly.
+	private function swap_players_in_one_game($misc, $game, $slot1, $slot2)
+	{
+		$rounds = isset($misc->seating->rounds) ? $misc->seating->rounds : null;
+		if (!is_array($rounds) || $game > count($rounds))
+		{
+			throw new Exc(get_label('Game [0] is not in this seating.', $game));
+		}
+
+		// [table, seat] of each player in this game, or null when they do not play it.
+		$find = function($slot) use ($rounds, $game)
+		{
+			if ($slot < 0)
+			{
+				return null;
+			}
+			$round = $rounds[$game - 1];
+			if (!is_array($round))
+			{
+				return null;
+			}
+			for ($t = 0; $t < count($round); ++$t)
+			{
+				if (!is_array($round[$t])) { continue; }
+				for ($s = 0; $s < count($round[$t]); ++$s)
+				{
+					if ((int)$round[$t][$s] === (int)$slot)
+					{
+						return array($t, $s);
+					}
+				}
+			}
+			return null;
+		};
+
+		$at1 = $find($slot1);
+		$at2 = $find($slot2);
+		if (is_null($at1) || is_null($at2))
+		{
+			throw new Exc(get_label('Both players must play game [0] to be swapped in it. Swapping a player who sits it out with one who does not would change how many games they each play.', $game));
+		}
+
+		$misc->seating->rounds[$game - 1][$at1[0]][$at1[1]] = $slot2;
+		$misc->seating->rounds[$game - 1][$at2[0]][$at2[1]] = $slot1;
 	}
 
 	function swap_seating_players_op_help()
