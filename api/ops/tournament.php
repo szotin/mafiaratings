@@ -9,6 +9,7 @@ require_once '../../include/scoring.php';
 require_once '../../include/image.php';
 require_once '../../include/game.php';
 require_once '../../include/mwt.php';
+require_once '../../include/seating.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -2132,7 +2133,13 @@ class ApiPage extends OpsApiPageBase
 
 		Db::begin();
 
+		// A seating is built for one team size, which its hash records, so changing it invalidates
+		// every round's seating at once - not only the rounds whose numbers were edited.
+		list($old_team_size) = Db::record(get_label('tournament'), 'SELECT team_size FROM tournaments WHERE id = ?', $tournament_id);
+		$team_size_changed = (max(1, (int)$old_team_size) != $team_size);
+
 		$main_players = null;
+		$cleared = 0;
 		foreach ($rounds as $round)
 		{
 			$event_id = (int)$round->event_id;
@@ -2140,7 +2147,30 @@ class ApiPage extends OpsApiPageBase
 			$tables   = isset($round->tables)  && $round->tables  > 0 ? (int)$round->tables  : null;
 			$games    = isset($round->games)   && $round->games   > 0 ? (int)$round->games   : null;
 
+			// Read the scheme this round had before overwriting it, so the seating can be judged
+			// against what actually changed. Fetched rather than required: the update below has
+			// always ignored an event that is not this tournament's, and asking for the row
+			// outright would turn that from a no-op into a failed save.
+			$old = (new DbQuery('SELECT players, tables, games FROM events WHERE id = ? AND tournament_id = ?',
+				$event_id, $tournament_id))->next();
+			if (!$old)
+			{
+				continue;
+			}
+
 			Db::exec(get_label('event'), 'UPDATE events SET players = ?, tables = ?, games = ? WHERE id = ? AND tournament_id = ?', $players, $tables, $games, $event_id, $tournament_id);
+
+			// The seating stored on this round was made for the old scheme. Keeping it would seat
+			// people by a scheme nobody is running any more.
+			if ($team_size_changed)
+			{
+				if (clear_event_seating($event_id)) { ++$cleared; }
+			}
+			else if (clear_event_seating_on_scheme_change($event_id,
+				array($old[0], $old[1], $old[2]), array($players, $tables, $games)))
+			{
+				++$cleared;
+			}
 
 			if (isset($round->is_main) && $round->is_main && !is_null($players))
 			{
@@ -2155,6 +2185,10 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		Db::commit();
+
+		// The page reloads after this, so the rounds whose seating went are visible straight
+		// away; the count is here so a caller that is not the page can see it happened.
+		$this->response['seatings_cleared'] = $cleared;
 	}
 
 	function set_scheme_op_help()

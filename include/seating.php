@@ -2906,6 +2906,54 @@ function teams_in_indexes($teams_by_user, $team_size, $user_to_index)
 	return $teams;
 }
 
+// Drops an event's stored seating when the scheme it was built for no longer holds.
+//
+// A seating is made for a particular number of players at a particular number of tables over a
+// particular number of games - that is what its hash says and what its rows are. Change any of
+// them and what is stored describes a different round: a seating for fifteen leaves the sixteenth
+// player with nowhere to sit, and nothing downstream notices, because every page reads misc and
+// takes it at its word.
+//
+// Dropping it loses nothing that matters. It is a plan, not a record - the games hold the record -
+// and seating_optimization.php rebuilds misc.seating from the game records for a round that has
+// already been played. What it does lose is the arrangement the organizer may have been looking
+// at, which is why this only fires when the scheme really changed rather than on every save.
+//
+// Returns true when a seating was dropped, so the caller can say so.
+function clear_event_seating_on_scheme_change($event_id, $old_scheme, $new_scheme)
+{
+	// A null anywhere means "not set"; compare them as numbers so null and 0 do not look like a
+	// change from one to the other.
+	$normalize = function($scheme)
+	{
+		return array((int)$scheme[0], (int)$scheme[1], (int)$scheme[2]);
+	};
+	if ($normalize($old_scheme) === $normalize($new_scheme))
+	{
+		return false;
+	}
+	return clear_event_seating($event_id);
+}
+
+// Removes misc.seating from an event, leaving the rest of misc alone. Returns true when there
+// was one to remove.
+function clear_event_seating($event_id)
+{
+	list($misc_str) = Db::record(get_label('event'), 'SELECT misc FROM events WHERE id = ?', $event_id);
+	if (is_null($misc_str))
+	{
+		return false;
+	}
+	$misc = json_decode($misc_str);
+	if (is_null($misc) || !isset($misc->seating))
+	{
+		return false;
+	}
+	unset($misc->seating);
+	Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), (int)$event_id);
+	return true;
+}
+
 // $team_size and $teams describe a team tournament: how many players are on a team, and which
 // of this seating's player numbers make up each one. Pass them whenever they are known - the
 // seating itself cannot tell a teammate pair from two players who merely never met.

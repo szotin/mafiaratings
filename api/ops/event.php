@@ -631,7 +631,18 @@ class ApiPage extends OpsApiPageBase
 			$name, $tournament_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options,
 			$address_id, $start_timestamp, $notes, $duration, $flags,
 			$langs, $round_num, $players, $tables, $games, $event_id);
-		if (Db::affected_rows() > 0)
+
+		// Taken before anything else queries, because affected_rows() reports the last statement
+		// and the seating clean-up below runs statements of its own.
+		$event_changed = Db::affected_rows();
+
+		// Editing the round's numbers leaves any seating it has describing the old ones - a
+		// seating for fifteen has nowhere to put a sixteenth player, and every page that reads
+		// misc takes it at its word. Same reasoning as in tournament.php's set_scheme.
+		clear_event_seating_on_scheme_change($event_id,
+			array($old_players, $old_tables, $old_games), array($players, $tables, $games));
+
+		if ($event_changed > 0)
 		{
 			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $address_id);
 			$log_details = new stdClass();
