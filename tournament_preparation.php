@@ -687,6 +687,11 @@ class Page extends TournamentPageBase
 	{
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id);
 
+		// This page runs the optimizer too - from the offer made after a seating is generated,
+		// and from the hash shown next to a round - so it needs the texts as much as the seating
+		// pages do. Without them the dialogs fall back to the English built into mr.js.
+		show_seating_optimizer_labels();
+
 		echo '<div class="tab">';
 		echo '<button' . ($this->tab == PREP_TAB_SCHEME ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_SCHEME . ')">' . get_label('Scheme') . '</button>';
 		$reg_disabled = !$this->scheme_valid ? ' disabled' : '';
@@ -730,7 +735,20 @@ class Page extends TournamentPageBase
 			{
 				op: 'set_seating',
 				event_id: eventId,
-			}, refr);
+			},
+			function(data)
+			{
+				// Offer to optimize only a seating the optimizer has never worked on. One taken
+				// from the table has had hours of it already, and spending the user's ten
+				// minutes redoing that would be a poor trade.
+				if (data && data.seating_hash &&
+					(data.seating_status == 'new' || data.seating_status == 'similar'))
+				{
+					mr.offerFullOptimization(data.seating_hash, eventId, data.seating_status, refr);
+					return;
+				}
+				refr();
+			});
 		}
 
 		function clearSeating(eventId, confirmMessage)

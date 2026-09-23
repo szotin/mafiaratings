@@ -3083,10 +3083,21 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 		
 		$seating = $found->seating;
-		if (isset($found->warning))
-		{
-			$this->setUserMessage($found->warning);
-		}
+
+		// findSeating()'s warning is deliberately not shown here. It says a new or adapted
+		// seating was made and offers a link to optimize it, which is what the offer below asks
+		// about anyway - two dialogs in a row saying the same thing. Its wording lives in the
+		// offer now. api/ops/seating.php still shows it, having no offer of its own.
+		//
+		// Tell the caller whether this seating is one the optimizer has never worked on. "new"
+		// was generated from scratch just now and "similar" was adapted from a seating for a
+		// different set of rules; either way it is at version 0.0.0 and there is a lot to gain
+		// from optimizing it. "found" is a stored seating the background optimizer has already
+		// been improving for hours, and offering to redo that would be a waste of the user's
+		// ten minutes. The hash goes along because the optimizer works on the canonical seating,
+		// which is named by the hash rather than by the event.
+		$this->response['seating_status'] = $found->status;
+		$this->response['seating_hash'] = $seatingDef->hash;
 
 		// The seating is applied either way, but the organizer must be told when a "separate
 		// these players" rule could not be honoured, otherwise they run the tournament assuming

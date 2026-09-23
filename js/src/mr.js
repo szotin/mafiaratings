@@ -1377,12 +1377,47 @@ var mr = new function()
 	// only show them stale numbers.
 	this.optimizeSeating = function(task, hash, applyToEventId)
 	{
+		runOptimization([{ task: task, passes: 300 }], hash, applyToEventId);
+	}
+
+	// Offers to optimize a seating that has just been made for a tournament. It is worth asking
+	// rather than doing: the run takes minutes and the page is unusable meanwhile, and a seating
+	// nobody is in a hurry about gets the same treatment from the background optimizer anyway.
+	// $status is what findSeating() made of it - 'new' or 'similar' - and picks the wording. It
+	// also carries what the separate "a new seating was made" message used to say, so there is
+	// one dialog here rather than two in a row.
+	this.offerFullOptimization = function(hash, applyToEventId, status, onDecline)
+	{
+		var L = mr.seatingOptLabels;
+		var text = (L.offers && L.offers[status]) ? L.offers[status] : L.offer;
+		dlg.yesNo(text, null, null,
+			function() { mr.optimizeSeatingFully(hash, applyToEventId); },
+			onDecline);
+	}
+
+	// Players first, because optimizing them resets the numbers and the tables - so the two
+	// phases that follow repair what it costs, and the run as a whole gives up nothing. Numbers
+	// and tables do not disturb each other, so their order between themselves does not matter.
+	this.optimizeSeatingFully = function(hash, applyToEventId)
+	{
+		runOptimization(
+			[{ task: 'players', passes: 100 },
+			 { task: 'numbers', passes: 100 },
+			 { task: 'tables',  passes: 100 }], hash, applyToEventId);
+	}
+
+	function runOptimization(phases, hash, applyToEventId)
+	{
 		var L = mr.seatingOptLabels;
 		var sliceSeconds = 8;
-		// An upper bound, not a plan: the run also ends when there is nothing left to improve,
-		// when the user stops it, or on an error. The bar fills towards this.
-		var maxPasses = 300;
-		var state = { stop: false, passes: 0, improvements: 0, finished: false };
+		// An upper bound, not a plan: a phase also ends as soon as there is nothing left to
+		// improve in it, and the whole run ends when the user stops it or on an error. The bar
+		// fills towards the total of every phase.
+		var maxPasses = 0;
+		for (var i = 0; i < phases.length; ++i) { maxPasses += phases[i].passes; }
+		var state = { stop: false, passes: 0, phase: 0, phasePasses: 0, improvements: 0, finished: false };
+		// Reassigned as the phases go by; everything below reads it rather than the phase list.
+		var task = phases[0].task;
 
 		var body =
 			'<div id="opt-dlg-msg" style="margin-bottom:10px;min-height:1.4em;"></div>' +
@@ -1395,9 +1430,12 @@ var mr = new function()
 
 		// Name what is being optimized, falling back to the generic title when there is no task
 		// to name - the "we found a similar seating" warning optimizes without one.
-		var title = (L.titles && L.titles[task]) ? L.titles[task] : L.title;
+		function titleForTask()
+		{
+			return (L.titles && L.titles[task]) ? L.titles[task] : L.title;
+		}
 
-		var elem = dlg.custom(body, title, 420,
+		var elem = dlg.custom(body, titleForTask(), 420,
 			[{ text: L.stop, click: function() { state.stop = true; $('#opt-dlg-msg').text(L.stopping); } }],
 			function()
 			{
@@ -1431,7 +1469,10 @@ var mr = new function()
 			// What this run cost the other measures, said once it is known that it cost
 			// anything: the other two are only reset when a better seating was actually stored,
 			// so a run that found nothing has taken nothing away and has nothing to warn about.
-			var cost = (L.costs && state.improvements > 0) ? L.costs[task] : null;
+			// Only a single-phase run can cost anything. A full run optimizes the players first
+			// precisely so the phases after it put back what that costs, so there is nothing to
+			// warn about at the end of one.
+			var cost = (L.costs && phases.length == 1 && state.improvements > 0) ? L.costs[task] : null;
 			if (cost) { $('#opt-dlg-cost').text(cost); }
 
 			// A better seating is of no use to the tournament while it sits in the seatings
@@ -1494,10 +1535,31 @@ var mr = new function()
 			readQuality(function() { finish(L.enough); });
 		}
 
+		// Moves on to the next phase, or ends the run when that was the last one. Called both
+		// when a phase runs out of passes and when it reports nothing left to improve - there is
+		// no point spending the remaining passes of a phase that is already perfect.
+		function nextPhase(before)
+		{
+			if (state.phase + 1 >= phases.length) { stopped(); return; }
+			// The passes a finished phase did not need still count towards the bar, so it keeps
+			// moving at an even pace instead of jumping when a phase ends early.
+			state.passes += phases[state.phase].passes - state.phasePasses;
+			++state.phase;
+			state.phasePasses = 0;
+			task = phases[state.phase].task;
+			elem.dialog('option', 'title', titleForTask());
+			show();
+			// The scores of the phase just starting are a different measure from the one that
+			// ended, so the comparison countPass() makes has to start over.
+			readQuality(function(data) { runSlice(data); });
+		}
+
 		function runSlice(before)
 		{
-			if (state.stop || state.passes >= maxPasses) { stopped(); return; }
+			if (state.stop) { stopped(); return; }
+			if (state.phasePasses >= phases[state.phase].passes) { nextPhase(before); return; }
 			++state.passes;
+			++state.phasePasses;
 			show();
 
 			$.ajax({
@@ -1511,7 +1573,14 @@ var mr = new function()
 					{
 						if (state.finished) { return; }
 						countPass(before, after); show();
-						if (pct !== null && pct >= 100) { finish(L.done); return; }
+						if (pct !== null && pct >= 100)
+						{
+							// Nothing left in this phase. With phases to follow that is a reason
+							// to move on, not to stop.
+							if (state.phase + 1 < phases.length) { nextPhase(after); }
+							else { finish(L.done); }
+							return;
+						}
 						runSlice(after);
 					});
 				}
@@ -1536,7 +1605,7 @@ var mr = new function()
 	}
 
 	// Texts are filled in by the page, which has the translations.
-	this.seatingOptLabels = { title: 'Optimizing seating', titles: {}, done: 'Nothing left to improve', failed: 'Could not optimize: the seating was not found', enough: 'Finished', found: 'Better seatings found: [0]', stopping: 'Stopping after this pass...', stop: 'Stop', close: 'Close', applying: 'Applying the new seating to the tournament...', applied: 'Done. The new seating is now used by the tournament.', applyFailed: 'The seating was improved, but applying it to the tournament failed.', costs: {} };
+	this.seatingOptLabels = { title: 'Optimizing seating', titles: {}, offer: 'Optimize the seating now?', offers: {}, done: 'Nothing left to improve', failed: 'Could not optimize: the seating was not found', enough: 'Finished', found: 'Better seatings found: [0]', stopping: 'Stopping after this pass...', stop: 'Stop', close: 'Close', applying: 'Applying the new seating to the tournament...', applied: 'Done. The new seating is now used by the tournament.', applyFailed: 'The seating was improved, but applying it to the tournament failed.', costs: {} };
 
 	this.setSeatingQuality = function(task, pct)
 	{

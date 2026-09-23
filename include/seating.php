@@ -360,6 +360,15 @@ function show_seating_optimizer_labels()
 		'numbers: ' . json_encode(get_label('Optimizing numbers')) . ',' .
 		'tables: ' . json_encode(get_label('Optimizing tables')) .
 	'},';
+	// What the offer to optimize says. These carry what the "a new seating was made" message used
+	// to say before it was folded in here - there is no sense telling the user the same thing in
+	// two dialogs in a row, and what they want to know at that moment is whether to wait for the
+	// background optimizer or spend ten minutes now.
+	echo 'offer: ' . json_encode(get_label('This seating has not been optimized yet. Optimize it now? It takes about ten minutes, and this page has to stay open.')) . ',';
+	echo 'offers: {'.
+		'new: ' . json_encode(get_label('We do not have a seating arrangement for this configuration, so we have generated a very basic one.<p>The background optimizer will improve it over the next few hours. Or we can optimize it right now: that takes about ten minutes, and this page has to stay open.</p><p>Optimize it now?</p>')) . ',' .
+		'similar: ' . json_encode(get_label('We have found a similar but not exactly the same seating arrangement. It is pretty good, but we can do better.<p>The background optimizer will improve it over the next few hours. Or we can optimize it right now: that takes about ten minutes, and this page has to stay open.</p><p>Optimize it now?</p>')) .
+	'},';
 	echo 'done: ' . json_encode(get_label('Nothing left to improve')) . ',';
 	echo 'failed: ' . json_encode(get_label('Could not optimize: the seating was not found')) . ',';
 	echo 'enough: ' . json_encode(get_label('Finished')) . ',';
