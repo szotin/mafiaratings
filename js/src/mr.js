@@ -1393,7 +1393,11 @@ var mr = new function()
 			'<div id="opt-dlg-found" style="margin-top:8px;">' + L.found.replace('[0]', 0) + '</div>' +
 			'<div id="opt-dlg-cost" style="margin-top:8px;color:#a60;"></div>';
 
-		var elem = dlg.custom(body, L.title, 420,
+		// Name what is being optimized, falling back to the generic title when there is no task
+		// to name - the "we found a similar seating" warning optimizes without one.
+		var title = (L.titles && L.titles[task]) ? L.titles[task] : L.title;
+
+		var elem = dlg.custom(body, title, 420,
 			[{ text: L.stop, click: function() { state.stop = true; $('#opt-dlg-msg').text(L.stopping); } }],
 			function()
 			{
@@ -1532,7 +1536,7 @@ var mr = new function()
 	}
 
 	// Texts are filled in by the page, which has the translations.
-	this.seatingOptLabels = { title: 'Optimizing seating', done: 'Nothing left to improve', failed: 'Could not optimize: the seating was not found', enough: 'Finished', found: 'Better seatings found: [0]', stopping: 'Stopping after this pass...', stop: 'Stop', close: 'Close', applying: 'Applying the new seating to the tournament...', applied: 'Done. The new seating is now used by the tournament.', applyFailed: 'The seating was improved, but applying it to the tournament failed.', costs: {} };
+	this.seatingOptLabels = { title: 'Optimizing seating', titles: {}, done: 'Nothing left to improve', failed: 'Could not optimize: the seating was not found', enough: 'Finished', found: 'Better seatings found: [0]', stopping: 'Stopping after this pass...', stop: 'Stop', close: 'Close', applying: 'Applying the new seating to the tournament...', applied: 'Done. The new seating is now used by the tournament.', applyFailed: 'The seating was improved, but applying it to the tournament failed.', costs: {} };
 
 	this.setSeatingQuality = function(task, pct)
 	{

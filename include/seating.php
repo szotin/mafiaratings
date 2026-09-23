@@ -352,7 +352,14 @@ function show_seating_quality_bar($percent, $task, $hash, $can_optimize, $note =
 function show_seating_optimizer_labels()
 {
 	echo '<script>mr.seatingOptLabels = {';
+	// The generic title is the fallback, and it is not decoration: the warning about a similar
+	// seating calls mr.optimizeSeating(null, ...), with no task to name.
 	echo 'title: ' . json_encode(get_label('Optimizing seating')) . ',';
+	echo 'titles: {'.
+		'players: ' . json_encode(get_label('Optimizing players')) . ',' .
+		'numbers: ' . json_encode(get_label('Optimizing numbers')) . ',' .
+		'tables: ' . json_encode(get_label('Optimizing tables')) .
+	'},';
 	echo 'done: ' . json_encode(get_label('Nothing left to improve')) . ',';
 	echo 'failed: ' . json_encode(get_label('Could not optimize: the seating was not found')) . ',';
 	echo 'enough: ' . json_encode(get_label('Finished')) . ',';
