@@ -8,7 +8,35 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
-	private function check_name($name, $league_id, $id = -1)
+	// A gaining system belongs to a league, or to a club, or to neither - a system owned by
+	// nobody is global and usable everywhere. Returns the owner ids to store, after checking
+	// that the caller is allowed to own a system there.
+	private function check_owner(&$league_id, &$club_id)
+	{
+		if ($league_id > 0 && $club_id > 0)
+		{
+			throw new Exc(get_label('A gaining system belongs either to a league or to a club, but not to both.'));
+		}
+
+		if ($club_id > 0)
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			$league_id = NULL;
+		}
+		else if ($league_id > 0)
+		{
+			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			$club_id = NULL;
+		}
+		else
+		{
+			check_permissions(PERMISSION_ADMIN);
+			$league_id = NULL;
+			$club_id = NULL;
+		}
+	}
+
+	private function check_name($name, $league_id, $club_id, $id = -1)
 	{
 		global $_profile;
 
@@ -18,21 +46,25 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		check_name($name, get_label('gaining system name'));
-		
+
+		// The name has to be unique among the systems this owner can see - their own plus the
+		// global ones.
+		$query = new DbQuery('SELECT name FROM gainings WHERE name = ? AND ((league_id IS NULL AND club_id IS NULL)', $name);
 		if (!is_null($league_id))
 		{
-			$query = new DbQuery('SELECT name FROM gainings WHERE name = ? AND (league_id = ? OR league_id IS NULL)', $name, $league_id);
+			$query->add(' OR league_id = ?', $league_id);
 		}
-		else
+		if (!is_null($club_id))
 		{
-			$query = new DbQuery('SELECT name FROM gainings WHERE name = ? AND league_id IS NULL', $name);
+			$query->add(' OR club_id = ?', $club_id);
 		}
-		
+		$query->add(')');
+
 		if ($id > 0)
 		{
 			$query->add(' AND id <> ?', $id);
 		}
-		
+
 		if ($query->next())
 		{
 			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Gaining system name'), $name));
@@ -45,16 +77,9 @@ class ApiPage extends OpsApiPageBase
 	function create_op()
 	{
 		$league_id = (int)get_optional_param('league_id', -1);
-		if ($league_id > 0)
-		{
-			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		}
-		else
-		{
-			check_permissions(PERMISSION_ADMIN);
-			$league_id = NULL;
-		}
-		
+		$club_id = (int)get_optional_param('club_id', -1);
+		$this->check_owner($league_id, $club_id);
+
 		$copy_id = (int)get_optional_param('copy_id', -1);
 		$name = trim(get_required_param('name'));
 		$gaining = get_optional_param('gaining', '{}');
@@ -66,9 +91,9 @@ class ApiPage extends OpsApiPageBase
 		$gaining = json_encode($gaining);
 		
 		Db::begin();
-		$this->check_name($name, $league_id);
-		
-		Db::exec(get_label('gaining system'), 'INSERT INTO gainings (league_id, name, version) VALUES (?, ?, NULL)', $league_id, $name);
+		$this->check_name($name, $league_id, $club_id);
+
+		Db::exec(get_label('gaining system'), 'INSERT INTO gainings (league_id, club_id, name, version) VALUES (?, ?, ?, NULL)', $league_id, $club_id, $name);
 		list ($gaining_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		
 		if ($copy_id > 0)
@@ -87,15 +112,16 @@ class ApiPage extends OpsApiPageBase
 		$log_details->name = $name;
 		$log_details->version = 1;
 		$log_details->gaining = $gaining;
-		db_log(LOG_OBJECT_GAINING_SYSTEM, 'created', $log_details, $gaining_id, NULL, $league_id);
+		db_log(LOG_OBJECT_GAINING_SYSTEM, 'created', $log_details, $gaining_id, $club_id, $league_id);
 		Db::commit();
 		$this->response['gaining_id'] = (int)$gaining_id;
 	}
-	
+
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Create gaining system in the league. Or create a global gaining system. "Global" means that it can be used in any league. Creating global gaining system requires <em>admin</em> permissions.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Create gaining system in a league or in a club. Or create a global gaining system. "Global" means that it can be used anywhere. Creating global gaining system requires <em>admin</em> permissions.');
 		$help->request_param('league_id', 'League id.', 'global gaining system is created.');
+		$help->request_param('club_id', 'Club id. Pass either this or <q>league_id</q>, not both.', 'global gaining system is created.');
 		$help->request_param('name', 'gaining system name.');
 		$help->request_param('copy_id', 'Id of the existing gaining system to be used as an initial template. If set, the latest version of gaining rules from this system are copied to the new system.', 'parameter <q>gaining</q> is used to create the new system.');
 		api_gaining_help($help->request_param('gaining', 'gaining rules:', 'empty gaining system is created.'));
@@ -112,8 +138,12 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($league_id, $old_name) = Db::record(get_label('gaining system'), 'SELECT league_id, name FROM gainings WHERE id = ?', $gaining_id);
-		if (!is_null($league_id))
+		list ($league_id, $club_id, $old_name) = Db::record(get_label('gaining system'), 'SELECT league_id, club_id, name FROM gainings WHERE id = ?', $gaining_id);
+		if (!is_null($club_id))
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		}
+		else if (!is_null($league_id))
 		{
 			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		}
@@ -121,9 +151,9 @@ class ApiPage extends OpsApiPageBase
 		{
 			check_permissions(PERMISSION_ADMIN);
 		}
-		
+
 		$name = trim(get_optional_param('name', $old_name));
-		$this->check_name($name, $league_id, $gaining_id);
+		$this->check_name($name, $league_id, $club_id, $gaining_id);
 		
 		list ($old_gaining, $version) = Db::record(get_label('gaining system'), 'SELECT v.gaining, s.version FROM gainings s JOIN gaining_versions v ON v.gaining_id = s.id AND v.version = s.version WHERE s.id = ?', $gaining_id);
 		$gaining = get_optional_param('gaining', $old_gaining);
@@ -155,7 +185,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$log_details = new stdClass();
 			$log_details->name = $name;
-			db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
+			db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, $club_id, $league_id);
 		}
 		
 		if ($overwrite)
@@ -165,7 +195,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details = new stdClass();
 				$log_details->gaining = $gaining;
-				db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
+				db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, $club_id, $league_id);
 			}
 		}
 		else
@@ -178,7 +208,7 @@ class ApiPage extends OpsApiPageBase
 				$log_details = new stdClass();
 				$log_details->gaining = $gaining;
 				$log_details->version = $version;
-				db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, NULL, $league_id);
+				db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, $club_id, $league_id);
 			}
 		}
 		Db::commit();
@@ -188,7 +218,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Change gaining system. If some of the past events or tournaments are already using this gaining system, the gaining rules are not overwritten. We create a new version of gaining rules. Old events contunie using old version. All newly created events use the new version. Events that already exist but not finished yet will use the new version.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Change gaining system. If some of the past events or tournaments are already using this gaining system, the gaining rules are not overwritten. We create a new version of gaining rules. Old events contunie using old version. All newly created events use the new version. Events that already exist but not finished yet will use the new version.');
 		$help->request_param('gaining_id', 'gaining system id. If the gaining system is global (shared between leagues) updating requires <em>admin</em> permissions.');
 		$help->request_param('name', 'gaining system name.', 'remains the same.');
 		api_gaining_help($help->request_param('gaining', 'gaining rules:', 'remain the same.'));
@@ -203,21 +233,32 @@ class ApiPage extends OpsApiPageBase
 	{
 		$gaining_id = (int)get_required_param('gaining_id');
 		
-		list ($league_id) = Db::record(get_label('gaining system'), 'SELECT league_id FROM gainings WHERE id = ?', $gaining_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		list ($league_id, $club_id) = Db::record(get_label('gaining system'), 'SELECT league_id, club_id FROM gainings WHERE id = ?', $gaining_id);
+		if (!is_null($club_id))
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		}
+		else if (!is_null($league_id))
+		{
+			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		}
+		else
+		{
+			check_permissions(PERMISSION_ADMIN);
+		}
 
 		Db::begin();
 		Db::exec(get_label('gaining system'), 'UPDATE gainings SET version = NULL WHERE id = ?', $gaining_id);
 		Db::exec(get_label('gaining system'), 'DELETE FROM gaining_versions WHERE gaining_id = ?', $gaining_id);
 		Db::exec(get_label('gaining system'), 'DELETE FROM gainings WHERE id = ?', $gaining_id);
-		db_log(LOG_OBJECT_GAINING_SYSTEM, 'deleted', NULL, $gaining_id, NULL, $league_id);
+		db_log(LOG_OBJECT_GAINING_SYSTEM, 'deleted', NULL, $gaining_id, $club_id, $league_id);
 		Db::commit();
 	}
 	
 	function delete_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Delete gaining system.');
-		$help->request_param('gaining_id', 'Gaining system id. If the gaining system is global (shared between leagues) deleting requires <em>admin</em> permissions.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Delete gaining system.');
+		$help->request_param('gaining_id', 'Gaining system id. If the gaining system is global (shared between leagues and clubs) deleting requires <em>admin</em> permissions.');
 		return $help;
 	}
 }

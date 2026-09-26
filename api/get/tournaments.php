@@ -5,6 +5,7 @@ require_once '../../include/user_location.php';
 require_once '../../include/rules.php';
 require_once '../../include/datetime.php';
 require_once '../../include/picture.php';
+require_once '../../include/series.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -307,19 +308,29 @@ class ApiPage extends GetApiPageBase
 			$index = 0;
 			$tournament = $tournaments[0];
 			$query = new DbQuery(
-				'SELECT t.id, s.id, s.name, l.id, l.name, st.stars'.
+				'SELECT t.id, s.id, s.name, sol.id, sol.name, soc.id, soc.name, st.stars'.
 				' FROM series_tournaments st'.
 				' JOIN tournaments t ON t.id = st.tournament_id'.
 				' JOIN series s ON s.id = st.series_id'.
-				' JOIN leagues l ON l.id = s.league_id'.
+				series_owner_join().
 				' WHERE t.id IN ('.$tournaments_list.') '.
 				' ORDER BY t.start_time DESC, t.id DESC');
 			while ($row = $query->next())
 			{
 				$series = new stdClass();
-				list ($tournament_id, $series->id, $series->name, $series->league_id, $series->league_name, $series->stars) = $row;
+				list ($tournament_id, $series->id, $series->name, $league_id, $league_name, $club_id, $club_name, $series->stars) = $row;
 				$series->id = (int)$series->id;
-				$series->league_id = (int)$series->league_id;
+				// A series belongs either to a league or to a club - only the one it belongs to is reported.
+				if (!is_null($league_id))
+				{
+					$series->league_id = (int)$league_id;
+					$series->league_name = $league_name;
+				}
+				else
+				{
+					$series->club_id = (int)$club_id;
+					$series->club_name = $club_name;
+				}
 				$series->stars = (float)$series->stars;
 				
 				while ($tournament_id != $tournament->id)
@@ -452,8 +463,10 @@ class ApiPage extends GetApiPageBase
 			$series_param = $param->sub_param('series', 'Array of series where this tournament participates in.', 'the tournament is not a part of any series.');
 				$series_param->sub_param('id', 'Series id.');
 				$series_param->sub_param('name', 'Series name.');
-				$series_param->sub_param('league_id', 'League id.');
-				$series_param->sub_param('league_name', 'League name.');
+				$series_param->sub_param('league_id', 'League id. Present only when the series belongs to a league.');
+				$series_param->sub_param('league_name', 'League name. Present only when the series belongs to a league.');
+				$series_param->sub_param('club_id', 'Club id. Present only when the series belongs to a club.');
+				$series_param->sub_param('club_name', 'Club name. Present only when the series belongs to a club.');
 				$series_param->sub_param('stars', 'Tournament stars in these series.');
 			$players_param = $param->sub_param('players', 'Array of tournament players in the order of the place taken.', 'the tournament is not finished yet.', 2);
 				$players_param->sub_param('user_id', 'User id of the player.', 2);

@@ -2,6 +2,7 @@
 
 require_once '../include/session.php';
 require_once '../include/tournament.php';
+require_once '../include/series.php';
 
 initiate_session();
 
@@ -21,15 +22,15 @@ try
 	
 	$tournament_id = (int)$_REQUEST['tournament_id'];
 	$series_id = (int)$_REQUEST['series_id'];
-	list($league_id, $currency_name, $series_fee, $series_flags, $tournament_fee, $num_players, $players_count) = Db::record(get_label('tournament'), 
-		'SELECT s.league_id, nc.name, s.fee, st.flags, st.fee, t.num_players, (SELECT count(*) FROM tournament_places tp WHERE tp.tournament_id = t.id) as count'.
+	list($league_id, $club_id, $currency_name, $series_fee, $series_flags, $tournament_fee, $num_players, $players_count) = Db::record(get_label('tournament'),
+		'SELECT s.league_id, s.club_id, nc.name, s.fee, st.flags, st.fee, t.num_players, (SELECT count(*) FROM tournament_places tp WHERE tp.tournament_id = t.id) as count'.
 		' FROM series_tournaments st'.
 		' JOIN series s ON s.id = st.series_id'.
 		' JOIN tournaments t ON t.id = st.tournament_id'.
 		' LEFT OUTER JOIN currencies c ON c.id = s.currency_id'.
 		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 		' WHERE st.series_id = ? AND st.tournament_id = ?', $series_id, $tournament_id);
-	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+	check_series_permissions(new SeriesOwner($league_id, $club_id), $series_id);
 	
 	if (!is_null($tournament_fee))
 	{

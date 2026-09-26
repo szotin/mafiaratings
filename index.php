@@ -11,6 +11,7 @@ require_once 'include/snapshot.php';
 require_once 'include/scoring.php';
 require_once 'include/picture.php';
 require_once 'include/tournament.php';
+require_once 'include/series.php';
 
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('ROW_COUNT', 2);
@@ -42,11 +43,13 @@ class Page extends GeneralPageBase
 	private function show_series($series)
 	{
 		list (
-			$s_id, $s_name, $s_flags, 
-			$s_start_time, $s_duration, 
-			$s_languages, 
-			$s_league_id, $s_league_name, $s_league_flags) = $series;
-			
+			$s_id, $s_name, $s_flags,
+			$s_start_time, $s_duration,
+			$s_languages,
+			$s_league_id, $s_league_name, $s_league_flags,
+			$s_club_id, $s_club_name, $s_club_flags) = $series;
+		$s_owner = SeriesOwner::from_row($s_league_id, $s_league_name, $s_league_flags, $s_club_id, $s_club_name, $s_club_flags);
+
 		$future = ($s_start_time > time());
 		if ($future)
 		{
@@ -78,8 +81,11 @@ class Page extends GeneralPageBase
 		}
 		echo '</td></tr>';
 		
-		echo '<tr' . $dark_class . ' style="height: 40px;"><td colspan="2" align="center">' . $s_league_name . '</td></tr>';
-		
+		// The owner of the series - a league or a club, whichever it belongs to.
+		echo '<tr' . $dark_class . ' style="height: 40px;"><td align="center">' . $s_owner->name . '</td><td width="34">';
+		$s_owner->picture()->show(ICONS_DIR, false, 30);
+		echo '</td></tr>';
+
 		echo '</table>';
 	}
 	
@@ -391,9 +397,10 @@ class Page extends GeneralPageBase
 	
 	private function show_seriess($condition)
 	{
+		// League series and club series share this block - the owner's logo is what tells them apart.
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, l.id, l.name, l.flags FROM series s' .
-			' JOIN leagues l ON l.id = s.league_id' .
+			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, ' . series_owner_fields() . ' FROM series s' .
+			series_owner_join() .
 			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP()');
 		$query->add(' ORDER BY s.flags & ' . SERIES_FLAG_PINNED .' DESC, s.start_time + s.duration, s.name, s.id LIMIT ' . (SERIES_COLUMN_COUNT * SERIES_ROW_COUNT));
 		

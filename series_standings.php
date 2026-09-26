@@ -48,20 +48,21 @@ class Page extends SeriesPageBase
 		
 		$parent_series = array();
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, ss.stars, g.gaining'.
+			'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, g.gaining'.
 			' FROM series_series ss'.
 			' JOIN series s ON s.id = ss.parent_id'.
-			' JOIN leagues l ON l.id = s.league_id'.
+			series_owner_join().
 			' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version'.
 			' WHERE ss.child_id = ?', $this->id);
 		while ($row = $query->next())
 		{
 			$s = new stdClass();
-			list($s->id, $s->name, $s->flags, $s->league_id, $s->league_name, $s->league_flags, $s->stars, $gaining) = $row;
+			list($s->id, $s->name, $s->flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $s->stars, $gaining) = $row;
+			$s->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 			$s->gaining = json_decode($gaining);
 			$parent_series[] = $s;
 		}
-		$parent_series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		$parent_series_pic = new SeriesPicture();
 		
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -85,8 +86,7 @@ class Page extends SeriesPageBase
 		foreach ($parent_series as $s)
 		{
 			echo '<td width="36" align="center">';
-			$parent_series_pic->set($s->id, $s->name, $s->flags)->set($s->league_id, $s->league_name, $s->league_flags);
-			$parent_series_pic->show(ICONS_DIR, true, 32);
+			$parent_series_pic->set($s->id, $s->name, $s->flags, $s->owner)->show(ICONS_DIR, true, 32);
 			echo '</td>';
 		}
 		echo '</tr>';

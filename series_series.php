@@ -53,7 +53,7 @@ class Page extends SeriesPageBase
 		$condition = new SQL(
 			' FROM series_series ss'.
 			' JOIN series s ON s.id = ss.child_id' .
-			' JOIN leagues l ON l.id = s.league_id'.
+			series_owner_join().
 			' WHERE ss.parent_id IN ('.$subseries_csv.')');
 		if ($this->future)
 		{
@@ -101,7 +101,7 @@ class Page extends SeriesPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT DISTINCT s.id, s.name, s.flags, s.start_time, s.duration, l.id, l.name, l.flags,' .
+			'SELECT DISTINCT s.id, s.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
 			$condition);
 		if ($this->future)
@@ -122,10 +122,10 @@ class Page extends SeriesPageBase
 		$timezone = get_timezone();
 		$now = time();
 		$series_pic = new Picture(SERIES_PICTURE);
-		$league_pic = new Picture(LEAGUE_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $tournaments_count) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
+			$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 			$playing =($now >= $series_time && $now < $series_time + $series_duration);
 			if ($playing)
 			{
@@ -143,8 +143,7 @@ class Page extends SeriesPageBase
 			
 			echo '<td><table width="100%" class="transp"><tr>';
 			echo '<td width="60" align="center" valign="center">';
-			$league_pic->set($league_id, $league_name, $league_flags);
-			$league_pic->show(ICONS_DIR, false, 40);
+			$owner->picture()->show(ICONS_DIR, false, 40);
 			echo '</td><td>';
 			echo '<b><a href="series_standings.php?bck=1&id=' . $series_id . '">' . $series_name;
 			if ($playing)

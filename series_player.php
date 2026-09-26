@@ -182,21 +182,23 @@ class Page extends SeriesPageBase
 		$delim = '';
 		$cs_child_series = '';
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, l.id, l.name, l.flags, ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score'.
+			'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score'.
 			' FROM series_places p'.
 			' JOIN series s ON s.id = p.series_id'.
 			' JOIN series_places p1 ON p1.series_id = s.id'.
 			' JOIN series_series ss ON ss.child_id = s.id AND ss.parent_id = ?'.
-			' JOIN leagues l ON l.id = s.league_id'.
+			series_owner_join() .
 			' WHERE p.user_id = ? AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
 			' GROUP BY s.id', $this->id, $this->user_id);
 		while ($row = $query->next())
 		{
 			$c_series = new stdClass();
 			list(
-				$c_series->id, $c_series->name, $c_series->flags, $c_series->league_id, $c_series->league_name, $c_series->league_flags, 
-				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration, 
+				$c_series->id, $c_series->name, $c_series->flags,
+				$league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags,
+				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration,
 				$c_series->players_count, $c_series->points) = $row;
+			$c_series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 			$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
 			$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count, 0, 0, 0, 0, true);
 			$c_series->type = TYPE_SERIES;
@@ -319,16 +321,16 @@ class Page extends SeriesPageBase
 		if ($cs_tournaments != '')
 		{
 			$query = new DbQuery(
-				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, l.id, l.name, l.flags' .
+				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
 				' FROM series_tournaments st' .
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
-				' JOIN leagues l ON l.id = s.league_id' .
+				series_owner_join() .
 				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ORDER BY t.start_time + t.duration DESC, t.start_time DESC, t.id DESC');
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{
-				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
+				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				for (; $current_tournament < count($tournaments); ++$current_tournament)
 				{
 					$t = $tournaments[$current_tournament];
@@ -346,9 +348,7 @@ class Page extends SeriesPageBase
 						$series->id = $series_id;
 						$series->name = $series_name;
 						$series->flags = $series_flags;
-						$series->league_id = $league_id;
-						$series->league_name = $league_name;
-						$series->league_flags = $league_flags;
+						$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 						$tournaments[$current_tournament]->series[] = $series;
 					}
 				}
@@ -358,16 +358,16 @@ class Page extends SeriesPageBase
 		if ($cs_child_series != '')
 		{
 			$query = new DbQuery(
-				'SELECT ss.child_id, ss.stars, s.id, s.name, s.flags, l.id, l.name, l.flags' .
+				'SELECT ss.child_id, ss.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
 				' FROM series_series ss' .
 				' JOIN series s ON s.id = ss.parent_id' .
 				' JOIN series c ON c.id = ss.child_id' .
-				' JOIN leagues l ON l.id = s.league_id' .
+				series_owner_join() .
 				' WHERE ss.child_id IN (' . $cs_child_series . ') ORDER BY c.start_time + c.duration DESC, c.start_time DESC, c.id DESC');
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{
-				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
+				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				for (; $current_tournament < count($tournaments); ++$current_tournament)
 				{
 					$t = $tournaments[$current_tournament];
@@ -385,17 +385,14 @@ class Page extends SeriesPageBase
 						$series->id = $series_id;
 						$series->name = $series_name;
 						$series->flags = $series_flags;
-						$series->league_id = $league_id;
-						$series->league_name = $league_name;
-						$series->league_flags = $league_flags;
+						$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 						$tournaments[$current_tournament]->series[] = $series;
 					}
 				}
 			}
 		}
 		
-		$league_pic = new Picture(LEAGUE_PICTURE);
-		$series_pic = new Picture(SERIES_PICTURE, $league_pic);
+		$series_pic = new SeriesPicture();
 		$sum = 0;
 		$num = 0;
 		foreach ($tournaments as $tournament)
@@ -417,8 +414,8 @@ class Page extends SeriesPageBase
 					$link_beg = '<a href="series_player.php?user_id=' . $this->user_id . '&id=' . $tournament->id . '&bck=1">';
 					$link_end = '</a>';
 					echo $link_beg;
-					$series_pic->set($tournament->id, $tournament->name, $tournament->flags)->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
-					$series_pic->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
+					$series_pic->set($tournament->id, $tournament->name, $tournament->flags, $tournament->owner)
+						->show(ICONS_DIR, true, 50, 50, NULL, ($tournament->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
 					echo $link_end;
 					break;
 				case TYPE_EXTRA_POINTS:
@@ -436,8 +433,7 @@ class Page extends SeriesPageBase
 					echo '<td width="64" align="center" valign="center">';
 					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
 					echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
-					$series_pic->set($series->id, $series->name, $series->flags)->set($series->league_id, $series->league_name, $series->league_flags);
-					$series_pic->show(ICONS_DIR, false, 32);
+					$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);
 					echo '</a></td>';
 				}
 			}
@@ -453,8 +449,7 @@ class Page extends SeriesPageBase
 					$club_pic->show(ICONS_DIR, false, 40);
 					break;
 				case TYPE_SERIES:
-					$league_pic->set($tournament->league_id, $tournament->league_name, $tournament->league_flags);
-					$league_pic->show(ICONS_DIR, false, 40);
+					$tournament->owner->picture()->show(ICONS_DIR, false, 40);
 					break;
 				case TYPE_EXTRA_POINTS:
 					break;

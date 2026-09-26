@@ -734,6 +734,11 @@ var mr = new function()
 	{
 		dlg.form("form/series_create.php?league_id=" + leagueId, refr, 900);
 	}
+
+	this.createClubSeries = function(clubId)
+	{
+		dlg.form("form/series_create.php?club_id=" + clubId, refr, 900);
+	}
 	
 	this.restoreSeries = function(id)
 	{
@@ -1053,12 +1058,18 @@ var mr = new function()
 		});
 	}
 
-	this.createGainingSystem = function(leagueId)
+	this.createGainingSystem = function(leagueId, clubId)
 	{
 		var url = "form/gaining_create.php";
+		var delim = "?";
 		if (leagueId)
 		{
-			url += "?league=" + leagueId;
+			url += delim + "league=" + leagueId;
+			delim = "&";
+		}
+		if (clubId)
+		{
+			url += delim + "club=" + clubId;
 		}
 		dlg.form(url, refr, 400);
 	}

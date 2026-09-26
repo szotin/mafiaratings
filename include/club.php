@@ -152,6 +152,7 @@ class ClubPageBase extends PageBase
 		(
 			new MenuItem('club_main.php?id=' . $this->id, get_label('Club'), get_label('[0] main page', $this->name))
 			, new MenuItem('club_ratings.php?id=' . $this->id, get_label('Ratings'), get_label('[0] ratings', $this->name))
+			, new MenuItem('club_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series history', $this->name))
 			, new MenuItem('club_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name))
 			, new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
 			, new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
@@ -180,6 +181,8 @@ class ClubPageBase extends PageBase
 			if ($this->is_manager)
 			{
 				$managment_menu[] = new MenuItem('club_upcoming_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] upcoming tournaments', $this->name));
+				$managment_menu[] = new MenuItem('club_upcoming_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series', $this->name));
+				$managment_menu[] = new MenuItem(null, null, null);
 			}
 			$managment_menu[] = new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name));
 			if ($this->is_manager)

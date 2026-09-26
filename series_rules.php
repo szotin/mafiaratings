@@ -17,7 +17,9 @@ class Page extends SeriesPageBase
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_FULL . ')"' . ($view <= RULES_VIEW_FULL ? ' checked' : '') . '> ' . get_label('detailed');
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_SHORT . ')"' . ($view == RULES_VIEW_SHORT ? ' checked' : '') . '> ' . get_label('shorter');
 		
-		if (is_permitted(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $this->league_id, $this->id))
+		// The editor behind this button is the league rules filter editor. A club series carries
+		// its club's rules code rather than a filter, so there is nothing for it to edit.
+		if ($this->owner->is_league() && is_series_manager($this->owner, $this->id))
 		{
 			echo '</td><td align="right"><button class="icon" onclick="mr.editLeagueRules(' . $this->id . ')"><img src="images/edit.png" border="0"></button>';
 		}

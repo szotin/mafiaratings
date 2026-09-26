@@ -15,28 +15,39 @@ try
 {
 	dialog_title(get_label('Create [0]', get_label('sеriеs')));
 	
-	if (!isset($_REQUEST['league_id']))
+	// A series belongs either to a league or to a club. Everything below is the same for both -
+	// only the owner the defaults come from differs.
+	$league_id = isset($_REQUEST['league_id']) ? (int)$_REQUEST['league_id'] : 0;
+	$club_id = isset($_REQUEST['club_id']) ? (int)$_REQUEST['club_id'] : 0;
+
+	if ($club_id > 0)
+	{
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		list($owner_name, $owner_flags, $owner_langs) = Db::record(get_label('club'), 'SELECT name, flags, langs FROM clubs WHERE id = ?', $club_id);
+		$owner_pic = new Picture(CLUB_PICTURE);
+		$owner_id = $club_id;
+		$owner_is_elite = false;
+		$default_gaining_id = 0;
+	}
+	else if ($league_id > 0)
+	{
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		list($owner_name, $owner_flags, $owner_langs, $default_gaining_id) = Db::record(get_label('league'), 'SELECT name, flags, langs, gaining_id FROM leagues WHERE id = ?', $league_id);
+		$owner_pic = new Picture(LEAGUE_PICTURE);
+		$owner_id = $league_id;
+		$owner_is_elite = ($owner_flags & LEAGUE_FLAG_ELITE) != 0;
+	}
+	else
 	{
 		throw new Exc(get_label('Unknown [0]', get_label('league')));
 	}
-	
-	$league_id = (int)$_REQUEST['league_id'];
-	check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-	
-	$league_id = 0;
-	if (isset($_REQUEST['league_id']))
-	{
-		$league_id = (int)$_REQUEST['league_id'];
-	}
 
 	echo '<table class="dialog_form" width="100%">';
-	list($league_name, $league_flags, $league_langs) = Db::record(get_label('league'), 'SELECT name, flags, langs FROM leagues WHERE id = ?', $league_id);
-	
+
 	echo '<tr><td colspan="2"><table class="transp" width="100%"><tr><td width="' . ICON_WIDTH . '">';
-	$league_pic = new Picture(LEAGUE_PICTURE);
-	$league_pic->set($league_id, $league_name, $league_flags);
-	$league_pic->show(ICONS_DIR, false);
-	echo '</td><td align="center"><b>' . $league_name . '</b></td></tr></table></td></tr>';
+	$owner_pic->set($owner_id, $owner_name, $owner_flags);
+	$owner_pic->show(ICONS_DIR, false);
+	echo '</td><td align="center"><b>' . $owner_name . '</b></td></tr></table></td></tr>';
 	
 	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
@@ -64,24 +75,29 @@ try
 	}
 	echo '</select></td></tr>';
 	
-	if (is_valid_lang($league_langs))
+	if (is_valid_lang($owner_langs))
 	{
-		echo '<input type="hidden" id="form-langs" value="' . $league_langs . '">';
+		echo '<input type="hidden" id="form-langs" value="' . $owner_langs . '">';
 	}
 	else
 	{
 		echo '<tr><td>'.get_label('Languages').':</td><td>';
-		langs_checkboxes(LANG_ALL, $league_langs, NULL, '<br>', 'form-');
+		langs_checkboxes(LANG_ALL, $owner_langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
 
-	list($default_gaining_id) = Db::record(get_label('league'), 'SELECT gaining_id FROM leagues WHERE id = ?', $league_id);
+	// The owner's own gaining systems plus the global ones. A club has no default gaining system
+	// the way a league does, so the first one on the list is preselected.
 	$default_gaining_id = (int)$default_gaining_id;
-	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $league_id);
+	$query = new DbQuery('SELECT id, name FROM gainings WHERE (league_id IS NULL AND club_id IS NULL) OR league_id = ? OR club_id = ? ORDER BY name', $league_id, $club_id);
 	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
 	while ($row = $query->next())
 	{
 		list($gaining_id, $gaining_name) = $row;
+		if ($default_gaining_id <= 0)
+		{
+			$default_gaining_id = (int)$gaining_id;
+		}
 		show_option((int)$gaining_id, $default_gaining_id, $gaining_name);
 	}
 	echo '</select></td></tr>';
@@ -94,7 +110,7 @@ try
 	{
 		echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.');
 	}
-	if ($league_flags & LEAGUE_FLAG_ELITE)
+	if ($owner_is_elite)
 	{
 		echo '<br><input type="checkbox" id="form-elite"> ' . get_label('elite series. The tournaments with more than one star become elite tournaments and bring more rating points.');
 	}
@@ -243,6 +259,7 @@ try
 		{
 			op: "create",
 			league_id: <?php echo $league_id; ?>,
+			club_id: <?php echo $club_id; ?>,
 			parent_series: series,
 			name: $("#form-name").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),

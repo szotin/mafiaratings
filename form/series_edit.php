@@ -21,14 +21,19 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $name, $start_time, $duration, $langs, $notes, $flags, $league_langs, $league_flags, $gaining_id, $gaining_version, $fee, $currency_id) = 
-		Db::record(get_label('sеriеs'), 
-			'SELECT s.league_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags, l.langs, l.flags, s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' . 
-			' JOIN leagues l ON l.id = s.league_id' .
+	list ($league_id, $club_id, $name, $start_time, $duration, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
+		Db::record(get_label('sеriеs'),
+			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags,' .
+			' COALESCE(sol.langs, soc.langs), COALESCE(sol.flags, soc.flags),' .
+			' s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' .
+			series_owner_join() .
 			' WHERE s.id = ?', $series_id);
 	$currency_id = (int)$currency_id;
 	$gaining_id = (int)$gaining_id;
-	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+	$league_id = (int)$league_id;
+	$club_id = (int)$club_id;
+	$owner = new SeriesOwner($league_id, $club_id);
+	check_series_permissions($owner, $series_id);
 	
 	$series_list = '{';
 	$delimiter = '';
@@ -85,18 +90,18 @@ try
 	}
 	echo '</select></td></tr>';
 	
-	if (is_valid_lang($league_langs))
+	if (is_valid_lang($owner_langs))
 	{
-		echo '<input type="hidden" id="form-langs" value="' . $league_langs . '">';
+		echo '<input type="hidden" id="form-langs" value="' . $owner_langs . '">';
 	}
 	else
 	{
 		echo '<tr><td>'.get_label('Languages').':</td><td>';
-		langs_checkboxes($langs, $league_langs, NULL, '<br>', 'form-');
+		langs_checkboxes($langs, $owner_langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
 	
-	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $league_id);
+	$query = new DbQuery('SELECT id, name FROM gainings WHERE (league_id IS NULL AND club_id IS NULL) OR league_id = ? OR club_id = ? ORDER BY name', $league_id, $club_id);
 	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining" onchange="gainingChanged()">';
 	while ($row = $query->next())
 	{
@@ -118,7 +123,7 @@ try
 		}
 		echo  '> ' . get_label('pin to the main page.');
 	}
-	if ($league_flags & LEAGUE_FLAG_ELITE)
+	if ($owner->is_league() && ($owner_flags & LEAGUE_FLAG_ELITE) != 0)
 	{
 		echo '<br><input type="checkbox" id="form-elite"';
 		if ($flags & SERIES_FLAG_ELITE)

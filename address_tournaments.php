@@ -6,6 +6,7 @@ require_once 'include/club.php';
 require_once 'include/address.php';
 require_once 'include/pages.php';
 require_once 'include/tournament.php';
+require_once 'include/series.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
 
@@ -114,7 +115,7 @@ class Page extends AddressPageBase
 			$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
 		}
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		$series_pic = new SeriesPicture();
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, t.langs, t.num_players, a.id, a.address, a.flags,' .
 			' (SELECT count(*) FROM games _g JOIN events _e ON _e.id = _g.event_id WHERE _e.tournament_id = t.id AND (_g.flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
@@ -164,16 +165,16 @@ class Page extends AddressPageBase
 		if ($cs_tournaments != '')
 		{
 			$query = new DbQuery(
-				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, l.id, l.name, l.flags' .
+				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
 				' FROM series_tournaments st' .
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
-				' JOIN leagues l ON l.id = s.league_id' .
+				series_owner_join() .
 				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id DESC');
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{
-				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
+				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
 				{
 					++$current_tournament;
@@ -185,9 +186,7 @@ class Page extends AddressPageBase
 					$series->id = $series_id;
 					$series->name = $series_name;
 					$series->flags = $series_flags;
-					$series->league_id = $league_id;
-					$series->league_name = $league_name;
-					$series->league_flags = $league_flags;
+					$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 					$tournaments[$current_tournament]->series[] = $series;
 				}
 			}
@@ -244,8 +243,7 @@ class Page extends AddressPageBase
 			{
 				echo '<td width="50" align="center" valign="center">';
 				echo '<a href="series_standings.php?bck=1&id=' . $series->id . '">';
-				$series_pic->set($series->id, $series->name, $series->flags)->set($series->league_id, $series->league_name, $series->league_flags);
-				$series_pic->show(ICONS_DIR, false, 40);
+				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 40);
 				echo '</a><br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($series->stars) . '</font>';
 				echo '</td>';
 			}

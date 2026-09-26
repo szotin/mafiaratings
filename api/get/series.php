@@ -4,6 +4,7 @@ require_once '../../include/api.php';
 require_once '../../include/rules.php';
 require_once '../../include/datetime.php';
 require_once '../../include/picture.php';
+require_once '../../include/series.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -107,9 +108,10 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND s.league_id = ?', $league_id);
 		}
 		
+		// The series the club runs itself, plus those of the leagues it belongs to.
 		if ($club_id > 0)
 		{
-			$condition->add(' AND s.league_id IN (SELECT league_id FROM league_clubs WHERE club_id = ?)', $club_id);
+			$condition->add(' AND (s.club_id = ? OR s.league_id IN (SELECT league_id FROM league_clubs WHERE club_id = ?))', $club_id, $club_id);
 		}
 		
 		if ($langs > 0)
@@ -136,14 +138,13 @@ class ApiPage extends GetApiPageBase
 			return;
 		}
 		
-		$league_pic = new Picture(LEAGUE_PICTURE);
 		$series_pic = new Picture(SERIES_PICTURE);
 		$series = array();
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.notes, s.rules, l.id, l.name, l.flags FROM series s' . 
-				' LEFT OUTER JOIN leagues l ON l.id = s.league_id', $condition);
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
+				series_owner_join(), $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
 			{
@@ -155,7 +156,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->notes, $rules, $s->league_id, $s->league_name, $s->league_flags) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->notes, $rules, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
 				$s->flags = (int)$s->flags;
@@ -164,13 +165,31 @@ class ApiPage extends GetApiPageBase
 				$s->start = timestamp_to_string($s->timestamp, $timezone);
 				$s->end = timestamp_to_string($s->timestamp + $s->duration, $timezone);
 				$s->rules = json_decode($rules);
-				
-				$s->league_id = (int)$s->league_id;
-				$league_pic->set($s->league_id, $s->league_name, $s->league_flags);
-				$s->has_league_picture = $league_pic->has_image(true);
-				$s->league_icon = $league_pic->url(ICONS_DIR);
-				$s->league_picture = $league_pic->url(TNAILS_DIR);
-					
+
+				// The owner is either a league or a club. The owner_* fields always describe
+				// whichever it is; league_* stays for the callers that already read it.
+				$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
+				$s->owner_type = $owner->is_league() ? 'league' : 'club';
+				$s->owner_id = $owner->id;
+				$s->owner_name = $owner->name;
+				$s->league_id = $owner->league_id;
+				$s->club_id = $owner->club_id;
+				if ($owner->is_league())
+				{
+					$s->league_name = $owner->name;
+				}
+				else
+				{
+					$s->club_name = $owner->name;
+				}
+				$owner_pic = $owner->picture();
+				$s->has_owner_picture = $owner_pic->has_image(true);
+				$s->owner_icon = $owner_pic->url(ICONS_DIR);
+				$s->owner_picture = $owner_pic->url(TNAILS_DIR);
+				$s->has_league_picture = $s->has_owner_picture;
+				$s->league_icon = $s->owner_icon;
+				$s->league_picture = $s->owner_picture;
+
 				$series_pic->set($s->id, $s->name, $s->flags);
 				$s->has_picture = $series_pic->has_image(true);
 				$s->icon = $series_pic->url(ICONS_DIR);
@@ -183,7 +202,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.notes, l.id, l.name, l.flags FROM series s JOIN leagues l ON l.id = s.league_id', $condition);
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.notes, s.league_id, s.club_id FROM series s', $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
 			{
@@ -194,10 +213,14 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->notes, $s->league_id, $league_name, $league_flags) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->notes, $league_id, $club_id) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
-				$s->league_id = (int)$s->league_id;
+				$owner = new SeriesOwner($league_id, $club_id);
+				$s->owner_type = $owner->is_league() ? 'league' : 'club';
+				$s->owner_id = $owner->id;
+				$s->league_id = $owner->league_id;
+				$s->club_id = $owner->club_id;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
 				
@@ -225,7 +248,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('tournament_id', 'Tournament id. For example: <a href="series.php?tournament_id=1">' . PRODUCT_URL . '/api/get/series.php?tournament_id=1</a> returns the series of the tournament with id 1.', '-');
 		$help->request_param('series_id', 'Series id. For example: <a href="series.php?serie_id=1">' . PRODUCT_URL . '/api/get/series.php?serie_id=1</a> returns the serie with id 1.', '-');
 		$help->request_param('league_id', 'League id. For example: <a href="series.php?league_id=2">' . PRODUCT_URL . '/api/get/series.php?league_id=2</a> returns all series of the American Mafia League.', '-');
-		$help->request_param('club_id', 'Club id.  For example: <a href="series.php?club_id=1">' . PRODUCT_URL . '/api/get/series.php?club_id=1</a> returns all series of the leagues that Russian Mafia of Vancouver belongs to.', '-');
+		$help->request_param('club_id', 'Club id.  For example: <a href="series.php?club_id=1">' . PRODUCT_URL . '/api/get/series.php?club_id=1</a> returns the series that Russian Mafia of Vancouver runs itself plus all series of the leagues it belongs to.', '-');
 		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="series.php?langs=1">' . PRODUCT_URL . '/api/get/series.php?langs=1</a> returns all series that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('canceled', '0 - exclude canceled series (default); 1 - incude canceled series; 2 - canceled series only. For example: <a href="series.php?canceled=2">' . PRODUCT_URL . '/api/get/series.php?canceled=2</a> returns all canceled series.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="series.php?page=1">' . PRODUCT_URL . '/api/get/series.php?page=1</a> returns the second page of series by time from newest to oldest.', '-');
@@ -244,12 +267,20 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('end', 'Formatted date "yyyy-mm-dd HH:MM" for the end of the series. User timezone is used.', 1);
 			$param->sub_param('notes', 'Series notes.');
 			$param->sub_param('canceled', 'True for canceled series, false for others.');
-			$param->sub_param('league_id', 'League id of the series.');
-			$param->sub_param('league_name', 'League name.', 1);
-			$param->sub_param('has_league_picture', 'True if league has unique picture; false if default one is used.', 1);
-			$param->sub_param('league_icon', 'League icon URL.', 1);
-			$param->sub_param('league_picture', 'League picture URL.', 1);
-			api_rules_filter_help($param->sub_param('rules', 'Game rules filter. Specifies what rules are allowed in the series. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.', 1));
+			$param->sub_param('owner_type', 'Who the series belongs to: <q>league</q> or <q>club</q>.');
+			$param->sub_param('owner_id', 'Id of the league or the club the series belongs to.');
+			$param->sub_param('owner_name', 'Name of the league or the club the series belongs to.', 1);
+			$param->sub_param('has_owner_picture', 'True if the owner has a unique picture; false if the default one is used.', 1);
+			$param->sub_param('owner_icon', 'Owner icon URL.', 1);
+			$param->sub_param('owner_picture', 'Owner picture URL.', 1);
+			$param->sub_param('league_id', 'League id of the series. 0 when the series belongs to a club.');
+			$param->sub_param('club_id', 'Club id of the series. 0 when the series belongs to a league.');
+			$param->sub_param('league_name', 'League name. Missing when the series belongs to a club.', 1);
+			$param->sub_param('club_name', 'Club name. Missing when the series belongs to a league.', 1);
+			$param->sub_param('has_league_picture', 'Deprecated alias of has_owner_picture.', 1);
+			$param->sub_param('league_icon', 'Deprecated alias of owner_icon.', 1);
+			$param->sub_param('league_picture', 'Deprecated alias of owner_picture.', 1);
+			api_rules_filter_help($param->sub_param('rules', 'Game rules of the series. For a series of a league it is a rules filter, specifying what rules are allowed in the series. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others. A club has no rules filter, so for a series of a club this is the rules code string of the club instead.', 1));
 		$help->response_param('count', 'Total number of series satisfying the request parameters.');
 		return $help;
 	}

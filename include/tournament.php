@@ -8,6 +8,7 @@ require_once __DIR__ . '/image.php';
 require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/address.php';
 require_once __DIR__ . '/club.php';
+require_once __DIR__ . '/series.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
@@ -150,11 +151,15 @@ class TournamentPageBase extends PageBase
 		list ($this->broadcasts) = Db::record(get_label('tournament'), 'SELECT count(*) FROM event_broadcasts es JOIN events e ON e.id = es.event_id WHERE e.tournament_id = ?', $this->id);
 			
 		$this->series = array();
-		$query = new DbQuery('SELECT s.id, s.name, s.flags, st.stars, l.id, l.name, l.flags FROM series_tournaments st JOIN series s ON s.id = st.series_id JOIN leagues l ON l.id = s.league_id WHERE st.tournament_id = ?', $this->id);
+		$query = new DbQuery(
+			'SELECT s.id, s.name, s.flags, st.stars, ' . series_owner_fields() .
+			' FROM series_tournaments st JOIN series s ON s.id = st.series_id' . series_owner_join() .
+			' WHERE st.tournament_id = ?', $this->id);
 		while ($row = $query->next())
 		{
 			$s = new stdClass();
-			list($s->series_id, $s->series_name, $s->series_flags, $s->stars, $s->league_id, $s->league_name, $s->league_flags) = $row;
+			list($s->series_id, $s->series_name, $s->series_flags, $s->stars, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
+			$s->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 			$this->series[] = $s;
 		}
 		
@@ -348,12 +353,11 @@ class TournamentPageBase extends PageBase
 		
 		if (count($this->series) > 0)
 		{
-			$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+			$series_pic = new SeriesPicture();
 			foreach ($this->series as $s)
 			{
 				echo '<td align="center" width="64">';
-				$series_pic->set($s->series_id, $s->series_name, $s->series_flags)->set($s->league_id, $s->league_name, $s->league_flags);
-				$series_pic->show(ICONS_DIR, true, 42);
+				$series_pic->set($s->series_id, $s->series_name, $s->series_flags, $s->owner)->show(ICONS_DIR, true, 42);
 				echo '<br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($s->stars) . '</font>';
 				// for ($i = 0; $i < floor($s->stars); ++$i)
 				// {

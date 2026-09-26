@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../include/api.php';
+require_once '../../include/series.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
 require_once '../../include/datetime.php';
@@ -18,11 +19,36 @@ class ApiPage extends OpsApiPageBase
 	function create_op()
 	{
 		global $_profile;
-		$league_id = (int)get_required_param('league_id');
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($league_name, $league_rules, $league_langs, $league_flags, $gaining_id) = Db::record(get_label('league'), 'SELECT name, rules, langs, flags, gaining_id FROM leagues WHERE id = ?', $league_id);
-		
-		$gaining_id = (int)get_optional_param('gaining_id'); //, $gaining_id);
+		$league_id = (int)get_optional_param('league_id', -1);
+		$club_id = (int)get_optional_param('club_id', -1);
+		if ($league_id > 0 && $club_id > 0)
+		{
+			throw new Exc(get_label('A series belongs either to a league or to a club, but not to both.'));
+		}
+
+		if ($club_id > 0)
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			$league_id = NULL;
+			// A club has no rules filter the way a league does - it has a plain rules code. Both
+			// are accepted by show_rules(), so the code is stored as is and the series rulebook
+			// shows exactly the rules of the club.
+			list($owner_name, $owner_rules, $owner_langs) = Db::record(get_label('club'), 'SELECT name, rules, langs FROM clubs WHERE id = ?', $club_id);
+			$owner_rules = json_encode($owner_rules);
+			$owner_flags = 0;
+		}
+		else if ($league_id > 0)
+		{
+			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			$club_id = NULL;
+			list($owner_name, $owner_rules, $owner_langs, $owner_flags) = Db::record(get_label('league'), 'SELECT name, rules, langs, flags FROM leagues WHERE id = ?', $league_id);
+		}
+		else
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('league')));
+		}
+
+		$gaining_id = (int)get_optional_param('gaining_id');
 		list($gaining_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
 		$gaining_version = (int)get_optional_param('gaining_version', $gaining_version);
 		
@@ -48,7 +74,8 @@ class ApiPage extends OpsApiPageBase
 		$notes = get_optional_param('notes', '');
 		$flags = (int)get_optional_param('flags', NEW_SERIES_FLAGS);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + (NEW_SERIES_FLAGS & ~SERIES_EDITABLE_MASK);
-		if (($league_flags & LEAGUE_FLAG_ELITE) == 0)
+		// Elite is a property of elite leagues. A club series is never elite.
+		if (($owner_flags & LEAGUE_FLAG_ELITE) == 0)
 		{
 			$flags &= ~SERIES_FLAG_ELITE;
 		}
@@ -56,8 +83,8 @@ class ApiPage extends OpsApiPageBase
 		{
 			$flags &= ~SERIES_ADMIN_EDITABLE_MASK;
 		}
-		
-		$langs = get_optional_param('langs', $league_langs);
+
+		$langs = get_optional_param('langs', $owner_langs);
 		$timezone = get_timezone();
 		
 		Db::begin();
@@ -72,26 +99,27 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(
-			get_label('sеriеs'), 
-			'INSERT INTO series (name, league_id, start_time, duration, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $flags, $league_rules, $gaining_id, $gaining_version);
+			get_label('sеriеs'),
+			'INSERT INTO series (name, league_id, club_id, start_time, duration, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $club_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
 		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
-		
+
 		$log_details = new stdClass();
 		$log_details->name = $name;
 		$log_details->league_id = $league_id;
+		$log_details->club_id = $club_id;
 		$log_details->start = $start;
 		$log_details->duration = $end - $start;
 		$log_details->langs = $langs;
 		$log_details->notes = $notes;
 		$log_details->fee = $fee;
 		$log_details->currency_id = $currency_id;
-		$log_details->rules_code = $league_rules;
+		$log_details->rules_code = $owner_rules;
 		$log_details->flags = $flags;
 		$log_details->gaining_id = $gaining_id;
 		$log_details->gaining_version = $gaining_version;
 		$log_details->parent_series = json_encode($parent_series);
-		db_log(LOG_OBJECT_SERIES, 'created', $log_details, $series_id, NULL, $league_id);
+		db_log(LOG_OBJECT_SERIES, 'created', $log_details, $series_id, $club_id, $league_id);
 		
 		// create parent series records
 		foreach ($parent_series as $s)
@@ -110,9 +138,10 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Create series.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Create series. A series belongs either to a league or to a club - pass exactly one of <q>league_id</q> and <q>club_id</q>.');
 		$help->request_param('name', 'Series name.');
-		$help->request_param('league_id', 'League id.');
+		$help->request_param('league_id', 'League id. Requires manager permissions in that league.', 'the series belongs to the club passed in <q>club_id</q>.');
+		$help->request_param('club_id', 'Club id. Requires manager permissions in that club.', 'the series belongs to the league passed in <q>league_id</q>.');
 		$series_help = $help->request_param('parent_series', 'Json array of series that this series belongs to. For example "[{id:2,stars:3},{id:4,stars:1}]".', 'series does not belong to any series - same as "[]".');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
@@ -146,12 +175,17 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
-			Db::record(get_label('sеriеs'), 'SELECT league_id, name, start_time, duration, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
+		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
+			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
 
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
-		list($league_name, $league_rules, $league_langs, $league_flags) = Db::record(get_label('league'), 'SELECT name, rules, langs, flags FROM leagues WHERE id = ?', $league_id);
-		
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
+		$owner_flags = 0;
+		if ($owner->is_league())
+		{
+			list($owner_flags) = Db::record(get_label('league'), 'SELECT flags FROM leagues WHERE id = ?', $owner->id);
+		}
+
 		$gaining_id = (int)get_optional_param('gaining_id', $old_gaining_id);
 		if ($gaining_id != $old_gaining_id)
 		{
@@ -164,9 +198,10 @@ class ApiPage extends OpsApiPageBase
 		$langs = get_optional_param('langs', $old_langs);
 		$flags = (int)get_optional_param('flags', $old_flags);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + ($old_flags & ~SERIES_EDITABLE_MASK);
-		if (($league_flags & LEAGUE_FLAG_ELITE) == 0)
+		// Elite is a property of elite leagues. A club series is never elite.
+		if (($owner_flags & LEAGUE_FLAG_ELITE) == 0)
 		{
-			$flags &= ~LEAGUE_FLAG_ELITE;
+			$flags &= ~SERIES_FLAG_ELITE;
 		}
 		if (!is_permitted(PERMISSION_ADMIN))
 		{
@@ -369,7 +404,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->parent_series = json_encode($parent_series);
 			}
-			db_log(LOG_OBJECT_SERIES, 'changed', $log_details, $series_id, NULL, $league_id);
+			db_log(LOG_OBJECT_SERIES, 'changed', $log_details, $series_id, $club_id, $league_id);
 		}
 		Db::commit();
 	}
@@ -404,13 +439,14 @@ class ApiPage extends OpsApiPageBase
 		$series_id = (int)get_required_param('series_id');
 		
 		Db::begin();
-		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		list($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
 
 		Db::exec(get_label('sеriеs'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_SERIES, 'canceled', NULL, $series_id, NULL, $league_id);
+			db_log(LOG_OBJECT_SERIES, 'canceled', NULL, $series_id, $club_id, $league_id);
 		}
 		Db::commit();
 	}
@@ -430,13 +466,14 @@ class ApiPage extends OpsApiPageBase
 		$series_id = (int)get_required_param('series_id');
 		
 		Db::begin();
-		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		list($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
 
 		Db::exec(get_label('sеriеs'), 'UPDATE series SET flags = (flags & ~' . SERIES_FLAG_CANCELED . ') WHERE id = ?', $series_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_SERIES, 'restored', NULL, $series_id, NULL, $league_id);
+			db_log(LOG_OBJECT_SERIES, 'restored', NULL, $series_id, $club_id, $league_id);
 		}
 		Db::commit();
 	}
@@ -459,8 +496,9 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($series_id > 0)
 		{
-			list ($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-			check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+			list($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+			$owner = new SeriesOwner($league_id, $club_id);
+			check_series_permissions($owner, $series_id);
 			Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $series_id);
 		}
 		else
@@ -488,8 +526,9 @@ class ApiPage extends OpsApiPageBase
 		$now = time();
 		
 		Db::begin();
-		list($league_id, $start_time, $duration, $flags) = Db::record(get_label('series'), 'SELECT league_id, start_time, duration, flags FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		list($league_id, $club_id, $start_time, $duration, $flags) = Db::record(get_label('series'), 'SELECT league_id, club_id, start_time, duration, flags FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
 		if (($flags & SERIES_FLAG_FINISHED) == 0)
 		{
 			if ($now < $start_time)
@@ -501,7 +540,7 @@ class ApiPage extends OpsApiPageBase
 				$duration = $now - $start_time;
 			}
 			Db::exec(get_label('series'), 'UPDATE series SET start_time = ?, duration = ? WHERE id = ?', $start_time, $duration, $series_id);
-			db_log(LOG_OBJECT_SERIES, 'finished', NULL, $series_id, NULL, $league_id);
+			db_log(LOG_OBJECT_SERIES, 'finished', NULL, $series_id, $club_id, $league_id);
 		}
 		Db::commit();
 	}
@@ -607,8 +646,9 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		list($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
 
 		Db::exec(get_label('points'), 'INSERT INTO series_extra_points (time, series_id, user_id, reason, details, points) VALUES (?, ?, ?, ?, ?, ?)', $time, $series_id, $user_id, $reason, $details, $points);
 		list ($points_id) = Db::record(get_label('points'), 'SELECT LAST_INSERT_ID()');
@@ -625,7 +665,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$log_details->details = $details;
 		}
-		db_log(LOG_OBJECT_EXTRA_POINTS, 'created', $log_details, $points_id, NULL, $league_id);
+		db_log(LOG_OBJECT_EXTRA_POINTS, 'created', $log_details, $points_id, $club_id, $league_id);
 		
 		Db::exec(get_label('series'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_DIRTY . ') WHERE id = ?', $series_id);
 		
@@ -656,11 +696,11 @@ class ApiPage extends OpsApiPageBase
 		$points_id = (int)get_required_param('points_id');
 		
 		Db::begin();
-		list($user_id, $series_id, $league_id, $old_reason, $old_details, $old_points, $old_time) = 
-			Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, e.league_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series e ON e.id = p.series_id WHERE p.id = ?', $points_id);
-			
-		list($league_id) = Db::record(get_label('sеriеs'), 'SELECT league_id FROM series WHERE id = ?', $series_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		list($user_id, $series_id, $league_id, $club_id, $old_reason, $old_details, $old_points, $old_time) =
+			Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, e.league_id, e.club_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series e ON e.id = p.series_id WHERE p.id = ?', $points_id);
+
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
 
 		$reason = get_optional_param('reason', $old_reason);
 		if (empty($reason))
@@ -693,7 +733,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->time = $time;
 			}
-			db_log(LOG_OBJECT_EXTRA_POINTS, 'changed', $log_details, $points_id, NULL, $league_id);
+			db_log(LOG_OBJECT_EXTRA_POINTS, 'changed', $log_details, $points_id, $club_id, $league_id);
 			
 			Db::exec(get_label('series'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_DIRTY . ') WHERE id = ?', $series_id);
 		}
@@ -719,13 +759,14 @@ class ApiPage extends OpsApiPageBase
 		$points_id = (int)get_required_param('points_id');
 		
 		Db::begin();
-		list($league_id, $series_id) = Db::record(get_label('points'), 'SELECT s.league_id, s.id FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
-		
+		list($league_id, $club_id, $series_id) = Db::record(get_label('points'), 'SELECT s.league_id, s.club_id, s.id FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
+
 		Db::exec(get_label('points'), 'DELETE FROM series_extra_points WHERE id = ?', $points_id);
 		if (Db::affected_rows() > 0)
 		{
-			db_log(LOG_OBJECT_EXTRA_POINTS, 'deleted', NULL, $points_id, NULL, $league_id);
+			db_log(LOG_OBJECT_EXTRA_POINTS, 'deleted', NULL, $points_id, $club_id, $league_id);
 			Db::exec(get_label('series'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_DIRTY . ') WHERE id = ?', $series_id);
 		}
 		Db::commit();

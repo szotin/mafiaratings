@@ -294,6 +294,7 @@ DROP TABLE IF EXISTS `gainings`;
 CREATE TABLE `gainings` (
   `id` int(11) NOT NULL,
   `league_id` int(11) DEFAULT NULL,
+  `club_id` int(11) DEFAULT NULL,
   `name` varchar(128) NOT NULL,
   `version` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -686,7 +687,8 @@ DROP TABLE IF EXISTS `series`;
 CREATE TABLE `series` (
   `id` int(11) NOT NULL,
   `name` varchar(128) NOT NULL,
-  `league_id` int(11) NOT NULL,
+  `league_id` int(11) DEFAULT NULL,
+  `club_id` int(11) DEFAULT NULL,
   `start_time` int(11) NOT NULL,
   `duration` int(11) NOT NULL,
   `langs` int(11) NOT NULL,
@@ -738,7 +740,7 @@ CREATE TABLE `series_series` (
   `parent_id` int(11) NOT NULL,
   `child_id` int(11) NOT NULL,
   `stars` float DEFAULT NULL,
-  `flags` int(11) NOT NULL,
+  `flags` int(11) NOT NULL DEFAULT '0',
   `fee` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -1026,7 +1028,7 @@ INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`)
 -- (global) because the gaining selectors list only "league_id IS NULL OR league_id = ?" -
 -- scoped to a single league it is invisible to every other league, leaving an empty dropdown
 -- that posts an empty gaining_id into the NOT NULL series.gaining_id column.
-INSERT INTO `gainings` (`id`, `league_id`, `name`, `version`) VALUES (1, NULL, 'Sample Gaining', 1);
+INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name`, `version`) VALUES (1, NULL, NULL, 'Sample Gaining', 1);
 INSERT INTO `gaining_versions` (`gaining_id`, `version`, `gaining`, `functions`) VALUES (1, 1, '{\"maxTournaments\":1,\"points\":\"table(stars-1, place-1)\",\"table\":[[20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1],[40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21],[60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41]]}'
 , 576);
 
@@ -1085,7 +1087,9 @@ INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `ema
 INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`, `default_rules`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 1, 0, '{}', NULL, 1, '0002000010000');
 INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`, `rules`) VALUES (1, 1, 0, '0002000010000');
 INSERT INTO `league_managers` (`league_id`, `user_id`) VALUES (1, 1);
-INSERT INTO `series` (`id`, `name`, `league_id`, `start_time`, `duration`, `langs`, `notes`, `finals_id`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`) VALUES (1, 'Season 2024', 1, 1284784660, 31536000, 7, '', NULL, 0, '{}', 1, 1, 0, NULL, NULL);
+INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `finals_id`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`) VALUES (1, 'Season 2024', 1, NULL, 1284784660, 31536000, 7, '', NULL, 0, '{}', 1, 1, 0, NULL, NULL);
+-- A series owned by a club instead of a league. Exactly one of league_id / club_id is set.
+INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `finals_id`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`) VALUES (2, 'Club Cup 2024', NULL, 1, 1284784660, 31536000, 7, '', NULL, 0, '"0002000010000"', 1, 1, 0, NULL, NULL);
 
 -- Tournament (finished) and its link to the season
 INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `security_token`, `type`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 'Sample Tournament', 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, NULL, 0, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
@@ -1673,7 +1677,8 @@ ALTER TABLE `event_scores_cache`
 --
 ALTER TABLE `gainings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `league_id` (`league_id`,`name`);
+  ADD KEY `league_id` (`league_id`,`name`),
+  ADD KEY `club_id` (`club_id`,`name`);
 
 --
 -- Indexes for table `gaining_versions`
@@ -1941,6 +1946,7 @@ ALTER TABLE `series`
   ADD PRIMARY KEY (`id`),
   ADD KEY `start_time` (`start_time`),
   ADD KEY `league_id` (`league_id`,`start_time`),
+  ADD KEY `club_id` (`club_id`,`start_time`),
   ADD KEY `finals_id` (`finals_id`),
   ADD KEY `gaining_id` (`gaining_id`,`gaining_version`);
 
@@ -2556,6 +2562,7 @@ ALTER TABLE `event_scores_cache`
 -- Constraints for table `gainings`
 --
 ALTER TABLE `gainings`
+  ADD CONSTRAINT `gaining_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
   ADD CONSTRAINT `gaining_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`);
 
 --
@@ -2762,6 +2769,7 @@ ALTER TABLE `scoring_versions`
 ALTER TABLE `series`
   ADD CONSTRAINT `series_final` FOREIGN KEY (`finals_id`) REFERENCES `tournaments` (`id`),
   ADD CONSTRAINT `series_gaining_version` FOREIGN KEY (`gaining_id`,`gaining_version`) REFERENCES `gaining_versions` (`gaining_id`, `version`),
+  ADD CONSTRAINT `series_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
   ADD CONSTRAINT `series_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`);
 
 --

@@ -70,7 +70,7 @@ try
 	} 
 	echo '</select></td></tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM gainings WHERE league_id IS NULL OR league_id = ? ORDER BY name', $id);
+	$query = new DbQuery('SELECT id, name FROM gainings WHERE (league_id IS NULL AND club_id IS NULL) OR league_id = ? ORDER BY name', $id);
 	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
 	while ($row = $query->next())
 	{

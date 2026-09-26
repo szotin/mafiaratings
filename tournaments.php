@@ -195,16 +195,16 @@ class Page extends GeneralPageBase
 		if ($cs_tournaments != '')
 		{
 			$query = new DbQuery(
-				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, l.id, l.name, l.flags' .
+				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
 				' FROM series_tournaments st' .
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
-				' JOIN leagues l ON l.id = s.league_id' .
+				series_owner_join() .
 				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id DESC');
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{
-				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags) = $row;
+				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
 				{
 					++$current_tournament;
@@ -216,9 +216,7 @@ class Page extends GeneralPageBase
 					$series->id = $series_id;
 					$series->name = $series_name;
 					$series->flags = $series_flags;
-					$series->league_id = $league_id;
-					$series->league_name = $league_name;
-					$series->league_flags = $league_flags;
+					$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 					$tournaments[$current_tournament]->series[] = $series;
 				}
 			}
@@ -243,7 +241,7 @@ class Page extends GeneralPageBase
 		$now = time();
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
-		$series_pic = new Picture(SERIES_PICTURE, new Picture(LEAGUE_PICTURE));
+		$series_pic = new SeriesPicture();
 		foreach ($tournaments as $tournament)
 		{
 			$playing =($now >= $tournament->time && $now < $tournament->time + $tournament->duration);
@@ -284,8 +282,7 @@ class Page extends GeneralPageBase
 				echo '<td width="64" align="center" valign="center">';
 				echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
 				echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
-				$series_pic->set($series->id, $series->name, $series->flags)->set($series->league_id, $series->league_name, $series->league_flags);
-				$series_pic->show(ICONS_DIR, false, 32);
+				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);
 				echo '</a></td>';
 			}
 			echo '</tr></table>';

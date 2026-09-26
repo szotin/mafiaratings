@@ -8,6 +8,7 @@ require_once '../../include/country.php';
 require_once '../../include/image.php';
 require_once '../../include/game.php';
 require_once '../../include/tournament.php';
+require_once '../../include/series.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -354,8 +355,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($series_id > 0)
 		{
-			list($league_id, $old_flags) = Db::record(get_label('series'), 'SELECT s.league_id, sr.flags FROM series_regs sr JOIN series s ON s.id = sr.series_id WHERE sr.series_id = ? AND sr.user_id = ?', $series_id, $user_id);
-			check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+			list($league_id, $club_id, $old_flags) = Db::record(get_label('series'), 'SELECT s.league_id, s.club_id, sr.flags FROM series_regs sr JOIN series s ON s.id = sr.series_id WHERE sr.series_id = ? AND sr.user_id = ?', $series_id, $user_id);
+			check_series_permissions(new SeriesOwner($league_id, $club_id), $series_id);
 			$flags = access_flags($old_flags, USER_FLAG_EXHIBITION_PLAYER);
 
 			Db::exec(get_label('user'), 'UPDATE series_regs SET flags = ? WHERE user_id = ? AND series_id = ?', $flags, $user_id, $series_id);

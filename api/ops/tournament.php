@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/tournament.php';
+require_once '../../include/series.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
 require_once '../../include/datetime.php';
@@ -17,17 +18,28 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 {
 	global $_profile;
 	
-	// send emails to league managers notifying about the tournament participating in the series
+	// Send emails to the managers of whoever owns the series - a league or a club - notifying
+	// about the tournament participating in it. The two halves of the union are the same query
+	// against a different set of managers; only one of them ever returns rows for a given series.
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, l.name'.
+		'(SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, l.name'.
 		' FROM series s' .
 		' JOIN leagues l ON l.id = s.league_id' .
 		' JOIN league_managers lm ON lm.league_id = s.league_id' .
 		' JOIN users u ON u.id = lm.user_id' .
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
-		' WHERE s.id = ?', $series->id);
+		' WHERE s.id = ?)' .
+		' UNION DISTINCT ' .
+		'(SELECT u.id, nu.name, u.email, u.def_lang, s.name, c.id, c.name'.
+		' FROM series s' .
+		' JOIN clubs c ON c.id = s.club_id' .
+		' JOIN club_regs cr ON cr.club_id = s.club_id AND (cr.flags & ' . USER_PERM_MANAGER . ') <> 0' .
+		' JOIN users u ON u.id = cr.user_id' .
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
+		' WHERE s.id = ?)', $series->id, $series->id);
 	while ($row = $query->next())
 	{
+		// The owner fills the [league_name] slot of the message whether it is a league or a club.
 		list($user_id, $user_name, $user_email, $user_lang, $series_name, $league_id, $league_name) = $row;
 		if (!is_valid_lang($user_lang))
 		{
@@ -1598,13 +1610,14 @@ class ApiPage extends OpsApiPageBase
 		$not_payed = get_optional_param('not_payed', null);
 		
 		Db::begin();
-		list($club_id, $league_id, $series_fee, $old_series_flags, $old_payment, $num_players) = Db::record(get_label('tournament'), 
-			'SELECT t.club_id, s.league_id, s.fee, st.flags, st.fee, t.num_players'.
+		list($club_id, $league_id, $series_club_id, $series_fee, $old_series_flags, $old_payment, $num_players) = Db::record(get_label('tournament'),
+			'SELECT t.club_id, s.league_id, s.club_id, s.fee, st.flags, st.fee, t.num_players'.
 			' FROM series_tournaments st'.
 			' JOIN series s ON s.id = st.series_id'.
 			' JOIN tournaments t ON t.id = st.tournament_id'.
 			' WHERE st.series_id = ? AND st.tournament_id = ?', $series_id, $tournament_id);
-		check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+		// $club_id is the club running the tournament; the series may be owned by a different one.
+		check_series_permissions(new SeriesOwner($league_id, $series_club_id), $series_id);
 		if (is_null($payment))
 		{
 			$payment = (int)$old_payment;

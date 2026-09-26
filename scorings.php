@@ -87,7 +87,7 @@ class Page extends GeneralPageBase
 				
 				echo '<td>' . get_label('Gaining system name') . '</td></tr>';
 				
-				$query = new DbQuery('SELECT id, name, version FROM gainings WHERE league_id IS NULL ORDER BY name');
+				$query = new DbQuery('SELECT id, name, version FROM gainings WHERE club_id IS NULL AND league_id IS NULL ORDER BY name');
 				while ($row = $query->next())
 				{
 					list ($id, $name, $version) = $row;

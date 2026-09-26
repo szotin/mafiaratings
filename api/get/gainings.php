@@ -13,6 +13,7 @@ class ApiPage extends GetApiPageBase
 		$gaining_id = (int)get_optional_param('gaining_id', -1);
 		$gaining_version = (int)get_optional_param('gaining_version', -1);
 		$league_id = (int)get_optional_param('league_id', -1);
+		$club_id = (int)get_optional_param('club_id', -1);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
 		$page_size = (int)get_optional_param('page_size', API_DEFAULT_PAGE_SIZE);
@@ -37,13 +38,23 @@ class ApiPage extends GetApiPageBase
 				$condition->add(' AND (s.name LIKE(?) OR s.name LIKE(?))', $name_starts1, $name_starts2);
 			}
 		
+			// A gaining system with neither owner set is global - visible to every league and club.
 			if ($league_id > 0)
 			{
-				$condition->add(' AND (s.league_id = ? OR s.league_id IS NULL)', $league_id);
+				$condition->add(' AND (s.league_id = ? OR (s.league_id IS NULL AND s.club_id IS NULL))', $league_id);
 			}
 			else if ($league_id == 0)
 			{
 				$condition->add(' AND s.league_id IS NULL');
+			}
+
+			if ($club_id > 0)
+			{
+				$condition->add(' AND (s.club_id = ? OR (s.league_id IS NULL AND s.club_id IS NULL))', $club_id);
+			}
+			else if ($club_id == 0)
+			{
+				$condition->add(' AND s.club_id IS NULL');
 			}
 		}
 		
@@ -65,7 +76,7 @@ class ApiPage extends GetApiPageBase
 		
 		$gainings = array();
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.league_id, v.version, v.gaining FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id', $condition);
+			'SELECT s.id, s.name, s.league_id, s.club_id, v.version, v.gaining FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id', $condition);
 		$query->add(' ORDER BY s.name, v.version');
 		if ($page_size > 0)
 		{
@@ -77,7 +88,7 @@ class ApiPage extends GetApiPageBase
 		$current_gaining = NULL;
 		while ($row = $query->next())
 		{
-			list ($gaining_id, $gaining_name, $gaining_league_id, $gaining_version, $gaining) = $row;
+			list ($gaining_id, $gaining_name, $gaining_league_id, $gaining_club_id, $gaining_version, $gaining) = $row;
 			if (count($gainings) > 0)
 			{
 				$current_gaining = $gainings[count($gainings)-1];
@@ -95,6 +106,10 @@ class ApiPage extends GetApiPageBase
 				if (!is_null($gaining_league_id))
 				{
 					$current_gaining->league_id = (int)$gaining_league_id;
+				}
+				if (!is_null($gaining_club_id))
+				{
+					$current_gaining->club_id = (int)$gaining_club_id;
 				}
 				$current_gaining->versions = array();
 				$gainings[] = $current_gaining;
@@ -116,11 +131,13 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('gaining_id', 'gaining system id. For example: <a href="gainings.php?gaining_id=2">/api/get/gainings.php?gaining_id=2</a> returns information about MLM gaining system.', '-');
 		$help->request_param('gaining_version', 'gaining system version. For example: <a href="gainings.php?gaining_id=3&gaining_version=1">/api/get/gainings.php?gaining_id=3&gaining_version=1</a> returns information about AML gaining system version 1 (current version is 2). When 0, the latest version is returned.', 'all versions are returned');
 		$help->request_param('league_id', 'League id. Returns all gaining systems used in this league. For example: <a href="gainings.php?league_id=2">/api/get/gainings.php?league_id=2</a> returns all gaining systems used in American Mafia League. It can be 0 - then all gaining systems not belonging to any league are reurned.', 'all gaining systems are returned');
+		$help->request_param('club_id', 'Club id. Returns the gaining systems of this club plus the global ones. It can be 0 - then all gaining systems not belonging to any club are returned.', 'all gaining systems are returned');
 		
 		$param = $help->response_param('gainings', 'The array of gaining systems.');
 			$param->sub_param('id', 'gaining system id.');
 			$param->sub_param('name', 'gaining system name.');
 			$param->sub_param('league_id', 'League id that this system belongs to. Missing for gaining systems that do not belong to a league.');
+			$param->sub_param('club_id', 'Club id that this system belongs to. Missing for gaining systems that do not belong to a club.');
 			$versions_param = $param->sub_param('versions', 'List of versions of the gaining system.');
 				$versions_param->sub_param('version', 'Version number.');
 				$versions_param->sub_param('rules', 'gaining rules. Todo: make a detailed description of the format.');

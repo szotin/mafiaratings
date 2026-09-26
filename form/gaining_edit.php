@@ -14,14 +14,18 @@ try
 	}
 	$gaining_id = $_REQUEST['gaining_id'];
 
-	list ($name, $league_id, $gaining, $version) = Db::record(get_label('gaining system'), 'SELECT g.name, g.league_id, v.gaining, g.version FROM gainings g JOIN gaining_versions v ON v.gaining_id = g.id AND v.version = g.version WHERE g.id = ?', $gaining_id);
-	if (is_null($league_id))
+	list ($name, $league_id, $club_id, $gaining, $version) = Db::record(get_label('gaining system'), 'SELECT g.name, g.league_id, g.club_id, v.gaining, g.version FROM gainings g JOIN gaining_versions v ON v.gaining_id = g.id AND v.version = g.version WHERE g.id = ?', $gaining_id);
+	if (!is_null($club_id))
 	{
-		check_permissions(PERMISSION_ADMIN);
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+	}
+	else if (!is_null($league_id))
+	{
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 	}
 	else
 	{
-		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		check_permissions(PERMISSION_ADMIN);
 	}
 	
 	$json = formatted_json(json_decode($gaining));

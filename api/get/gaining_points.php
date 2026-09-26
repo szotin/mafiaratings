@@ -74,7 +74,10 @@ class ApiPage extends GetApiPageBase
 			$trav_dist = (bool)$_REQUEST['trav_dist'];
 		}
 		
-		$guest_coeff += log(1 + $trav_dist / 600, 2);
+		// The guest coefficient of a real tournament is a sum over its players (see
+		// complete_competitions.php), and this preview has no players - so it is simply a request
+		// parameter like the ones above, defaulting to zero when the caller omits it.
+		$guest_coef = 0;
 		if (isset($_REQUEST['guest_coef']))
 		{
 			$guest_coef = (bool)$_REQUEST['guest_coef'];

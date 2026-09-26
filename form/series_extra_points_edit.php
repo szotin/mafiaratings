@@ -3,6 +3,7 @@
 require_once '../include/session.php';
 require_once '../include/user.php';
 require_once '../include/datetime.php';
+require_once '../include/series.php';
 
 initiate_session();
 
@@ -16,9 +17,9 @@ try
 	}
 	$points_id = (int)$_REQUEST['points_id'];
 	
-	list($user_id, $series_id, $league_id, $reason, $details, $points, $time) = 
-		Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, s.league_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
-	check_permissions(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, $league_id, $series_id);
+	list($user_id, $series_id, $league_id, $club_id, $reason, $details, $points, $time) =
+		Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, s.league_id, s.club_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
+	check_series_permissions(new SeriesOwner($league_id, $club_id), $series_id);
 	
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td>' . get_label('Date').':</td><td><input type="date" id="form-time" value="' . timestamp_to_string($time, get_timezone(), false) . '"></td></tr>';
