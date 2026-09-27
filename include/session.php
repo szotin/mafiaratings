@@ -388,6 +388,48 @@ class Profile
 	}
 }
 
+// Where the site is served from, so that a cookie set anywhere in it is sent back from everywhere
+// in it.
+//
+// setcookie() with no path gives the cookie the directory of the script that set it. Logging in
+// happens in api/ops/account.php, so auth_key was scoped to /api/ops and the browser never sent it
+// to a page. The session cookie has path=/ from php.ini and did reach every page, which is why the
+// login held while the session file lived and vanished with it.
+function get_cookie_path()
+{
+	$path = rtrim((string)parse_url(get_server_url(false), PHP_URL_PATH), '/');
+	return $path == '' ? '/' : $path;
+}
+
+// How long the cookie is good for. A year rather than something wilder: browsers cap what they
+// will keep anyway (Chrome at 400 days), and time() plus a decade overflows a 32 bit build before
+// long. What actually makes it endless is that every request pushes the expiry back out again.
+define('AUTH_KEY_LIFETIME', 60 * 60 * 24 * 365);
+
+function set_auth_key_cookie($auth_key, $expire)
+{
+	$path = get_cookie_path();
+
+	// secure follows the scheme the request actually arrived on rather than being switched on
+	// flatly. Production answers http with a redirect to https, so a real page there is always
+	// https and the cookie is always marked; the testing server is plain http, where marking it
+	// would stop the browser sending it back at all.
+	$secure = get_server_protocol() == 'https';
+
+	// httponly: nothing in the site's javascript reads this cookie, and it is the one thing an
+	// attacker would want out of the page.
+	setcookie('auth_key', $auth_key, $expire, $path, '', $secure, true);
+
+	// Browsers still hold the copies written before this had a path, scoped to whatever directory
+	// set them - api/ops for a login. They would be sent alongside the right one, so they are
+	// cleared from here, which is the only place that can name their path.
+	$script_dir = rtrim(str_replace('\\', '/', dirname(get_page_name())), '/');
+	if ($script_dir != '' && $script_dir != $path)
+	{
+		setcookie('auth_key', '', time() - 3600, $script_dir, '', $secure, true);
+	}
+}
+
 // $remember: 0 - do not remember; >0 - remember; <0 - leave as is
 function remember_user($remember = 1)
 {
@@ -405,14 +447,14 @@ function remember_user($remember = 1)
 	if ($remember == 0)
 	{
 		$auth_key = '';
-		setcookie("auth_key", $auth_key);
+		set_auth_key_cookie($auth_key, time() - 3600);
 	}
 	else
 	{
 		// Generate new auth key for each log in (so old auth key can not be used multiple times in case 
 		// of cookie hijacking)
 		$auth_key = md5(rand_string(10) . $_profile->user_name . 'mafia');
-		setcookie("auth_key", $auth_key, time() + 60 * 60 * 24 * 365);
+		set_auth_key_cookie($auth_key, time() + AUTH_KEY_LIFETIME);
 	}
 	Db::exec(get_label('user'), 'UPDATE users SET auth_key = ? WHERE id = ?', $auth_key, $_profile->user_id);
 }
@@ -443,7 +485,7 @@ function logout()
 {
 	global $_profile;
 	// Need to delete auth key from database so cookie can no longer be used
-	setcookie("auth_key", "", time() - 3600);
+	set_auth_key_cookie('', time() - 3600);
 	if ($_profile != NULL)
 	{
 		Db::exec(get_label('user'), 'UPDATE users SET auth_key = \'\' WHERE id = ?', $_profile->user_id);
@@ -465,6 +507,14 @@ function get_session_state()
 
 	if (isset($_SESSION['profile']))
 	{
+		// Push the expiry back out on every request, so that the cookie of somebody who keeps
+		// using the site never runs out from under them. No new key and no database write - the
+		// same value, dated further ahead.
+		if (isset($_COOKIE['auth_key']) && $_COOKIE['auth_key'] != '')
+		{
+			set_auth_key_cookie($_COOKIE['auth_key'], time() + AUTH_KEY_LIFETIME);
+		}
+
         // already logged on
         // now check if the session is expired
 		// !!! I have commented this code, because session expiration is anoying.
@@ -505,7 +555,7 @@ function get_session_state()
 		}
 
         // not found
-        setcookie("auth_key", "", time() - 3600);
+        set_auth_key_cookie('', time() - 3600);
     }
     return SESSION_NO_USER;
 }
