@@ -64,13 +64,9 @@ try
 		$series = (bool)$_REQUEST['series'];
 	}
 
-	// The score the player took away from the competition. seriesPoints formulas are often just
-	// "score", so previewing one is pointless without it.
+	// One row per place means every row is a different player, so there is no single result to hand
+	// them all. It stays at zero, and a formula that reads it is previewed on that footing.
 	$score = 0;
-	if (isset($_REQUEST['score']))
-	{
-		$score = (double)$_REQUEST['score'];
-	}
 
 	$rating_sum = 500 * $players;
 	if (isset($_REQUEST['rating_sum']))
@@ -119,14 +115,10 @@ try
 	
 	if ($all_the_same)
 	{
-		if (abs($points[0]) > 0.00001)
-		{
-			echo get_label('Plus everyoune receives [0] points.', format_gain($points[0]));
-		}
+		echo get_label('Every player gets [0] points regardless of the place.', format_gain($points[0]));
 	}
 	else
 	{
-		echo get_label('In addition to:');
 		echo '<p>';
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="100"><b>' . get_label('Place') . '</b></td><td><b>' . get_label('Points') . '</b></td></tr>';

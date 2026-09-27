@@ -76,12 +76,16 @@ class Page extends PageBase
 		// h3 carries no margin of its own (common.css), so the heading needs one here to stand off
 		// the editor above it.
 		echo '<h3 style="margin-top: 24px;">' . get_label('Preview') . '</h3>';
+		// Stars and the number of players are the same for everybody in the table below, which is
+		// why they can be set here. A player's own result cannot: the table holds every place at
+		// once, and the first place and the last one do not share a result. Formulas that use it
+		// get a note instead.
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td width="25%"><input type="number" style="width: 45px;" step="1" min="1" max="10" id="form-stars" value="2" onchange="refreshGainingPreview()"> ' . get_label('stars') . '</td>';
 		echo '<td width="25%"><input type="number" style="width: 45px;" step="1" min="2" id="form-players" value="30" onchange="refreshGainingPreview()"> ' . get_label('players') . '</td>';
-		echo '<td width="25%"><input type="number" style="width: 60px;" step="0.01" id="form-score" value="0" onchange="refreshGainingPreview()"> ' . get_label('Points') . '</td>';
 		echo '<td align="right"><input type="checkbox" id="form-series" onclick="refreshGainingPreview()"> ' . get_label('for series of tournaments') . '</td></tr>';
 		echo '</table></p>';
+		echo '<p><i id="form-score-note" style="display: none;">' . get_label('The points depend on the result each player brought from the competition, so the table below counts it as zero.') . '</i></p>';
 		echo '<div id="form-gaining"></div>';
 	}
 
@@ -140,8 +144,23 @@ class Page extends PageBase
 			$('#save').prop('disabled', !isDirty || !isGainingDataCorrect());
 		}
 
+		// Whether the player's own result reaches the formula the preview is about to evaluate.
+		// Only one of the two formulas is used at a time - the same choice get_gaining_points()
+		// makes - so a system whose subseries formula reads the result says nothing about the
+		// table of an ordinary tournament. The values are evaluated either way.
+		function scoreMatters(g)
+		{
+			var series = $('#form-series').attr('checked');
+			var text = (series && typeof g.seriesPoints != "undefined") ? g.seriesPoints : g.points;
+			text = text ? text : '';
+			for (var key in g.globals) { text += ' ' + g.globals[key]; }
+			for (var key in g.vars) { text += ' ' + g.vars[key]; }
+			return /(^|[^A-Za-z0-9_])score([^A-Za-z0-9_]|$)/.test(text);
+		}
+
 		function onPreview(d)
 		{
+			$('#form-score-note').css('display', scoreMatters(d.gaining) ? '' : 'none');
 			if (!isGainingDataCorrect())
 			{
 				return;
@@ -151,7 +170,6 @@ class Page extends PageBase
 				gaining: JSON.stringify(d.gaining)
 				, stars: $("#form-stars").val()
 				, players: $("#form-players").val()
-				, score: $("#form-score").val()
 			};
 			if ($('#form-series').attr('checked'))
 			{

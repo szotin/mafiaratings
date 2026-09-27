@@ -82,7 +82,7 @@ $labelMenu = array (
 'Date' => 'Дата', // event_mailings.php, seating.php, form/event_create.php, form/event_edit.php, form/round_create.php, form/series_extra_points_add.php, form/series_extra_points_edit.php, form/video_create.php, form/video_edit.php
 'Time' => 'Время', // club_log.php, log.php, log_details.php, view_game.php, form/event_create.php, form/event_edit.php, form/round_create.php
 'Language' => 'Язык', // event_info.php, game_obs.php, view_game.php, form/video_create.php, form/video_edit.php
-'Points' => 'Баллы', // event_competition.php, event_extra_points.php, event_screen.php, event_standings.php, gaining.php, iratings.php, scoring.php, series_extra_points.php, series_standings.php, tournament_competition.php, tournament_extra_points.php, tournament_screen.php, tournament_standings.php, tournament_standings.php, tournament_standings.php, view_game.php, form/extra_points_add.php, form/extra_points_edit.php, form/gaining_table.php, form/series_extra_points_add.php, form/series_extra_points_edit.php
+'Points' => 'Баллы', // event_competition.php, event_extra_points.php, event_screen.php, event_standings.php, iratings.php, scoring.php, series_extra_points.php, series_standings.php, tournament_competition.php, tournament_extra_points.php, tournament_screen.php, tournament_standings.php, tournament_standings.php, tournament_standings.php, view_game.php, form/extra_points_add.php, form/extra_points_edit.php, form/gaining_table.php, form/series_extra_points_add.php, form/series_extra_points_edit.php
 'Killed' => 'Убит', // view_game.php, form/game_round_view.php
 'Warnings' => 'Замечания', // address_nominations.php, address_referees.php, club_nominations.php, club_referees.php, event_nominations.php, event_player.php, event_referees.php, league_nominations.php, league_referees.php, nominations.php, referees.php, series_nominations.php, series_player.php, series_referees.php, tournament_nominations.php, tournament_player.php, tournament_referees.php, user_stats.php, view_game.php, form/game_round_view.php
 'Role' => 'Роль', // series_player.php, user_games.php, view_game.php, form/game_round_view.php
@@ -1574,8 +1574,6 @@ $labelMenu = array (
 'The results of the existing tournaments will change. Are you sure you want to overwrite the current version?' => 'Результаты уже прошедших турниров изменятся. Вы уверены, что хотите перезаписать текущую версию?', // scoring.php
 'Depending on bonus points given by a referee' => 'В зависимости от допов выданных судьей', // scoring.php
 'Multiply bonus points to' => 'Умножить все допы на', // scoring.php
-'In addition to:' => 'В добавок к:', // form/gaining_table.php
-'Plus everyoune receives [0] points.' => 'В дополнение каждый получает [0] бал(ов).', // form/gaining_table.php
 'Subseries' => 'Серийники', // series_series.php, include/series.php
 'Subseries of this series' => 'Серийные турниры засчитываемые в эту серию', // include/series.php
 'MWT integration' => 'Интеграция с MWT', // tournament_mwt.php
@@ -1987,6 +1985,8 @@ $labelMenu = array (
 'the formula is malformed.' => 'формула составлена неверно.', // include/gaining.php
 '[0] cannot be calculated: [1]' => 'Не удается вычислить [0]: [1]', // include/gaining.php
 'add a nested table' => 'добавить вложенную таблицу', // gaining.php
+'every tournament of the series counts' => 'учитываются все турниры серии', // gaining.php
+'Every player gets [0] points regardless of the place.' => 'Все игроки получают [0] балл(ов) независимо от места.', // form/gaining_table.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -2004,7 +2004,7 @@ $labelMenu = array (
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
 'We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'Мы нашли похожую, но не совсем такую рассадку. Она вполне хороша, но мы можем сделать лучше.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // include/seating.php
 'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас нет готовой рассадки для данной конфигурации. Мы сгенерировали для вас самую базовую начальную рассадку и сейчас её улучшаем и оптимизируем.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // include/seating.php
-'every tournament of the series counts' => 'учитываются все турниры серии', // gaining.php
+'The points depend on the result each player brought from the competition, so the table below counts it as zero.' => 'Баллы зависят от результата, с которым игрок пришел из соревнования, поэтому в таблице ниже он принят за ноль.', // gaining.php
 );
 
 return $labelMenu;
