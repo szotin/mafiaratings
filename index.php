@@ -262,7 +262,7 @@ class Page extends GeneralPageBase
 		return false;
 	}
 	
-	private function select_tournaments($condition, $limit, $in_series)
+	private function select_tournaments($condition, $limit)
 	{
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
@@ -270,14 +270,15 @@ class Page extends GeneralPageBase
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0', $condition);
-		// $condition already carries its own leading " AND ...", so the WHERE above must not
-		// end with a dangling AND and this clause has to supply its own.
-		$query->add(' AND');
-		if (!$in_series)
-		{
-			$query->add(' NOT');
-		}
-		$query->add(' EXISTS (SELECT st.series_id FROM series_tournaments st WHERE st.tournament_id = t.id)');
+		// Only the tournaments a league has entered into one of its series. A club series does not
+		// put a tournament on this page, the same way a club series does not appear on it itself.
+		//
+		// $condition already carries its own leading " AND ...", so the WHERE above must not end
+		// with a dangling AND and this clause has to supply its own.
+		$query->add(
+			' AND EXISTS (SELECT st.series_id FROM series_tournaments st' .
+			' JOIN series s ON s.id = st.series_id' .
+			' WHERE st.tournament_id = t.id AND s.league_id IS NOT NULL)');
 		$query->add(' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id LIMIT ' . $limit);
 		$delim = empty($this->tournaments_list) ? '' : ', ';
 		while ($row = $query->next())
@@ -293,12 +294,12 @@ class Page extends GeneralPageBase
 		}
 	}
 	
-	private function show_tournaments($condition, $in_series)
+	private function show_tournaments($condition)
 	{
 		$this->tournaments_list = '';
 		$this->tournaments = array();
 		
-		$this->select_tournaments($condition, TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT, $in_series);
+		$this->select_tournaments($condition, TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT);
 		// if (count($this->tournaments) < TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT)
 		// {
 			// $this->select_tournaments($condition, TOURNAMENTS_COLUMN_COUNT * TOURNAMENTS_ROW_COUNT - count($this->tournaments), false);
@@ -364,7 +365,7 @@ class Page extends GeneralPageBase
 				if ($tournament_count == 0)
 				{
 					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td colspan="' . TOURNAMENTS_COLUMN_COUNT . '"><b><a href="tournaments.php?future=1&bck=1">' . ($in_series ? get_label('Tournaments') : get_label('Club tournaments')) . '</b></td></tr>';
+					echo '<tr class="darker"><td colspan="' . TOURNAMENTS_COLUMN_COUNT . '"><b><a href="tournaments.php?future=1&bck=1">' . get_label('Tournaments') . '</b></td></tr>';
 				}
 				else
 				{
@@ -397,11 +398,11 @@ class Page extends GeneralPageBase
 	
 	private function show_seriess($condition)
 	{
-		// League series and club series share this block - the owner's logo is what tells them apart.
+		// League series only. What a club runs on its own is its own business and stays off this page.
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, ' . series_owner_fields() . ' FROM series s' .
 			series_owner_join() .
-			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP()');
+			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.league_id IS NOT NULL');
 		$query->add(' ORDER BY s.flags & ' . SERIES_FLAG_PINNED .' DESC, s.start_time + s.duration, s.name, s.id LIMIT ' . (SERIES_COLUMN_COUNT * SERIES_ROW_COUNT));
 		
 		$series_count = 0;
@@ -649,10 +650,9 @@ class Page extends GeneralPageBase
 			echo '<p>';
 		}
 		
-		// tournaments, events and series
-		$have_tables = $this->show_tournaments($condition, true) || $have_tables;
+		// The league competitions: their series, and the tournaments entered into them.
+		$have_tables = $this->show_tournaments($condition) || $have_tables;
 		$have_tables = $this->show_seriess($condition) || $have_tables;
-		$have_tables = $this->show_tournaments($condition, false) || $have_tables;
 		//$have_tables = $this->show_events($condition) || $have_tables;
 		
 		if ($had_tables)

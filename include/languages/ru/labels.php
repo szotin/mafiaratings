@@ -1382,12 +1382,12 @@ $labelMenu = array (
 'unplayed series' => 'несыгранные серии', // club_series.php, league_series.php, series.php, series_series.php
 'canceled series' => 'отмененные серии', // club_series.php, league_series.php, series.php, series_series.php
 'series' => 'серии', // club_series.php, club_upcoming_series.php, complete_competitions.php, complete_competitions.php, complete_competitions.php, complete_competitions.php, complete_competitions.php, complete_competitions.php, complete_competitions.php, gaining.php, league_series.php, league_upcoming_series.php, series.php, series_series.php, series_standings.php, user_series.php, api/ops/gaining.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/user.php, api/ops/user.php, api/ops/user.php, api/ops/user.php, form/series_extra_points_add.php, form/tournament_payment.php, form/user_access.php
-'Series' => 'Серии', // club_series.php, club_series.php, index.php, league_series.php, league_series.php, series.php, series.php, series_series.php, user_series.php, user_series.php, include/club.php, include/club.php, include/general_page_base.php, include/league.php, include/league.php, include/user.php, form/series_edit.php, form/tournament_create.php, form/tournament_edit.php
+'Series' => 'Серии', // club_main.php, club_series.php, club_series.php, index.php, league_series.php, league_series.php, series.php, series.php, series_series.php, user_series.php, user_series.php, include/club.php, include/club.php, include/general_page_base.php, include/league.php, include/league.php, include/user.php, form/series_edit.php, form/tournament_create.php, form/tournament_edit.php
 'sеriеs' => 'серию', // club_upcoming_series.php, league_upcoming_series.php, include/series.php, include/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/series.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, api/ops/tournament.php, form/series_create.php, form/series_edit.php, form/series_edit.php, form/series_edit.php
 'Upcoming series' => 'Предстоящие серии', // club_upcoming_series.php, league_upcoming_series.php
 '[0] series history' => '[0] - серии', // include/club.php, include/league.php, include/user.php
 '[0] series' => '[0] - серии', // include/club.php, include/league.php
-'View series details.' => 'Перейти в серию.', // index.php, league_main.php
+'View series details.' => 'Перейти в серию.', // club_main.php, index.php, league_main.php
 'Tournaments and series' => 'Турниры и серии', // league_main.php, league_main.php
 'Finals' => 'Финал', // club_series.php, league_series.php
 'Series history' => 'Прошедшие серии', // include/general_page_base.php
@@ -1701,7 +1701,6 @@ $labelMenu = array (
 'Next' => 'Далее', // game.php, tournament_preparation.php
 'result' => 'результат', // include/game.php, include/game.php, api/ops/game.php
 'Game id does not match the one in the game' => 'Номер игры не соответствует тому, что указан в игре', // api/ops/game.php, api/ops/game.php, api/ops/game.php
-'Club tournaments' => 'Клубные турниры', // index.php
 'during votings for killing all' => 'во время голосования за подъем', // include/game.php
 'when the night starts' => 'когда начинается ночь', // include/game.php
 'Report a bug' => 'Сообщить о баге', // game.php
@@ -1987,6 +1986,7 @@ $labelMenu = array (
 'add a nested table' => 'добавить вложенную таблицу', // gaining.php
 'every tournament of the series counts' => 'учитываются все турниры серии', // gaining.php
 'Every player gets [0] points regardless of the place.' => 'Все игроки получают [0] балл(ов) независимо от места.', // form/gaining_table.php
+'The points depend on the result each player brought from the competition, so the table below counts it as zero.' => 'Баллы зависят от результата, с которым игрок пришел из соревнования, поэтому в таблице ниже он принят за ноль.', // gaining.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -2004,7 +2004,6 @@ $labelMenu = array (
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
 'We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'Мы нашли похожую, но не совсем такую рассадку. Она вполне хороша, но мы можем сделать лучше.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // include/seating.php
 'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас нет готовой рассадки для данной конфигурации. Мы сгенерировали для вас самую базовую начальную рассадку и сейчас её улучшаем и оптимизируем.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // include/seating.php
-'The points depend on the result each player brought from the competition, so the table below counts it as zero.' => 'Баллы зависят от результата, с которым игрок пришел из соревнования, поэтому в таблице ниже он принят за ноль.', // gaining.php
 );
 
 return $labelMenu;

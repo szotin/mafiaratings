@@ -107,6 +107,84 @@ class Page extends ClubPageBase
 		echo '</table>';
 	}
 	
+	private function show_series($series)
+	{
+		$future = ($series->start_time > time());
+		if ($future)
+		{
+			$dark_class = ' class = "darker"';
+			$light_class = ' class = "dark"';
+			$url = 'series_info.php';
+		}
+		else
+		{
+			$dark_class = ' class = "dark"';
+			$light_class = '';
+			$url = 'series_standings.php';
+		}
+
+		echo '<table class="transp" width="100%">';
+
+		echo '<tr' . $dark_class . ' style="height: 40px;"><td align="center"><b>' . $series->name . '</b></td></tr>';
+		echo '<tr' . $light_class . ' style="height: 80px;"><td align="center">';
+		echo '<a href="' . $url . '?bck=1&id=' . $series->id . '" title="' . get_label('View series details.') . '">';
+		$this->series_pic->set($series->id, $series->name, $series->flags);
+		$this->series_pic->show(ICONS_DIR, false, $future ? 56 : 70);
+		echo '</a>';
+		if ($future)
+		{
+			echo '<br>' . format_date_period($series->start_time, $series->duration, $this->timezone);
+		}
+		echo '</td></tr>';
+
+		echo '</table>';
+	}
+
+	private function show_series_list($series)
+	{
+		$s = new stdClass();
+		$count = 0;
+		$column_count = 0;
+		foreach ($series as $row)
+		{
+			list ($s->id, $s->name, $s->flags, $s->start_time, $s->duration, $s->languages) = $row;
+
+			if ($column_count == 0)
+			{
+				if ($count == 0)
+				{
+					echo '<table class="bordered light" width="100%">';
+					echo '<tr class="darker"><td colspan="' . COLUMN_COUNT . '"><b>' . get_label('Series') . '</b></td></tr>';
+				}
+				else
+				{
+					echo '</tr>';
+				}
+				echo '<tr>';
+			}
+			echo '<td width="' . COLUMN_WIDTH . '%" valign="top">';
+			$this->show_series($s);
+			echo '</td>';
+			++$column_count;
+			++$count;
+			if ($column_count >= COLUMN_COUNT)
+			{
+				$column_count = 0;
+			}
+		}
+
+		if ($column_count > 0)
+		{
+			echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '"></td>';
+		}
+		if ($count > 0)
+		{
+			echo '</tr></table>';
+			return true;
+		}
+		return false;
+	}
+
 	private function show_happenings($events, $tournaments)
 	{
 		$event_index = 0;
@@ -240,6 +318,7 @@ class Page extends ClubPageBase
 		global $_profile, $_lang;
 		
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$this->series_pic = new Picture(SERIES_PICTURE);
 		$this->club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 	
 		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
@@ -300,6 +379,23 @@ class Page extends ClubPageBase
 			echo '<p>';
 		}
 		
+		// the series the club runs itself
+		$series = array();
+		$query = new DbQuery(
+			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs FROM series s' .
+				' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.club_id = ?' .
+				' ORDER BY s.start_time + s.duration, s.name, s.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
+			$this->id);
+		while ($row = $query->next())
+		{
+			$series[] = $row;
+		}
+		if ($this->show_series_list($series))
+		{
+			$have_tables = true;
+			echo '<p>';
+		}
+
 		// tournaments and events
 		$tournaments = array();
 		$query = new DbQuery(
