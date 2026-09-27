@@ -264,21 +264,32 @@ class Page extends GeneralPageBase
 	
 	private function select_tournaments($condition, $limit)
 	{
+		global $_profile;
+
 		$query = new DbQuery(
 			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0', $condition);
-		// Only the tournaments a league has entered into one of its series. A club series does not
-		// put a tournament on this page, the same way a club series does not appear on it itself.
+		// The tournaments a league has entered into one of its series, plus whatever the visitor's
+		// own clubs are running. A club tournament belonging to nobody the visitor knows stays off
+		// the page.
+		//
+		// Membership comes from club_regs rather than from the profile, whose club list is every
+		// club there is when the visitor is an administrator.
 		//
 		// $condition already carries its own leading " AND ...", so the WHERE above must not end
 		// with a dangling AND and this clause has to supply its own.
 		$query->add(
-			' AND EXISTS (SELECT st.series_id FROM series_tournaments st' .
+			' AND (EXISTS (SELECT st.series_id FROM series_tournaments st' .
 			' JOIN series s ON s.id = st.series_id' .
 			' WHERE st.tournament_id = t.id AND s.league_id IS NOT NULL)');
+		if ($_profile != NULL)
+		{
+			$query->add(' OR t.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?)', $_profile->user_id);
+		}
+		$query->add(')');
 		$query->add(' ORDER BY t.flags & ' . TOURNAMENT_FLAG_PINNED .' DESC, t.start_time + t.duration, t.name, t.id LIMIT ' . $limit);
 		$delim = empty($this->tournaments_list) ? '' : ', ';
 		while ($row = $query->next())
@@ -398,11 +409,21 @@ class Page extends GeneralPageBase
 	
 	private function show_seriess($condition)
 	{
-		// League series only. What a club runs on its own is its own business and stays off this page.
+		global $_profile;
+
+		// Every league series, and of the club ones only those run by a club the visitor belongs to.
+		// soc is the owning club from series_owner_join(), so a closed one is left out.
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, ' . series_owner_fields() . ' FROM series s' .
 			series_owner_join() .
-			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.league_id IS NOT NULL');
+			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND (s.league_id IS NOT NULL');
+		if ($_profile != NULL)
+		{
+			$query->add(
+				' OR (s.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?)' .
+				' AND (soc.flags & ' . CLUB_FLAG_CLOSED . ') = 0)', $_profile->user_id);
+		}
+		$query->add(')');
 		$query->add(' ORDER BY s.flags & ' . SERIES_FLAG_PINNED .' DESC, s.start_time + s.duration, s.name, s.id LIMIT ' . (SERIES_COLUMN_COUNT * SERIES_ROW_COUNT));
 		
 		$series_count = 0;
