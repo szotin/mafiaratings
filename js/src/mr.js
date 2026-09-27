@@ -1010,9 +1010,16 @@ var mr = new function()
 		}
 	}
 	
-	this.functionHelp = function()
+	// functions is an optional comma separated list of names to offer. Without it the dialog
+	// lists the tournament scoring functions.
+	this.functionHelp = function(functions)
 	{
-		dlg.infoForm("form/function_help.php", 600);
+		var url = "form/function_help.php";
+		if (functions)
+		{
+			url += "?functions=" + encodeURIComponent(functions);
+		}
+		dlg.infoForm(url, 600);
 	}
 	
 	//--------------------------------------------------------------------------------------
@@ -1076,7 +1083,7 @@ var mr = new function()
 
 	this.editGainingSystem = function(id)
 	{
-		dlg.form("form/gaining_edit.php?gaining_id=" + id, refr, 1200);
+		goTo("gaining.php?bck=1&id=" + id);
 	}
 	
 	this.showGaining = function(name)

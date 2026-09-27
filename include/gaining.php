@@ -91,6 +91,88 @@ function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $
 	return $evaluator->evaluate();
 }
 
+// Builds an evaluator for one of the gaining formulas, set up the way get_gaining_points() sets
+// one up, so that a formula can be tried out without a competition to try it on.
+function prepare_gaining_evaluator($gaining, $key, $stars, $num_players, $place, $score)
+{
+	$evaluator = new Evaluator($gaining->$key, get_gaining_functions());
+	$evaluator->set_var('table', isset($gaining->table) ? $gaining->table : array());
+	$evaluator->set_var('stars', $stars);
+	$evaluator->set_var('numPlayers', $num_players);
+	$evaluator->set_var('ratingSum', 500 * $num_players);
+	$evaluator->set_var('ratingSum20', 500 * 20);
+	$evaluator->set_var('travelingDistance', 100);
+	$evaluator->set_var('guestCoef', 1);
+	if (isset($gaining->globals))
+	{
+		$evaluator->set_vars($gaining->globals);
+	}
+	$evaluator->set_var('score', $score);
+	$evaluator->set_var('place', $place);
+	if (isset($gaining->vars))
+	{
+		$evaluator->set_vars($gaining->vars);
+	}
+	return $evaluator;
+}
+
+// Refuses a gaining system whose formulas cannot be evaluated at all.
+//
+// A malformed expression is not caught when it is parsed - the evaluator builds a tree with a
+// hole in it and only trips over the hole when it runs, and it trips over it with an Error
+// rather than an Exception. Left unchecked, such a formula saves cleanly and then breaks the
+// series standings much later, so it is tried out here instead.
+//
+// Two places are tried and one of them succeeding is enough: a formula dividing by something
+// like place-1 is fine everywhere except at the first place, and that is the author's business,
+// not a reason to refuse the system.
+function check_gaining($gaining)
+{
+	// Trying out a formula that may well be broken is what this function is for, so the notices
+	// the evaluator emits on its way down are noise here by construction.
+	$reporting = error_reporting(error_reporting() & ~E_NOTICE & ~E_WARNING);
+	try
+	{
+		foreach (array('points', 'seriesPoints') as $key)
+		{
+			if (!isset($gaining->$key))
+			{
+				continue;
+			}
+
+			$error = NULL;
+			foreach (array(1, 2) as $place)
+			{
+				try
+				{
+					prepare_gaining_evaluator($gaining, $key, 2, 20, $place, 1)->evaluate();
+					$error = NULL;
+					break;
+				}
+				catch (Throwable $e)
+				{
+					if (is_null($error))
+					{
+						// An Exc from the parser says something useful - "Unexpected lexem" and
+						// where. Anything else is the evaluator tripping over a hole in the tree
+						// it built itself, and its wording would tell the author nothing.
+						$error = ($e instanceof Exc) ? $e->getMessage() : get_label('the formula is malformed.');
+					}
+				}
+			}
+
+			if (!is_null($error))
+			{
+				throw new Exc(get_label('[0] cannot be calculated: [1]', $key, $error));
+			}
+		}
+	}
+	finally
+	{
+		error_reporting($reporting);
+	}
+}
+
 function format_gain($gain, $zeroes = true)
 {
 	return format_float($gain, 2, $zeroes);

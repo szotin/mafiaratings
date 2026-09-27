@@ -8,23 +8,36 @@ initiate_session();
 
 try
 {
-	if (!isset($_REQUEST['gaining_id']))
+	// The editor sends the rules it is holding, unsaved, so that the table previews what the
+	// author is typing. Everybody else names a stored version instead.
+	if (isset($_REQUEST['gaining']))
 	{
-		throw new Exc(get_label('Unknown [0]', get_label('gaining system')));
-	}
-	$gaining_id = (int)$_REQUEST['gaining_id'];
-	
-	if (isset($_REQUEST['gaining_version']))
-	{
-		$gaining_version = (int)$_REQUEST['gaining_version'];
-		list($gaining, $name, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? AND v.version = ?', $gaining_id, $gaining_version);
+		$gaining = json_decode($_REQUEST['gaining']);
+		if (is_null($gaining))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('gaining system')));
+		}
 	}
 	else
 	{
-		list($gaining, $name, $gaining_version, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, v.version, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? ORDER BY version DESC LIMIT 1', $gaining_id);
-		$gaining_version = (int)$gaining_version;
+		if (!isset($_REQUEST['gaining_id']))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('gaining system')));
+		}
+		$gaining_id = (int)$_REQUEST['gaining_id'];
+
+		if (isset($_REQUEST['gaining_version']))
+		{
+			$gaining_version = (int)$_REQUEST['gaining_version'];
+			list($gaining, $name, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? AND v.version = ?', $gaining_id, $gaining_version);
+		}
+		else
+		{
+			list($gaining, $name, $gaining_version, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, v.version, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? ORDER BY version DESC LIMIT 1', $gaining_id);
+			$gaining_version = (int)$gaining_version;
+		}
+		$gaining = json_decode($gaining);
 	}
-	$gaining = json_decode($gaining);
 	
 	$players = 30;
 	if (isset($_REQUEST['players']))
@@ -44,6 +57,21 @@ try
 		$place = (int)$_REQUEST['place'];
 	}
 	
+	// Scoring a subseries rather than a tournament, which is when seriesPoints replaces points.
+	$series = false;
+	if (isset($_REQUEST['series']))
+	{
+		$series = (bool)$_REQUEST['series'];
+	}
+
+	// The score the player took away from the competition. seriesPoints formulas are often just
+	// "score", so previewing one is pointless without it.
+	$score = 0;
+	if (isset($_REQUEST['score']))
+	{
+		$score = (double)$_REQUEST['score'];
+	}
+
 	$rating_sum = 500 * $players;
 	if (isset($_REQUEST['rating_sum']))
 	{
@@ -71,13 +99,17 @@ try
 		$guest_coef = (bool)$_REQUEST['guest_coef'];
 	}
 	
+	// Says in one readable sentence what is wrong with the formula before the table below tries to
+	// evaluate it thirty times over.
+	check_gaining($gaining);
+
 	$points = array();
 	$message = false;
 	$all_the_same = true;
-	$points[] = get_gaining_points(0, $gaining, $stars, 1, 0, $players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, false);
+	$points[] = get_gaining_points(0, $gaining, $stars, 1, $score, $players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $series);
 	for ($p = 2; $p <= $players; ++$p)
 	{
-		$gp = get_gaining_points(0, $gaining, $stars, $p, 0, $players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, false);
+		$gp = get_gaining_points(0, $gaining, $stars, $p, $score, $players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $series);
 		$points[] = $gp;
 		if ($all_the_same && abs($points[0] - $gp) > 0.00001)
 		{
@@ -108,7 +140,10 @@ try
 		echo '</p>';
 	}
 }
-catch (Exception $e)
+// Throwable, not Exception: a half-typed formula makes the evaluator trip over a hole in its own
+// tree and raise an Error, and this preview is where formulas are half-typed by definition. A
+// message belongs there, not a stack trace.
+catch (Throwable $e)
 {
 	Exc::log($e);
 	echo 'Error: <b>' . $e->getMessage() . '</b>';

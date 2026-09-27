@@ -11,7 +11,8 @@ class ApiPage extends GetApiPageBase
 	{
 		global $_lang;
 	
-		$this->functions = get_scoring_functions();
+		// Help is keyed by function name alone, so this serves any set of functions - tournament
+		// scoring, series gaining, whatever asks.
 		$functionId = get_required_param('function');
 		$lang = (int)get_optional_param('lang', $_lang);
 		

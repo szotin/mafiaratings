@@ -87,6 +87,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$gaining = json_decode($gaining);
 		}
+		check_gaining($gaining);
 		$function_flags = get_gaining_function_flags($gaining);
 		$gaining = json_encode($gaining);
 		
@@ -161,6 +162,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			$gaining = json_decode($gaining);
 		}
+		check_gaining($gaining);
 		$function_flags = get_gaining_function_flags($gaining);
 		$gaining = json_encode($gaining);
 		

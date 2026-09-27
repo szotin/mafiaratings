@@ -8,19 +8,35 @@ initiate_session();
 try
 {
 	dialog_title('Functions for scoring system');
-	if (!isset($_SESSION['current_function']))
+
+	// Any set of functions can be listed here - the caller names them and the help itself is
+	// looked up by name in include/languages/<lang>/function_help.php, which knows nothing about
+	// where a function is used. Without the parameter the list is the tournament scoring one.
+	if (isset($_REQUEST['functions']) && !empty($_REQUEST['functions']))
 	{
-		$_SESSION['current_function'] = 'round';
+		$names = explode(',', $_REQUEST['functions']);
 	}
-	$current_function = $_SESSION['current_function'];
-	
-	$functions = get_scoring_functions();
-	
+	else
+	{
+		$names = array();
+		foreach (get_scoring_functions() as $f)
+		{
+			$names[] = $f->id();
+		}
+	}
+
+	// The function the dialog was last opened on, unless it belongs to another set.
+	$current_function = isset($_SESSION['current_function']) ? $_SESSION['current_function'] : '';
+	if (!in_array($current_function, $names))
+	{
+		$current_function = count($names) ? $names[0] : '';
+	}
+
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td>Function: <select id="form-functions" onchange="functionChanged()">';
-	for ($i = 0; $i < count($functions); ++$i)
+	foreach ($names as $name)
 	{
-		show_option($functions[$i]->id(), $current_function, $functions[$i]->name());
+		show_option($name, $current_function, $name);
 	}
 	echo '</td></tr>';
 	echo '<tr><td><div id="form-help"></div></td></tr>';

@@ -42,6 +42,7 @@ include/pdf/font/unifont/arial.cw.dat
 js/scoring_editor.js
 sounds/
 js/normalizer_editor.js
+js/gaining_editor.js
 rebuild_ratings.log
 complete_competitions.log
 js/seating_ua.js

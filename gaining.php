@@ -3,80 +3,155 @@
 require_once 'include/general_page_base.php';
 require_once 'include/gaining.php';
 
-class Page extends GeneralPageBase
+class Page extends PageBase
 {
-	private $place;
-	
+	private $gaining;
+	private $gaining_id;
+	private $gaining_name;
+	private $gaining_version;
+	private $dependants;
+
 	protected function prepare()
 	{
+		parent::prepare();
+
 		if (!isset($_REQUEST['id']))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('gaining system')));
 		}
-		$this->gaining_id = (int)$_REQUEST['id'];
-		
-		if (isset($_REQUEST['version']))
+		$gaining_id = (int)$_REQUEST['id'];
+
+		list($this->gaining_id, $this->gaining, $this->gaining_name, $this->gaining_version, $club_id, $league_id) =
+			Db::record(get_label('gaining system'),
+				'SELECT s.id, v.gaining, s.name, s.version, s.club_id, s.league_id FROM gainings s' .
+				' JOIN gaining_versions v ON v.gaining_id = s.id AND v.version = s.version' .
+				' WHERE s.id = ?', $gaining_id);
+		if (is_null($club_id))
 		{
-			$this->gaining_version = (int)$_REQUEST['version'];
-			list($this->gaining, $name, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? AND v.version = ?', $this->gaining_id, $this->gaining_version);
+			if (is_null($league_id))
+			{
+				check_permissions(PERMISSION_ADMIN);
+			}
+			else
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
 		}
 		else
 		{
-			list($this->gaining, $name, $this->gaining_version, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, v.version, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? ORDER BY version DESC LIMIT 1', $this->gaining_id);
-			$this->gaining_version = (int)$this->gaining_version;
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			if (!is_null($league_id))
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
 		}
-		$this->gaining = json_decode($this->gaining);
-		
-		$this->players = 30;
-		if (isset($_REQUEST['players']))
-		{
-			$this->players = (int)$_REQUEST['players'];
-		}
-		
-		$this->stars = 2;
-		if (isset($_REQUEST['stars']))
-		{
-			$this->stars = (double)$_REQUEST['stars'];
-		}
-		
-		$this->place = 0;
-		if (isset($_REQUEST['place']))
-		{
-			$this->place = (int)$_REQUEST['place'];
-		}
-		
-		$this->series = false;
-		if (isset($_REQUEST['series']))
-		{
-			$this->series = (bool)$_REQUEST['series'];
-		}
-		
-		$this->title = get_label('Gaining system [0]. Version [1].', $name, $this->gaining_version);
+
+		// api/ops/gaining.php overwrites the current version in place while no finished series
+		// uses it, and starts a new version once one does. Saying which it will be up front
+		// spares the author a surprise.
+		list($this->dependants) = Db::record(get_label('series'),
+			'SELECT count(*) FROM series WHERE gaining_id = ? AND gaining_version = ? AND start_time + duration < UNIX_TIMESTAMP()',
+			$this->gaining_id, $this->gaining_version);
+		$this->dependants = (int)$this->dependants;
+
+		$this->_title = get_label('Gaining system') . ': ' . $this->gaining_name;
 	}
-	
+
 	protected function show_body()
 	{
-		echo '<table class="transp" width="100%">';
-		echo '<tr><td width="300"><input type="number" style="width: 45px;" step="1" min="1" max="10" id="form-stars" value="' . $this->stars . '" onChange="onChangeParams()"> ' . get_label('stars') . '</td>';
-		echo '<td><input type="number" style="width: 45px;" step="1" min="10" id="form-players" value="' . $this->players . '" onChange="onChangeParams()"> ' . get_label('players') . '</td>';
-		echo '<td align="right"><input type="checkbox" id="form-series" onClick="onChangeParams()"> ' . get_label('for series of tournaments') . '</td></tr>';
-		echo '</table>';
-		
-		echo '<p><div id="form-gaining"></div></p>';
+		echo '<p><button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button>';
+		echo ' <button onclick="viewJson()">' . get_label('View json') . '</button>';
+		echo ' <button onclick="editJson()">' . get_label('Edit json') . '</button></p>';
+
+		if ($this->dependants > 0)
+		{
+			echo '<p><i>' . get_label('[0] finished series already use this version. Saving creates a new version and leaves their results alone.', $this->dependants) . '</i></p>';
+		}
+
+		echo '<script src="' . versioned_asset('js/gaining_editor.js') . '"></script>';
+		echo '<div id="gaining-editor"></div>';
+
+		// The preview evaluates whatever is in the editor right now through the real Evaluator,
+		// so it is also where a broken formula shows itself.
+		// h3 carries no margin of its own (common.css), so the heading needs one here to stand off
+		// the editor above it.
+		echo '<h3 style="margin-top: 24px;">' . get_label('Preview') . '</h3>';
+		echo '<p><table class="transp" width="100%">';
+		echo '<tr><td width="25%"><input type="number" style="width: 45px;" step="1" min="1" max="10" id="form-stars" value="2" onchange="refreshGainingPreview()"> ' . get_label('stars') . '</td>';
+		echo '<td width="25%"><input type="number" style="width: 45px;" step="1" min="2" id="form-players" value="30" onchange="refreshGainingPreview()"> ' . get_label('players') . '</td>';
+		echo '<td width="25%"><input type="number" style="width: 60px;" step="0.01" id="form-score" value="0" onchange="refreshGainingPreview()"> ' . get_label('Points') . '</td>';
+		echo '<td align="right"><input type="checkbox" id="form-series" onclick="refreshGainingPreview()"> ' . get_label('for series of tournaments') . '</td></tr>';
+		echo '</table></p>';
+		echo '<div id="form-gaining"></div>';
 	}
-	
+
 	protected function js()
 	{
-		parent::js();
-?>
-		function onChangeParams()
+		// What the help button next to every formula offers, taken from the evaluator's own
+		// function list so that it cannot drift away from what get_gaining_points() provides.
+		// "place" is added by hand: it is set as a plain variable rather than registered as a
+		// function, but a formula uses it the same way and an author looks for it here.
+		$function_names = array();
+		foreach (get_gaining_functions() as $f)
 		{
-			var params = 
+			$function_names[] = $f->id();
+		}
+		$function_names[] = 'place';
+?>
+		var data =
+		{
+			gaining: <?php echo $this->gaining; ?>,
+			id: <?php echo $this->gaining_id; ?>,
+			name: "<?php echo $this->gaining_name; ?>",
+			version: <?php echo $this->gaining_version; ?>,
+			functions: "<?php echo implode(',', $function_names); ?>",
+			strings:
 			{
-				gaining_id: <?php echo $this->gaining_id; ?>
-				, gaining_version: <?php echo $this->gaining_version; ?>
+				name: "<?php echo get_label('Gaining system name'); ?>",
+				version: "<?php echo get_label('Version'); ?>",
+				points: "<?php echo get_label('Points for a tournament'); ?>",
+				pointsHelp: "<?php echo get_label('What one tournament of the series brings a player who took a given place in it.'); ?>",
+				seriesPointsUse: "<?php echo get_label('use a different formula when what is scored is a subseries rather than a tournament'); ?>",
+				maxTournaments: "<?php echo get_label('Tournaments counted'); ?>",
+				allTournaments: "<?php echo get_label('every tournament of the series counts'); ?>",
+				countBest: "<?php echo get_label('count only the best'); ?>",
+				countBestPost: "<?php echo get_label('tournaments of each player'); ?>",
+				globals: "<?php echo get_label('Values calculated once'); ?>",
+				globalsHelp: "<?php echo get_label('Calculated once for the whole competition. Order matters - each one may use those above it.'); ?>",
+				vars: "<?php echo get_label('Values calculated per player'); ?>",
+				varsHelp: "<?php echo get_label('Recalculated for every player, after their place and score are known. Order matters here too.'); ?>",
+				varAdd: "<?php echo get_label('Add value.'); ?>",
+				varDel: "<?php echo get_label('Delete value.'); ?>",
+				moveUp: "<?php echo get_label('Move up.'); ?>",
+				moveDown: "<?php echo get_label('Move down.'); ?>",
+				table: "<?php echo get_label('Table'); ?>",
+				tableHelp: "<?php echo get_label('The numbers table(...) looks up. Indices start at 0 and are clamped to the nearest existing one.'); ?>",
+				tableAdd: "<?php echo get_label('Add a table.'); ?>",
+				tableDrop: "<?php echo get_label('Delete the table.'); ?>",
+				entryDel: "<?php echo get_label('Delete entry.'); ?>",
+				entryAddRow: "<?php echo get_label('add a row of numbers'); ?>",
+				entryAddTable: "<?php echo get_label('add a nested table'); ?>",
+			},
+		};
+
+		function onDataChange(d, isDirty)
+		{
+			data = d;
+			$('#save').prop('disabled', !isDirty || !isGainingDataCorrect());
+		}
+
+		function onPreview(d)
+		{
+			if (!isGainingDataCorrect())
+			{
+				return;
+			}
+			var params =
+			{
+				gaining: JSON.stringify(d.gaining)
 				, stars: $("#form-stars").val()
 				, players: $("#form-players").val()
+				, score: $("#form-score").val()
 			};
 			if ($('#form-series').attr('checked'))
 			{
@@ -87,13 +162,39 @@ class Page extends GeneralPageBase
 				$("#form-gaining").html(html);
 			});
 		}
-		
-		onChangeParams();
+
+		function saveData()
+		{
+			var params =
+			{
+				op: 'change'
+				, gaining_id: data.id
+				, name: data.name
+				, gaining: JSON.stringify(data.gaining)
+			};
+			json.post("api/ops/gaining.php", params, function(response)
+			{
+				setGainingVersion(response.gaining_version);
+				dirty(false);
+			});
+		}
+
+		function viewJson()
+		{
+			dlg.info(JSON.stringify(data.gaining), 'Json');
+		}
+
+		function editJson()
+		{
+			dlg.form("form/gaining_edit.php?gaining_id=" + data.id, refr, 1200);
+		}
+
+		initGainingEditor(data, onDataChange, onPreview);
 <?php
 	}
 }
 
 $page = new Page();
-$page->run(get_label('Gaining system'));
+$page->run('');
 
 ?>

@@ -493,7 +493,9 @@ class ApiPage extends OpsApiPageBase
 		{
 			$_lang = LANG_ENGLISH;
 		}
-		else if (!is_valid_lang($lang_code))
+		// is_valid_lang() takes the language bitmask, not the code: handing it "ru" made it do
+		// arithmetic on a word, which warns three times over and answers nothing useful.
+		else if (!is_valid_lang($_lang))
 		{
 			$_lang = get_next_lang(LANG_NO, $_lang);
 		}

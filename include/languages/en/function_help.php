@@ -176,6 +176,86 @@ return array
 		<p><code>matter(8) && matter(2) ? 0.2 : 0</code> 0.2 if the player was killed the first night and their team lost.<br> 
 		<code>matter(8) && !matter(23) && !matter(10) && !matter(11) ? -0.4 : 0</code> -0.4 if the player was killed the first night and left no black players in the legacy.<br> 
 		<code>matter(12) || matter(13) ? -0.5 : 0</code> -0.5 if the player got 4 warnings, or was mod-killed.</p>',
+
+	'table' =>
+	'<h3>Description</h3>
+		<p><code>table(index1, index2, ...)</code></p>
+		<p>Returns a number from the Table of the gaining system.</p>
+		<p>The table is nested as deeply as you make it: a flat list of numbers takes one index, a list of lists takes two, and so on. Indices start at 0. An index outside the table is moved to the nearest one that exists, so the first row answers for anything below it and the last row for anything above it. If you pass fewer indices than the table has levels, the first element of each remaining level is taken.</p>
+	<h3>Parameters</h3>
+		<dl>
+			<dt>indexN</dt><dd>Position on the Nth level of the table, counted from 0. A fractional index is rounded down.</dd>
+		</dl>
+	<h3>Examples</h3>
+		<p>Suppose the table is a list of rows, one row per star, and each row holds the points by place:</p>
+		<p><code>table(stars-1, place-1)</code> the points for this place in a competition of this many stars. Both are shifted by one because places and stars are counted from 1 while indices are counted from 0.<br>
+		<code>table(stars-1)</code> the first number of the row for these stars.<br>
+		<code>table(0, stars-1, numPlayers/10-1, place-1)</code> a four level table, the first level choosing between two sets of rows - for instance one for tournaments and one for subseries.</p>',
+
+	'score' =>
+	'<h3>Description</h3>
+		<p><code>score()</code></p>
+		<p>Returns the points the player scored inside the competition, by its own scoring system - the sum of their main, bonus and first night points in a tournament, or their place points in a subseries. This is the competition result the player brings with them; the gaining system turns it into series points.</p>
+	<h3>Examples</h3>
+		<p><code>score()</code> the series gets exactly what the competition gave. Often used as the formula for a subseries.<br>
+		<code>score() / 2</code> half of it.<br>
+		<code>place = 1 ? score() * 1.5 : score()</code> the winner keeps one and a half of their result.</p>',
+
+	'numPlayers' =>
+	'<h3>Description</h3>
+		<p><code>numPlayers()</code></p>
+		<p>Returns the number of players who took part in the competition.</p>
+	<h3>Examples</h3>
+		<p><code>(numPlayers() - place) / (numPlayers() - 1)</code> 1 for the winner, 0 for the last place, and evenly spread in between whatever the size of the competition.<br>
+		<code>numPlayers() / 10 - 1</code> used as a table index to pick a row by the size of the competition, where every row covers ten players.</p>',
+
+	'stars' =>
+	'<h3>Description</h3>
+		<p><code>stars()</code></p>
+		<p>Returns the number of stars this competition was given in the series. Stars are how a series says how much a competition weighs - a minor tournament and the main one of the year are both tournaments, and the stars are what tells them apart.</p>
+	<h3>Examples</h3>
+		<p><code>stars()</code> one point per star.<br>
+		<code>table(stars()-1, place-1)</code> a row of the table per star.<br>
+		<code>stars() > 0 && stars() < 6 ? stars() : 0</code> nothing at all outside the range of 1 to 5 stars.</p>',
+
+	'ratingSum' =>
+	'<h3>Description</h3>
+		<p><code>ratingSum()</code></p>
+		<p>Returns the sum of the ratings of all the players accepted to the competition, as their ratings were when it was counted. It says how strong the field was: the same place among strong players is worth more than among weak ones.</p>
+	<h3>Examples</h3>
+		<p><code>ratingSum() / numPlayers()</code> the average rating of the field.</p>',
+
+	'ratingSum20' =>
+	'<h3>Description</h3>
+		<p><code>ratingSum20()</code></p>
+		<p>Returns the sum of the ratings of the twenty highest rated players of the competition, or of all of them when there were fewer than twenty. Unlike ratingSum this does not keep growing with the size of the competition, so it compares a big tournament with a small one on the strength of the field rather than on its size.</p>
+	<h3>Examples</h3>
+		<p><code>ratingSum20() / (numPlayers() > 20 ? 20 : numPlayers())</code> the average rating of the twenty strongest players.<br>
+		<code>10 + ratingSum20() / (numPlayers() > 20 ? 20 : numPlayers()) * stars() / 100</code> the points for the first place, grown by the strength of the field and by the stars.</p>',
+
+	'travelingDistance' =>
+	'<h3>Description</h3>
+		<p><code>travelingDistance()</code></p>
+		<p>Returns the sum, over all the players of the competition, of the distance in miles from the city of the player to the city of the competition. It says how far the players came, which is one way of saying how much the competition mattered to them.</p>
+	<h3>Examples</h3>
+		<p><code>travelingDistance() / numPlayers()</code> how far an average player came.</p>',
+
+	'guestCoef' =>
+	'<h3>Description</h3>
+		<p><code>guestCoef()</code></p>
+		<p>Returns the guest coefficient of the competition - the sum, over all its players, of <code>log(1 + distance/600, 2)</code>, where distance is how far in miles that player came. It counts the same thing as travelingDistance but with diminishing returns, so that one player from the other side of the world does not outweigh a hall full of guests from the next city.</p>
+	<h3>Examples</h3>
+		<p><code>guestCoef()</code> a competition where everybody is local is 0.<br>
+		<code>min(guestCoef(), 10)</code> the same, but nothing above 10.</p>',
+
+	'place' =>
+	'<h3>Description</h3>
+		<p><code>place</code></p>
+		<p>The place the player took in the competition, counted from 1. Unlike the other names here it is a plain value rather than a function, so it is written without brackets.</p>
+	<h3>Examples</h3>
+		<p><code>table(stars-1, place-1)</code> the points for this place, taken from the table. One is subtracted because table indices are counted from 0.<br>
+		<code>place = 1 ? 10 : 0</code> ten points for the winner and nothing for everybody else.<br>
+		<code>((numPlayers - place) / (numPlayers - 1))^3</code> 1 for the winner falling steeply to 0 for the last place.</p>',
 );
 
 ?>

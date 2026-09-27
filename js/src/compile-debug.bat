@@ -13,6 +13,7 @@ copy mr.chart.js ..
 copy seating.js ..
 copy scoring_editor.js ..
 copy normalizer_editor.js ..
+copy gaining_editor.js ..
 copy game-ui.js ..
 copy game1-ui.js ..
 copy seating-ui.js ..
