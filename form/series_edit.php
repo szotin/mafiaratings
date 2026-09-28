@@ -21,9 +21,9 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $club_id, $name, $start_time, $duration, $type, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
+	list ($league_id, $club_id, $name, $start_time, $duration, $type, $max_stars, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
 		Db::record(get_label('sеriеs'),
-			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.type, s.langs, s.notes, s.flags,' .
+			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.type, s.max_stars, s.langs, s.notes, s.flags,' .
 			' COALESCE(sol.langs, soc.langs), COALESCE(sol.flags, soc.flags),' .
 			' s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' .
 			series_owner_join() .
@@ -31,6 +31,7 @@ try
 	$currency_id = (int)$currency_id;
 	$gaining_id = (int)$gaining_id;
 	$type = (int)$type;
+	$max_stars = (int)$max_stars;
 	$league_id = (int)$league_id;
 	$club_id = (int)$club_id;
 	$owner = new SeriesOwner($league_id, $club_id);
@@ -66,6 +67,12 @@ try
 	
 	echo '<tr><td>' . get_label('Type') . ':</td><td>';
 	show_series_type_options($type, 'onTypeChange()');
+	echo '</td></tr>';
+
+	// Every tournament of a recurring tournament is the same event happening again, so it
+	// always gives exactly one star and is not asked about it.
+	echo '<tr id="form-max-stars-row"><td>' . get_label('Maximum stars') . ':</td><td>';
+	echo '<input type="number" style="width: 45px;" step="1" min="1" max="' . SERIES_MAX_STARS_LIMIT . '" id="form-max-stars" value="' . series_max_stars($type, $max_stars) . '">';
 	echo '</td></tr>';
 
 	// A recurring tournament has no dates, and the parent series on offer are the ones this series
@@ -186,6 +193,7 @@ try
 		var recurring = isRecurring();
 		$('#form-dates-row').css('display', recurring ? 'none' : '');
 		$('#form-series-row').css('display', recurring ? 'none' : '');
+		$('#form-max-stars-row').css('display', recurring ? 'none' : '');
 		if (!recurring)
 		{
 			setSeries();
@@ -252,7 +260,7 @@ try
 				{
 					$("#form-stars-" + s.id).rate(
 					{
-						max_value: 5,
+						max_value: s.max_stars,
 						step_size: 1,
 						initial_value: seriesList[s.id].stars,
 					}).on("change", function(ev, data) { starsChanged(this, data.to); });
@@ -325,6 +333,7 @@ try
 			series_id: <?php echo $series_id; ?>,
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
+			max_stars: $('#form-max-stars').val(),
 			notes: $("#form-notes").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),

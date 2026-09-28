@@ -701,7 +701,8 @@ CREATE TABLE `series` (
   `per_player_fee` float NOT NULL DEFAULT '0',
   `fee` int(11) DEFAULT NULL,
   `currency_id` int(11) DEFAULT NULL,
-  `type` int(11) NOT NULL DEFAULT '0'
+  `type` int(11) NOT NULL DEFAULT '0',
+  `max_stars` int(11) NOT NULL DEFAULT '5'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `series_extra_points`;
@@ -1088,9 +1089,9 @@ INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `ema
 INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`, `default_rules`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 1, 0, '{}', NULL, 1, '0002000010000');
 INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`, `rules`) VALUES (1, 1, 0, '0002000010000');
 INSERT INTO `league_managers` (`league_id`, `user_id`) VALUES (1, 1);
-INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `finals_id`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `type`) VALUES (1, 'Season 2024', 1, NULL, 1284784660, 31536000, 7, '', NULL, 0, '{}', 1, 1, 0, NULL, NULL, 0);
+INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `finals_id`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `type`, `max_stars`) VALUES (1, 'Season 2024', 1, NULL, 1284784660, 31536000, 7, '', NULL, 0, '{}', 1, 1, 0, NULL, NULL, 0, 5);
 -- A series owned by a club instead of a league. Exactly one of league_id / club_id is set.
-INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `finals_id`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `type`) VALUES (2, 'Club Cup 2024', NULL, 1, 1284784660, 31536000, 7, '', NULL, 0, '"0002000010000"', 1, 1, 0, NULL, NULL, 0);
+INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `finals_id`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `type`, `max_stars`) VALUES (2, 'Club Cup 2024', NULL, 1, 1284784660, 31536000, 7, '', NULL, 0, '"0002000010000"', 1, 1, 0, NULL, NULL, 0, 5);
 
 -- Tournament (finished) and its link to the season
 INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `security_token`, `type`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 'Sample Tournament', 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, NULL, 0, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);

@@ -61,7 +61,7 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 			'tournament_id' => new Tag($tournament_id),
 			'tournament_name' => new Tag($tournament_name),
 			'stars' => new Tag($series->stars),
-			'stars_str' => new Tag(tournament_stars_str($series->stars)),
+			'stars_str' => new Tag(tournament_stars_str($series->stars, false)),
 			'club_id' => new Tag($club_id),
 			'club_name' => new Tag($club_name),
 			'sender' => new Tag($_profile->user_name));

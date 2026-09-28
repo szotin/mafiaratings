@@ -258,7 +258,7 @@ try
 				var s = series.series[i];
 				$("#form-stars-" + s.id).rate(
 				{
-					max_value: 5,
+					max_value: s.max_stars,
 					step_size: 1,
 					initial_value: seriesList[s.id].stars,
 				}).on("change", function(ev, data) { starsChanged(this, data.to); });

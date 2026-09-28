@@ -77,6 +77,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('series type')));
 		}
+		$max_stars = series_max_stars($type, get_optional_param('max_stars', SERIES_DEFAULT_MAX_STARS));
 		$flags = (int)get_optional_param('flags', NEW_SERIES_FLAGS);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + (NEW_SERIES_FLAGS & ~SERIES_EDITABLE_MASK);
 		// Elite is a property of elite leagues. A club series is never elite.
@@ -117,8 +118,8 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('sеriеs'),
-			'INSERT INTO series (name, league_id, club_id, start_time, duration, type, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $club_id, $start, $duration, $type, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
+			'INSERT INTO series (name, league_id, club_id, start_time, duration, type, max_stars, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $club_id, $start, $duration, $type, $max_stars, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
 		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
 
 		$log_details = new stdClass();
@@ -128,6 +129,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->start = $start;
 		$log_details->duration = $duration;
 		$log_details->type = $type;
+		$log_details->max_stars = $max_stars;
 		$log_details->langs = $langs;
 		$log_details->notes = $notes;
 		$log_details->fee = $fee;
@@ -164,6 +166,7 @@ class ApiPage extends OpsApiPageBase
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
 		$help->request_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament. A recurring tournament has no dates - it never ends - so <q>start</q> and <q>end</q> are ignored for it.', SERIES_TYPE_SERIES . ' - a series of tournaments.');
+		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 1 to ' . SERIES_MAX_STARS_LIMIT . '. A recurring tournament always gives exactly one and ignores this.', SERIES_DEFAULT_MAX_STARS . '.');
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a recurring tournament.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a recurring tournament.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
@@ -194,9 +197,10 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_type, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
-			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, type, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
+		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_type, $old_max_stars, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
+			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, type, max_stars, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
 		$old_type = (int)$old_type;
+		$old_max_stars = (int)$old_max_stars;
 
 		$owner = new SeriesOwner($league_id, $club_id);
 		check_series_permissions($owner, $series_id);
@@ -244,6 +248,9 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('series type')));
 		}
+		// Lowering the maximum leaves the stars already handed out alone: they were given under the
+		// maximum of the day, and rewriting them is not this operation's business.
+		$max_stars = series_max_stars($type, get_optional_param('max_stars', $old_max_stars));
 
 		if ($type == SERIES_TYPE_RECURRING)
 		{
@@ -406,8 +413,8 @@ class ApiPage extends OpsApiPageBase
 			
 		Db::exec(
 			get_label('sеriеs'), 
-			'UPDATE series SET name = ?, start_time = ?, duration = ?, type = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
-			$name, $start, $duration, $type, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
+			'UPDATE series SET name = ?, start_time = ?, duration = ?, type = ?, max_stars = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
+			$name, $start, $duration, $type, $max_stars, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
@@ -426,6 +433,10 @@ class ApiPage extends OpsApiPageBase
 			if ($type != $old_type)
 			{
 				$log_details->type = $type;
+			}
+			if ($max_stars != $old_max_stars)
+			{
+				$log_details->max_stars = $max_stars;
 			}
 			if ($langs != $old_langs)
 			{
@@ -475,6 +486,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('series_id', 'Series id.');
 		$help->request_param('name', 'Series name.', 'remains the same.');
 		$help->request_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament. A recurring tournament has no dates, so its <q>start</q> and <q>end</q> are ignored; a series that stops being a recurring tournament must be given both.', 'remains the same.');
+		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 1 to ' . SERIES_MAX_STARS_LIMIT . '. A recurring tournament always gives exactly one and ignores this.', 'remains the same.');
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'remains the same.');

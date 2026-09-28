@@ -158,7 +158,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.max_stars, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
 				series_owner_join(), $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
@@ -171,13 +171,14 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->notes, $rules, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->max_stars, $s->notes, $rules, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
 				$s->flags = (int)$s->flags;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
 				$s->type = (int)$s->type;
+				$s->max_stars = series_max_stars($s->type, $s->max_stars);
 				$s->start = timestamp_to_string($s->timestamp, $timezone);
 				$s->end = timestamp_to_string($s->timestamp + $s->duration, $timezone);
 				$s->rules = json_decode($rules);
@@ -218,7 +219,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.notes, s.league_id, s.club_id FROM series s', $condition);
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.max_stars, s.notes, s.league_id, s.club_id FROM series s', $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
 			{
@@ -229,7 +230,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->notes, $league_id, $club_id) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->max_stars, $s->notes, $league_id, $club_id) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
 				$owner = new SeriesOwner($league_id, $club_id);
@@ -240,6 +241,7 @@ class ApiPage extends GetApiPageBase
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
 				$s->type = (int)$s->type;
+				$s->max_stars = series_max_stars($s->type, $s->max_stars);
 
 				$series_pic->set($s->id, $s->name, $s->flags);
 				$s->has_picture = $series_pic->has_image(true);
@@ -281,6 +283,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('langs', 'A bit combination of languages used in the series.' . valid_langs_help());
 			$param->sub_param('timestamp', 'Unix timestamp for the start of the series.');
 			$param->sub_param('duration', 'Duration of the series in seconds.');
+			$param->sub_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it. Between 1 and ' . SERIES_MAX_STARS_LIMIT . '; always 1 for a recurring tournament.');
 			$param->sub_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season; ' . SERIES_TYPE_SERIES . ' - a series of tournaments; ' . SERIES_TYPE_RECURRING . ' - a recurring tournament, which has no dates and never ends. The timestamp and the duration of a recurring tournament are an implementation detail - it simply runs.');
 			$param->sub_param('start', 'Formatted date "yyyy-mm-dd HH:MM" for the start of the series. User timezone is used.', 1);
 			$param->sub_param('end', 'Formatted date "yyyy-mm-dd HH:MM" for the end of the series. User timezone is used.', 1);

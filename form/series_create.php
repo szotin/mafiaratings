@@ -56,6 +56,12 @@ try
 	show_series_type_options(SERIES_TYPE_SERIES, 'onTypeChange()');
 	echo '</td></tr>';
 
+	// Every tournament of a recurring tournament is the same event happening again, so it
+	// always gives exactly one star and is not asked about it.
+	echo '<tr id="form-max-stars-row"><td>' . get_label('Maximum stars') . ':</td><td>';
+	echo '<input type="number" style="width: 45px;" step="1" min="1" max="' . SERIES_MAX_STARS_LIMIT . '" id="form-max-stars" value="' . SERIES_DEFAULT_MAX_STARS . '">';
+	echo '</td></tr>';
+
 	// A recurring tournament has no dates, and both rows below are about dates - the parent series
 	// on offer are the ones this series would run inside of. They are hidden for it.
 	echo '<tr id="form-series-row"><td>' . get_label('Belongs to series') . ':</td><td><div id="form-series"></div></td></tr>';
@@ -153,6 +159,7 @@ try
 		var recurring = isRecurring();
 		$('#form-dates-row').css('display', recurring ? 'none' : '');
 		$('#form-series-row').css('display', recurring ? 'none' : '');
+		$('#form-max-stars-row').css('display', recurring ? 'none' : '');
 		// setSeries() refuses to run while the type is recurring, so the list of parent series has
 		// to be asked for again once it stops being one.
 		if (!recurring)
@@ -217,7 +224,7 @@ try
 				{
 					$("#form-stars-" + s.id).rate(
 					{
-						max_value: 5,
+						max_value: s.max_stars,
 						step_size: 1,
 						initial_value: seriesList[s.id].stars,
 					}).on("change", function(ev, data) { starsChanged(this, data.to); });
@@ -277,6 +284,7 @@ try
 			club_id: <?php echo $club_id; ?>,
 			name: $("#form-name").val(),
 			type: $('#form-type').val(),
+			max_stars: $('#form-max-stars').val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
 			notes: $("#form-notes").val(),

@@ -28,6 +28,28 @@ define('SERIES_TYPE_RECURRING', 2);
 // Long enough to outlive anything, and still inside series.duration.
 define('SERIES_ETERNAL_DURATION', 0x7FFFFFFF);
 
+// How many stars a series can hand out to a tournament or a subseries entered into it. Five is
+// what every series used before the maximum became a property of the series itself.
+define('SERIES_MAX_STARS_LIMIT', 10);
+define('SERIES_DEFAULT_MAX_STARS', 5);
+
+// The maximum a series of this type may actually hand out. Every tournament of a recurring
+// tournament is the same event happening again, so there is nothing to grade between them: it
+// always gives exactly one star, and is not asked about it.
+function series_max_stars($type, $max_stars)
+{
+	if ((int)$type == SERIES_TYPE_RECURRING)
+	{
+		return 1;
+	}
+	$max_stars = (int)$max_stars;
+	if ($max_stars < 1)
+	{
+		return SERIES_DEFAULT_MAX_STARS;
+	}
+	return min($max_stars, SERIES_MAX_STARS_LIMIT);
+}
+
 // The types in the order they are offered, each with the label to offer it under. The order is
 // the organizers' - most of them think of a season first - and has nothing to do with the values.
 function get_series_types()
