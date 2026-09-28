@@ -28,6 +28,8 @@ class Page extends ClubPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 
+		$types = get_series_type_filter();
+
 		$future = false;
 		if (isset($_REQUEST['future']))
 		{
@@ -41,7 +43,7 @@ class Page extends ClubPageBase
 		}
 		else
 		{
-			$condition->add(' AND s.start_time < UNIX_TIMESTAMP()');
+			$condition->add(' AND ' . series_past_condition());
 
 			if ($filter & FLAG_FILTER_EMPTY)
 			{
@@ -61,6 +63,8 @@ class Page extends ClubPageBase
 			}
 		}
 
+		$condition->add(series_type_filter_condition($types));
+
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$condition->add(' AND s.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
@@ -76,14 +80,18 @@ class Page extends ClubPageBase
 		echo '</div>';
 		echo '<div class="tabcontent">';
 
+		echo '<p><table class="transp" width="100%">';
 		if (!$future)
 		{
-			echo '<p><table class="transp" width="100%"><tr><td>';
+			echo '<tr><td>';
 			show_date_filter();
 			echo '&emsp;&emsp;';
 			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $filter, 'filterSeries');
-			echo '</td></tr></table></p>';
+			echo '</td></tr>';
 		}
+		echo '<tr><td>';
+		show_series_type_filter($types);
+		echo '</td></tr></table></p>';
 
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -91,7 +99,7 @@ class Page extends ClubPageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs,' .
+			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.type, s.langs,' .
 			' (SELECT count(*) FROM series_tournaments _ts JOIN tournaments _t ON _t.id = _ts.tournament_id WHERE _ts.series_id = s.id AND (_t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0) as tournaments, f.id, f.name, f.flags',
 			$condition);
 		if ($future)
@@ -112,9 +120,9 @@ class Page extends ClubPageBase
 		echo '<td width="60" align="center">' . get_label('Finals') . '</td>';
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $languages, $tournaments_count, $finals_id, $finals_name, $finals_flags) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $series_type, $languages, $tournaments_count, $finals_id, $finals_name, $finals_flags) = $row;
 
-			$playing =($now >= $series_time && $now < $series_time + $series_duration);
+			$playing = ($now >= $series_time && $now < $series_time + $series_duration && $series_type != SERIES_TYPE_RECURRING);
 			if ($playing)
 			{
 				echo '<tr class="dark">';
@@ -135,7 +143,7 @@ class Page extends ClubPageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date_period($series_time, $series_duration, $timezone) . '</a></td>';
+			echo '</b><br>' . series_period($series_type, $series_time, $series_duration, $timezone) . '</a></td>';
 			echo '</tr></table>';
 			echo '</td>';
 

@@ -61,7 +61,7 @@ class Page extends SeriesPageBase
 		}
 		else
 		{
-			$condition->add(' AND s.start_time < UNIX_TIMESTAMP()');
+			$condition->add(' AND ' . series_past_condition());
 			
 			if ($this->filter & FLAG_FILTER_EMPTY)
 			{
@@ -101,7 +101,7 @@ class Page extends SeriesPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT DISTINCT s.id, s.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
+			'SELECT DISTINCT s.id, s.name, s.flags, s.start_time, s.duration, s.type, ' . series_owner_fields() . ',' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
 			$condition);
 		if ($this->future)
@@ -124,9 +124,9 @@ class Page extends SeriesPageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $series_type, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
 			$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-			$playing =($now >= $series_time && $now < $series_time + $series_duration);
+			$playing = ($now >= $series_time && $now < $series_time + $series_duration && $series_type != SERIES_TYPE_RECURRING);
 			if ($playing)
 			{
 				echo '<tr class="dark">';
@@ -150,7 +150,7 @@ class Page extends SeriesPageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date_period($series_time, $series_duration, $timezone) . '</a></td>';
+			echo '</b><br>' . series_period($series_type, $series_time, $series_duration, $timezone) . '</a></td>';
 			echo '</tr></table>';
 			echo '</td>';
 			

@@ -413,10 +413,15 @@ class Page extends GeneralPageBase
 
 		// Every league series, and of the club ones only those run by a club the visitor belongs to.
 		// soc is the owning club from series_owner_join(), so a closed one is left out.
+		//
+		// Recurring tournaments never end, so they would hold these few slots forever. They belong
+		// to the main page of the club or the league running them, not to this one - which is also
+		// why show_series() below prints the dates of whatever it is given without asking.
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, ' . series_owner_fields() . ' FROM series s' .
 			series_owner_join() .
-			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND (s.league_id IS NOT NULL');
+			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.type <> ' . SERIES_TYPE_RECURRING .
+			' AND (s.league_id IS NOT NULL');
 		if ($_profile != NULL)
 		{
 			$query->add(

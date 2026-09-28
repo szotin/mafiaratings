@@ -28,6 +28,8 @@ class Page extends GeneralPageBase
 			$this->filter = (int)$_REQUEST['filter'];
 		}
 		
+		$this->types = get_series_type_filter();
+
 		$this->future = false;
 		if (isset($_REQUEST['future']))
 		{
@@ -47,8 +49,13 @@ class Page extends GeneralPageBase
 		{
 			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
 		}
+		echo '</td></tr>';
+		// The type filter belongs on both tabs: a recurring tournament is always under way, so the
+		// future tab is exactly where one shows up.
+		echo '<tr><td>';
+		show_series_type_filter($this->types);
 		echo '</td></tr></table></p>';
-		
+
 		$condition = new SQL(
 			' FROM series s' .
 			series_owner_join());
@@ -58,7 +65,7 @@ class Page extends GeneralPageBase
 		}
 		else
 		{
-			$condition->add(' WHERE s.start_time < UNIX_TIMESTAMP()');
+			$condition->add(' WHERE ' . series_past_condition());
 			
 			if ($this->filter & FLAG_FILTER_EMPTY)
 			{
@@ -78,6 +85,8 @@ class Page extends GeneralPageBase
 			}
 		}
 		
+		$condition->add(series_type_filter_condition($this->types));
+
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$condition->add(' AND s.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
@@ -98,7 +107,7 @@ class Page extends GeneralPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
+			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.type, ' . series_owner_fields() . ',' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
 			$condition);
 		if ($this->future)
@@ -121,9 +130,10 @@ class Page extends GeneralPageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $series_type, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
 			$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-			$playing =($now >= $series_time && $now < $series_time + $series_duration);
+			// A recurring tournament is always under way. Saying so adds nothing to its type.
+			$playing = ($now >= $series_time && $now < $series_time + $series_duration && $series_type != SERIES_TYPE_RECURRING);
 			if ($playing)
 			{
 				echo '<tr class="dark">';
@@ -147,7 +157,7 @@ class Page extends GeneralPageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . format_date_period($series_time, $series_duration, $timezone) . '</a></td>';
+			echo '</b><br>' . series_period($series_type, $series_time, $series_duration, $timezone) . '</a></td>';
 			echo '</tr></table>';
 			echo '</td>';
 			

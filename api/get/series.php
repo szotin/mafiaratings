@@ -26,6 +26,7 @@ class ApiPage extends GetApiPageBase
 		$club_id = (int)get_optional_param('club_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
 		$canceled = (int)get_optional_param('canceled', 0);
+		$types = (int)get_optional_param('types', SERIES_TYPE_FILTER_ALL);
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
@@ -45,15 +46,24 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND (s.name LIKE(?) OR s.name LIKE(?))', $name_starts1, $name_starts2);
 		}
 
+		// The date filters below answer four questions about a series, and a recurring tournament has
+		// no dates to answer them with: it is already running and it never ends. So it started
+		// before any date given, and after none; it ends after any date given, and before none.
+		// The last two come out right on their own because such a series is stored with an eternal
+		// duration - the two about the start have to say so explicitly.
+		//
+		// This is what lets a tournament played long before the recurring tournament was created be
+		// entered into it: the tournament forms ask for the series overlapping the dates of the
+		// tournament, and a series that has no dates overlaps everything.
 		if (!empty($started_before))
 		{
 			if (strpos($started_before, '+') === 0)
 			{
-				$condition->add(' AND s.start_time <= ?', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
+				$condition->add(' AND (s.type = ' . SERIES_TYPE_RECURRING . ' OR s.start_time <= ?)', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
 			}
 			else
 			{
-				$condition->add(' AND s.start_time < ?', get_datetime($started_before)->getTimestamp());
+				$condition->add(' AND (s.type = ' . SERIES_TYPE_RECURRING . ' OR s.start_time < ?)', get_datetime($started_before)->getTimestamp());
 			}
 		}
 
@@ -71,6 +81,7 @@ class ApiPage extends GetApiPageBase
 
 		if (!empty($started_after))
 		{
+			$condition->add(' AND s.type <> ' . SERIES_TYPE_RECURRING);
 			if (strpos($started_after, '+') === 0)
 			{
 				$condition->add(' AND s.start_time >= ?', get_datetime(trim(substr($started_after, 1)))->getTimestamp());
@@ -119,6 +130,10 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND (s.langs & ?) <> 0', $langs);
 		}
 		
+		// Unlike the series lists on the site, the API returns every type unless asked otherwise -
+		// a caller that filters nothing expects nothing filtered out.
+		$condition->add(series_type_filter_condition($types));
+
 		switch ($canceled)
 		{
 			case 1: // all including canceled
@@ -143,7 +158,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
 				series_owner_join(), $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
@@ -156,12 +171,13 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->notes, $rules, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->notes, $rules, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
 				$s->flags = (int)$s->flags;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
+				$s->type = (int)$s->type;
 				$s->start = timestamp_to_string($s->timestamp, $timezone);
 				$s->end = timestamp_to_string($s->timestamp + $s->duration, $timezone);
 				$s->rules = json_decode($rules);
@@ -202,7 +218,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.notes, s.league_id, s.club_id FROM series s', $condition);
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.notes, s.league_id, s.club_id FROM series s', $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
 			{
@@ -213,7 +229,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->notes, $league_id, $club_id) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->notes, $league_id, $club_id) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
 				$owner = new SeriesOwner($league_id, $club_id);
@@ -223,7 +239,8 @@ class ApiPage extends GetApiPageBase
 				$s->club_id = $owner->club_id;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
-				
+				$s->type = (int)$s->type;
+
 				$series_pic->set($s->id, $s->name, $s->flags);
 				$s->has_picture = $series_pic->has_image(true);
 				$s->icon = $series_pic->url(ICONS_DIR);
@@ -251,6 +268,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('club_id', 'Club id.  For example: <a href="series.php?club_id=1">' . PRODUCT_URL . '/api/get/series.php?club_id=1</a> returns the series that Russian Mafia of Vancouver runs itself plus all series of the leagues it belongs to.', '-');
 		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="series.php?langs=1">' . PRODUCT_URL . '/api/get/series.php?langs=1</a> returns all series that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('canceled', '0 - exclude canceled series (default); 1 - incude canceled series; 2 - canceled series only. For example: <a href="series.php?canceled=2">' . PRODUCT_URL . '/api/get/series.php?canceled=2</a> returns all canceled series.', '-');
+		$help->request_param('types', 'What series types to return. A bit combination of: ' . SERIES_TYPE_FILTER_SEASON . ' - seasons; ' . SERIES_TYPE_FILTER_SERIES . ' - series of tournaments; ' . SERIES_TYPE_FILTER_RECURRING . ' - recurring tournaments. For example: <a href="series.php?types=' . SERIES_TYPE_FILTER_RECURRING . '">' . PRODUCT_URL . '/api/get/series.php?types=' . SERIES_TYPE_FILTER_RECURRING . '</a> returns recurring tournaments only.', 'all types.');
 		$help->request_param('page', 'Page number. For example: <a href="series.php?page=1">' . PRODUCT_URL . '/api/get/series.php?page=1</a> returns the second page of series by time from newest to oldest.', '-');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="series.php?page_size=32">' . PRODUCT_URL . '/api/get/series.php?page_size=32</a> returns first 32 series; <a href="series.php?page_size=0">' . PRODUCT_URL . '/api/get/series.php?page_size=0</a> returns series in one page; <a href="series.php">' . PRODUCT_URL . '/api/get/series.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' series by alphabet.', '-');
 
@@ -263,6 +281,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('langs', 'A bit combination of languages used in the series.' . valid_langs_help());
 			$param->sub_param('timestamp', 'Unix timestamp for the start of the series.');
 			$param->sub_param('duration', 'Duration of the series in seconds.');
+			$param->sub_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season; ' . SERIES_TYPE_SERIES . ' - a series of tournaments; ' . SERIES_TYPE_RECURRING . ' - a recurring tournament, which has no dates and never ends. The timestamp and the duration of a recurring tournament are an implementation detail - it simply runs.');
 			$param->sub_param('start', 'Formatted date "yyyy-mm-dd HH:MM" for the start of the series. User timezone is used.', 1);
 			$param->sub_param('end', 'Formatted date "yyyy-mm-dd HH:MM" for the end of the series. User timezone is used.', 1);
 			$param->sub_param('notes', 'Series notes.');

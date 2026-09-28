@@ -1,3 +1,11 @@
+-- Drops every table of the schema.
+--
+-- The foreign key checks are off for the whole script, so the order below does not have to
+-- be a topological sort of the references and no constraint has to be named here. Without
+-- that, every migration adding a foreign key would also have to add a line breaking it, and
+-- a forgotten one fails the run halfway through with "Cannot delete or update a parent row".
+SET FOREIGN_KEY_CHECKS = 0;
+
 DROP TABLE IF EXISTS `tournament_scores_cache`;
 DROP TABLE IF EXISTS `event_scores_cache`;
 DROP TABLE IF EXISTS `club_separations`;
@@ -43,8 +51,6 @@ DROP TABLE IF EXISTS `event_extra_points`;
 DROP TABLE IF EXISTS `tournament_approves`;
 DROP TABLE IF EXISTS `tournament_comments`;
 DROP TABLE IF EXISTS `tournament_invitations`;
-ALTER TABLE `clubs` DROP FOREIGN KEY club_prompt_sound;
-ALTER TABLE `clubs` DROP FOREIGN KEY club_end_sound;
 DROP TABLE IF EXISTS `sounds`;
 DROP TABLE IF EXISTS `tournament_regs`;
 DROP TABLE IF EXISTS `event_places`;
@@ -67,19 +73,12 @@ DROP TABLE IF EXISTS series_series;
 DROP TABLE IF EXISTS series;
 DROP TABLE IF EXISTS `tournaments`;
 DROP TABLE IF EXISTS `league_seasons`;
-ALTER TABLE `scorings` DROP FOREIGN KEY system_league;
-ALTER TABLE `normalizers` DROP FOREIGN KEY normalizer_league;
-ALTER TABLE `gainings` DROP FOREIGN KEY gaining_league;
 DROP TABLE IF EXISTS `leagues`;
 DROP TABLE IF EXISTS `addresses`;
-ALTER TABLE `scorings` DROP FOREIGN KEY system_club;
 DROP TABLE IF EXISTS `club_seasons`;
-ALTER TABLE `normalizers` DROP FOREIGN KEY normalizer_club;
 DROP TABLE IF EXISTS `clubs`;
-ALTER TABLE `scorings` DROP FOREIGN KEY system_version;
 DROP TABLE IF EXISTS `scoring_versions`;
 DROP TABLE IF EXISTS `scorings`;
-ALTER TABLE `normalizers` DROP FOREIGN KEY normalizer_version;
 DROP TABLE IF EXISTS `normalizer_versions`;
 DROP TABLE IF EXISTS `normalizers`;
 DROP TABLE IF EXISTS `city_names`;
@@ -96,3 +95,5 @@ DROP TABLE IF EXISTS `maintenance_scripts`;
 DROP TABLE IF EXISTS `profiling_ips`;
 DROP TABLE IF EXISTS `profiling_pages`;
 DROP TABLE IF EXISTS `seatings`;
+
+SET FOREIGN_KEY_CHECKS = 1;

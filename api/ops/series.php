@@ -72,6 +72,11 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$notes = get_optional_param('notes', '');
+		$type = (int)get_optional_param('type', SERIES_TYPE_SERIES);
+		if (!is_series_type_valid($type))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('series type')));
+		}
 		$flags = (int)get_optional_param('flags', NEW_SERIES_FLAGS);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + (NEW_SERIES_FLAGS & ~SERIES_EDITABLE_MASK);
 		// Elite is a property of elite leagues. A club series is never elite.
@@ -89,19 +94,31 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		$start_datetime = get_datetime(get_required_param('start'), $timezone);
-		$end_datetime = get_datetime(get_required_param('end'), $timezone);
-		$start = $start_datetime->getTimestamp();
-		$end = $end_datetime->getTimestamp();
-		if ($end <= $start)
+		if ($type == SERIES_TYPE_RECURRING)
 		{
-			throw new Exc(get_label('Series end before or right after the start.'));
+			// A recurring tournament has no dates - it runs from the moment it is created and
+			// never ends. The eternal duration is what makes every "is it over yet" query, and
+			// there are a lot of them, answer no.
+			$start = time();
+			$duration = SERIES_ETERNAL_DURATION;
 		}
-		
+		else
+		{
+			$start_datetime = get_datetime(get_required_param('start'), $timezone);
+			$end_datetime = get_datetime(get_required_param('end'), $timezone);
+			$start = $start_datetime->getTimestamp();
+			$end = $end_datetime->getTimestamp();
+			if ($end <= $start)
+			{
+				throw new Exc(get_label('Series end before or right after the start.'));
+			}
+			$duration = $end - $start;
+		}
+
 		Db::exec(
 			get_label('sеriеs'),
-			'INSERT INTO series (name, league_id, club_id, start_time, duration, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $club_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
+			'INSERT INTO series (name, league_id, club_id, start_time, duration, type, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $club_id, $start, $duration, $type, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
 		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
 
 		$log_details = new stdClass();
@@ -109,7 +126,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->league_id = $league_id;
 		$log_details->club_id = $club_id;
 		$log_details->start = $start;
-		$log_details->duration = $end - $start;
+		$log_details->duration = $duration;
+		$log_details->type = $type;
 		$log_details->langs = $langs;
 		$log_details->notes = $notes;
 		$log_details->fee = $fee;
@@ -145,8 +163,9 @@ class ApiPage extends OpsApiPageBase
 		$series_help = $help->request_param('parent_series', 'Json array of series that this series belongs to. For example "[{id:2,stars:3},{id:4,stars:1}]".', 'series does not belong to any series - same as "[]".');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
-		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
-		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
+		$help->request_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament. A recurring tournament has no dates - it never ends - so <q>start</q> and <q>end</q> are ignored for it.', SERIES_TYPE_SERIES . ' - a series of tournaments.');
+		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a recurring tournament.');
+		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a recurring tournament.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
 		$help->request_param('fee', 'Admission rate per player-tournament. Send -1 if unknown.', '-1.');
 		$help->request_param('currency_id', 'Currency id for the admission rate. Send -1 if unknown.', '-1.');
@@ -175,8 +194,9 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
-			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
+		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_type, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
+			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, type, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
+		$old_type = (int)$old_type;
 
 		$owner = new SeriesOwner($league_id, $club_id);
 		check_series_permissions($owner, $series_id);
@@ -219,16 +239,52 @@ class ApiPage extends OpsApiPageBase
 			$currency_id = NULL;
 		}
 		
-		$old_start_datetime = get_datetime($old_start, $timezone);
-		$old_end_datetime = get_datetime($old_start + $old_duration, $timezone);
-		$start_datetime = get_datetime(get_optional_param('start', datetime_to_string($old_start_datetime)), $timezone);
-		$end_datetime = get_datetime(get_optional_param('end', datetime_to_string($old_end_datetime)), $timezone);
-		$start = $start_datetime->getTimestamp();
-		$end = $end_datetime->getTimestamp();
-		$duration = $end - $start;
-		if ($duration <= 0)
+		$type = (int)get_optional_param('type', $old_type);
+		if (!is_series_type_valid($type))
 		{
-			throw new Exc(get_label('Series end before or right after the start.'));
+			throw new Exc(get_label('Unknown [0]', get_label('series type')));
+		}
+
+		if ($type == SERIES_TYPE_RECURRING)
+		{
+			if ($old_type == SERIES_TYPE_RECURRING)
+			{
+				// It has no dates to edit, so leave the ones it has alone. That is also what keeps
+				// a finished recurring tournament finished - finishing one cuts its duration short,
+				// and handing it the eternal duration again would bring it back to life.
+				$start = (int)$old_start;
+				$duration = (int)$old_duration;
+			}
+			else
+			{
+				// It becomes eternal from now on.
+				$start = time();
+				$duration = SERIES_ETERNAL_DURATION;
+			}
+		}
+		else
+		{
+			// A series that used to be a recurring tournament has no dates to fall back on, so
+			// whoever takes that type away has to say when it runs.
+			if ($old_type == SERIES_TYPE_RECURRING)
+			{
+				$start_datetime = get_datetime(get_required_param('start'), $timezone);
+				$end_datetime = get_datetime(get_required_param('end'), $timezone);
+			}
+			else
+			{
+				$old_start_datetime = get_datetime($old_start, $timezone);
+				$old_end_datetime = get_datetime($old_start + $old_duration, $timezone);
+				$start_datetime = get_datetime(get_optional_param('start', datetime_to_string($old_start_datetime)), $timezone);
+				$end_datetime = get_datetime(get_optional_param('end', datetime_to_string($old_end_datetime)), $timezone);
+			}
+			$start = $start_datetime->getTimestamp();
+			$end = $end_datetime->getTimestamp();
+			$duration = $end - $start;
+			if ($duration <= 0)
+			{
+				throw new Exc(get_label('Series end before or right after the start.'));
+			}
 		}
 		
 		$logo_uploaded = false;
@@ -350,8 +406,8 @@ class ApiPage extends OpsApiPageBase
 			
 		Db::exec(
 			get_label('sеriеs'), 
-			'UPDATE series SET name = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
-			$name, $start, $duration, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
+			'UPDATE series SET name = ?, start_time = ?, duration = ?, type = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
+			$name, $start, $duration, $type, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
@@ -366,6 +422,10 @@ class ApiPage extends OpsApiPageBase
 			if ($duration != $old_duration)
 			{
 				$log_details->duration = $duration;
+			}
+			if ($type != $old_type)
+			{
+				$log_details->type = $type;
 			}
 			if ($langs != $old_langs)
 			{
@@ -414,6 +474,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Change series.');
 		$help->request_param('series_id', 'Series id.');
 		$help->request_param('name', 'Series name.', 'remains the same.');
+		$help->request_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament. A recurring tournament has no dates, so its <q>start</q> and <q>end</q> are ignored; a series that stops being a recurring tournament must be given both.', 'remains the same.');
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'remains the same.');

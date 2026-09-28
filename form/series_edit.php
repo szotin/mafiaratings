@@ -21,15 +21,16 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $club_id, $name, $start_time, $duration, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
+	list ($league_id, $club_id, $name, $start_time, $duration, $type, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
 		Db::record(get_label('sеriеs'),
-			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.langs, s.notes, s.flags,' .
+			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.type, s.langs, s.notes, s.flags,' .
 			' COALESCE(sol.langs, soc.langs), COALESCE(sol.flags, soc.flags),' .
 			' s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' .
 			series_owner_join() .
 			' WHERE s.id = ?', $series_id);
 	$currency_id = (int)$currency_id;
 	$gaining_id = (int)$gaining_id;
+	$type = (int)$type;
 	$league_id = (int)$league_id;
 	$club_id = (int)$club_id;
 	$owner = new SeriesOwner($league_id, $club_id);
@@ -63,15 +64,31 @@ try
 	end_upload_logo_button(SERIES_PIC_CODE, $series_id);
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
-	
-	$end_time = $start_time + $duration - 24*60*60;
-	if ($end_time < $start_time)
+	echo '<tr><td>' . get_label('Type') . ':</td><td>';
+	show_series_type_options($type, 'onTypeChange()');
+	echo '</td></tr>';
+
+	// A recurring tournament has no dates, and the parent series on offer are the ones this series
+	// would run inside of - a question about dates too. Both rows are hidden for it.
+	echo '<tr id="form-series-row"><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
+
+	// A recurring tournament stores an eternal duration, so the end it would offer is meaningless.
+	// Today is what the date inputs start from if the type is taken away from it.
+	if ($type == SERIES_TYPE_RECURRING)
 	{
+		$start_time = time();
 		$end_time = $start_time;
 	}
-	
-	echo '<tr><td>'.get_label('Dates').':</td><td>';
+	else
+	{
+		$end_time = $start_time + $duration - 24*60*60;
+		if ($end_time < $start_time)
+		{
+			$end_time = $start_time;
+		}
+	}
+
+	echo '<tr id="form-dates-row"><td>'.get_label('Dates').':</td><td>';
 	echo '<input type="date" id="form-start" value="' . timestamp_to_string($start_time, $timezone, false) . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
 	echo '<input type="date" id="form-end" value="' . timestamp_to_string($end_time, $timezone, false) . '" onchange="setSeries()"">';
@@ -159,9 +176,29 @@ try
 	}
 	gainingChanged(<?php echo $gaining_version; ?>);
 	
+	function isRecurring()
+	{
+		return $('#form-type').val() == <?php echo SERIES_TYPE_RECURRING; ?>;
+	}
+
+	function onTypeChange()
+	{
+		var recurring = isRecurring();
+		$('#form-dates-row').css('display', recurring ? 'none' : '');
+		$('#form-series-row').css('display', recurring ? 'none' : '');
+		if (!recurring)
+		{
+			setSeries();
+		}
+	}
+
 	var seriesList = <?php echo $series_list; ?>;
 	function setSeries()
 	{
+		if (isRecurring())
+		{
+			return;
+		}
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		json.post("api/get/series.php",
@@ -223,7 +260,7 @@ try
 			}
 		});
 	}
-	setSeries();
+	onTypeChange();
 	
 	function starsChanged(control, stars)
 	{
@@ -277,41 +314,47 @@ try
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
-		var _end = strToDate($('#form-end').val());
-		_end.setDate(_end.getDate() + 1); // inclusive
-		
+
 		var _flags = 0;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
 		if ($("#form-elite").attr('checked')) _flags |= <?php echo SERIES_FLAG_ELITE; ?>;
-		
-		var series = [];
-		for (const i in seriesList) 
-		{
-			var s = seriesList[i];
-			if (s.selected)
-			{
-				series.push({ id: s.id, stars: s.stars });
-			}
-		}
-		series = JSON.stringify(series);
-		
+
 		var params =
 		{
 			op: "change",
 			series_id: <?php echo $series_id; ?>,
-			parent_series: series,
 			name: $("#form-name").val(),
+			type: $('#form-type').val(),
 			notes: $("#form-notes").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
-			start: $('#form-start').val(),
-			end: dateToStr(_end),
 			gaining_id: $('#form-gaining').val(),
 			gaining_version: $('#form-gaining-version').val(),
 			langs: _langs,
 			flags: _flags,
 		};
-		
+
+		// A recurring tournament has no dates, and no parent series were offered for it. Leaving
+		// parent_series out altogether is what tells the op to leave the ones it has alone.
+		if (!isRecurring())
+		{
+			var _end = strToDate($('#form-end').val());
+			_end.setDate(_end.getDate() + 1); // inclusive
+			params['start'] = $('#form-start').val();
+			params['end'] = dateToStr(_end);
+
+			var series = [];
+			for (const i in seriesList)
+			{
+				var s = seriesList[i];
+				if (s.selected)
+				{
+					series.push({ id: s.id, stars: s.stars });
+				}
+			}
+			params['parent_series'] = JSON.stringify(series);
+		}
+
 		json.post("api/ops/series.php", params, onSuccess);
 	}
 	

@@ -45,14 +45,14 @@ class Page extends LeaguePageBase
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT s.id, s.name, s.start_time, s.duration, s.flags FROM series s WHERE ', $condition);
+		$query = new DbQuery('SELECT s.id, s.name, s.start_time, s.duration, s.type, s.flags FROM series s WHERE ', $condition);
 		$query->add(' ORDER BY s.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
 		$timezone = get_timezone();
 		$series_pic = new Picture(SERIES_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags) = $row;
+			list ($id, $name, $start_time, $duration, $type, $flags) = $row;
 			if ($column_count == 0)
 			{
 				if ($series_count == 0)
@@ -76,7 +76,7 @@ class Page extends LeaguePageBase
 				echo '</td></tr>';	
 			}
 			
-			echo '<tr><td align="center"><a href="series_info.php?bck=1&id=' . $id . '">' . format_date_period($start_time, $duration, $timezone) . '<br>';
+			echo '<tr><td align="center"><a href="series_info.php?bck=1&id=' . $id . '">' . series_period($type, $start_time, $duration, $timezone) . '<br>';
 			$series_pic->set($id, $name, $flags);
 			$series_pic->show(ICONS_DIR, false);
 			echo '</a><br><b>' . $name;

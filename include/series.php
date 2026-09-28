@@ -14,6 +14,179 @@ require_once __DIR__ . '/user.php';
 define('SERIES_OWNER_LEAGUE', 1);
 define('SERIES_OWNER_CLUB', 2);
 
+// The kind of competition a series is. Zero is the series of tournaments, so every series that
+// existed before the column was added is one.
+//
+// A season and a series of tournaments are treated identically everywhere for now - the type
+// only says what the organizers call it. A recurring tournament is different: it has no start
+// and no end. It is stored with an eternal duration so that every query asking whether a series
+// is over answers no, which is the truth about it.
+define('SERIES_TYPE_SERIES', 0);
+define('SERIES_TYPE_SEASON', 1);
+define('SERIES_TYPE_RECURRING', 2);
+
+// Long enough to outlive anything, and still inside series.duration.
+define('SERIES_ETERNAL_DURATION', 0x7FFFFFFF);
+
+// The types in the order they are offered, each with the label to offer it under. The order is
+// the organizers' - most of them think of a season first - and has nothing to do with the values.
+function get_series_types()
+{
+	return array(
+		SERIES_TYPE_SEASON => get_label('Season'),
+		SERIES_TYPE_SERIES => get_label('Series of tournaments'),
+		SERIES_TYPE_RECURRING => get_label('Recurring tournament'));
+}
+
+function get_series_type_name($type)
+{
+	$types = get_series_types();
+	$type = (int)$type;
+	return isset($types[$type]) ? $types[$type] : $types[SERIES_TYPE_SERIES];
+}
+
+function is_series_type_valid($type)
+{
+	$types = get_series_types();
+	return isset($types[(int)$type]);
+}
+
+// A <select> of the types, the given one preselected.
+function show_series_type_options($type, $on_change = NULL)
+{
+	echo '<select id="form-type"' . ($on_change == NULL ? '' : ' onchange="' . $on_change . '"') . '>';
+	foreach (get_series_types() as $t => $name)
+	{
+		show_option($t, (int)$type, $name);
+	}
+	echo '</select>';
+}
+
+// What goes under the name of a series in a list. A recurring tournament has no dates to print,
+// so it names its kind instead of an invented period.
+function series_period($type, $start_time, $duration, $timezone)
+{
+	if ((int)$type == SERIES_TYPE_RECURRING)
+	{
+		return get_series_type_name(SERIES_TYPE_RECURRING);
+	}
+	return format_date_period($start_time, $duration, $timezone);
+}
+
+// The condition behind the "Past" tab of a series list, without a leading AND or WHERE - the
+// caller supplies whichever it needs.
+//
+// A series lands there as soon as it has started, which is why one playing right now shows up
+// under both tabs. A recurring tournament never ends, so having started is not enough for it: it
+// belongs there only once it has actually been finished, which is when finish_op cuts its
+// duration short. Without this it would sit in both tabs forever.
+function series_past_condition($series_alias = 's')
+{
+	$a = $series_alias;
+	return $a . '.start_time < UNIX_TIMESTAMP()' .
+		' AND (' . $a . '.type <> ' . SERIES_TYPE_RECURRING .
+		' OR ' . $a . '.start_time + ' . $a . '.duration < UNIX_TIMESTAMP())';
+}
+
+// Filtering series lists by type.
+//
+// The types are mutually exclusive, so the filter is simply the set of types to show - unlike
+// the three-state include/exclude filter the other list conditions use. Recurring tournaments
+// never end, so they would sit on top of every list forever; they are shown only when asked for.
+define('SERIES_TYPE_FILTER_SEASON', 0x1);
+define('SERIES_TYPE_FILTER_SERIES', 0x2);
+define('SERIES_TYPE_FILTER_RECURRING', 0x4);
+define('SERIES_TYPE_FILTER_ALL', 0x7);
+define('SERIES_TYPE_FILTER_DEFAULT', SERIES_TYPE_FILTER_SEASON | SERIES_TYPE_FILTER_SERIES);
+
+function series_type_filter_bit($type)
+{
+	switch ((int)$type)
+	{
+		case SERIES_TYPE_SEASON:
+			return SERIES_TYPE_FILTER_SEASON;
+		case SERIES_TYPE_RECURRING:
+			return SERIES_TYPE_FILTER_RECURRING;
+	}
+	return SERIES_TYPE_FILTER_SERIES;
+}
+
+function get_series_type_filter()
+{
+	if (isset($_REQUEST['types']))
+	{
+		return (int)$_REQUEST['types'] & SERIES_TYPE_FILTER_ALL;
+	}
+	return SERIES_TYPE_FILTER_DEFAULT;
+}
+
+// The SQL for a type filter on the series aliased as $series_alias. Only the type constants
+// reach the query, so there is nothing to parameterize.
+function series_type_filter_condition($types, $series_alias = 's')
+{
+	$types = (int)$types & SERIES_TYPE_FILTER_ALL;
+	if ($types == SERIES_TYPE_FILTER_ALL)
+	{
+		return '';
+	}
+	$values = array();
+	foreach (get_series_types() as $t => $name)
+	{
+		if ($types & series_type_filter_bit($t))
+		{
+			$values[] = $t;
+		}
+	}
+	if (count($values) == 0)
+	{
+		// Nothing is checked. Show nothing rather than everything.
+		return ' AND FALSE';
+	}
+	return ' AND ' . $series_alias . '.type IN (' . implode(',', $values) . ')';
+}
+
+// One checkbox per type, checked when that type is shown. Reloads the page on a change unless
+// $on_change names a function to call instead.
+function show_series_type_filter($types, $on_change = NULL)
+{
+	echo get_label('Types') . ':';
+	foreach (get_series_types() as $t => $name)
+	{
+		$bit = series_type_filter_bit($t);
+		echo ' <input type="checkbox" id="stf' . $bit . '" onclick="stf()"' . (($types & $bit) ? ' checked' : '') . '> ' . $name;
+	}
+?>
+	<script>
+		function seriesTypeFilterFlags()
+		{
+			var types = 0;
+<?php
+			foreach (get_series_types() as $t => $name)
+			{
+				$bit = series_type_filter_bit($t);
+				echo "\t\t\tif ($('#stf" . $bit . "').attr('checked')) types += " . $bit . ";\n";
+			}
+?>
+			return types;
+		}
+
+		function stf()
+		{
+<?php
+		if ($on_change == NULL)
+		{
+			echo "\t\t\tgoTo({types: seriesTypeFilterFlags(), page: 0});\n";
+		}
+		else
+		{
+			echo "\t\t\t" . $on_change . "();\n";
+		}
+?>
+		}
+	</script>
+<?php
+}
+
 // A series belongs either to a league or to a club - exactly one of series.league_id and
 // series.club_id is set. SeriesOwner hides which one it is from the code that only wants to
 // show the owner or to find out who is allowed to manage the series.
@@ -229,10 +402,10 @@ class SeriesPageBase extends PageBase
 		$this->timezone = get_timezone();
 		list(
 			$this->name, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags,
-			$this->start_time, $this->duration, $this->langs, $this->notes, $this->flags, $this->rules, $this->gaining_id, $this->gaining_version, $this->finals_id) =
+			$this->start_time, $this->duration, $this->type, $this->langs, $this->notes, $this->flags, $this->rules, $this->gaining_id, $this->gaining_version, $this->finals_id) =
 		Db::record(
 			get_label('sеriеs'),
-			'SELECT s.name, ' . series_owner_fields() . ', s.start_time, s.duration, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version, s.finals_id FROM series s' .
+			'SELECT s.name, ' . series_owner_fields() . ', s.start_time, s.duration, s.type, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version, s.finals_id FROM series s' .
 				series_owner_join() .
 				' WHERE s.id = ?',
 			$this->id);
@@ -331,8 +504,9 @@ class SeriesPageBase extends PageBase
 		
 		echo '<td rowspan="2" valign="top"><h2 class="series">' . $this->name . '</h2><br><h3>' . $this->_title;
 		$time = time();
-		echo '</h3><p class="subtitle">' . format_date_period($this->start_time, $this->duration, $this->timezone) . '</p>';
-		if (($this->flags & SERIES_FLAG_FINISHED) == 0)
+		echo '</h3><p class="subtitle">' . series_period($this->type, $this->start_time, $this->duration, $this->timezone) . '</p>';
+		// A recurring tournament is always under way, which is what its type already says.
+		if (($this->flags & SERIES_FLAG_FINISHED) == 0 && $this->type != SERIES_TYPE_RECURRING)
 		{
 			echo '<p class="subtitle"><i>(';
 			if ($this->start_time < $time)

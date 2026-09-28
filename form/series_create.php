@@ -8,6 +8,7 @@ require_once '../include/datetime.php';
 require_once '../include/security.php';
 require_once '../include/picture.php';
 require_once '../include/currency.php';
+require_once '../include/series.php';
 
 initiate_session();
 
@@ -50,14 +51,20 @@ try
 	echo '</td><td align="center"><b>' . $owner_name . '</b></td></tr></table></td></tr>';
 	
 	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value=""></td></tr>';
-	
-	echo '<tr><td>' . get_label('Belongs to series') . ':</td><td><div id="form-series"></div></td></tr>';
-	
+
+	echo '<tr><td>' . get_label('Type') . ':</td><td>';
+	show_series_type_options(SERIES_TYPE_SERIES, 'onTypeChange()');
+	echo '</td></tr>';
+
+	// A recurring tournament has no dates, and both rows below are about dates - the parent series
+	// on offer are the ones this series would run inside of. They are hidden for it.
+	echo '<tr id="form-series-row"><td>' . get_label('Belongs to series') . ':</td><td><div id="form-series"></div></td></tr>';
+
 	$timezone = get_timezone();
 	$datetime = get_datetime(time(), $timezone);
 	$date = datetime_to_string($datetime, false);
-	
-	echo '<tr><td>'.get_label('Dates').':</td><td>';
+
+	echo '<tr id="form-dates-row"><td>'.get_label('Dates').':</td><td>';
 	echo '<input type="date" id="form-start" value="' . $date . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
 	echo '<input type="date" id="form-end" value="' . $date . '" onchange="setSeries()">';
@@ -136,9 +143,31 @@ try
 		}
 	}
 	
+	function isRecurring()
+	{
+		return $('#form-type').val() == <?php echo SERIES_TYPE_RECURRING; ?>;
+	}
+
+	function onTypeChange()
+	{
+		var recurring = isRecurring();
+		$('#form-dates-row').css('display', recurring ? 'none' : '');
+		$('#form-series-row').css('display', recurring ? 'none' : '');
+		// setSeries() refuses to run while the type is recurring, so the list of parent series has
+		// to be asked for again once it stops being one.
+		if (!recurring)
+		{
+			setSeries();
+		}
+	}
+
 	var seriesList = new Object();
 	function setSeries()
 	{
+		if (isRecurring())
+		{
+			return;
+		}
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
 		json.post("api/get/series.php",
@@ -196,7 +225,7 @@ try
 			}
 		});
 	}
-	setSeries();
+	onTypeChange();
 	
 	function starsChanged(control, stars)
 	{
@@ -241,37 +270,42 @@ try
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
 		if ($("#form-elite").attr('checked')) _flags |= <?php echo SERIES_FLAG_ELITE; ?>;
 		
-		var _end = strToDate($('#form-end').val());
-		_end.setDate(_end.getDate() + 1); // inclusive
-		
-		var series = [];
-		for (const i in seriesList) 
-		{
-			var s = seriesList[i];
-			if (s.selected)
-			{
-				series.push({ id: s.id, stars: s.stars });
-			}
-		}
-		series = JSON.stringify(series);
-		
 		var params =
 		{
 			op: "create",
 			league_id: <?php echo $league_id; ?>,
 			club_id: <?php echo $club_id; ?>,
-			parent_series: series,
 			name: $("#form-name").val(),
+			type: $('#form-type').val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
 			notes: $("#form-notes").val(),
-			start: $('#form-start').val(),
 			gaining_id: $('#form-gaining').val(),
-			end: dateToStr(_end),
 			langs: _langs,
 			flags: _flags
 		};
-		
+
+		// A recurring tournament has no dates to send, and no parent series were offered for it -
+		// the ones on offer are those it would run inside of, which is a question about dates.
+		if (!isRecurring())
+		{
+			var _end = strToDate($('#form-end').val());
+			_end.setDate(_end.getDate() + 1); // inclusive
+			params['start'] = $('#form-start').val();
+			params['end'] = dateToStr(_end);
+
+			var series = [];
+			for (const i in seriesList)
+			{
+				var s = seriesList[i];
+				if (s.selected)
+				{
+					series.push({ id: s.id, stars: s.stars });
+				}
+			}
+			params['parent_series'] = JSON.stringify(series);
+		}
+
 		json.post("api/ops/series.php", params, onSuccess);
 	}
 	
