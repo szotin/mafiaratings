@@ -18,28 +18,23 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 {
 	global $_profile;
 	
-	// Send emails to the managers of whoever owns the series - a league or a club - notifying
-	// about the tournament participating in it. The two halves of the union are the same query
-	// against a different set of managers; only one of them ever returns rows for a given series.
+	// Send emails to the managers of the league owning the series, notifying about the tournament
+	// participating in it. A league manager needs to know: the stars are assigned by the
+	// organizers of the tournament, not by them.
+	//
+	// A series of a club notifies nobody. Its managers are all equal and none of them is being
+	// told about a decision somebody else made - they look when they want to know. The query
+	// returns no rows for such a series, because its league_id is null.
 	$query = new DbQuery(
-		'(SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, l.name'.
+		'SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, l.name'.
 		' FROM series s' .
 		' JOIN leagues l ON l.id = s.league_id' .
 		' JOIN league_managers lm ON lm.league_id = s.league_id' .
 		' JOIN users u ON u.id = lm.user_id' .
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
-		' WHERE s.id = ?)' .
-		' UNION DISTINCT ' .
-		'(SELECT u.id, nu.name, u.email, u.def_lang, s.name, c.id, c.name'.
-		' FROM series s' .
-		' JOIN clubs c ON c.id = s.club_id' .
-		' JOIN club_regs cr ON cr.club_id = s.club_id AND (cr.flags & ' . USER_PERM_MANAGER . ') <> 0' .
-		' JOIN users u ON u.id = cr.user_id' .
-		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
-		' WHERE s.id = ?)', $series->id, $series->id);
+		' WHERE s.id = ?', $series->id);
 	while ($row = $query->next())
 	{
-		// The owner fills the [league_name] slot of the message whether it is a league or a club.
 		list($user_id, $user_name, $user_email, $user_lang, $series_name, $league_id, $league_name) = $row;
 		if (!is_valid_lang($user_lang))
 		{
