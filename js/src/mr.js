@@ -766,6 +766,33 @@ var mr = new function()
 	{
 		dlg.form("form/series_edit.php?id=" + id, refr);
 	}
+
+	this.transferSeries = function(seriesId)
+	{
+		dlg.form("form/series_transfer.php?series_id=" + seriesId, refr, 600);
+	}
+
+	this.addSeriesClub = function(seriesId)
+	{
+		dlg.form("form/series_add_club.php?series_id=" + seriesId, refr, 500);
+	}
+
+	this.removeSeriesClub = function(seriesId, clubId, confirmMessage)
+	{
+		function _remove()
+		{
+			json.post("api/ops/series.php", { op: "remove_club", series_id: seriesId, club_id: clubId }, refr);
+		}
+
+		if (isString(confirmMessage))
+		{
+			dlg.yesNo(confirmMessage, null, null, _remove);
+		}
+		else
+		{
+			_remove();
+		}
+	}
 	
 	this.finishSeries = function(id, confirmMessage, doneMessage)
 	{

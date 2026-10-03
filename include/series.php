@@ -209,6 +209,41 @@ function show_series_type_filter($types, $on_change = NULL)
 <?php
 }
 
+// A club may run a tournament in a series when it owns the series, when it belongs to the league
+// owning it, or when the series has invited it. Returns the SQL condition for the series aliased
+// as $series_alias, without a leading AND.
+//
+// Three sources, one rule, and no permission over the series comes with any of them: an invited
+// club can enter its tournaments and nothing more.
+function series_club_condition($club_id, $series_alias = 's')
+{
+	$a = $series_alias;
+	$club_id = (int)$club_id;
+	return '(' . $a . '.club_id = ' . $club_id .
+		' OR ' . $a . '.league_id IN (SELECT league_id FROM league_clubs WHERE club_id = ' . $club_id . ')' .
+		' OR ' . $a . '.id IN (SELECT series_id FROM series_clubs WHERE club_id = ' . $club_id . '))';
+}
+
+// The clubs of a series that cannot be taken off it: the owning club, or every club of the owning
+// league. Keyed by club id so a page can tell them from the invited ones.
+function get_series_permanent_clubs($owner)
+{
+	$clubs = array();
+	if ($owner->is_league())
+	{
+		$query = new DbQuery('SELECT club_id FROM league_clubs WHERE league_id = ?', $owner->league_id);
+		while ($row = $query->next())
+		{
+			$clubs[(int)$row[0]] = true;
+		}
+	}
+	else
+	{
+		$clubs[$owner->club_id] = true;
+	}
+	return $clubs;
+}
+
 // A series belongs either to a league or to a club - exactly one of series.league_id and
 // series.club_id is set. SeriesOwner hides which one it is from the code that only wants to
 // show the owner or to find out who is allowed to manage the series.
@@ -491,7 +526,13 @@ class SeriesPageBase extends PageBase
 		{
 			$manager_menu = array
 			(
+				// Also a button on the clubs page, where the owner is in front of you. Here is
+				// where a manager looks for it.
+				new MenuItem('javascript:mr.transferSeries(' . $this->id . ')', get_label('Transfer the series'), get_label('Give the series to another club or league.')),
+				new MenuItem('series_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Clubs allowed to enter their tournaments into [0]', $this->name)),
+				new MenuItem(null, null, null),
 				new MenuItem('series_finance.php?id=' . $this->id, get_label('Financial report'), get_label('Financial report of the [0]', $this->name)),
+				new MenuItem(null, null, null),
 				new MenuItem('series_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);

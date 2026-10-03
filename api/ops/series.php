@@ -626,6 +626,159 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// transfer
+	//-------------------------------------------------------------------------------------------------------
+	function transfer_op()
+	{
+		$series_id = (int)get_required_param('series_id');
+		$new_league_id = (int)get_optional_param('league_id', 0);
+		$new_club_id = (int)get_optional_param('club_id', 0);
+		if (($new_league_id > 0) == ($new_club_id > 0))
+		{
+			throw new Exc(get_label('A series belongs either to a league or to a club, but not to both.'));
+		}
+
+		Db::begin();
+		list ($league_id, $club_id, $flags) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, flags FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $club_id);
+
+		// Authorized against the owner it is leaving. Whoever can manage the series can give it
+		// away, and after that they may well have no say over it at all.
+		check_series_permissions($owner, $series_id);
+
+		if ($new_league_id > 0)
+		{
+			list($new_owner_name, $new_owner_flags) = Db::record(get_label('league'), 'SELECT name, flags FROM leagues WHERE id = ?', $new_league_id);
+			$new_owner = new SeriesOwner($new_league_id, NULL);
+			$is_elite_owner = ($new_owner_flags & LEAGUE_FLAG_ELITE) != 0;
+			$new_club_id = NULL;
+		}
+		else
+		{
+			list($new_owner_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $new_club_id);
+			$new_owner = new SeriesOwner(NULL, $new_club_id);
+			$is_elite_owner = false;
+			$new_league_id = NULL;
+		}
+
+		if ($new_owner->kind == $owner->kind && $new_owner->id == $owner->id)
+		{
+			throw new Exc(get_label('[0] already owns this series.', $new_owner_name));
+		}
+
+		// Elite is a property of elite leagues, and turning it off is not a rename: the rating of
+		// every game of every two-star tournament of the series was computed with it on and has to
+		// be rebuilt. That is what the series editor does when the flag is cleared, so this
+		// operation refuses rather than doing half of it silently.
+		if (($flags & SERIES_FLAG_ELITE) != 0 && !$is_elite_owner)
+		{
+			throw new Exc(get_label('This is an elite series. Turn the elite flag off before giving it to [0].', $new_owner_name));
+		}
+
+		Db::exec(get_label('sеriеs'), 'UPDATE series SET league_id = ?, club_id = ? WHERE id = ?', $new_league_id, $new_club_id, $series_id);
+
+		// Whatever the new owner brings with it is no longer an invitation.
+		$permanent_clubs = array_keys(get_series_permanent_clubs($new_owner));
+		if (count($permanent_clubs) > 0)
+		{
+			Db::exec(get_label('club'),
+				'DELETE FROM series_clubs WHERE series_id = ? AND club_id IN (' . implode(',', $permanent_clubs) . ')', $series_id);
+		}
+
+		$log_details = new stdClass();
+		$log_details->league_id = $new_league_id;
+		$log_details->club_id = $new_club_id;
+		db_log(LOG_OBJECT_SERIES, 'transferred', $log_details, $series_id, $new_club_id, $new_league_id);
+
+		Db::commit();
+	}
+
+	function transfer_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER,
+			'Give the series to another owner. Pass exactly one of <q>league_id</q> and <q>club_id</q>. Authorized against the current owner, so whoever does it may lose every right over the series. Refused while the series is elite and the new owner is not an elite league.');
+		$help->request_param('series_id', 'Series id.');
+		$help->request_param('league_id', 'Id of the league to give the series to.', 'the series goes to the club passed in <q>club_id</q>.');
+		$help->request_param('club_id', 'Id of the club to give the series to.', 'the series goes to the league passed in <q>league_id</q>.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// add_club
+	//-------------------------------------------------------------------------------------------------------
+	function add_club_op()
+	{
+		$series_id = (int)get_required_param('series_id');
+		$club_id = (int)get_required_param('club_id');
+
+		Db::begin();
+		list ($league_id, $owner_club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $owner_club_id);
+		check_series_permissions($owner, $series_id);
+
+		list ($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+
+		// The clubs that are on the series by ownership are already there and cannot be invited.
+		$permanent_clubs = get_series_permanent_clubs($owner);
+		if (isset($permanent_clubs[$club_id]))
+		{
+			throw new Exc(get_label('[0] is already in the series and cannot be invited to it.', $club_name));
+		}
+
+		Db::exec(get_label('club'), 'INSERT IGNORE INTO series_clubs (series_id, club_id) VALUES (?, ?)', $series_id, $club_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->club_id = $club_id;
+			db_log(LOG_OBJECT_SERIES, 'club added', $log_details, $series_id, $owner_club_id, $league_id);
+		}
+		Db::commit();
+	}
+
+	function add_club_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER,
+			'Invite a club to the series. Its managers can then enter tournaments of that club into the series. It grants nothing else - the club gets no permissions over the series itself.');
+		$help->request_param('series_id', 'Series id.');
+		$help->request_param('club_id', 'Club id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// remove_club
+	//-------------------------------------------------------------------------------------------------------
+	function remove_club_op()
+	{
+		$series_id = (int)get_required_param('series_id');
+		$club_id = (int)get_required_param('club_id');
+
+		Db::begin();
+		list ($league_id, $owner_club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $owner_club_id);
+		check_series_permissions($owner, $series_id);
+
+		// Only an invitation can be withdrawn. A club that is on the series because it owns it, or
+		// because it belongs to the owning league, is not in this table in the first place.
+		Db::exec(get_label('club'), 'DELETE FROM series_clubs WHERE series_id = ? AND club_id = ?', $series_id, $club_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->club_id = $club_id;
+			db_log(LOG_OBJECT_SERIES, 'club removed', $log_details, $series_id, $owner_club_id, $league_id);
+		}
+		Db::commit();
+	}
+
+	function remove_club_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER,
+			'Withdraw the invitation of a club to the series. The tournaments it already entered stay in the series. A club that is on the series by ownership cannot be removed this way.');
+		$help->request_param('series_id', 'Series id.');
+		$help->request_param('club_id', 'Club id.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// comment
 	//-------------------------------------------------------------------------------------------------------
 	// function comment_op()

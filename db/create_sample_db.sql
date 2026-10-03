@@ -705,6 +705,12 @@ CREATE TABLE `series` (
   `max_stars` int(11) NOT NULL DEFAULT '5'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `series_clubs`;
+CREATE TABLE `series_clubs` (
+  `series_id` int(11) NOT NULL,
+  `club_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 DROP TABLE IF EXISTS `series_extra_points`;
 CREATE TABLE `series_extra_points` (
   `id` int(11) NOT NULL,
@@ -1953,6 +1959,13 @@ ALTER TABLE `series`
   ADD KEY `gaining_id` (`gaining_id`,`gaining_version`);
 
 --
+-- Indexes for table `series_clubs`
+--
+ALTER TABLE `series_clubs`
+  ADD PRIMARY KEY (`series_id`,`club_id`),
+  ADD KEY `club_id` (`club_id`,`series_id`);
+
+--
 -- Indexes for table `series_extra_points`
 --
 ALTER TABLE `series_extra_points`
@@ -2773,6 +2786,13 @@ ALTER TABLE `series`
   ADD CONSTRAINT `series_gaining_version` FOREIGN KEY (`gaining_id`,`gaining_version`) REFERENCES `gaining_versions` (`gaining_id`, `version`),
   ADD CONSTRAINT `series_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
   ADD CONSTRAINT `series_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`);
+
+--
+-- Constraints for table `series_clubs`
+--
+ALTER TABLE `series_clubs`
+  ADD CONSTRAINT `series_clubs_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
+  ADD CONSTRAINT `series_clubs_series` FOREIGN KEY (`series_id`) REFERENCES `series` (`id`);
 
 --
 -- Constraints for table `series_extra_points`

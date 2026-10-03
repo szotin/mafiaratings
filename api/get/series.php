@@ -119,10 +119,11 @@ class ApiPage extends GetApiPageBase
 			$condition->add(' AND s.league_id = ?', $league_id);
 		}
 		
-		// The series the club runs itself, plus those of the leagues it belongs to.
+		// The series this club may run a tournament in: its own, those of the leagues it belongs
+		// to, and those that invited it.
 		if ($club_id > 0)
 		{
-			$condition->add(' AND (s.club_id = ? OR s.league_id IN (SELECT league_id FROM league_clubs WHERE club_id = ?))', $club_id, $club_id);
+			$condition->add(' AND ' . series_club_condition($club_id));
 		}
 		
 		if ($langs > 0)
