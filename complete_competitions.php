@@ -4,6 +4,7 @@ require_once 'include/updater.php';
 require_once 'include/security.php';
 require_once 'include/scoring.php';
 require_once 'include/gaining.php';
+require_once 'include/series.php';
 require_once 'include/geo.php';
 
 define('COMPLETE_EVENTS', 'events');
@@ -11,8 +12,81 @@ define('COMPLETE_TOURNAMENTS', 'tournaments');
 define('CALCULATE_SERIES', 'calc-series');
 define('COMPLETE_SERIES', 'series');
 
+// The running total of one stage for one player: the best maxTournaments points of that stage,
+// and what fell out of them.
+//
+// The points are offered one at a time, in the order the competitions were played, and the rule is
+// the one the series standings have always used: the first maxTournaments are kept, and a later
+// one takes the place of the smallest kept point when it is not smaller. A point that never makes
+// it into the kept set is simply dropped - only an evicted one counts as cut off. A maximum of
+// zero means every point counts.
+class SeriesStageTotal
+{
+	public $count = 0;
+	public $total_cut_off = 0;
+	private $max;
+	private $p = array();
+
+	function __construct($max_tournaments)
+	{
+		$this->max = (int)$max_tournaments;
+	}
+
+	function add($points)
+	{
+		++$this->count;
+		if ($this->max <= 0 || count($this->p) < $this->max)
+		{
+			$this->p[] = $points;
+			return;
+		}
+		$min_index = 0;
+		for ($i = 1; $i < $this->max; ++$i)
+		{
+			if ($this->p[$i] < $this->p[$min_index])
+			{
+				$min_index = $i;
+			}
+		}
+		if ($this->p[$min_index] <= $points)
+		{
+			$this->total_cut_off += $this->p[$min_index];
+			$this->p[$min_index] = $points;
+		}
+	}
+
+	function points()
+	{
+		$points = 0;
+		foreach ($this->p as $p)
+		{
+			$points += $p;
+		}
+		return $points;
+	}
+
+	// The smallest point that still counts - what the next one has to beat. There is nothing to
+	// beat until the kept set is full, and nothing at all when every point counts.
+	function cut_off()
+	{
+		if ($this->max > 0 && count($this->p) >= $this->max)
+		{
+			return min($this->p);
+		}
+		return 0;
+	}
+}
+
 function compare_series_players($player1, $player2)
 {
+	// The deciding stage comes first and nothing outweighs it: whoever went further stands above,
+	// and the points only order the players of one stage among themselves. That is what makes "a
+	// finalist is always above a semifinalist" true by construction - there is no sum across
+	// stages, so there are no coefficients to tune for it.
+	if ($player1->stage_order != $player2->stage_order)
+	{
+		return $player2->stage_order - $player1->stage_order;
+	}
 	if ($player1->points < $player2->points)
 	{
 		return 1;
@@ -434,298 +508,463 @@ class CompleteCompetitions extends Updater
 		return $importance;
 	}
 
+	// One competition a series counts: a tournament of it, or a subseries entered into it.
+	private function seriesSource($id, $stage, $stars, $is_series)
+	{
+		$source = new stdClass();
+		$source->id = (int)$id;
+		$source->stage = (int)$stage;
+		$source->stars = $stars;
+		$source->is_series = $is_series;
+		$source->rating_sum = 0;
+		$source->rating_sum_20 = 0;
+		$source->traveling_distance = 0;
+		$source->guest_coeff = 0;
+		$source->num_players = 0;
+		// The furthest stage this competition has, in the order its stages are played. For a
+		// tournament that is its deepest round, for a subseries the last stage of its ladder.
+		$source->max_stage = 0;
+		$source->rows = array();
+		return $source;
+	}
+
+	private function seriesSourceRow($user_id, $place, $games, $wins, $score)
+	{
+		$row = new stdClass();
+		$row->user_id = (int)$user_id;
+		$row->place = (int)$place;
+		$row->games = (int)$games;
+		$row->wins = (int)$wins;
+		$row->score = $score;
+		$row->points = 0;
+		// How far this player got in this competition, in the order its stages are played, and
+		// what they scored in each of those stages. The scores are only known for a subseries -
+		// see readSeriesSources() - and a tournament leaves them null.
+		$row->stage = 0;
+		$row->stage_scores = NULL;
+		return $row;
+	}
+
+	// round => its position in the order the rounds of a tournament are played. The main round,
+	// zero, is played first; of the rest a bigger number is an earlier round, the final being one.
+	//
+	// It is a dense rank over the rounds that are actually there rather than arithmetic on their
+	// numbers, so a tournament that skips a round does not leave a gap in the count.
+	private function roundPlayOrder($rounds)
+	{
+		$has_main = false;
+		$knockout = array();
+		foreach ($rounds as $round)
+		{
+			if ($round == 0)
+			{
+				$has_main = true;
+			}
+			else
+			{
+				$knockout[] = $round;
+			}
+		}
+		rsort($knockout);
+
+		$order = array();
+		$next = 0;
+		if ($has_main)
+		{
+			$order[0] = $next++;
+		}
+		foreach ($knockout as $round)
+		{
+			$order[$round] = $next++;
+		}
+		return $order;
+	}
+
+	// How far each player got in each tournament of the series, and how far there was to get.
+	//
+	// A substitute is not in the count of the tournament at all, so the round they played as one
+	// does not move them up its ladder.
+	private function readTournamentStages($series_id)
+	{
+		$rounds = array();
+		$played = array();
+		$query = new DbQuery(
+			'SELECT e.tournament_id, e.round, ep.user_id' .
+			' FROM events e' .
+			' JOIN event_places ep ON ep.event_id = e.id' .
+			' JOIN series_tournaments st ON st.tournament_id = e.tournament_id AND st.series_id = ?' .
+			' LEFT OUTER JOIN event_regs er ON er.event_id = e.id AND er.user_id = ep.user_id' .
+			' WHERE (er.flags IS NULL OR (er.flags & ' . USER_FLAG_SUBSTITUTE . ') = 0)', $series_id);
+		while ($row = $query->next())
+		{
+			list($tournament_id, $round, $user_id) = $row;
+			$tournament_id = (int)$tournament_id;
+			$round = (int)$round;
+			$user_id = (int)$user_id;
+			$rounds[$tournament_id][$round] = true;
+			$played[$tournament_id][$user_id][$round] = true;
+		}
+
+		$stages = array();
+		foreach ($rounds as $tournament_id => $present)
+		{
+			$order = $this->roundPlayOrder(array_keys($present));
+			$entry = new stdClass();
+			$entry->max_stage = count($order) - 1;
+			$entry->players = array();
+			foreach ($played[$tournament_id] as $user_id => $user_rounds)
+			{
+				$stage = 0;
+				foreach (array_keys($user_rounds) as $round)
+				{
+					if ($order[$round] > $stage)
+					{
+						$stage = $order[$round];
+					}
+				}
+				$entry->players[$user_id] = $stage;
+			}
+			$stages[$tournament_id] = $entry;
+		}
+		return $stages;
+	}
+
+	// Dense places over the participations that count, and how many of them there are.
+	//
+	// The place stored on a competition counts everybody who was in it. A player who is out of the
+	// count of this series - an exhibition player, or a substitute in this tournament - must not be
+	// there at all as far as the series is concerned: whoever stood below them moves up, and the
+	// field they are all measured against shrinks. Without this the others keep the place and the
+	// field size they had with that player in, so everybody's points come out slightly wrong -
+	// which is what the series standings have been doing with exhibition players all along.
+	//
+	// Equal places stay equal: the dense place is one plus the number of counted participations
+	// standing strictly above.
+	private function closeSeriesSource($source)
+	{
+		$source->num_players = count($source->rows);
+		$places = array();
+		foreach ($source->rows as $row)
+		{
+			$places[] = $row->place;
+		}
+		sort($places);
+		$dense = array();
+		foreach ($places as $i => $place)
+		{
+			if (!isset($dense[$place]))
+			{
+				// The places are sorted, so the first index a place appears at is how many stand
+				// strictly above it.
+				$dense[$place] = $i + 1;
+			}
+		}
+		foreach ($source->rows as $row)
+		{
+			$row->place = $dense[$row->place];
+		}
+	}
+
+	// Everything the series counts, in the order the standings have always accumulated it: the
+	// tournaments by id, then the subseries by id. Extra points are not a competition of the
+	// series and are read separately.
+	private function readSeriesSources($series_id, $stages)
+	{
+		$sources = array();
+		$tournament_stages = $this->readTournamentStages($series_id);
+
+		// series_regs holds the exhibition flag, which takes a player out of the whole series;
+		// tournament_regs holds the substitute flag, which takes them out of this one tournament
+		// only - they still stand in the table of the tournament itself.
+		$query = new DbQuery(
+			'SELECT st.tournament_id, st.stage, st.stars, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff,' .
+			' p.user_id, p.place, p.games_count, p.wins, p.main_points + p.bonus_points + p.shot_points' .
+			' FROM tournament_places p' .
+			' JOIN series_tournaments st ON st.tournament_id = p.tournament_id AND st.series_id = ?' .
+			' JOIN tournaments t ON t.id = p.tournament_id' .
+			' LEFT OUTER JOIN series_regs sr ON sr.series_id = st.series_id AND sr.user_id = p.user_id' .
+			' LEFT OUTER JOIN tournament_regs tr ON tr.tournament_id = p.tournament_id AND tr.user_id = p.user_id' .
+			' WHERE (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0' .
+			' AND (sr.flags IS NULL OR (sr.flags & ' . USER_FLAG_EXHIBITION_PLAYER . ') = 0)' .
+			' AND (tr.flags IS NULL OR (tr.flags & ' . USER_FLAG_SUBSTITUTE . ') = 0)' .
+			' ORDER BY st.tournament_id', $series_id);
+		while ($row = $query->next())
+		{
+			list($tournament_id, $stage, $stars, $rating_sum, $rating_sum20, $trav_dist, $guest_coef,
+				$user_id, $place, $games, $wins, $score) = $row;
+			$key = 't' . (int)$tournament_id;
+			if (!isset($sources[$key]))
+			{
+				$source = $this->seriesSource($tournament_id, series_stage($stages, $stage), $stars, false);
+				$source->rating_sum = $rating_sum;
+				$source->rating_sum_20 = $rating_sum20;
+				$source->traveling_distance = $trav_dist;
+				$source->guest_coeff = $guest_coef;
+				if (isset($tournament_stages[(int)$tournament_id]))
+				{
+					$source->max_stage = $tournament_stages[(int)$tournament_id]->max_stage;
+				}
+				$sources[$key] = $source;
+			}
+			$source_row = $this->seriesSourceRow($user_id, $place, $games, $wins, $score);
+			if (isset($tournament_stages[(int)$tournament_id]->players[$source_row->user_id]))
+			{
+				$source_row->stage = $tournament_stages[(int)$tournament_id]->players[$source_row->user_id];
+			}
+			$sources[$key]->rows[] = $source_row;
+		}
+
+		// A subseries has no stage of its own - series_series says nothing about stages - so it
+		// counts in the base stage, which is where a subseries of a season belongs anyway. What
+		// enters this series is its full ranking, the one cut at nothing.
+		//
+		// Its partial rankings are read all the same, because together they say what a player
+		// scored in each single stage of it, which is what score(n) answers: the ranking cut at a
+		// stage places a player by their furthest stage, so when that stage is the one asked
+		// about, its score is the points of it, and a player who never got that far has none.
+		$child_stage_scores = array();
+		$query = new DbQuery(
+			'SELECT sp.series_id, ss.stars, sp.user_id, sp.cut_stages, sp.stage, sp.place, sp.games, sp.wins, sp.score, s.stages' .
+			' FROM series_places sp' .
+			' JOIN series_series ss ON ss.child_id = sp.series_id' .
+			' JOIN series s ON s.id = sp.series_id' .
+			' LEFT OUTER JOIN series_regs sr ON sr.series_id = ss.parent_id AND sr.user_id = sp.user_id' .
+			' WHERE ss.parent_id = ?' .
+			' AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0' .
+			' AND (sr.flags IS NULL OR (sr.flags & ' . USER_FLAG_EXHIBITION_PLAYER . ') = 0)' .
+			' ORDER BY sp.series_id', $series_id);
+		while ($row = $query->next())
+		{
+			list($child_series_id, $stars, $user_id, $cut_stages, $stage, $place, $games, $wins, $score, $child_stages) = $row;
+			$user_id = (int)$user_id;
+			$child_stages = series_stage_count($child_stages);
+			$key = 's' . (int)$child_series_id;
+
+			$stage_order = series_stage_order($child_stages, $stage);
+			$asked_stage = $child_stages - 1 - (int)$cut_stages;
+			$child_stage_scores[$key][$user_id][$asked_stage] = $stage_order == $asked_stage ? $score : 0;
+
+			if ((int)$cut_stages != 0)
+			{
+				continue;
+			}
+			if (!isset($sources[$key]))
+			{
+				$source = $this->seriesSource($child_series_id, SERIES_STAGE_BASE, $stars, true);
+				$source->max_stage = $child_stages - 1;
+				$sources[$key] = $source;
+			}
+			$source_row = $this->seriesSourceRow($user_id, $place, $games, $wins, $score);
+			$source_row->stage = $stage_order;
+			$sources[$key]->rows[] = $source_row;
+		}
+
+		foreach ($sources as $key => $source)
+		{
+			foreach ($source->rows as $row)
+			{
+				if (isset($child_stage_scores[$key][$row->user_id]))
+				{
+					$scores = $child_stage_scores[$key][$row->user_id];
+					ksort($scores);
+					$row->stage_scores = $scores;
+				}
+			}
+			$this->closeSeriesSource($source);
+		}
+		return $sources;
+	}
+
+	private function readSeriesExtraPoints($series_id)
+	{
+		$extra_points = array();
+		$query = new DbQuery(
+			'SELECT ep.user_id, ep.points, ep.stage FROM series_extra_points ep' .
+			' LEFT OUTER JOIN series_regs sr ON sr.series_id = ep.series_id AND sr.user_id = ep.user_id' .
+			' WHERE ep.series_id = ?' .
+			' AND (sr.flags IS NULL OR (sr.flags & ' . USER_FLAG_EXHIBITION_PLAYER . ') = 0)', $series_id);
+		while ($row = $query->next())
+		{
+			list($user_id, $points, $stage) = $row;
+			$entry = new stdClass();
+			$entry->user_id = (int)$user_id;
+			$entry->points = $points;
+			$entry->stage = (int)$stage;
+			$extra_points[] = $entry;
+		}
+		return $extra_points;
+	}
+
+	private function seriesPlayer(&$players, $user_id)
+	{
+		$user_id = (int)$user_id;
+		if (!isset($players[$user_id]))
+		{
+			$player = new stdClass();
+			$player->id = $user_id;
+			$player->tournaments = 0;
+			$player->games = 0;
+			$player->wins = 0;
+			$player->stage_totals = array();
+			$players[$user_id] = $player;
+		}
+		return $players[$user_id];
+	}
+
+	private function seriesPlayerStage($player, $stage, $max_tournaments)
+	{
+		if (!isset($player->stage_totals[$stage]))
+		{
+			$player->stage_totals[$stage] = new SeriesStageTotal($max_tournaments);
+		}
+		return $player->stage_totals[$stage];
+	}
+
+	// One ranking of the series, leaving out the last $cut_stages stages of its ladder.
+	//
+	// Inside a stage the points add up over the best maxTournaments of that stage - the existing
+	// parameter now applies stage by stage rather than to the series as a whole. Between stages
+	// nothing adds up: the deciding stage of a player is the furthest one where anything counted
+	// for them, their score is the points of that stage alone, and the order is the deciding stage
+	// first and those points second.
+	private function rankSeries($sources, $extra_points, $stages, $cut_stages, $max_tournaments)
+	{
+		$top_order = $stages - 1 - $cut_stages;
+		$players = array();
+		foreach ($sources as $source)
+		{
+			if (series_stage_order($stages, $source->stage) > $top_order)
+			{
+				continue;
+			}
+			foreach ($source->rows as $row)
+			{
+				$player = $this->seriesPlayer($players, $row->user_id);
+				$this->seriesPlayerStage($player, $source->stage, $max_tournaments)->add($row->points);
+				++$player->tournaments;
+				$player->games += $row->games;
+				$player->wins += $row->wins;
+			}
+		}
+
+		// Extra points are not a competition of the series but they do belong to a stage of it,
+		// so a ranking that cuts that stage away leaves them out with everything else of it.
+		foreach ($extra_points as $entry)
+		{
+			if (series_stage_order($stages, $entry->stage) > $top_order)
+			{
+				continue;
+			}
+			$player = $this->seriesPlayer($players, $entry->user_id);
+			$this->seriesPlayerStage($player, series_stage($stages, $entry->stage), $max_tournaments)->add($entry->points);
+			++$player->tournaments;
+		}
+
+		foreach ($players as $player)
+		{
+			$player->stage = SERIES_STAGE_BASE;
+			$player->stage_order = -1;
+			foreach ($player->stage_totals as $stage => $total)
+			{
+				$order = series_stage_order($stages, $stage);
+				if ($order > $player->stage_order)
+				{
+					$player->stage_order = $order;
+					$player->stage = $stage;
+				}
+			}
+			$total = $player->stage_totals[$player->stage];
+			$player->points = $total->points();
+			$player->cut_off = $total->cut_off();
+			$player->total_cut_off = $total->total_cut_off;
+			unset($player->stage_totals);
+		}
+
+		$players = array_values($players);
+		usort($players, "compare_series_players");
+		return $players;
+	}
+
 	function calculate_series_task($items_count)
 	{
 		$count = 0;
 		Db::begin();
 		$top_query = new DbQuery(
-			'SELECT s.id, s.flags, g.gaining, s.finals_id FROM series s' . 
+			'SELECT s.id, s.flags, s.stages, g.gaining FROM series s' .
 			' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version' .
 			' WHERE (s.flags & ' . SERIES_FLAG_DIRTY  . ') <> 0 LIMIT ' . $items_count);
 		while ($row = $top_query->next())
 		{
-			list($series_id, $series_flags, $gaining, $finals_id) = $row;
+			list($series_id, $series_flags, $series_stages, $gaining) = $row;
 			$gaining = json_decode($gaining);
-//			print_json($gaining);
-			
-			$tournament_players = array();
-			$query = new DbQuery(
-				'SELECT st.tournament_id, COUNT(tp.user_id)'.
-				' FROM series_tournaments st'.
-				' JOIN tournament_places tp ON tp.tournament_id = st.tournament_id'.
-				' WHERE st.series_id = ? AND (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
-				' GROUP BY st.tournament_id', $series_id);
-			while ($row = $query->next())
-			{
-				list($tournament_id, $num_players) = $row;
-				if ($tournament_id != $finals_id)
-				{
-					$tournament_players[$tournament_id] = (int)$num_players;
-				}
-			}
-			
-			$child_series_players = array();
-			$query = new DbQuery(
-				'SELECT ss.child_id, COUNT(sp.user_id)'.
-				' FROM series_series ss'.
-				' JOIN series_places sp ON sp.series_id = ss.child_id'.
-				' JOIN series s ON s.id = ss.child_id'.
-				' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
-				' GROUP BY ss.child_id', $series_id);
-			while ($row = $query->next())
-			{
-				list($child_series_id, $num_players) = $row;
-				$child_series_players[$child_series_id] = (int)$num_players;
-			}
-			
+			$stages = series_stage_count($series_stages);
 			$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
-			$players = array();
-			
-			$query = new DbQuery(
-				'SELECT st.tournament_id, p.user_id, p.place, p.games_count, p.wins, p.main_points + p.bonus_points + p.shot_points, st.stars, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff'.
-				' FROM tournament_places p'.
-				' JOIN series_tournaments st ON st.tournament_id = p.tournament_id AND st.series_id = ?'.
-				' JOIN tournaments t ON t.id = p.tournament_id'.
-				' LEFT OUTER JOIN series_regs sr ON sr.series_id = st.series_id AND sr.user_id = p.user_id'.
-				' WHERE (st.flags & ' . SERIES_TOURNAMENT_FLAG_NOT_PAYED . ') = 0'.
-				' AND (sr.flags IS NULL OR (sr.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)'.
-				' ORDER BY t.id', $series_id);
-			while ($row = $query->next())
+
+
+			$sources = $this->readSeriesSources($series_id, $stages);
+			$extra_points = $this->readSeriesExtraPoints($series_id);
+
+			// What one competition gives one player does not depend on where the table is cut, so
+			// it is worked out once here and only bucketed by stage for each ranking below. The
+			// gaining evaluator caches per competition, which is the other reason to do it in one
+			// pass over the competitions.
+			foreach ($sources as $source)
 			{
-				list($tournament_id, $player_id, $place, $games, $wins, $score, $stars, $rating_sum, $rating_sum20, $trav_dist, $guest_coef) = $row;
-				if ($tournament_id == $finals_id)
+				$competition_vars = array(
+					'maxStage' => $source->max_stage,
+					'currentStage' => series_stage_order($stages, $source->stage),
+					'maxCurrentStage' => $stages - 1);
+				foreach ($source->rows as $row)
 				{
-					continue;
-				}
-				
-				if (!isset($players[$player_id]))
-				{
-					$player = new stdClass();
-					$player->id = (int)$player_id;
-					$player->tournaments = 0;
-					$player->games = 0;
-					$player->wins = 0;
-					$player->total_cut_off = 0;
-					$player->cut_off = 0;
-					if ($max_tournaments > 0)
+					$player_vars = array('stage' => $row->stage);
+					if (is_array($row->stage_scores))
 					{
-						$player->p = array();
+						$player_vars['stageScores'] = $row->stage_scores;
 					}
-					else
-					{
-						$player->points = 0;
-					}
-					$players[$player_id] = $player;
+					$row->points = get_gaining_points(
+						$source->id, $gaining, $source->stars, $row->place, $row->score, $source->num_players,
+						$source->rating_sum, $source->rating_sum_20, $source->traveling_distance,
+						$source->guest_coeff, $source->is_series, $competition_vars, $player_vars);
 				}
-				else
-				{
-					$player = $players[$player_id];
-				}
-				
-				$points = get_gaining_points($tournament_id, $gaining, $stars, $place, $score, $tournament_players[$tournament_id], $rating_sum, $rating_sum20, $trav_dist, $guest_coef, false);
-				if ($max_tournaments > 0)
-				{
-					if (count($player->p) >= $max_tournaments)
-					{
-						$min_index = 0;
-						for ($i = 1; $i < $max_tournaments; ++$i)
-						{
-							if ($player->p[$i] < $player->p[$min_index])
-							{
-								$min_index = $i;
-							}
-						}
-						if ($player->p[$min_index] <= $points)
-						{
-							$player->total_cut_off += $player->p[$min_index];
-							$player->p[$min_index] = $points;
-						}
-					}
-					else
-					{
-						$player->p[] = $points;
-					}
-				}
-				else
-				{
-					$player->points += $points;
-				}
-				++$player->tournaments;
-				$player->games += $games;
-				$player->wins += $wins;
 			}
-			
-			$query = new DbQuery(
-				'SELECT sp.series_id, sp.user_id, sp.place, sp.games, sp.wins, sp.score, ss.stars'.
-				' FROM series_places sp'.
-				' JOIN series_series ss ON ss.child_id = sp.series_id'.
-				' JOIN series s ON s.id = sp.series_id'.
-				' LEFT OUTER JOIN series_regs sr ON sr.series_id = ss.parent_id AND sr.user_id = sp.user_id'.
-				' WHERE ss.parent_id = ? AND (ss.flags & ' . SERIES_SERIES_FLAG_NOT_PAYED . ') = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
-				' AND (sr.flags IS NULL OR (sr.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)'.
-				' ORDER BY sp.series_id', $series_id);
-			while ($row = $query->next())
+
+			Db::exec(get_label('series'), 'DELETE FROM series_places WHERE series_id = ?', $series_id);
+
+			// One ranking per stage: the whole series first, then the table as it stood before the
+			// last stage was played, and so on down to the base stage alone.
+			$players_count = 0;
+			for ($cut_stages = 0; $cut_stages < $stages; ++$cut_stages)
 			{
-				list($child_series_id, $player_id, $place, $games, $wins, $score, $stars) = $row;
-				if (!isset($players[$player_id]))
-				{
-					$player = new stdClass();
-					$player->id = (int)$player_id;
-					$player->tournaments = 0;
-					$player->games = 0;
-					$player->wins = 0;
-					$player->total_cut_off = 0;
-					$player->cut_off = 0;
-					if ($max_tournaments > 0)
-					{
-						$player->p = array();
-					}
-					else
-					{
-						$player->points = 0;
-					}
-					$players[$player_id] = $player;
-				}
-				else
-				{
-					$player = $players[$player_id];
-				}
-				
-				$points = get_gaining_points($child_series_id, $gaining, $stars, $place, $score, $child_series_players[$child_series_id], 0, 0, 0, 0, true);
-				if ($max_tournaments > 0)
-				{
-					if (count($player->p) >= $max_tournaments)
-					{
-						$min_index = 0;
-						for ($i = 1; $i < $max_tournaments; ++$i)
-						{
-							if ($player->p[$i] < $player->p[$min_index])
-							{
-								$min_index = $i;
-							}
-						}
-						if ($player->p[$min_index] <= $points)
-						{
-							$player->total_cut_off += $player->p[$min_index];
-							$player->p[$min_index] = $points;
-						}
-					}
-					else
-					{
-						$player->p[] = $points;
-					}
-				}
-				else
-				{
-					$player->points += $points;
-				}
-				++$player->tournaments;
-				$player->games += $games;
-				$player->wins += $wins;
-			}
-			
-			$query = new DbQuery(
-				'SELECT ep.user_id, ep.points FROM series_extra_points ep'.
-				' LEFT OUTER JOIN series_regs sr ON sr.series_id = ep.series_id AND sr.user_id = ep.user_id'.
-				' WHERE ep.series_id = ?'.
-				' AND (sr.flags IS NULL OR (sr.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $series_id);
-			while ($row = $query->next())
-			{
-				list($player_id, $points) = $row;
-				if (!isset($players[$player_id]))
-				{
-					$player = new stdClass();
-					$player->id = (int)$player_id;
-					$player->tournaments = 0;
-					$player->games = 0;
-					$player->wins = 0;
-					$player->total_cut_off = 0;
-					$player->cut_off = 0;
-					if ($max_tournaments > 0)
-					{
-						$player->p = array();
-					}
-					else
-					{
-						$player->points = 0;
-					}
-					$players[$player_id] = $player;
-				}
-				else
-				{
-					$player = $players[$player_id];
-				}
-				
-				if ($max_tournaments > 0)
-				{
-					if (count($player->p) >= $max_tournaments)
-					{
-						$min_index = 0;
-						for ($i = 1; $i < $max_tournaments; ++$i)
-						{
-							if ($player->p[$i] < $player->p[$min_index])
-							{
-								$min_index = $i;
-							}
-						}
-						if ($player->p[$min_index] <= $points)
-						{
-							$player->total_cut_off += $player->p[$min_index];
-							$player->p[$min_index] = $points;
-						}
-					}
-					else
-					{
-						$player->p[] = $points;
-					}
-				}
-				else
-				{
-					$player->points += $points;
-				}
-				++$player->tournaments;
-			}
-			
-			if ($max_tournaments > 0)
-			{
+				$players = $this->rankSeries($sources, $extra_points, $stages, $cut_stages, $max_tournaments);
+				$ranking_count = count($players);
+				$place = 1;
 				foreach ($players as $player)
 				{
-					$player->points = 0;
-					$player->cut_off = 1000000000;
-					foreach ($player->p as $p)
-					{
-						$player->points += $p;
-						$player->cut_off = min($player->cut_off, $p);
-					}
-					if (count($player->p) < $max_tournaments)
-					{
-						$player->cut_off = 0;
-					}
-					unset($player->p);
+					// Importance ranks the series of one player against each other, so only the
+					// full table carries it - a partial one would compete with its own series.
+					$importance = $cut_stages == 0 ? $this->getSeriesImportance($place, $ranking_count) : 0;
+					Db::exec(get_label('series'),
+						'INSERT INTO series_places (series_id, user_id, cut_stages, stage, place, importance, score, tournaments, games, wins, total_cut_off, cut_off)' .
+						' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						$series_id, $player->id, $cut_stages, $player->stage, $place, $importance,
+						$player->points, $player->tournaments, $player->games, $player->wins,
+						$player->total_cut_off, $player->cut_off);
+					++$place;
+				}
+				if ($cut_stages == 0)
+				{
+					$players_count = $ranking_count;
 				}
 			}
-			
-			usort($players, "compare_series_players");
-			
-			Db::exec(get_label('series'), 'DELETE FROM series_places WHERE series_id = ?', $series_id);
-			$place = 1;
-			$players_count = count($players);
-			foreach ($players as $player)
-			{
-				$importance = $this->getSeriesImportance($place, $players_count);
-				Db::exec(get_label('series'), 'INSERT INTO series_places (series_id, user_id, place, importance, score, tournaments, games, wins, total_cut_off, cut_off) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-					$series_id, $player->id, $place, $importance, $player->points, $player->tournaments, $player->games, $player->wins, $player->total_cut_off, $player->cut_off);
-				++$place;
-			}
-			
+
 			Db::exec(get_label('series'), 'UPDATE series SET flags = flags & ' . ~SERIES_FLAG_DIRTY .  ' WHERE id = ?', $series_id);
 			if ($series_flags & SERIES_FLAG_FINISHED)
 			{
 				Db::exec(get_label('series'), 'UPDATE series s JOIN series_series ss ON ss.parent_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .  ' WHERE ss.child_id = ?', $series_id);
 			}
-			
+
 			$this->log('Wrote ' . $players_count . ' players to series ' . $series_id . '. Series is up to date.');
-			
+
 			++$count;
 			if (!$this->canDoOneMoreItem())
 			{
@@ -735,7 +974,7 @@ class CompleteCompetitions extends Updater
 		Db::commit();
 		return $count;
 	}
-	
+
 	//-------------------------------------------------------------------------------------------------------
 	// CompleteCompetitions.series
 	//-------------------------------------------------------------------------------------------------------

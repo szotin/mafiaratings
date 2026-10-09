@@ -215,7 +215,7 @@ class Page extends SeriesPageBase
 			echo '</td>';
 			foreach ($tournament->series as $series)
 			{
-				echo '<td width="64" align="center" valign="center">';
+				echo '<td width="36" align="center" valign="center">';
 				echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
 				echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
 				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);

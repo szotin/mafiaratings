@@ -72,12 +72,29 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$notes = get_optional_param('notes', '');
-		$type = (int)get_optional_param('type', SERIES_TYPE_SERIES);
-		if (!is_series_type_valid($type))
+
+		// A series is made of three properties: how many stars it gives its tournaments, how many
+		// stages it has, and whether it has dates. Its type follows from the first and the third
+		// and is not stored at all - see series_type().
+		//
+		// A type may still be passed, and then it stands for the shape such a series usually has:
+		// it fills in whichever of the three properties the caller left out. That is all it does.
+		$preset = (int)get_optional_param('type', SERIES_TYPE_SERIES);
+		if (!is_series_type_valid($preset))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('series type')));
 		}
-		$max_stars = series_max_stars($type, get_optional_param('max_stars', SERIES_DEFAULT_MAX_STARS));
+		$preset = get_series_type_defaults($preset);
+		$max_stars = series_max_stars(get_optional_param('max_stars', $preset['max_stars']));
+		$stages = series_stage_count(get_optional_param('stages', $preset['stages']));
+		$infinite = (int)get_optional_param('infinite', $preset['infinite']) != 0;
+
+		// A series with no dates is inside nothing - see the same rule in change_op.
+		if ($infinite)
+		{
+			$parent_series = array();
+		}
+
 		$flags = (int)get_optional_param('flags', NEW_SERIES_FLAGS);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + (NEW_SERIES_FLAGS & ~SERIES_EDITABLE_MASK);
 		// Elite is a property of elite leagues. A club series is never elite.
@@ -95,12 +112,11 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		if ($type == SERIES_TYPE_RECURRING)
+		if ($infinite)
 		{
-			// A recurring tournament has no dates - it runs from the moment it is created and
-			// never ends. The eternal duration is what makes every "is it over yet" query, and
-			// there are a lot of them, answer no.
-			$start = time();
+			// No dates at all: infinite in both directions. See SERIES_INFINITE_START - that is
+			// what every query about the dates of the series reads.
+			$start = SERIES_INFINITE_START;
 			$duration = SERIES_ETERNAL_DURATION;
 		}
 		else
@@ -118,8 +134,8 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('sеriеs'),
-			'INSERT INTO series (name, league_id, club_id, start_time, duration, type, max_stars, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $club_id, $start, $duration, $type, $max_stars, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
+			'INSERT INTO series (name, league_id, club_id, start_time, duration, max_stars, stages, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $league_id, $club_id, $start, $duration, $max_stars, $stages, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
 		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
 
 		$log_details = new stdClass();
@@ -128,8 +144,8 @@ class ApiPage extends OpsApiPageBase
 		$log_details->club_id = $club_id;
 		$log_details->start = $start;
 		$log_details->duration = $duration;
-		$log_details->type = $type;
 		$log_details->max_stars = $max_stars;
+		$log_details->stages = $stages;
 		$log_details->langs = $langs;
 		$log_details->notes = $notes;
 		$log_details->fee = $fee;
@@ -162,13 +178,15 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('name', 'Series name.');
 		$help->request_param('league_id', 'League id. Requires manager permissions in that league.', 'the series belongs to the club passed in <q>club_id</q>.');
 		$help->request_param('club_id', 'Club id. Requires manager permissions in that club.', 'the series belongs to the league passed in <q>league_id</q>.');
-		$series_help = $help->request_param('parent_series', 'Json array of series that this series belongs to. For example "[{id:2,stars:3},{id:4,stars:1}]".', 'series does not belong to any series - same as "[]".');
+		$series_help = $help->request_param('parent_series', 'Json array of series that this series belongs to. For example "[{id:2,stars:3},{id:4,stars:1}]". Ignored for a series with no dates: a parent series is one this series runs within, and such a series has no period to run within.', 'series does not belong to any series - same as "[]".');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
-		$help->request_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament. A recurring tournament has no dates - it never ends - so <q>start</q> and <q>end</q> are ignored for it.', SERIES_TYPE_SERIES . ' - a series of tournaments.');
-		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 1 to ' . SERIES_MAX_STARS_LIMIT . '. A recurring tournament always gives exactly one and ignores this.', SERIES_DEFAULT_MAX_STARS . '.');
-		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a recurring tournament.');
-		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a recurring tournament.');
+		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 0 to ' . SERIES_MAX_STARS_LIMIT . '. Zero means the series does not grade its tournaments at all: it says which stage each of them belongs to instead.', 'whatever <q>type</q> implies.');
+		$help->request_param('stages', 'How many stages the series has, from 1 to ' . SERIES_MAX_STAGES . '. One means there is no ladder - every tournament is a tournament of the series. The stages of a series with n of them are ' . SERIES_STAGE_BASE . ' - the base stage - and 1..n-1, numbered the way tournaments number the rounds of their own playoff: ' . SERIES_STAGE_FINAL . ' - the final, ' . SERIES_STAGE_SEMIFINAL . ' - the semifinal, ' . SERIES_STAGE_QUARTERFINAL . ' - the quarterfinal, and so on.', 'whatever <q>type</q> implies.');
+		$help->request_param('infinite', 'Pass 1 for a series with no dates at all - one that is infinite in both directions, which is what a recurring tournament is. <q>start</q> and <q>end</q> are then ignored.', 'whatever <q>type</q> implies.');
+		$help->request_param('type', 'Not a property of a series and not stored: the type is derived from <q>max_stars</q> and <q>infinite</q>. Passing it here only supplies the shape such a series usually has, for whichever of those three is left out: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament.', SERIES_TYPE_SERIES . ' - a series of tournaments.');
+		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a series with no dates.');
+		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds. Not used by a series with no dates.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'empty.');
 		$help->request_param('fee', 'Admission rate per player-tournament. Send -1 if unknown.', '-1.');
 		$help->request_param('currency_id', 'Currency id for the admission rate. Send -1 if unknown.', '-1.');
@@ -197,10 +215,10 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_type, $old_max_stars, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
-			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, type, max_stars, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
-		$old_type = (int)$old_type;
+		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_max_stars, $old_stages, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
+			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, max_stars, stages, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
 		$old_max_stars = (int)$old_max_stars;
+		$old_stages = (int)$old_stages;
 
 		$owner = new SeriesOwner($league_id, $club_id);
 		check_series_permissions($owner, $series_id);
@@ -243,18 +261,40 @@ class ApiPage extends OpsApiPageBase
 			$currency_id = NULL;
 		}
 		
-		$type = (int)get_optional_param('type', $old_type);
-		if (!is_series_type_valid($type))
+		// A series is made of three properties - how many stars it gives, how many stages it has,
+		// and whether it has dates - and its type follows from them rather than being stored. Each
+		// of the three keeps its stored value when it is not passed.
+		//
+		// A type may be passed instead, and then it stands for the shape such a series usually has
+		// and supplies whichever of the three the caller left out, exactly as in create. That is
+		// how an editor offering a type to pick works, and all it does.
+		$preset = get_optional_param('type', NULL);
+		if (is_null($preset))
+		{
+			$preset = array(
+				'max_stars' => $old_max_stars,
+				'stages' => $old_stages,
+				'infinite' => series_is_infinite($old_start) ? 1 : 0);
+		}
+		else if (is_series_type_valid($preset))
+		{
+			$preset = get_series_type_defaults($preset);
+		}
+		else
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('series type')));
 		}
-		// Lowering the maximum leaves the stars already handed out alone: they were given under the
-		// maximum of the day, and rewriting them is not this operation's business.
-		$max_stars = series_max_stars($type, get_optional_param('max_stars', $old_max_stars));
 
-		if ($type == SERIES_TYPE_RECURRING)
+		// Lowering the maximum leaves the stars already handed out alone: they were given under the
+		// maximum of the day, and rewriting them is not this operation's business. Same for the
+		// stages: a membership left on a stage the series no longer has reads as the base stage.
+		$max_stars = series_max_stars(get_optional_param('max_stars', $preset['max_stars']));
+		$stages = series_stage_count(get_optional_param('stages', $preset['stages']));
+		$infinite = (int)get_optional_param('infinite', $preset['infinite']) != 0;
+
+		if ($infinite)
 		{
-			if ($old_type == SERIES_TYPE_RECURRING)
+			if (series_is_infinite($old_start))
 			{
 				// It has no dates to edit, so leave the ones it has alone. That is also what keeps
 				// a finished recurring tournament finished - finishing one cuts its duration short,
@@ -264,16 +304,16 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				// It becomes eternal from now on.
-				$start = time();
+				// It loses its dates.
+				$start = SERIES_INFINITE_START;
 				$duration = SERIES_ETERNAL_DURATION;
 			}
 		}
 		else
 		{
-			// A series that used to be a recurring tournament has no dates to fall back on, so
-			// whoever takes that type away has to say when it runs.
-			if ($old_type == SERIES_TYPE_RECURRING)
+			// A series that had no dates has none to fall back on, so whoever gives it dates has
+			// to say what they are.
+			if (series_is_infinite($old_start))
 			{
 				$start_datetime = get_datetime(get_required_param('start'), $timezone);
 				$end_datetime = get_datetime(get_required_param('end'), $timezone);
@@ -293,7 +333,7 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('Series end before or right after the start.'));
 			}
 		}
-		
+
 		$logo_uploaded = false;
 		if (isset($_FILES['logo']))
 		{
@@ -310,6 +350,19 @@ class ApiPage extends OpsApiPageBase
 		
 		// update parent series records
 		$parent_series = json_decode(get_optional_param('parent_series', NULL));
+
+		// A series with no dates is inside nothing. A parent series is one this series runs within,
+		// and a series with no dates has no period to run within - which is why the editor stops
+		// offering parents for it.
+		//
+		// That by itself is not enough. Leaving parent_series out is what tells this operation to
+		// keep the parents a series already has, and the editor leaves it out exactly when the
+		// series has no dates - so a series given dates, put inside another and then made eternal
+		// again would quietly keep a link it can no longer have. Being eternal clears them instead.
+		if ($infinite)
+		{
+			$parent_series = array();
+		}
 		$parent_series_changed = false;
 		if (!is_null($parent_series))
 		{
@@ -327,7 +380,6 @@ class ApiPage extends OpsApiPageBase
 				if (isset($old_parent_series[$s->id]))
 				{
 					$os = $old_parent_series[$s->id];
-					$finals = isset($s->finals) ? $s->finals : false;
 					if ($os->stars != $s->stars)
 					{
 						Db::exec(
@@ -413,8 +465,8 @@ class ApiPage extends OpsApiPageBase
 			
 		Db::exec(
 			get_label('sеriеs'), 
-			'UPDATE series SET name = ?, start_time = ?, duration = ?, type = ?, max_stars = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
-			$name, $start, $duration, $type, $max_stars, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
+			'UPDATE series SET name = ?, start_time = ?, duration = ?, max_stars = ?, stages = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
+			$name, $start, $duration, $max_stars, $stages, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
@@ -430,13 +482,13 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->duration = $duration;
 			}
-			if ($type != $old_type)
-			{
-				$log_details->type = $type;
-			}
 			if ($max_stars != $old_max_stars)
 			{
 				$log_details->max_stars = $max_stars;
+			}
+			if ($stages != $old_stages)
+			{
+				$log_details->stages = $stages;
 			}
 			if ($langs != $old_langs)
 			{
@@ -485,8 +537,10 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Change series.');
 		$help->request_param('series_id', 'Series id.');
 		$help->request_param('name', 'Series name.', 'remains the same.');
-		$help->request_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament. A recurring tournament has no dates, so its <q>start</q> and <q>end</q> are ignored; a series that stops being a recurring tournament must be given both.', 'remains the same.');
-		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 1 to ' . SERIES_MAX_STARS_LIMIT . '. A recurring tournament always gives exactly one and ignores this.', 'remains the same.');
+		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 0 to ' . SERIES_MAX_STARS_LIMIT . '. Zero means the series does not grade its tournaments at all: it says which stage each of them belongs to instead. Lowering it leaves the stars already handed out alone.', 'remains the same.');
+		$help->request_param('stages', 'How many stages the series has, from 1 to ' . SERIES_MAX_STAGES . '. See the create operation for the numbering. Lowering it leaves a tournament on a stage the series no longer has, and that tournament reads as the base stage from then on.', 'remains the same.');
+		$help->request_param('infinite', 'Pass 1 for a series with no dates at all - one that is infinite in both directions, which is what a recurring tournament is. Such a series ignores <q>start</q> and <q>end</q>; a series that stops being one must be given both.', 'remains the same.');
+		$help->request_param('type', 'Not a property of a series and not stored: the type is derived from <q>max_stars</q> and <q>infinite</q>. Passing it here only supplies the shape such a series usually has, for whichever of those three is left out - so passing it alone resets all three: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament.', 'the three properties remain the same.');
 		$help->request_param('start', 'Series start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Series end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('notes', 'Series notes. Just a text.', 'remains the same.');
@@ -602,6 +656,16 @@ class ApiPage extends OpsApiPageBase
 		list($league_id, $club_id, $start_time, $duration, $flags) = Db::record(get_label('series'), 'SELECT league_id, club_id, start_time, duration, flags FROM series WHERE id = ?', $series_id);
 		$owner = new SeriesOwner($league_id, $club_id);
 		check_series_permissions($owner, $series_id);
+
+		// Finishing a series cuts it short of the end it was given, so that its results reach its
+		// parents without waiting for that end to arrive. A series with no dates was never given
+		// one: there is nothing to cut short, and cutting its stored duration anyway would leave a
+		// series that reads as eternal and is over at the same time.
+		if (series_is_infinite($start_time))
+		{
+			throw new Exc(get_label('A series with no dates cannot be finished.'));
+		}
+
 		if (($flags & SERIES_FLAG_FINISHED) == 0)
 		{
 			if ($now < $start_time)
@@ -620,7 +684,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function finish_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Finish the series. After finishing the series within one hour players will get all parent series points for this series. Finish series functionality lets not to wait until the time expires and get the results quicker.');
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Finish the series. After finishing the series within one hour players will get all parent series points for this series. Finish series functionality lets not to wait until the time expires and get the results quicker. A series with no dates has no time to wait for and cannot be finished.');
 		$help->request_param('series_id', 'Series id.');
 		return $help;
 	}
@@ -872,11 +936,16 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		list($league_id, $club_id, $stages) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, stages FROM series WHERE id = ?', $series_id);
 		$owner = new SeriesOwner($league_id, $club_id);
 		check_series_permissions($owner, $series_id);
 
-		Db::exec(get_label('points'), 'INSERT INTO series_extra_points (time, series_id, user_id, reason, details, points) VALUES (?, ?, ?, ?, ?, ?)', $time, $series_id, $user_id, $reason, $details, $points);
+		// Extra points are not a competition of the series, so which stage they count in is said
+		// outright rather than following from anything. The base stage is where points for the
+		// series as a whole belong, and that is what they are by default.
+		$stage = series_stage($stages, get_optional_param('stage', SERIES_STAGE_BASE));
+
+		Db::exec(get_label('points'), 'INSERT INTO series_extra_points (time, series_id, user_id, reason, details, points, stage) VALUES (?, ?, ?, ?, ?, ?, ?)', $time, $series_id, $user_id, $reason, $details, $points, $stage);
 		list ($points_id) = Db::record(get_label('points'), 'SELECT LAST_INSERT_ID()');
 		
 		list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
@@ -887,6 +956,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->series_id = $series_id;
 		$log_details->points = $points;
 		$log_details->reason = $reason;
+		$log_details->stage = $stage;
 		if (!empty($details))
 		{
 			$log_details->details = $details;
@@ -908,6 +978,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('time', 'Time when point are rewarded. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract.');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.');
+		$help->request_param('stage', 'Which stage of the series these points count in - see the create operation for the numbering. Extra points are not a competition of the series, so this is said outright rather than following from anything.', SERIES_STAGE_BASE . ' - the base stage.');
 		$help->request_param('details', 'Detailed explanation why user recieves or loses points.', 'empty.');
 		
 		$help->response_param('points_id', 'Id of the created extra points object.');
@@ -922,8 +993,8 @@ class ApiPage extends OpsApiPageBase
 		$points_id = (int)get_required_param('points_id');
 		
 		Db::begin();
-		list($user_id, $series_id, $league_id, $club_id, $old_reason, $old_details, $old_points, $old_time) =
-			Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, e.league_id, e.club_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series e ON e.id = p.series_id WHERE p.id = ?', $points_id);
+		list($user_id, $series_id, $league_id, $club_id, $old_reason, $old_details, $old_points, $old_time, $old_stage, $stages) =
+			Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, e.league_id, e.club_id, p.reason, p.details, p.points, p.time, p.stage, e.stages FROM series_extra_points p JOIN series e ON e.id = p.series_id WHERE p.id = ?', $points_id);
 
 		$owner = new SeriesOwner($league_id, $club_id);
 		check_series_permissions($owner, $series_id);
@@ -938,8 +1009,10 @@ class ApiPage extends OpsApiPageBase
 		$points = (float)get_optional_param('points', $old_points);
 		$timezone = get_timezone();
 		$time = get_datetime(get_optional_param('time', $old_time), $timezone)->getTimestamp();
+		$old_stage = series_stage($stages, $old_stage);
+		$stage = series_stage($stages, get_optional_param('stage', $old_stage));
 		
-		Db::exec(get_label('points'), 'UPDATE series_extra_points SET time = ?, reason = ?, details = ?, points = ? WHERE id = ?', $time, $reason, $details, $points, $points_id);
+		Db::exec(get_label('points'), 'UPDATE series_extra_points SET time = ?, reason = ?, details = ?, points = ?, stage = ? WHERE id = ?', $time, $reason, $details, $points, $stage, $points_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -959,6 +1032,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->time = $time;
 			}
+			if ($stage != $old_stage)
+			{
+				$log_details->stage = $stage;
+			}
 			db_log(LOG_OBJECT_EXTRA_POINTS, 'changed', $log_details, $points_id, $club_id, $league_id);
 			
 			Db::exec(get_label('series'), 'UPDATE series SET flags = (flags | ' . SERIES_FLAG_DIRTY . ') WHERE id = ?', $series_id);
@@ -973,6 +1050,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('time', 'Time when point are rewarded. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('points', 'Floating number of points to add. Negative means substract.', 'remains the same');
 		$help->request_param('reason', 'Reason for adding/substracting points. Must be not empty.', 'remains the same');
+		$help->request_param('stage', 'Which stage of the series these points count in - see the create operation for the numbering.', 'remains the same');
 		$help->request_param('details', 'Detailed explanation why user recieves or loses points.', 'remains the same');
 		return $help;
 	}

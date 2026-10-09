@@ -3,6 +3,7 @@
 require_once '../include/session.php';
 require_once '../include/user.php';
 require_once '../include/datetime.php';
+require_once '../include/series.php';
 
 initiate_session();
 
@@ -19,6 +20,9 @@ try
 	}
 	
 	$series_id = (int)$_REQUEST['series_id'];
+	list($series_start, $series_max_stars, $series_stages) = Db::record(get_label('series'), 'SELECT start_time, max_stars, stages FROM series WHERE id = ?', $series_id);
+	$series_stages = series_stage_count($series_stages);
+	$series_type = series_type($series_start, $series_max_stars);
 	show_user_input('form-user', '', 'series=' . $series_id, get_label('Select player.'), 'onSelect');
 	echo '</td></tr>';
 	
@@ -29,6 +33,19 @@ try
 	echo '<tr><td>' . get_label('Reason').':</td><td><input id="form-reason"></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Details').':</td><td><textarea id="form-details" cols="93" rows="8"></textarea></td></tr>';
 	echo '<tr><td>' . get_label('Points') . ':</td><td><input type="number" style="width: 45px;" step="1" id="form-points"></td></tr>';
+	
+	// Extra points are not a competition of the series, so which stage they count in has to be
+	// said. A series with no ladder has only one stage to say.
+	if ($series_stages > 1)
+	{
+		echo '<tr><td>' . get_label('Stage') . ':</td><td>';
+		echo '<select id="form-stage">';
+		foreach (get_series_stages($series_type, $series_stages) as $stage => $stage_name)
+		{
+			show_option($stage, SERIES_STAGE_BASE, $stage_name);
+		}
+		echo '</select></td></tr>';
+	}
 	echo '</table>';
 
 ?>
@@ -79,6 +96,7 @@ try
 				, reason: $("#form-reason").val()
 				, details: $("#form-details").val()
 				, points: $("#form-points").val()
+				, stage: $('#form-stage').length ? $('#form-stage').val() : <?php echo SERIES_STAGE_BASE; ?>
 			},
 			onSuccess);
 		}

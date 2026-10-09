@@ -194,10 +194,17 @@ return array
 
 	'score' =>
 	'<h3>Description</h3>
-		<p><code>score()</code></p>
+		<p><code>score(stage)</code></p>
 		<p>Returns the points the player scored inside the competition, by its own scoring system - the sum of their main, bonus and first night points in a tournament, or their place points in a subseries. This is the competition result the player brings with them; the gaining system turns it into series points.</p>
+		<p>With no argument it is the result of the deciding stage of the player - the furthest stage of the subseries where anything counted for them, the one their place there was decided by.</p>
+	<h3>Parameters</h3>
+		<dl>
+			<dt>stage</dt><dd>The optional number of a stage of the subseries, in the order its stages are played: 0 the first, then one more for each stage after it. Returns what the player scored in that one stage, or 0 when nothing of theirs counted in it. A competition with no stages - a tournament, or a subseries that declares only one - answers any argument with its single result.</dd>
+		</dl>
 	<h3>Examples</h3>
 		<p><code>score()</code> the series gets exactly what the competition gave. Often used as the formula for a subseries.<br>
+		<code>score(0)</code> what the player scored in the first stage of the subseries - their qualifying result, whatever they did later.<br>
+		<code>score(stage)</code> the same thing as <code>score()</code>.<br>
 		<code>score() / 2</code> half of it.<br>
 		<code>place = 1 ? score() * 1.5 : score()</code> the winner keeps one and a half of their result.</p>',
 
@@ -256,6 +263,40 @@ return array
 		<p><code>table(stars-1, place-1)</code> the points for this place, taken from the table. One is subtracted because table indices are counted from 0.<br>
 		<code>place = 1 ? 10 : 0</code> ten points for the winner and nothing for everybody else.<br>
 		<code>((numPlayers - place) / (numPlayers - 1))^3</code> 1 for the winner falling steeply to 0 for the last place.</p>',
+
+	'stage' =>
+	'<h3>Description</h3>
+		<p><code>stage</code></p>
+		<p>How far the player got inside the competition, counted in the order its parts are played: 0 for the main round of a tournament or the first stage of a subseries, and one more for each part after that. A plain value rather than a function, so it is written without brackets.</p>
+		<p>The rounds of a tournament are counted over the ones it actually has, so a tournament with a final but no semifinal gives 1 for its final rather than leaving a gap. A round the player took part in only as a substitute does not count - as far as the series goes they were not there.</p>
+	<h3>Examples</h3>
+		<p><code>stage = maxStage ? score() * 2 : score()</code> double for whoever played the final of the competition.<br>
+		<code>stage</code> one point per round survived.<br>
+		<code>score(stage)</code> the same thing as <code>score()</code>.</p>',
+
+	'maxStage' =>
+	'<h3>Description</h3>
+		<p><code>maxStage</code></p>
+		<p>The number of the last part of the competition, in the same count <code>stage</code> uses. So <code>stage = maxStage</code> means the player played the final of it. A tournament of a single main round, and a subseries with no ladder, both give 0. A plain value, written without brackets.</p>
+	<h3>Examples</h3>
+		<p><code>stage = maxStage ? 10 : 0</code> ten points to whoever played the final and nothing to the rest.<br>
+		<code>maxStage - stage</code> how many rounds short of the final the player stopped.</p>',
+
+	'currentStage' =>
+	'<h3>Description</h3>
+		<p><code>currentStage</code></p>
+		<p>Which stage of the series this competition counts in, in the order the stages of the series are played: 0 the base stage, and one more for each stage after it. Where <code>stage</code> says how far the player got inside the competition, this says where the competition itself stands in the series. A plain value, written without brackets.</p>
+	<h3>Examples</h3>
+		<p><code>currentStage = maxCurrentStage ? score() * 2 : score()</code> the final stage of the series counts double.<br>
+		<code>table(currentStage, place-1)</code> a row of the table per stage of the series.</p>',
+
+	'maxCurrentStage' =>
+	'<h3>Description</h3>
+		<p><code>maxCurrentStage</code></p>
+		<p>The number of the last stage of the series, in the same count <code>currentStage</code> uses - one less than the number of stages the series declares. A series with no ladder gives 0. A plain value, written without brackets.</p>
+	<h3>Examples</h3>
+		<p><code>currentStage = maxCurrentStage ? 2 : 1</code> twice as much for a competition of the final stage.<br>
+		<code>maxCurrentStage = 0 ? score() : table(currentStage, place-1)</code> the plain result while the series has no ladder, and a row of the table per stage once it has one.</p>',
 );
 
 ?>

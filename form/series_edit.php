@@ -21,20 +21,23 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $club_id, $name, $start_time, $duration, $type, $max_stars, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
+	list ($league_id, $club_id, $name, $start_time, $duration, $max_stars, $stages, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
 		Db::record(get_label('sеriеs'),
-			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.type, s.max_stars, s.langs, s.notes, s.flags,' .
+			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.max_stars, s.stages, s.langs, s.notes, s.flags,' .
 			' COALESCE(sol.langs, soc.langs), COALESCE(sol.flags, soc.flags),' .
 			' s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' .
 			series_owner_join() .
 			' WHERE s.id = ?', $series_id);
 	$currency_id = (int)$currency_id;
 	$gaining_id = (int)$gaining_id;
-	$type = (int)$type;
-	$max_stars = (int)$max_stars;
+	$max_stars = series_max_stars($max_stars);
+	$stages = series_stage_count($stages);
+	$infinite = series_is_infinite($start_time);
+	$type = series_type($start_time, $max_stars);
 	$league_id = (int)$league_id;
 	$club_id = (int)$club_id;
 	$owner = new SeriesOwner($league_id, $club_id);
+	$is_club_series = !$owner->is_league();
 	check_series_permissions($owner, $series_id);
 	
 	$series_list = '{';
@@ -56,7 +59,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
 	
-	echo '<td align="center" valign="top" rowspan="13" width="120">';
+	echo '<td align="center" valign="top" rowspan="14" width="120">';
 	start_upload_logo_button($series_id);
 	echo get_label('Change logo') . '<br>';
 	$series_pic = new Picture(SERIES_PICTURE);
@@ -65,23 +68,30 @@ try
 	end_upload_logo_button(SERIES_PIC_CODE, $series_id);
 	echo '</td></tr>';
 	
+	// The type is not a property of a series: it follows from the three rows below. Picking one
+	// here fills them in with the shape such a series usually has, and changing any of them shows
+	// in this list which type the series has become.
 	echo '<tr><td>' . get_label('Type') . ':</td><td>';
 	show_series_type_options($type, 'onTypeChange()');
 	echo '</td></tr>';
 
-	// Every tournament of a recurring tournament is the same event happening again, so it
-	// always gives exactly one star and is not asked about it.
-	echo '<tr id="form-max-stars-row"><td>' . get_label('Maximum stars') . ':</td><td>';
-	echo '<input type="number" style="width: 45px;" step="1" min="1" max="' . SERIES_MAX_STARS_LIMIT . '" id="form-max-stars" value="' . series_max_stars($type, $max_stars) . '">';
+	echo '<tr><td>' . get_label('Maximum stars') . ':</td><td>';
+	echo '<input type="number" style="width: 45px;" step="1" min="0" max="' . SERIES_MAX_STARS_LIMIT . '" id="form-max-stars" value="' . $max_stars . '" onchange="onParamChange()">';
+	echo ' ' . get_label('zero if the series does not use stars.');
 	echo '</td></tr>';
 
-	// A recurring tournament has no dates, and the parent series on offer are the ones this series
-	// would run inside of - a question about dates too. Both rows are hidden for it.
-	echo '<tr id="form-series-row"><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
+	echo '<tr><td>' . get_label('Stages') . ':</td><td>';
+	echo '<select id="form-stages" onchange="onParamChange()">';
+	foreach (get_series_stages_options() as $option => $option_name)
+	{
+		show_option($option, $stages, $option_name);
+	}
+	echo '</select>';
+	echo '</td></tr>';
 
-	// A recurring tournament stores an eternal duration, so the end it would offer is meaningless.
-	// Today is what the date inputs start from if the type is taken away from it.
-	if ($type == SERIES_TYPE_RECURRING)
+	// A series with no dates stores the epoch and an eternal duration, so the dates it would offer
+	// are meaningless. Today is what the inputs start from if it is given dates.
+	if ($infinite)
 	{
 		$start_time = time();
 		$end_time = $start_time;
@@ -95,12 +105,18 @@ try
 		}
 	}
 
-	echo '<tr id="form-dates-row"><td>'.get_label('Dates').':</td><td>';
+	echo '<tr><td>'.get_label('Dates').':</td><td>';
 	echo '<input type="date" id="form-start" value="' . timestamp_to_string($start_time, $timezone, false) . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
-	echo '<input type="date" id="form-end" value="' . timestamp_to_string($end_time, $timezone, false) . '" onchange="setSeries()"">';
+	echo '<input type="date" id="form-end" value="' . timestamp_to_string($end_time, $timezone, false) . '" onchange="setSeries()">';
+	echo '  ';
+	echo '<input type="checkbox" id="form-infinite"' . ($infinite ? ' checked' : '') . ' onclick="onParamChange()"> ' . get_label('no dates at all - the series is eternal.');
 	echo '</td></tr>';
-	echo '</td></tr>';
+
+	// The parent series on offer are the ones this series would run inside of, which is a question
+	// about dates: a series with no dates is not asked it, and this row goes away. It sits below
+	// the dates rather than above them so that what stays put does not move when it does.
+	echo '<tr id="form-series-row"><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
 	echo '<tr><td>'.get_label('Admission rate per player-tournament').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
 	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
@@ -183,18 +199,51 @@ try
 	}
 	gainingChanged(<?php echo $gaining_version; ?>);
 	
-	function isRecurring()
+	function isInfinite()
 	{
-		return $('#form-type').val() == <?php echo SERIES_TYPE_RECURRING; ?>;
+		return $('#form-infinite').prop('checked');
 	}
+
+	// The type of a series follows from its three properties, and this is the same derivation
+	// series_type_from_params() does on the server, which is the one that counts.
+	function deriveType()
+	{
+		if (isInfinite())
+		{
+			return <?php echo SERIES_TYPE_RECURRING; ?>;
+		}
+		if ($('#form-max-stars').val() < 1)
+		{
+			return <?php echo SERIES_TYPE_SERIES; ?>;
+		}
+		return <?php echo SERIES_TYPE_SEASON; ?>;
+	}
+
+	// Picking a type fills the three properties in with the shape such a series usually has. Any
+	// of them can then be changed, which may well derive a different type - and that is the point.
+	var typeDefaults = <?php echo json_encode(array(
+		SERIES_TYPE_SEASON => get_series_type_defaults(SERIES_TYPE_SEASON),
+		SERIES_TYPE_SERIES => get_series_type_defaults(SERIES_TYPE_SERIES),
+		SERIES_TYPE_RECURRING => get_series_type_defaults(SERIES_TYPE_RECURRING))); ?>;
 
 	function onTypeChange()
 	{
-		var recurring = isRecurring();
-		$('#form-dates-row').css('display', recurring ? 'none' : '');
-		$('#form-series-row').css('display', recurring ? 'none' : '');
-		$('#form-max-stars-row').css('display', recurring ? 'none' : '');
-		if (!recurring)
+		var d = typeDefaults[$('#form-type').val()];
+		$('#form-infinite').prop('checked', d.infinite != 0);
+		$('#form-max-stars').val(d.max_stars);
+		$('#form-stages').val(d.stages);
+		onParamChange();
+	}
+
+	function onParamChange()
+	{
+		var infinite = isInfinite();
+		// Disabled, not hidden: a control that disappears takes with it the only hint of how to
+		// get it back, and the checkbox that hid it sits right there in the same row.
+		$('#form-start, #form-end').prop('disabled', infinite);
+		$('#form-series-row').css('display', infinite ? 'none' : '');
+		$('#form-type').val(deriveType());
+		if (!infinite)
 		{
 			setSeries();
 		}
@@ -203,7 +252,7 @@ try
 	var seriesList = <?php echo $series_list; ?>;
 	function setSeries()
 	{
-		if (isRecurring())
+		if (isInfinite())
 		{
 			return;
 		}
@@ -213,11 +262,23 @@ try
 		{
 			ended_after: _end
 			, started_before: '+' + strToDate($('#form-start').val())
+			// Which series this one can be part of, and nothing to do with who is logged in. A club
+			// series: the series of that club, the ones it has been invited to, and the series of the
+			// leagues it belongs to - all three are what club_id means here. A league series: the
+			// series of that league only.
+			, <?php echo $is_club_series ? 'club_id' : 'league_id'; ?>: <?php echo $owner->id; ?>
+			// A recurring tournament grades nothing and holds tournaments rather than subseries, so
+			// there is nothing for a subseries to be worth inside one. Having no dates it overlapped
+			// every window, which is why every one of them used to be on this list.
+			, types: <?php echo SERIES_TYPE_FILTER_SEASON | SERIES_TYPE_FILTER_SERIES; ?>
 		},
 		function(series)
 		{
 			var html = '<table class="dialog_form" width="100%"><tr>';
-			var sl = new Object();
+			// Seeded with the parents it already has. This object is what the save posts, so an entry
+			// dropped here would quietly unlink a series nobody touched - and the filters above can
+			// leave out something that was linked before they existed.
+			var sl = $.extend({}, seriesList);
 			for (i = 0; i < series.series.length; ++i)
 			{
 				var s = series.series[i];
@@ -268,7 +329,9 @@ try
 			}
 		});
 	}
-	onTypeChange();
+	// The stored properties are what the editor opens with, so only their effect is applied here
+	// - picking a type is what replaces them.
+	onParamChange();
 	
 	function starsChanged(control, stars)
 	{
@@ -332,8 +395,11 @@ try
 			op: "change",
 			series_id: <?php echo $series_id; ?>,
 			name: $("#form-name").val(),
-			type: $('#form-type').val(),
+			// The three properties a series is made of. The type is not sent: the op derives it
+			// from them, which is what keeps the two sides from ever disagreeing about it.
 			max_stars: $('#form-max-stars').val(),
+			stages: $('#form-stages').val(),
+			infinite: isInfinite() ? 1 : 0,
 			notes: $("#form-notes").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
@@ -343,9 +409,9 @@ try
 			flags: _flags,
 		};
 
-		// A recurring tournament has no dates, and no parent series were offered for it. Leaving
-		// parent_series out altogether is what tells the op to leave the ones it has alone.
-		if (!isRecurring())
+		// A series with no dates was offered no parent series. Leaving parent_series out
+		// altogether is what tells the op to leave the ones it has alone.
+		if (!isInfinite())
 		{
 			var _end = strToDate($('#form-end').val());
 			_end.setDate(_end.getDate() + 1); // inclusive

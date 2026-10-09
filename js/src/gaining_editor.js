@@ -541,6 +541,20 @@ function setGainingVersion(version)
 	}
 }
 
+// The version picker next to the name. Any version of the system can be opened; switching is a
+// page load, which the page does in selectVersion() - that is where there are labels to ask
+// about unsaved edits with. Newest first, because that is the one usually wanted.
+function versionSelectHtml()
+{
+	var html = '<select onchange="selectVersion(this.value)">';
+	for (var i = _data.versions.length - 1; i >= 0; --i)
+	{
+		var version = _data.versions[i];
+		html += '<option value="' + version + '"' + (version == _data.version ? ' selected' : '') + '>' + version + '</option>';
+	}
+	return html + '</select>';
+}
+
 function refreshGainingEditor(isDirty)
 {
 	var g = _data.gaining;
@@ -549,7 +563,7 @@ function refreshGainingEditor(isDirty)
 	// The name of the system and which version is open.
 	html += geSectionStart('dark');
 	html += '<tr><td>' + _data.strings.name + ': <input id="gaining-name" value="' + geEscape(_data.name) + '" oninput="geNameChange()">' +
-		' &emsp; ' + _data.strings.version + ': ' + _data.version + '</td></tr>';
+		' &emsp; ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
 	html += geSectionEnd();
 
 	// The formulas.

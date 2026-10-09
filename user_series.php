@@ -14,7 +14,7 @@ class Page extends UserPageBase
 		global $_profile, $_page;
 		$timezone = get_timezone();
 		
-		$condition = new SQL(' FROM series_places sp JOIN series s ON s.id = sp.series_id WHERE sp.user_id = ?', $this->id);
+		$condition = new SQL(' FROM series_places sp JOIN series s ON s.id = sp.series_id WHERE sp.user_id = ? AND sp.cut_stages = 0', $this->id);
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$condition->add(' AND s.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
@@ -34,7 +34,7 @@ class Page extends UserPageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.type, s.langs, sp.place, sp.score, sp.tournaments, sp.games, sp.wins',
+			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, sp.place, sp.score, sp.tournaments, sp.games, sp.wins',
 			$condition);
 		$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
@@ -50,9 +50,9 @@ class Page extends UserPageBase
 		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $series_type, $languages, $place, $score, $tournaments_count, $games_count, $wins_count) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $languages, $place, $score, $tournaments_count, $games_count, $wins_count) = $row;
 
-			$playing = ($now >= $series_time && $now < $series_time + $series_duration && $series_type != SERIES_TYPE_RECURRING);
+			$playing = ($now >= $series_time && $now < $series_time + $series_duration && !series_is_infinite($series_time));
 			if ($playing)
 			{
 				echo '<tr class="dark">';
@@ -73,7 +73,7 @@ class Page extends UserPageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . series_period($series_type, $series_time, $series_duration, $timezone) . '</a></td>';
+			echo '</b><br>' . series_period($series_time, $series_duration, $timezone) . '</a></td>';
 			echo '</tr></table>';
 			echo '</td>';
 			

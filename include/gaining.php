@@ -22,26 +22,83 @@ define('GAINING_FUNCTION_RATING_SUM_20',      0x0800); //   2048
 define('GAINING_FUNCTION_TRAVELING_DISTANCE', 0x1000); //   4096
 define('GAINING_FUNCTION_GUEST_COEF',         0x2000); //   8192
 
+// The points a player got. With an argument - the number of a stage in the order the stages are
+// played, zero being the first - the points they got in that stage of the series; without one, the
+// points of their deciding stage, which is what score has always meant and what series_places
+// stores. So a bare score is the same thing as score(stage).
+//
+// A competition with no stages to speak of - a tournament, or a series that declares just one -
+// answers every argument with that same single number, the way the other values of a gaining
+// formula answer an argument they have no use for.
+class EvFuncScore extends EvFunction
+{
+	public function evaluate($evaluator, $args)
+	{
+		$score = isset($evaluator->vars->score) ? $evaluator->vars->score : 0;
+		if (!is_numeric($score))
+		{
+			$score = 0;
+		}
+		if (count($args) == 0 || !isset($evaluator->vars->stageScores) || !is_array($evaluator->vars->stageScores))
+		{
+			return $score;
+		}
+		$scores = $evaluator->vars->stageScores;
+		$stage = (int)floor($args[0]->evaluate());
+		if (!isset($scores[$stage]) || !is_numeric($scores[$stage]))
+		{
+			return 0;
+		}
+		return $scores[$stage];
+	}
+
+	// It reads the variables of the moment, so it must not be folded away when the formula is
+	// optimized - same as every EvFuncParam.
+	public function is_deterministic()
+	{
+		return false;
+	}
+
+	public function name()
+	{
+		return 'score';
+	}
+
+	public function id()
+	{
+		return 'score';
+	}
+}
+
 function get_gaining_functions()
 {
 	return array(
-		new EvFuncRound(), 
-		new EvFuncFloor(), 
-		new EvFuncCeil(), 
-		new EvFuncLog(), 
-		new EvFuncMin(), 
-		new EvFuncMax(), 
+		new EvFuncRound(),
+		new EvFuncFloor(),
+		new EvFuncCeil(),
+		new EvFuncLog(),
+		new EvFuncMin(),
+		new EvFuncMax(),
 		new EvFuncParam('table'),
-		new EvFuncParam('score'),
+		new EvFuncScore(),
 		new EvFuncParam('numPlayers'),
 		new EvFuncParam('stars'),
 		new EvFuncParam('ratingSum'),
 		new EvFuncParam('ratingSum20'),
 		new EvFuncParam('travelingDistance'),
-		new EvFuncParam('guestCoef'));
+		new EvFuncParam('guestCoef'),
+		new EvFuncParam('place'),
+		new EvFuncParam('stage'),
+		new EvFuncParam('maxStage'),
+		new EvFuncParam('currentStage'),
+		new EvFuncParam('maxCurrentStage'));
 }
 
-function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $num_players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $is_series = false)
+// $competition_vars are the values that are the same for everybody in this competition, so they
+// are set once, when the evaluator for it is built; $player_vars change from one player to the
+// next and are set on every call, like score and place. Both are plain name => value arrays - see
+// readSeriesSources() in complete_competitions.php for what goes into them.
+function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $num_players, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $is_series = false, $competition_vars = NULL, $player_vars = NULL)
 {
 	if (!isset($gaining->__cache) || $gaining->__cache->competition_id != $competition_id || $gaining->__cache->is_series != $is_series)
 	{
@@ -72,7 +129,14 @@ function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $
 		$evaluator->set_var('ratingSum20', $rating_sum20);
 		$evaluator->set_var('travelingDistance', $trav_dist);
 		$evaluator->set_var('guestCoef', $guest_coef);
-		
+		if (is_array($competition_vars))
+		{
+			foreach ($competition_vars as $name => $value)
+			{
+				$evaluator->set_var($name, $value);
+			}
+		}
+
 		if (isset($gaining->globals))
 		{
 			$evaluator->set_vars($gaining->globals);
@@ -84,6 +148,13 @@ function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $
 	}
 	$evaluator->set_var('score', $score);
 	$evaluator->set_var('place', $place);
+	if (is_array($player_vars))
+	{
+		foreach ($player_vars as $name => $value)
+		{
+			$evaluator->set_var($name, $value);
+		}
+	}
 	if (isset($gaining->vars))
 	{
 		$evaluator->set_vars($gaining->vars);
@@ -109,6 +180,13 @@ function prepare_gaining_evaluator($gaining, $key, $stars, $num_players, $place,
 	}
 	$evaluator->set_var('score', $score);
 	$evaluator->set_var('place', $place);
+	// A sample of a competition with two stages whose player reached the second of them, so that a
+	// formula reading the stages is tried out on something other than zeros.
+	$evaluator->set_var('stage', 1);
+	$evaluator->set_var('maxStage', 1);
+	$evaluator->set_var('currentStage', 0);
+	$evaluator->set_var('maxCurrentStage', 1);
+	$evaluator->set_var('stageScores', array($score, $score));
 	if (isset($gaining->vars))
 	{
 		$evaluator->set_vars($gaining->vars);

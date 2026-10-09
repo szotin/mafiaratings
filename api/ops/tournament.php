@@ -342,17 +342,16 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		// Check if elite flag should be set
+		// Check if elite flag should be set. The stars that count are the ones that will be
+		// stored - a series that does not grade its tournaments stores none, so a tournament
+		// never becomes elite through such a series.
 		foreach ($parent_series as $s)
 		{
-			if ($s->stars > 1)
+			list($sflags, $smax_stars) = Db::record(get_label('series'), 'SELECT flags, max_stars FROM series WHERE id = ?', $s->id);
+			if (series_membership_stars($smax_stars, $s->stars) > 1 && ($sflags & SERIES_FLAG_ELITE))
 			{
-				list($sflags) = Db::record(get_label('series'), 'SELECT flags FROM series WHERE id = ?', $s->id);
-				if ($sflags & SERIES_FLAG_ELITE)
-				{
-					$flags |= TOURNAMENT_FLAG_ELITE;
-					break;
-				}
+				$flags |= TOURNAMENT_FLAG_ELITE;
+				break;
 			}
 		}
 		
@@ -448,14 +447,13 @@ class ApiPage extends OpsApiPageBase
 		// create parent series records
 		foreach ($parent_series as $s)
 		{
+			list($smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
+				get_label('sеriеs'), 'SELECT max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
 			Db::exec(
-				get_label('sеriеs'), 
-				'INSERT INTO series_tournaments (tournament_id, series_id, stars) values (?, ?, ?)',
-				$tournament_id, $s->id, $s->stars);
-			if (isset($s->finals) && $s->finals)
-			{
-				Db::exec(get_label('sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
-			}
+				get_label('sеriеs'),
+				'INSERT INTO series_tournaments (tournament_id, series_id, stars, stage) values (?, ?, ?, ?)',
+				$tournament_id, $s->id, series_membership_stars($smax_stars, $s->stars),
+				series_requested_stage(new SeriesOwner($sleague_id, $sclub_id), $s->id, $sstages, $s, SERIES_STAGE_BASE));
 			send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
 		}
 		
@@ -468,10 +466,10 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create tournament.');
 		$help->request_param('name', 'Tournament name.');
 		$help->request_param('club_id', 'Club id.');
-		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'tournament does not belong to any series - same as "[]".');
+		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,stage:1}]".', 'tournament does not belong to any series - same as "[]".');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
-			$series_help->sub_param('finals', 'true/false - if this tournament is a series finals.', 'false');
+			$series_help->sub_param('stage', 'Which stage of the series this tournament belongs to, numbered the way tournaments number the rounds of their own playoff: ' . SERIES_STAGE_BASE . ' - the base stage, which is a qualifier of a series of tournaments and an ordinary tournament of a season, ' . SERIES_STAGE_FINAL . ' - the final, ' . SERIES_STAGE_SEMIFINAL . ' - the semifinal, ' . SERIES_STAGE_QUARTERFINAL . ' - the quarterfinal, and so on up to the number of stages the series has. A stage the series does not have falls back to ' . SERIES_STAGE_BASE . '. Only a manager of the series may set this; anybody else is ignored and the stage stays as it was.', 'the stage the series already has for this tournament, or ' . SERIES_STAGE_BASE . ' for a new one.');
 		$help->request_param('type', tournament_type_help_str(), '0');
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
@@ -687,12 +685,14 @@ class ApiPage extends OpsApiPageBase
 		if (!is_null($parent_series))
 		{
 			$old_parent_series = array();
-			$query = new DbQuery('SELECT s.id, st.stars, s.finals_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
+			$query = new DbQuery(
+				'SELECT s.id, st.stars, st.stage, s.max_stars, s.stages, s.league_id, s.club_id' .
+				' FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list($s->id, $s->stars, $finals_id) = $row;
-				$s->finals = ($finals_id == $tournament_id);
+				list($s->id, $s->stars, $s->stage, $s->max_stars, $s->stages, $s->league_id, $s->club_id) = $row;
+				$s->stage = (int)$s->stage;
 				$old_parent_series[$s->id] = $s;
 			}
 			
@@ -703,12 +703,12 @@ class ApiPage extends OpsApiPageBase
 				if (isset($old_parent_series[$s->id]))
 				{
 					$os = $old_parent_series[$s->id];
-					$finals = isset($s->finals) ? $s->finals : false;
-					if ($os->stars != $s->stars)
+					$stars = series_membership_stars($os->max_stars, $s->stars);
+					if ($os->stars != $stars)
 					{
 						Db::exec(
 							get_label('sеriеs'), 
-							'UPDATE series_tournaments SET stars = ? WHERE series_id = ? AND tournament_id = ?', $s->stars, $s->id, $tournament_id);
+							'UPDATE series_tournaments SET stars = ? WHERE series_id = ? AND tournament_id = ?', $stars, $s->id, $tournament_id);
 						if ($flags & TOURNAMENT_FLAG_FINISHED)
 						{
 							Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $s->id);
@@ -716,31 +716,26 @@ class ApiPage extends OpsApiPageBase
 						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
 						$changed = true;
 					}
-					if ($os->finals != $finals)
+					$stage = series_requested_stage(new SeriesOwner($os->league_id, $os->club_id), $s->id, $os->stages, $s, $os->stage);
+					if ($os->stage != $stage)
 					{
-						$finals_id = $finals ? $tournament_id : null;
 						Db::exec(
-							get_label('sеriеs'), 
-							'UPDATE series SET finals_id = ? WHERE id = ?', $finals_id, $s->id);
-						if ($flags & TOURNAMENT_FLAG_FINISHED)
-						{
-							Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $s->id);
-						}
-						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
+							get_label('sеriеs'),
+							'UPDATE series_tournaments SET stage = ? WHERE series_id = ? AND tournament_id = ?',
+							$stage, $s->id, $tournament_id);
 						$changed = true;
 					}
 					unset($old_parent_series[$s->id]);
 				}
 				else
 				{
+					list($smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
+						get_label('sеriеs'), 'SELECT max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
 					Db::exec(
-						get_label('sеriеs'), 
-						'INSERT INTO series_tournaments (tournament_id, series_id, stars) values (?, ?, ?)',
-						$tournament_id, $s->id, $s->stars);
-					if (isset($s->finals) && $s->finals)
-					{
-						Db::exec(get_label('sеriеs'), 'UPDATE series SET finals_id = ? WHERE id = ?', $tournament_id, $s->id);
-					}
+						get_label('sеriеs'),
+						'INSERT INTO series_tournaments (tournament_id, series_id, stars, stage) values (?, ?, ?, ?)',
+						$tournament_id, $s->id, series_membership_stars($smax_stars, $s->stars),
+						series_requested_stage(new SeriesOwner($sleague_id, $sclub_id), $s->id, $sstages, $s, SERIES_STAGE_BASE));
 					send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
 					$changed = true;
 				}
@@ -754,13 +749,10 @@ class ApiPage extends OpsApiPageBase
 					$parent_series_changed = true;
 				}
 				
-				if ($s->stars > 1)
+				list($sflags, $smax_stars) = Db::record(get_label('series'), 'SELECT flags, max_stars FROM series WHERE id = ?', $s->id);
+				if (series_membership_stars($smax_stars, $s->stars) > 1 && ($sflags & SERIES_FLAG_ELITE))
 				{
-					list($sflags) = Db::record(get_label('series'), 'SELECT flags FROM series WHERE id = ?', $s->id);
-					if ($sflags & SERIES_FLAG_ELITE)
-					{
-						$flags |= TOURNAMENT_FLAG_ELITE;
-					}
+					$flags |= TOURNAMENT_FLAG_ELITE;
 				}
 			}
 			
@@ -949,10 +941,10 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change tournament.');
 		$help->request_param('tournament_id', 'Tournament id.');
 		$help->request_param('name', 'Tournament name.', 'remains the same.');
-		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,finals:true}]".', 'remains the same.');
+		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,stage:1}]".', 'remains the same.');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
-			$series_help->sub_param('finals', 'true/false - if this tournament is a series finals.', 'false');
+			$series_help->sub_param('stage', 'Which stage of the series this tournament belongs to, numbered the way tournaments number the rounds of their own playoff: ' . SERIES_STAGE_BASE . ' - the base stage, which is a qualifier of a series of tournaments and an ordinary tournament of a season, ' . SERIES_STAGE_FINAL . ' - the final, ' . SERIES_STAGE_SEMIFINAL . ' - the semifinal, ' . SERIES_STAGE_QUARTERFINAL . ' - the quarterfinal, and so on up to the number of stages the series has. A stage the series does not have falls back to ' . SERIES_STAGE_BASE . '. Only a manager of the series may set this; anybody else is ignored and the stage stays as it was.', 'the stage the series already has for this tournament, or ' . SERIES_STAGE_BASE . ' for a new one.');
 		$help->request_param('type', tournament_type_help_str(), 'remains the same.');
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
@@ -1890,6 +1882,18 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 
+		if (isset($_REQUEST['substitute']))
+		{
+			if ((int)$_REQUEST['substitute'])
+			{
+				$flags |= USER_FLAG_SUBSTITUTE;
+			}
+			else
+			{
+				$flags &= ~USER_FLAG_SUBSTITUTE;
+			}
+		}
+
 		if ($city_id != $old_city_id || $flags != $old_flags)
 		{
 			if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $user_id, $user_club_id))
@@ -1904,6 +1908,15 @@ class ApiPage extends OpsApiPageBase
 			{
 				Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 				Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+			}
+
+			// Out of series leaves the tournament alone and only changes what the series make
+			// of it, so only they are asked to rebuild.
+			if ((($flags ^ $old_flags) & USER_FLAG_SUBSTITUTE) != 0)
+			{
+				Db::exec(get_label('series'),
+					'UPDATE series s JOIN series_tournaments st ON st.series_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .
+					' WHERE st.tournament_id = ?', $tournament_id);
 			}
 		}
 		

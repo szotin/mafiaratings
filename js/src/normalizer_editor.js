@@ -611,6 +611,20 @@ function getRuleHelp(policyNum)
 	return '';
 }
 
+// The version picker next to the name. Any version of the system can be opened; switching is a
+// page load, which the page does in selectVersion() - that is where there are labels to ask
+// about unsaved edits with. Newest first, because that is the one usually wanted.
+function versionSelectHtml()
+{
+	var html = '<select onchange="selectVersion(this.value)">';
+	for (var i = _data.versions.length - 1; i >= 0; --i)
+	{
+		var version = _data.versions[i];
+		html += '<option value="' + version + '"' + (version == _data.version ? ' selected' : '') + '>' + version + '</option>';
+	}
+	return html + '</select>';
+}
+
 function refreshNormalizerEditor(isDirty)
 {
 	var norm = _data.normalizer;
@@ -619,7 +633,7 @@ function refreshNormalizerEditor(isDirty)
     var html = '<table width="100%" class="bordered light">';
 	if (_data.name)
 	{
-		html += '<tr class="dark"><td colspan="3"><label for="normalizer-name">' + str.name + ': </label><input id="normalizer-name" value="' + _data.name + '" onChange="onNormalizerNameChange()"><label for="normalizer-name"> ' + str.version + ': ' + _data.version + '</label></td></tr>';
+		html += '<tr class="dark"><td colspan="3"><label for="normalizer-name">' + str.name + ': </label><input id="normalizer-name" value="' + _data.name + '" onChange="onNormalizerNameChange()"><label for="normalizer-name"> ' + str.version + ': </label>' + versionSelectHtml() + '</td></tr>';
 	}
 	
 	html += '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + str.policyAdd + '" onclick="createPolicy()"><img src="images/create.png"></button></td>';

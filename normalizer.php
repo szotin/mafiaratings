@@ -1,14 +1,18 @@
 <?php
 
 require_once 'include/general_page_base.php';
+require_once 'include/systems.php';
 require_once 'include/scoring.php';
 
 class Page extends PageBase
 {
 	private $normalizer;
 	private $normalizer_id;
+	private $used_versions;
 	private $normalizer_name;
 	private $normalizer_version;
+	private $current_version;
+	private $versions;
 	
 	protected function prepare()
 	{
@@ -20,7 +24,7 @@ class Page extends PageBase
 		}
 		$normalizer_id = (int)$_REQUEST['id'];
 		
-		list($this->normalizer_id, $this->normalizer, $this->normalizer_name, $this->normalizer_version, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT s.id, v.normalizer, s.name, s.version, s.club_id, s.league_id FROM normalizers s JOIN normalizer_versions v ON v.normalizer_id = s.id AND v.version = s.version WHERE s.id = ?', $normalizer_id);
+		list($this->normalizer_id, $this->normalizer_name, $this->current_version, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT id, name, version, club_id, league_id FROM normalizers WHERE id = ?', $normalizer_id);
 		if (is_null($club_id))
 		{
 			if (is_null($league_id))
@@ -40,13 +44,36 @@ class Page extends PageBase
 				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 			}
 		}
+		// Any version can be opened, not only the current one.
+		$this->versions = get_system_versions('normalizer', $this->normalizer_id);
+		$this->normalizer_version = get_requested_system_version($this->versions, $this->current_version);
+		list($this->normalizer) = Db::record(get_label('scoring normalizer'),
+			'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?',
+			$this->normalizer_id, $this->normalizer_version);
+		
+		// Which versions some tournament has already been normalized on. Saving one of those
+		// changes results that exist, so it is what the warning is about, and what makes the New
+		// version button worth offering.
+		$this->used_versions = get_used_system_versions('normalizer', $this->normalizer_id, array('tournaments'));
+
 		$this->_title = get_label('Scoring normalizer') . ': ' . $this->normalizer_name;
 	}
 	
 	protected function show_body()
 	{
-		echo '<p><button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button></p>';
-		echo '<script src="js/normalizer_editor.js"></script>';
+		// The same four buttons in the same order as the other two system editors: save what is
+		// on screen, start a version to put it in instead, drop a version nothing is on, edit
+		// the json by hand.
+		echo '<p>';
+		echo '<button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button>';
+		// A new version is only worth having while something already uses the one on screen.
+		// Otherwise it can be changed in place without touching any competition.
+		echo ' <button id="new-version" onclick="newVersion()"' . (isset($this->used_versions[$this->normalizer_version]) ? '' : ' disabled') . '>' . get_label('New version') . '</button>';
+		// And a version nothing is on can go - as long as it is not the only one there is.
+		echo ' <button id="delete-version" onclick="deleteVersion()"' . (!isset($this->used_versions[$this->normalizer_version]) && count($this->versions) > 1 ? '' : ' disabled') . '>' . get_label('Delete version') . '</button>';
+		echo ' <button onclick="editJson()">' . get_label('Edit json') . '</button>';
+		echo '</p>';
+		echo '<script src="' . versioned_asset('js/normalizer_editor.js') . '"></script>';
 		echo '<div id="normalizer-editor"></div>';
 	}
 	
@@ -60,6 +87,7 @@ class Page extends PageBase
 			id: <?php echo $this->normalizer_id; ?>,
 			name: "<?php echo $this->normalizer_name; ?>",
 			version: <?php echo $this->normalizer_version; ?>,
+			versions: [<?php echo implode(',', $this->versions); ?>],
 			strings:
 			{
 				name: "<?php echo get_label('Scoring normalizer name'); ?>",
@@ -127,23 +155,139 @@ class Page extends PageBase
 		{
 			data = d;
 			$('#save').prop('disabled', !isDirty);
+			// A new version is only worth having while something already uses this one, and this
+			// one can only go while nothing does - and never if it is the only one left.
+			$('#new-version').prop('disabled', !isVersionUsed(data.version));
+			$('#delete-version').prop('disabled', isVersionUsed(data.version) || data.versions.length < 2);
 		}
 		
+		// The version New version picked, until a save puts it there. It is in the picker but
+		// not in the database, so there is nothing to delete and nothing to come back to.
+		var unsavedVersion = 0;
+		
+		// The versions something already uses. A version that was just added is not one of
+		// them: it is a second old and nobody has had a chance to use it yet.
+		var usedVersions = [<?php echo implode(',', array_keys($this->used_versions)); ?>];
+		
+		function isVersionUsed(version)
+		{
+			return usedVersions.indexOf(version) >= 0;
+		}
+		
+		// Opening another version is a page load, so anything unsaved would be lost.
+		function selectVersion(version)
+		{
+			if (version == data.version)
+			{
+				return;
+			}
+			if (dirty())
+			{
+				dlg.yesNo("<?php echo get_label('The changes are not saved yet and will be lost. Open another version anyway?'); ?>", null, null, function()
+				{
+					goTo({ version: version });
+				});
+				return;
+			}
+			goTo({ version: version });
+		}
+		
+		// Save writes the version on screen, in place. Which is the whole point while nothing
+		// uses it, and worth a word of warning once something does.
 		function saveData()
 		{
-			console.log(data.normalizer);
+			if (isVersionUsed(data.version))
+			{
+				dlg.yesNo("<?php echo get_label('This version of the system is already used in competitions. Your changes may change the tables of the tournaments and series that already exist. If you do not want to break anything, we recommend pressing New version first - then your changes will not touch the existing competitions. If you are sure of what you are doing, press Yes.'); ?>", null, null, function()
+				{
+					postData();
+				});
+				return;
+			}
+			postData();
+		}
+		
+		// A new version is a number and nothing else until it is saved: what is on screen stays
+		// as it is and becomes something to save, now into a version no competition is on.
+		function newVersion()
+		{
+			var version = 1;
+			for (var i = 0; i < data.versions.length; ++i)
+			{
+				if (data.versions[i] >= version)
+				{
+					version = data.versions[i] + 1;
+				}
+			}
+			data.versions.push(version);
+			unsavedVersion = version;
+			setNormalizerVersion(version);
+			dirty(true);
+		}
+		
+		// Dropping the version that was never saved is just going back to what is there. Any
+		// other one is a deletion, and the page comes back on whatever version is current then.
+		function deleteVersion()
+		{
+			if (data.version == unsavedVersion)
+			{
+				dirty(false);
+				goTo({ version: undefined });
+				return;
+			}
+			dlg.yesNo("<?php echo get_label('Delete this version? This can not be undone.'); ?>", null, null, function()
+			{
+				var params =
+				{
+					op: 'delete_version'
+					, normalizer_id: data.id
+					, normalizer_version: data.version
+				};
+				json.post("api/ops/normalizer.php", params, function(response)
+				{
+					dirty(false);
+					goTo({ version: response.current_version });
+				});
+			});
+		}
+		
+		function editJson()
+		{
+			dlg.form("form/system_json.php?type=normalizer&id=" + data.id + "&version=" + data.version, null, 1200);
+		}
+		
+		// What that dialog calls with the json it was given. It saves nothing - this is the
+		// editor being handed other contents, and Save is still what writes them.
+		function applyJson(json)
+		{
+			data.normalizer = json;
+			initNormalizerEditor(data, onDataChange);
+			dirty(true);
+		}
+		
+		function postData()
+		{
 			var params =
 			{
 				op: 'change'
 				, normalizer_id: data.id
 				, name: data.name
 				, normalizer: JSON.stringify(data.normalizer)
+				, normalizer_version: data.version
 			};
 			json.post("api/ops/normalizer.php", params, function(response)
 			{
+				// A save that added a version gives the picker one more entry. This has to happen
+				// before setNormalizerVersion, which is what moves data.version.
+				if (data.versions.indexOf(response.normalizer_version) < 0)
+				{
+					data.versions.push(response.normalizer_version);
+				}
+				unsavedVersion = 0;
 				setNormalizerVersion(response.normalizer_version);
+				// Only once it is actually saved: a post that failed leaves something to save.
+				dirty(false);
 			});
-			dirty(false);
 		}
 		
 		initNormalizerEditor(data, onDataChange);

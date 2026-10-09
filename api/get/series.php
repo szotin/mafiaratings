@@ -59,11 +59,11 @@ class ApiPage extends GetApiPageBase
 		{
 			if (strpos($started_before, '+') === 0)
 			{
-				$condition->add(' AND (s.type = ' . SERIES_TYPE_RECURRING . ' OR s.start_time <= ?)', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
+				$condition->add(' AND (s.start_time = ' . SERIES_INFINITE_START . ' OR s.start_time <= ?)', get_datetime(trim(substr($started_before, 1)))->getTimestamp());
 			}
 			else
 			{
-				$condition->add(' AND (s.type = ' . SERIES_TYPE_RECURRING . ' OR s.start_time < ?)', get_datetime($started_before)->getTimestamp());
+				$condition->add(' AND (s.start_time = ' . SERIES_INFINITE_START . ' OR s.start_time < ?)', get_datetime($started_before)->getTimestamp());
 			}
 		}
 
@@ -81,7 +81,7 @@ class ApiPage extends GetApiPageBase
 
 		if (!empty($started_after))
 		{
-			$condition->add(' AND s.type <> ' . SERIES_TYPE_RECURRING);
+			$condition->add(' AND s.start_time <> ' . SERIES_INFINITE_START);
 			if (strpos($started_after, '+') === 0)
 			{
 				$condition->add(' AND s.start_time >= ?', get_datetime(trim(substr($started_after, 1)))->getTimestamp());
@@ -159,7 +159,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.max_stars, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.max_stars, s.stages, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
 				series_owner_join(), $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
@@ -172,21 +172,35 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->max_stars, $s->notes, $rules, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->max_stars, $s->stages, $s->notes, $rules, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
 				$s->flags = (int)$s->flags;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
-				$s->type = (int)$s->type;
-				$s->max_stars = series_max_stars($s->type, $s->max_stars);
-				$s->start = timestamp_to_string($s->timestamp, $timezone);
-				$s->end = timestamp_to_string($s->timestamp + $s->duration, $timezone);
+				$s->max_stars = series_max_stars($s->max_stars);
+				$s->stages = series_stage_count($s->stages);
+				$s->type = series_type($s->timestamp, $s->max_stars);
+				$s->stage_names = series_stage_names($s->type, $s->stages);
+				// A series with no dates reports none. The timestamp and the duration below are the
+				// stored marker of that - the epoch and an eternal duration - and formatting them
+				// would claim it started in 1970 and ends in 2038.
+				if (series_is_infinite($s->timestamp))
+				{
+					$s->start = NULL;
+					$s->end = NULL;
+				}
+				else
+				{
+					$s->start = timestamp_to_string($s->timestamp, $timezone);
+					$s->end = timestamp_to_string($s->timestamp + $s->duration, $timezone);
+				}
 				$s->rules = json_decode($rules);
 
 				// The owner is either a league or a club. The owner_* fields always describe
 				// whichever it is; league_* stays for the callers that already read it.
 				$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
+				$s->is_manager = is_series_manager($owner, $s->id);
 				$s->owner_type = $owner->is_league() ? 'league' : 'club';
 				$s->owner_id = $owner->id;
 				$s->owner_name = $owner->name;
@@ -220,7 +234,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.type, s.max_stars, s.notes, s.league_id, s.club_id FROM series s', $condition);
+				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.max_stars, s.stages, s.notes, s.league_id, s.club_id FROM series s', $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
 			{
@@ -231,7 +245,7 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->type, $s->max_stars, $s->notes, $league_id, $club_id) = $row;
+				list ($s->id, $s->name, $s->flags, $s->langs, $s->timestamp, $s->duration, $s->max_stars, $s->stages, $s->notes, $league_id, $club_id) = $row;
 				$s->id = (int)$s->id;
 				$s->langs = (int)$s->langs;
 				$owner = new SeriesOwner($league_id, $club_id);
@@ -241,8 +255,11 @@ class ApiPage extends GetApiPageBase
 				$s->club_id = $owner->club_id;
 				$s->timestamp = (int)$s->timestamp;
 				$s->duration = (int)$s->duration;
-				$s->type = (int)$s->type;
-				$s->max_stars = series_max_stars($s->type, $s->max_stars);
+				$s->max_stars = series_max_stars($s->max_stars);
+				$s->stages = series_stage_count($s->stages);
+				$s->type = series_type($s->timestamp, $s->max_stars);
+				$s->stage_names = series_stage_names($s->type, $s->stages);
+				$s->is_manager = is_series_manager($owner, $s->id);
 
 				$series_pic->set($s->id, $s->name, $s->flags);
 				$s->has_picture = $series_pic->has_image(true);
@@ -284,8 +301,11 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('langs', 'A bit combination of languages used in the series.' . valid_langs_help());
 			$param->sub_param('timestamp', 'Unix timestamp for the start of the series.');
 			$param->sub_param('duration', 'Duration of the series in seconds.');
-			$param->sub_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it. Between 1 and ' . SERIES_MAX_STARS_LIMIT . '; always 1 for a recurring tournament.');
-			$param->sub_param('type', 'Series type: ' . SERIES_TYPE_SEASON . ' - a season; ' . SERIES_TYPE_SERIES . ' - a series of tournaments; ' . SERIES_TYPE_RECURRING . ' - a recurring tournament, which has no dates and never ends. The timestamp and the duration of a recurring tournament are an implementation detail - it simply runs.');
+			$param->sub_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it. Between 0 and ' . SERIES_MAX_STARS_LIMIT . '. Zero means the series does not grade its tournaments at all: it says which stage each of them belongs to instead.');
+			$param->sub_param('stages', 'How many stages the series has. One means there is no ladder. The stages of a series with n of them are ' . SERIES_STAGE_BASE . ' - the base stage - and 1..n-1, numbered the way tournaments number the rounds of their own playoff: ' . SERIES_STAGE_FINAL . ' - the final, ' . SERIES_STAGE_SEMIFINAL . ' - the semifinal, ' . SERIES_STAGE_QUARTERFINAL . ' - the quarterfinal, and so on.');
+			$param->sub_param('stage_names', 'The stages of the series, in the order they are played. Each entry has <q>stage</q> - the number above - and <q>name</q> - what this series calls that stage in the language of the request.');
+			$param->sub_param('is_manager', 'True if the user of the request manages this series, and may therefore say which stage of it a tournament belongs to.');
+			$param->sub_param('type', 'What the series is called, derived from <q>max_stars</q>, <q>stages</q> and whether it has dates: ' . SERIES_TYPE_SEASON . ' - a season; ' . SERIES_TYPE_SERIES . ' - a series of tournaments; ' . SERIES_TYPE_RECURRING . ' - a recurring tournament, which has no dates and never ends. The timestamp and the duration of a series with no dates are an implementation detail - it simply runs.');
 			$param->sub_param('start', 'Formatted date "yyyy-mm-dd HH:MM" for the start of the series. User timezone is used.', 1);
 			$param->sub_param('end', 'Formatted date "yyyy-mm-dd HH:MM" for the end of the series. User timezone is used.', 1);
 			$param->sub_param('notes', 'Series notes.');

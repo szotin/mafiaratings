@@ -569,12 +569,26 @@ function setScoringVersion(version)
 	}
 }
 
+// The version picker next to the name. Any version of the system can be opened; switching is a
+// page load, which the page does in selectVersion() - that is where there are labels to ask
+// about unsaved edits with. Newest first, because that is the one usually wanted.
+function versionSelectHtml()
+{
+	var html = '<select onchange="selectVersion(this.value)">';
+	for (var i = _data.versions.length - 1; i >= 0; --i)
+	{
+		var version = _data.versions[i];
+		html += '<option value="' + version + '"' + (version == _data.version ? ' selected' : '') + '>' + version + '</option>';
+	}
+	return html + '</select>';
+}
+
 function refreshScoringEditor(isDirty)
 {
     var html = '<table width="100%" class="bordered dark">';
 	if (_data.name)
 	{
-		html += '<tr><td colspan="5">' + _data.strings.name + ': <input id="scoring-name" value="' + _data.name + '" oninput="onScoringNameChange()"> ' + _data.strings.version + ': ' + _data.version + '</td></tr>';
+		html += '<tr><td colspan="5">' + _data.strings.name + ': <input id="scoring-name" value="' + _data.name + '" oninput="onScoringNameChange()"> ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
 	}
     for (var sectionName in _data.sections)
     {

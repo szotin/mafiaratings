@@ -96,6 +96,19 @@ class Page extends SeriesPageBase
 		
 		$this->player_pic = new Picture(USER_PICTURE);
 		$this->player_pic->set($this->user_id, $this->user_name, $this->user_flags);
+		
+		// Which stage of the series this breakdown is of. Inside a stage the points add up and
+		// between stages they do not, so one stage at a time is the only breakdown that adds up
+		// to a number the series actually uses. It opens on the stage that decided this player's
+		// place - see series_places.stage.
+		$this->player_stage = SERIES_STAGE_BASE;
+		$query = new DbQuery('SELECT stage FROM series_places WHERE series_id = ? AND user_id = ? AND cut_stages = 0', $this->id, $this->user_id);
+		if ($row = $query->next())
+		{
+			list($this->player_stage) = $row;
+			$this->player_stage = series_stage($this->stages, $this->player_stage);
+		}
+		$this->stage = isset($_REQUEST['stage']) ? series_stage($this->stages, $_REQUEST['stage']) : $this->player_stage;
 	}
 	
 	protected function show_body()
@@ -131,6 +144,17 @@ class Page extends SeriesPageBase
 		global $_lang;
 		
 		$default_timezone = get_timezone();
+		
+		if ($this->stages > 1)
+		{
+			echo '<div class="tab">';
+			foreach (get_series_stages($this->type, $this->stages) as $s => $stage_name)
+			{
+				echo '<button ' . ($this->stage == $s ? 'class="active" ' : '') . 'onclick="goTo({stage:' . $s . ',page:undefined})">' . $stage_name . '</button>';
+			}
+			echo '</div>';
+		}
+		
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="th darker" align="center"><td colspan="3">';
 		echo '<table class="transp" width="100%"><tr><td width="72">';
@@ -162,8 +186,8 @@ class Page extends SeriesPageBase
 			' JOIN addresses a ON a.id = t.address_id'.
 			' JOIN cities ct ON ct.id = a.city_id'.
 			' JOIN names n ON n.id = ct.name_id AND (n.langs & '.$_lang.') <> 0'.
-			' WHERE p.user_id = ?'.
-			' GROUP BY t.id', $this->id, $this->user_id);
+			' WHERE p.user_id = ? AND s.stage = ?'.
+			' GROUP BY t.id', $this->id, $this->user_id, $this->stage);
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
@@ -179,42 +203,55 @@ class Page extends SeriesPageBase
 			$delim = ',';
 		}
 
-		$delim = '';
+		// A subseries has no stage of its own - series_series says nothing about stages - so it
+		// counts in the base stage and is listed only when that is the stage on screen. The list of
+		// them is still declared here: the query that looks up what other series they belong to
+		// reads it either way.
 		$cs_child_series = '';
-		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score'.
-			' FROM series_places p'.
-			' JOIN series s ON s.id = p.series_id'.
-			' JOIN series_places p1 ON p1.series_id = s.id'.
-			' JOIN series_series ss ON ss.child_id = s.id AND ss.parent_id = ?'.
-			series_owner_join() .
-			' WHERE p.user_id = ? AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
-			' GROUP BY s.id', $this->id, $this->user_id);
-		while ($row = $query->next())
+		if ($this->stage == SERIES_STAGE_BASE)
 		{
-			$c_series = new stdClass();
-			list(
-				$c_series->id, $c_series->name, $c_series->flags,
-				$league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags,
-				$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration,
-				$c_series->players_count, $c_series->points) = $row;
-			$c_series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-			$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
-			$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count, 0, 0, 0, 0, true);
-			$c_series->type = TYPE_SERIES;
-			$c_series->timezone = $default_timezone;
-			$tournaments[] = $c_series;
-			$cs_child_series .= $delim . $c_series->id;
-			$delim = ',';
+			$delim = '';
+			$query = new DbQuery(
+				'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score'.
+				' FROM series_places p'.
+				' JOIN series s ON s.id = p.series_id'.
+				' JOIN series_places p1 ON p1.series_id = s.id AND p1.cut_stages = 0'.
+				' JOIN series_series ss ON ss.child_id = s.id AND ss.parent_id = ?'.
+				series_owner_join() .
+				' WHERE p.user_id = ? AND p.cut_stages = 0 AND (s.flags & ' . SERIES_FLAG_FINISHED . ') <> 0'.
+				' GROUP BY s.id', $this->id, $this->user_id);
+			while ($row = $query->next())
+			{
+				$c_series = new stdClass();
+				list(
+					$c_series->id, $c_series->name, $c_series->flags,
+					$league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags,
+					$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration,
+					$c_series->players_count, $c_series->points) = $row;
+				$c_series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
+				$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
+				$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count, 0, 0, 0, 0, true);
+				$c_series->type = TYPE_SERIES;
+				$c_series->timezone = $default_timezone;
+				$tournaments[] = $c_series;
+				$cs_child_series .= $delim . $c_series->id;
+				$delim = ',';
+			}
+			
 		}
 		
+		// Extra points are not a competition of the series, but they do belong to a stage of it -
+		// the one whoever gave them said - so they are listed with the rest of that stage.
 		$query = new DbQuery(
-			'SELECT time, reason, points FROM series_extra_points WHERE series_id = ? AND user_id = ?', $this->id, $this->user_id);
+			'SELECT time, reason, points FROM series_extra_points WHERE series_id = ? AND user_id = ? AND stage = ?', $this->id, $this->user_id, $this->stage);
 		while ($row = $query->next())
 		{
 			$c_points = new stdClass();
 			list($c_points->time, $c_points->name, $c_points->score) = $row;
-			$c_points->duration = '';
+			// Zero rather than empty: extra points happen at a moment rather than over a period,
+			// but the duration goes into arithmetic when the list is sorted, and an empty string
+			// there is a warning on every page that has any.
+			$c_points->duration = 0;
 			$c_points->players_count = '';
 			$c_points->stars = 0;
 			$c_points->place = '';
@@ -248,7 +285,7 @@ class Page extends SeriesPageBase
 				for ($i = 1; $i < count($tournaments); ++$i)
 				{
 					$tournament = $tournaments[$i];
-					if ($tournament->exclude || $tournament->id == $this->finals_id)
+					if ($tournament->exclude)
 					{
 						continue;
 					}
@@ -268,7 +305,7 @@ class Page extends SeriesPageBase
 				for (; $i < count($tournaments); ++$i)
 				{
 					$tournament = $tournaments[$i];
-					if ($tournament->exclude || $tournament->id == $this->finals_id)
+					if ($tournament->exclude)
 					{
 						continue;
 					}
@@ -430,7 +467,7 @@ class Page extends SeriesPageBase
 			{
 				foreach ($tournament->series as $series)
 				{
-					echo '<td width="64" align="center" valign="center">';
+					echo '<td width="36" align="center" valign="center">';
 					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
 					echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
 					$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);
@@ -492,11 +529,6 @@ class Page extends SeriesPageBase
 			{
 				echo '<td class="dark"><font color="#808080">' . format_score($tournament->score) . '</font></td>';
 				echo '<td><font color="#808080">' . $tournament->players_count . '</font></td>';
-			}
-			else if ($tournament->type == TYPE_TOURNAMENT && $tournament->id == $this->finals_id)
-			{
-				echo '<td class="dark"></td>';
-				echo '<td>' . $tournament->players_count . '</td>';
 			}
 			else
 			{

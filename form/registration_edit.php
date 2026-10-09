@@ -77,6 +77,8 @@ try
 	echo '<br><input type="checkbox" id="form-referee"' . (($flags & USER_PERM_REFEREE) ? ' checked' : '') . '> '.get_label('Referee');
 	echo '<br><input type="checkbox" id="form-player"' . (($flags & USER_PERM_PLAYER) ? ' checked' : '') . '> '.get_label('Player');
 	echo '<br><input type="checkbox" id="form-exhibition"' . (($flags & USER_FLAG_EXHIBITION_PLAYER) ? ' checked' : '') . '> '.get_label('Exhibition player');
+	// Shown in the tournament standings, but this tournament does not count for them in any series.
+	echo '<br><input type="checkbox" id="form-substitute"' . (($flags & USER_FLAG_SUBSTITUTE) ? ' checked' : '') . '> '.get_label('Substitute');
 	echo '</td></tr>';
 
 	echo '</table>';
@@ -105,6 +107,7 @@ try
 			, team: $('#form-team').val()
 			, access_flags: flags
 			, exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
+			, substitute: ($("#form-substitute").attr("checked") ? 1 : 0)
 		}, onSuccess);
 	}
 	</script>

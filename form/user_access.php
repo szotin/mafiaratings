@@ -37,6 +37,7 @@ try
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		list($club_id, $name, $user_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, tu.flags FROM tournament_regs tu JOIN tournaments t ON t.id = tu.tournament_id WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		$substitute_flag = USER_FLAG_SUBSTITUTE;
 		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
 	}
@@ -61,6 +62,8 @@ try
 		dialog_title(get_label('[0] permissions', $user_name));
 	}
 	
+	$substitute_flag = isset($substitute_flag) ? $substitute_flag : 0;
+
 	if ($club_id > 0 || isset($series_id))
 	{
 		echo '<input type="checkbox" id="form-manager" value="1"' . ((($user_flags & USER_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager');
@@ -69,6 +72,11 @@ try
 		if ($exhibition_flag != 0)
 		{
 			echo '<br><input type="checkbox" id="form-exhibition" value="1"' . ((($user_flags & $exhibition_flag) != 0) ? ' checked' : '') . '> '.get_label('Exhibition player');
+		}
+		if ($substitute_flag != 0)
+		{
+			// Shown in the tournament, but this tournament does not count for them in any series.
+			echo '<br><input type="checkbox" id="form-substitute" value="1"' . ((($user_flags & $substitute_flag) != 0) ? ' checked' : '') . '> '.get_label('Substitute');
 		}
 		if (isset($event_id))
 		{
@@ -105,7 +113,8 @@ try
 					manager: ($("#form-manager").attr("checked") ? 1 : 0),
 					moder: ($("#form-referee").attr("checked") ? 1 : 0),
 					player: ($("#form-player").attr("checked") ? 1 : 0),
-					exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
+					exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0),
+					substitute: ($("#form-substitute").attr("checked") ? 1 : 0)
 				},
 				onSuccess);
 			}

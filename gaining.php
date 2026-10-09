@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/general_page_base.php';
+require_once 'include/systems.php';
 require_once 'include/gaining.php';
 
 class Page extends PageBase
@@ -9,7 +10,9 @@ class Page extends PageBase
 	private $gaining_id;
 	private $gaining_name;
 	private $gaining_version;
-	private $dependants;
+	private $current_version;
+	private $versions;
+	private $used_versions;
 
 	protected function prepare()
 	{
@@ -21,11 +24,9 @@ class Page extends PageBase
 		}
 		$gaining_id = (int)$_REQUEST['id'];
 
-		list($this->gaining_id, $this->gaining, $this->gaining_name, $this->gaining_version, $club_id, $league_id) =
+		list($this->gaining_id, $this->gaining_name, $this->current_version, $club_id, $league_id) =
 			Db::record(get_label('gaining system'),
-				'SELECT s.id, v.gaining, s.name, s.version, s.club_id, s.league_id FROM gainings s' .
-				' JOIN gaining_versions v ON v.gaining_id = s.id AND v.version = s.version' .
-				' WHERE s.id = ?', $gaining_id);
+				'SELECT id, name, version, club_id, league_id FROM gainings WHERE id = ?', $gaining_id);
 		if (is_null($club_id))
 		{
 			if (is_null($league_id))
@@ -46,27 +47,35 @@ class Page extends PageBase
 			}
 		}
 
-		// api/ops/gaining.php overwrites the current version in place while no finished series
-		// uses it, and starts a new version once one does. Saying which it will be up front
-		// spares the author a surprise.
-		list($this->dependants) = Db::record(get_label('series'),
-			'SELECT count(*) FROM series WHERE gaining_id = ? AND gaining_version = ? AND start_time + duration < UNIX_TIMESTAMP()',
+		// Any version can be opened, not only the current one.
+		$this->versions = get_system_versions('gaining', $this->gaining_id);
+		$this->gaining_version = get_requested_system_version($this->versions, $this->current_version);
+		list($this->gaining) = Db::record(get_label('gaining system'),
+			'SELECT gaining FROM gaining_versions WHERE gaining_id = ? AND version = ?',
 			$this->gaining_id, $this->gaining_version);
-		$this->dependants = (int)$this->dependants;
+		
+		// Which versions some series already uses. Saving one of those changes results that
+		// exist, so it is what the warning is about, and what makes the New version button worth
+		// offering. What uses a gaining system is the series, not the tournaments inside it.
+		$this->used_versions = get_used_system_versions('gaining', $this->gaining_id, array('series'));
 
 		$this->_title = get_label('Gaining system') . ': ' . $this->gaining_name;
 	}
 
 	protected function show_body()
 	{
-		echo '<p><button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button>';
-		echo ' <button onclick="viewJson()">' . get_label('View json') . '</button>';
-		echo ' <button onclick="editJson()">' . get_label('Edit json') . '</button></p>';
-
-		if ($this->dependants > 0)
-		{
-			echo '<p><i>' . get_label('[0] finished series already use this version. Saving creates a new version and leaves their results alone.', $this->dependants) . '</i></p>';
-		}
+		// The same four buttons in the same order as the other two system editors: save what is
+		// on screen, start a version to put it in instead, drop a version nothing is on, edit
+		// the json by hand.
+		echo '<p>';
+		echo '<button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button>';
+		// A new version is only worth having while something already uses the one on screen.
+		// Otherwise it can be changed in place without touching any competition.
+		echo ' <button id="new-version" onclick="newVersion()"' . (isset($this->used_versions[$this->gaining_version]) ? '' : ' disabled') . '>' . get_label('New version') . '</button>';
+		// And a version nothing is on can go - as long as it is not the only one there is.
+		echo ' <button id="delete-version" onclick="deleteVersion()"' . (!isset($this->used_versions[$this->gaining_version]) && count($this->versions) > 1 ? '' : ' disabled') . '>' . get_label('Delete version') . '</button>';
+		echo ' <button onclick="editJson()">' . get_label('Edit json') . '</button>';
+		echo '</p>';
 
 		echo '<script src="' . versioned_asset('js/gaining_editor.js') . '"></script>';
 		echo '<div id="gaining-editor"></div>';
@@ -93,14 +102,11 @@ class Page extends PageBase
 	{
 		// What the help button next to every formula offers, taken from the evaluator's own
 		// function list so that it cannot drift away from what get_gaining_points() provides.
-		// "place" is added by hand: it is set as a plain variable rather than registered as a
-		// function, but a formula uses it the same way and an author looks for it here.
 		$function_names = array();
 		foreach (get_gaining_functions() as $f)
 		{
 			$function_names[] = $f->id();
 		}
-		$function_names[] = 'place';
 ?>
 		var data =
 		{
@@ -108,6 +114,7 @@ class Page extends PageBase
 			id: <?php echo $this->gaining_id; ?>,
 			name: "<?php echo $this->gaining_name; ?>",
 			version: <?php echo $this->gaining_version; ?>,
+			versions: [<?php echo implode(',', $this->versions); ?>],
 			functions: "<?php echo implode(',', $function_names); ?>",
 			strings:
 			{
@@ -141,7 +148,12 @@ class Page extends PageBase
 		function onDataChange(d, isDirty)
 		{
 			data = d;
-			$('#save').prop('disabled', !isDirty || !isGainingDataCorrect());
+			var incorrect = !isGainingDataCorrect();
+			$('#save').prop('disabled', incorrect || !isDirty);
+			// A new version is only worth having while something already uses this one, and this
+			// one can only go while nothing does - and never if it is the only one left.
+			$('#new-version').prop('disabled', !isVersionUsed(data.version));
+			$('#delete-version').prop('disabled', isVersionUsed(data.version) || data.versions.length < 2);
 		}
 
 		// Whether the player's own result reaches the formula the preview is about to evaluate.
@@ -181,7 +193,71 @@ class Page extends PageBase
 			});
 		}
 
+		// The version New version picked, until a save puts it there. It is in the picker but
+		// not in the database, so there is nothing to delete and nothing to come back to.
+		var unsavedVersion = 0;
+		
+		// The versions something already uses. A version that was just added is not one of
+		// them: it is a second old and nobody has had a chance to use it yet.
+		var usedVersions = [<?php echo implode(',', array_keys($this->used_versions)); ?>];
+		
+		function isVersionUsed(version)
+		{
+			return usedVersions.indexOf(version) >= 0;
+		}
+		
+		// Opening another version is a page load, so anything unsaved would be lost.
+		function selectVersion(version)
+		{
+			if (version == data.version)
+			{
+				return;
+			}
+			if (dirty())
+			{
+				dlg.yesNo("<?php echo get_label('The changes are not saved yet and will be lost. Open another version anyway?'); ?>", null, null, function()
+				{
+					goTo({ version: version });
+				});
+				return;
+			}
+			goTo({ version: version });
+		}
+		
+		// Save writes the version on screen, in place. Which is the whole point while nothing
+		// uses it, and worth a word of warning once something does.
 		function saveData()
+		{
+			if (isVersionUsed(data.version))
+			{
+				dlg.yesNo("<?php echo get_label('This version of the system is already used in competitions. Your changes may change the tables of the tournaments and series that already exist. If you do not want to break anything, we recommend pressing New version first - then your changes will not touch the existing competitions. If you are sure of what you are doing, press Yes.'); ?>", null, null, function()
+				{
+					postData();
+				});
+				return;
+			}
+			postData();
+		}
+
+		// A new version is a number and nothing else until it is saved: what is on screen stays
+		// as it is and becomes something to save, now into a version no competition is on.
+		function newVersion()
+		{
+			var version = 1;
+			for (var i = 0; i < data.versions.length; ++i)
+			{
+				if (data.versions[i] >= version)
+				{
+					version = data.versions[i] + 1;
+				}
+			}
+			data.versions.push(version);
+			unsavedVersion = version;
+			setGainingVersion(version);
+			dirty(true);
+		}
+		
+		function postData()
 		{
 			var params =
 			{
@@ -189,22 +265,61 @@ class Page extends PageBase
 				, gaining_id: data.id
 				, name: data.name
 				, gaining: JSON.stringify(data.gaining)
+				, gaining_version: data.version
 			};
 			json.post("api/ops/gaining.php", params, function(response)
 			{
+				// A save that added a version gives the picker one more entry. This has to happen
+				// before setGainingVersion, which is what moves data.version.
+				if (data.versions.indexOf(response.gaining_version) < 0)
+				{
+					data.versions.push(response.gaining_version);
+				}
+				unsavedVersion = 0;
 				setGainingVersion(response.gaining_version);
 				dirty(false);
 			});
 		}
 
-		function viewJson()
+		// Dropping the version that was never saved is just going back to what is there. Any
+		// other one is a deletion, and the page comes back on whatever version is current then.
+		function deleteVersion()
 		{
-			dlg.info(JSON.stringify(data.gaining), 'Json');
+			if (data.version == unsavedVersion)
+			{
+				dirty(false);
+				goTo({ version: undefined });
+				return;
+			}
+			dlg.yesNo("<?php echo get_label('Delete this version? This can not be undone.'); ?>", null, null, function()
+			{
+				var params =
+				{
+					op: 'delete_version'
+					, gaining_id: data.id
+					, gaining_version: data.version
+				};
+				json.post("api/ops/gaining.php", params, function(response)
+				{
+					dirty(false);
+					goTo({ version: response.current_version });
+				});
+			});
 		}
-
+		
 		function editJson()
 		{
-			dlg.form("form/gaining_edit.php?gaining_id=" + data.id, refr, 1200);
+			dlg.form("form/system_json.php?type=gaining&id=" + data.id + "&version=" + data.version, null, 1200);
+		}
+		
+		// What that dialog calls with the json it was given. It saves nothing - this is the
+		// editor being handed other contents, and Save is still what writes them.
+		function applyJson(json)
+		{
+			data.gaining = json;
+			initGainingEditor(data, onDataChange, onPreview);
+			refreshGainingPreview();
+			dirty(true);
 		}
 
 		initGainingEditor(data, onDataChange, onPreview);

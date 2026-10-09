@@ -52,6 +52,18 @@ define('USER_CLUB_ICON_MAX_VERSION', 7);
 // flag sets so the same constant can be used regardless of registration type.
 define('USER_FLAG_EXHIBITION_PLAYER', 0x400);
 
+// The player takes part, and is shown in the standings of the competition, but the competition
+// does not count for them one level up: a tournament registration means the tournament brings
+// them nothing in any series it belongs to, an event registration means the event brings them
+// nothing in its tournament.
+//
+// Named after the common reason - a substitute plays a final without having qualified for it -
+// but it also covers a player already through to the next stage who enters another qualifier.
+//
+// That is the whole difference from USER_FLAG_EXHIBITION_PLAYER, who is not shown at all. Bit
+// 0x4000 is reserved in all three registration flag sets, same as 0x400 above.
+define('USER_FLAG_SUBSTITUTE', 0x4000);
+
 // user-event flags
 // 01 - 0x0001 -      1 - perm player
 // 02 - 0x0002 -      2 - perm mod
@@ -61,6 +73,7 @@ define('USER_FLAG_EXHIBITION_PLAYER', 0x400);
 // 06 - 0x0020 -     32 - icon mask
 // 07 - 0x0040 -     64 - icon mask
 // 11 - 0x0400 -   1024 - USER_FLAG_EXHIBITION_PLAYER (excluded from standings)
+// 15 - 0x4000 -  16384 - USER_FLAG_SUBSTITUTE (shown in the event, not counted in its tournament)
 define('USER_EVENT_NEW_PLAYER_FLAGS', 0);
 
 define('USER_EVENT_ICON_MASK', 0x70);
@@ -78,6 +91,7 @@ define('USER_EVENT_ICON_MAX_VERSION', 7);
 // 08 - 0x0080 -    128 - user applied by themself. They is not accepted for the tournament yet.
 // 09 - 0x0100 -    256 - tournament management is notified about this registration. It is checked only when USER_TOURNAMENT_FLAG_NOT_ACCEPTED is set.
 // 11 - 0x0400 -   1024 - USER_FLAG_EXHIBITION_PLAYER (excluded from standings and series scoring)
+// 15 - 0x4000 -  16384 - USER_FLAG_SUBSTITUTE (shown in the tournament, not counted in any series)
 define('USER_TOURNAMENT_FLAG_NOT_ACCEPTED', 0x80);
 define('USER_TOURNAMENT_MANAGER_NOTIFIED', 0x100);
 define('USER_TOURNAMENT_NEW_PLAYER_FLAGS', 0x0); // permissions are set in the request parameters
@@ -95,6 +109,7 @@ define('USER_TOURNAMENT_ICON_MAX_VERSION', 7);
 // 06 - 0x1000 -     32 - icon mask
 // 07 - 0x2000 -     64 - icon mask
 // 11 - 0x0400 -   1024 - USER_FLAG_EXHIBITION_PLAYER (excluded from series standings)
+// 15 - 0x4000 -  16384 - USER_FLAG_SUBSTITUTE (reserved; set on event and tournament registrations)
 define('USER_SERIES_NEW_PLAYER_FLAGS', 0x1); // USER_PERM_PLAYER
 
 define('USER_SERIES_ICON_MASK', 0x70);

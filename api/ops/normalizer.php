@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/scoring.php';
+require_once '../../include/systems.php';
 require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
@@ -151,7 +152,27 @@ class ApiPage extends OpsApiPageBase
 		$name = trim(get_optional_param('name', $old_name));
 		$this->check_name($name, $club_id, $normalizer_id);
 		
-		$normalizer = get_optional_param('normalizer', NULL);
+		list ($current_version) = Db::record(get_label('scoring normalizer'), 'SELECT version FROM normalizers WHERE id = ?', $normalizer_id);
+		
+		// The version to write. An existing one is rewritten in place - that is what Save does,
+		// and the editor warns first when something already runs on it. One above the highest
+		// there is gets created and becomes the current version - that is the New version
+		// button, which only picks the number and leaves the writing to the save.
+		$versions = get_system_versions('normalizer', $normalizer_id);
+		$version = (int)get_optional_param('normalizer_version', $current_version);
+		$exists = in_array($version, $versions, true);
+		if (!$exists && $version != max($versions) + 1)
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('version')));
+		}
+		
+		// What is in it now - or in the current version when the one asked for is about to be
+		// created, so that a request naming only a new version gets a copy of the current one.
+		list ($old_normalizer) = Db::record(get_label('scoring normalizer'),
+			'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?',
+			$normalizer_id, $exists ? $version : $current_version);
+		
+		$normalizer = get_optional_param('normalizer', $old_normalizer);
 		if (!is_string($normalizer))
 		{
 			$normalizer = json_encode($normalizer);
@@ -161,17 +182,9 @@ class ApiPage extends OpsApiPageBase
 			$normalizer = check_json($normalizer);
 		}
 		
-		$overwrite = false;
-		list ($old_normalizer, $version) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, s.version FROM normalizers s JOIN normalizer_versions v ON v.normalizer_id = s.id AND v.version = s.version WHERE s.id = ?', $normalizer_id);
-		if ($old_normalizer != $normalizer)
-		{
-			list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE normalizer_id = ? AND normalizer_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $normalizer_id, $version);
-			$overwrite = ($usageCount <= 0);
-		}
-		else
-		{
-			$normalizer = NULL;
-		}
+		// Rewriting a version with what it already holds leaves it alone. Creating one is a
+		// change even when its contents are a copy.
+		$changed = (!$exists || $old_normalizer != $normalizer);
 		
 		Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET name = ? WHERE id = ?', $name, $normalizer_id);
 		if (Db::affected_rows() > 0)
@@ -181,9 +194,9 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_SCORING_NORMALIZER, 'changed', $log_details, $normalizer_id, $club_id, $league_id);
 		}
 		
-		if (!is_null($normalizer))
+		if ($changed)
 		{
-			if ($overwrite)
+			if ($exists)
 			{
 				Db::exec(get_label('scoring normalizer'), 'UPDATE normalizer_versions SET normalizer = ? WHERE normalizer_id = ? AND version = ?', $normalizer, $normalizer_id, $version);
 				if (Db::affected_rows() > 0)
@@ -191,11 +204,15 @@ class ApiPage extends OpsApiPageBase
 					$log_details = new stdClass();
 					$log_details->normalizer = $normalizer;
 					db_log(LOG_OBJECT_SCORING_NORMALIZER, 'changed', $log_details, $normalizer_id, $club_id, $league_id);
+					
+					// A tournament normalized by what was just rewritten has to be counted again.
+					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE normalizer_id = ? AND normalizer_version = ?', $normalizer_id, $version);
+					Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE normalizer_id = ? AND normalizer_version = ?', $normalizer_id, $version);
 				}
 			}
 			else
 			{
-				++$version;
+				$current_version = $version;
 				Db::exec(get_label('scoring normalizer'), 'INSERT INTO normalizer_versions (normalizer_id, version, normalizer) VALUES (?, ?, ?)', $normalizer_id, $version, $normalizer);
 				Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET version = ? WHERE id = ?', $version, $normalizer_id);
 				if (Db::affected_rows() > 0)
@@ -209,19 +226,106 @@ class ApiPage extends OpsApiPageBase
 		}
 		Db::commit();
 		
+		// Which version the change landed on, and which one is current now - the same thing
+		// unless an older version was rewritten in place.
 		$this->response['normalizer_version'] = (int)$version;
+		$this->response['current_version'] = (int)$current_version;
 	}
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change scoring normalizer. If some of the past events or tournaments are already using this scoring normalizer, the normalizer rules are not overwritten. We create a new version of normalizer. Old events contunie using the old version. All newly created events use the new version. Events that already exist but not finished yet will use the new version.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change a scoring normalizer. Which version is written is up to the <em>normalizer_version</em> parameter: an existing one is rewritten where it is, and every tournament normalized by it is marked to be counted again; one number above the highest version there is creates that version and makes it the current one, leaving the tournaments on the older versions as they were.');
 		$help->request_param('normalizer_id', 'Scoring normalizer id. If the scoring normalizer is global (shared between clubs) updating requires <em>admin</em> permissions.');
 		$help->request_param('name', 'Scoring normalizer name.', 'remains the same.');
 		api_normalizer_help($help->request_param('normalizer', 'Normalizer rules:', 'remain the same.'));
-		$help->response_param('version', 'Current scoring normalizer version.');
+		$help->request_param('normalizer_version', 'The version to write. An existing version is rewritten where it is, and every tournament normalized by it is counted again. One number above the highest version there is creates that version and makes it current. Any other number is refused.', 'is the current version.');
+		$help->response_param('normalizer_version', 'The version the change landed on.');
+		$help->response_param('current_version', 'Current scoring normalizer version. The same as <em>normalizer_version</em> unless an older version was rewritten where it is.');
 		return $help;
 	}
 
+	//-------------------------------------------------------------------------------------------------------
+	// delete_version
+	//-------------------------------------------------------------------------------------------------------
+	function delete_version_op()
+	{
+		$normalizer_id = (int)get_required_param('normalizer_id');
+		$version = (int)get_required_param('normalizer_version');
+		
+		Db::begin();
+		
+		list ($club_id, $league_id, $current_version) = Db::record(get_label('scoring normalizer'), 'SELECT club_id, league_id, version FROM normalizers WHERE id = ?', $normalizer_id);
+		if (is_null($club_id))
+		{
+			if (is_null($league_id))
+			{
+				check_permissions(PERMISSION_ADMIN);
+			}
+			else
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
+		}
+		else
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			if (!is_null($league_id))
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
+		}
+		
+		$versions = get_system_versions('normalizer', $normalizer_id);
+		if (!in_array($version, $versions, true))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('version')));
+		}
+		
+		// A system is its versions, so the last one left cannot go.
+		if (count($versions) < 2)
+		{
+			throw new Exc(get_label('The only version of a system can not be deleted.'));
+		}
+		
+		// Neither can one a tournament is normalized by. The page does not offer it and the foreign keys
+		// would refuse it, but the answer should say what the matter is.
+		$used = get_used_system_versions('normalizer', $normalizer_id, array('tournaments'));
+		if (isset($used[$version]))
+		{
+			throw new Exc(get_label('This version is used in competitions and can not be deleted.'));
+		}
+		
+		// The system points at its current version, so that has to move off it first.
+		if ($version == $current_version)
+		{
+			$current_version = max(array_diff($versions, array($version)));
+			Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET version = ? WHERE id = ?', $current_version, $normalizer_id);
+		}
+		
+		Db::exec(get_label('scoring normalizer'), 'DELETE FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $normalizer_id, $version);
+		
+		// Nothing is on this version, so nothing is cached for it either - except that its
+		// number comes free again, and a row left behind would be read as the next one's.
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE normalizer_id = ? AND normalizer_version = ?', $normalizer_id, $version);
+		
+		$log_details = new stdClass();
+		$log_details->deleted_version = $version;
+		db_log(LOG_OBJECT_SCORING_NORMALIZER, 'changed', $log_details, $normalizer_id, $club_id, $league_id);
+		
+		Db::commit();
+		
+		$this->response['current_version'] = (int)$current_version;
+	}
+	
+	function delete_version_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete one version of a scoring normalizer. Only a version no tournament is normalized by, and never the only version there is. When the version deleted is the current one, the highest of the rest takes its place.');
+		$help->request_param('normalizer_id', 'Scoring normalizer id. If the scoring normalizer is global (shared between clubs) deleting requires <em>admin</em> permissions.');
+		$help->request_param('normalizer_version', 'The version to delete.');
+		$help->response_param('current_version', 'Current scoring normalizer version after the deletion.');
+		return $help;
+	}
+	
 	//-------------------------------------------------------------------------------------------------------
 	// delete
 	//-------------------------------------------------------------------------------------------------------

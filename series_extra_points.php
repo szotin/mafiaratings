@@ -27,13 +27,17 @@ class Page extends SeriesPageBase
 		echo '</td>';
 		echo '<td colspan="2">'.get_label('Player').'</td>';
 		echo '<td width="500" align="center"></td>';
+		if ($this->stages > 1)
+		{
+			echo '<td width="110" align="center">' . get_label('Stage') . '</td>';
+		}
 		echo '<td width="80" align="center">' . get_label('Points') . '</td>';
 		echo '</tr>';
 		
 		$timezone = get_timezone();
 		
 		$query = new DbQuery(
-			'SELECT p.id, u.id, nu.name, u.flags, p.reason, p.details, p.points, p.time' . 
+			'SELECT p.id, u.id, nu.name, u.flags, p.reason, p.details, p.points, p.time, p.stage' . 
 				' FROM series_extra_points p' . 
 				' JOIN users u ON u.id = p.user_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
@@ -41,7 +45,7 @@ class Page extends SeriesPageBase
 				' ORDER BY p.time DESC, p.id', $this->id);
 		while ($row = $query->next())
 		{
-			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $time) = $row;
+			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $time, $stage) = $row;
 			
 			echo '<tr>';
 			echo '<td valign="center">';
@@ -54,6 +58,10 @@ class Page extends SeriesPageBase
 			echo '</td><td>';
 			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';
 			echo '<td><i>' . format_date($time, $timezone) . '</i>: <b>' . $reason . '</b></td>';
+			if ($this->stages > 1)
+			{
+				echo '<td align="center">' . get_series_stage_name($this->type, $this->stages, $stage) . '</td>';
+			}
 			echo '<td align="center">';
 			echo format_gain($points);
 			echo '</td>';

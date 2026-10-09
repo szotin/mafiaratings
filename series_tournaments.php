@@ -53,15 +53,19 @@ class Page extends SeriesPageBase
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
 		echo '&emsp;&emsp;';
-		echo get_label('Stars') . ': <select id="starsfilter" onchange="goTo({page:undefined,stars:$(\'#starsfilter\').val()})">';
-		show_option(0, $stars, '');
-		show_option(1, $stars, '★');
-		show_option(2, $stars, '★★');
-		show_option(3, $stars, '★★★');
-		show_option(4, $stars, '★★★★');
-		show_option(5, $stars, '★★★★★');
-		echo '</select>';
-		echo '&emsp;&emsp;';
+		// Only as many stars as this series hands out, and none at all when it does not rate its
+		// tournaments - there is nothing to filter by then.
+		if ($this->max_stars > 0)
+		{
+			echo get_label('Stars') . ': <select id="starsfilter" onchange="goTo({page:undefined,stars:$(\'#starsfilter\').val()})">';
+			show_option(0, $stars, '');
+			for ($s = 1; $s <= $this->max_stars; ++$s)
+			{
+				show_option($s, $stars, str_repeat('★', $s));
+			}
+			echo '</select>';
+			echo '&emsp;&emsp;';
+		}
 		show_date_filter();
 		echo '&emsp;&emsp;';
 		if (!$this->future)
@@ -220,7 +224,7 @@ class Page extends SeriesPageBase
 		if ($cs_tournaments != '')
 		{
 			$query = new DbQuery(
-				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
+				'SELECT st.tournament_id, st.stars, st.stage, s.stages, s.start_time, s.max_stars, s.id, s.name, s.flags, ' . series_owner_fields() .
 				' FROM series_tournaments st' .
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
@@ -229,8 +233,14 @@ class Page extends SeriesPageBase
 			$current_tournament = 0;
 			while ($row = $query->next())
 			{
-				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
+				list ($tournament_id, $stars, $stage, $series_stages, $series_start, $series_max_stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				$stars = (int)$stars;
+				$series_stages = series_stage_count($series_stages);
+				// A series with a ladder says what a tournament of it is - its stage - instead of
+				// rating it. A series without one has nothing to say beyond the stars.
+				$stage_name = $series_stages > 1
+					? get_series_stage_name(series_type($series_start, $series_max_stars), $series_stages, $stage)
+					: NULL;
 				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
 				{
 					++$current_tournament;
@@ -240,11 +250,13 @@ class Page extends SeriesPageBase
 					if ($series_id == $this->id)
 					{
 						$tournaments[$current_tournament]->stars = $stars;
+						$tournaments[$current_tournament]->stage_name = $stage_name;
 					}
 					else
 					{
 						$series = new stdClass();
 						$series->stars = $stars;
+						$series->stage_name = $stage_name;
 						$series->id = $series_id;
 						$series->name = $series_name;
 						$series->flags = $series_flags;
@@ -305,15 +317,26 @@ class Page extends SeriesPageBase
 				echo ' (' . get_label('playing now') . ')';
 			}
 			echo '</a></b>';
-			if (isset($tournament->stars))
+			if (isset($tournament->stage_name))
+			{
+				echo '<br><b>' . $tournament->stage_name . '</b>';
+			}
+			else if (isset($tournament->stars))
 			{
 				echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font>';
 			}
 			echo '</td>';
 			foreach ($tournament->series as $series)
 			{
-				echo '<td width="64" align="center" valign="center">';
-				echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
+				echo '<td width="36" align="center" valign="center">';
+				if (isset($series->stage_name))
+				{
+					echo '<span style="font-size:11px;">' . $series->stage_name . '</span>';
+				}
+				else
+				{
+					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
+				}
 				echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
 				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);
 				echo '</a></td>';

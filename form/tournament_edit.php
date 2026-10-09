@@ -7,6 +7,7 @@ require_once '../include/tournament.php';
 require_once '../include/timespan.php';
 require_once '../include/scoring.php';
 require_once '../include/datetime.php';
+require_once '../include/series.php';
 
 initiate_session();
 
@@ -54,15 +55,15 @@ try
 	
 	$series_list = '{';
 	$delimiter = '';
-	$query = new DbQuery('SELECT s.id, st.stars, s.finals_id FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
+	$query = new DbQuery('SELECT s.id, st.stars, st.stage, s.stages FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
 	while ($row = $query->next())
 	{
-		list ($series_id, $series_stars, $series_finals_id) = $row;
-		$series_list .= 
-			$delimiter . '"' . $series_id . '":{' . 
+		list ($series_id, $series_stars, $series_stage, $series_stages) = $row;
+		$series_list .=
+			$delimiter . '"' . $series_id . '":{' .
 				'id:' . $series_id . ',' .
 				'selected:true,' .
-				'finals:' . (($series_finals_id == $tournament_id) ? 'true' : 'false') . ',' .
+				'stage:' . series_stage($series_stages, $series_stage) . ',' .
 				'stars:' . $series_stars .
 			'}';
 		$delimiter = ',';
@@ -289,40 +290,68 @@ try
 					{
 						id: s.id,
 						selected: false,
-						finals: false,
-						stars: 0
+						stars: 0,
+						stage: <?php echo SERIES_STAGE_BASE; ?>
 					};
 				}
 				
+				// Not every series rates its tournaments, and not every series is a ladder. A
+				// series that does neither asks nothing beyond whether the tournament is in it.
+				//
+				// The ladder is the shape of the competition, so only a manager of the series is
+				// shown it. For anybody else the stage simply stays what it is - the op ignores a
+				// stage sent by them, so saving the tournament cannot undo it.
+				var hasStars = (s.max_stars > 0);
+				var hasStages = (s.stages > 1);
+				var mayEditStage = (hasStages && s.is_manager);
+
 				html += '<tr><td width="80" align="center"><img src="' + s.icon + '" width="48"><br><b>' + s.name + '</td>';
-				
+
 				html += '<td><input type="checkbox" id="form-p-' + s.id + '" onclick="seriesParticipantClick(' + s.id + ')"'
 				if (sl[s.id].selected)
 				{
 					html += ' checked';
 				}
 				html += '> <?php echo get_label('participate'); ?>';
-				
-				html += '<br><input type="checkbox" id="form-f-' + s.id + '" onclick="seriesFinalsClick(' + s.id + ')"';
-				if (!sl[s.id].selected)
+
+				html += '</td>';
+
+				html += '<td align="center" nowrap>';
+				if (mayEditStage)
 				{
-					html += ' disabled';
+					html += '<select id="form-stage-' + s.id + '" onchange="stageChanged(' + s.id + ')">';
+					for (var j = 0; j < s.stage_names.length; ++j)
+					{
+						html += '<option value="' + s.stage_names[j].stage + '"';
+						if (s.stage_names[j].stage == sl[s.id].stage)
+						{
+							html += ' selected';
+						}
+						html += '>' + s.stage_names[j].name + '</option>';
+					}
+					html += '</select>';
+					if (hasStars)
+					{
+						html += '<br>';
+					}
 				}
-				if (sl[s.id].finals)
+				if (hasStars)
 				{
-					html += ' checked';
+					html += '<div id="form-stars-' + s.id + '" class="stars"></div>';
 				}
-				html += '> <?php echo get_label('finals'); ?></td>';
-				
-				html += '<td align="center"><div id="form-stars-' + s.id + '" class="stars"></div></td></tr>';
+				html += '</td></tr>';
 			}
 			html += '</table>';
 			$('#form-series').html(html);
-			
+
 			seriesList = sl;
 			for (i = 0; i < series.series.length; ++i)
 			{
 				var s = series.series[i];
+				if (s.max_stars < 1)
+				{
+					continue; // no star control was drawn for it
+				}
 				$("#form-stars-" + s.id).rate(
 				{
 					max_value: s.max_stars,
@@ -379,11 +408,17 @@ try
 		
 		var seriesId = control.id.substr(control.id.lastIndexOf('-')+1);
 		$("#form-p-" + seriesId).prop('checked', true);
-		$("#form-f-" + seriesId).prop('disabled', false);
 		seriesList[seriesId].stars = stars;
 		seriesList[seriesId].selected = true;
 	}
 	
+	function stageChanged(seriesId)
+	{
+		seriesList[seriesId].stage = $("#form-stage-" + seriesId).val();
+		$("#form-p-" + seriesId).prop('checked', true);
+		seriesList[seriesId].selected = true;
+	}
+
 	function seriesParticipantClick(seriesId)
 	{
 		var d = false;
@@ -392,16 +427,8 @@ try
 			d = true;
 			$("#form-stars-" + seriesId).rate("setValue", 0);
 			$("#form-p-" + seriesId).prop('checked', false);
-			$("#form-f-" + seriesId).prop('checked', false);
-			seriesList[seriesId].finals = false;
 		}
-		$("#form-f-" + seriesId).prop('disabled', d);
 		seriesList[seriesId].selected = !d;
-	}
-	
-	function seriesFinalsClick(seriesId)
-	{
-		seriesList[seriesId].finals = $("#form-f-" + seriesId).attr('checked') ? true : false;
 	}
 	
 	function onMinDateChange()
@@ -517,11 +544,7 @@ try
 			var s = seriesList[i];
 			if (s.selected)
 			{
-				var _s = { id: s.id, stars: s.stars };
-				if (s.finals)
-				{
-					_s['finals'] = true;
-				}
+				var _s = { id: s.id, stars: s.stars, stage: s.stage };
 				series.push(_s);
 			}
 		}

@@ -155,7 +155,7 @@ class Page extends LeaguePageBase
 		echo '</div>';
 		echo '<div class="tabcontent">';
 		
-		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*)', $condition);
+		list ($count) = Db::record(get_label('tournament'), 'SELECT COUNT(DISTINCT t.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		if ($this->future)
@@ -169,7 +169,7 @@ class Page extends LeaguePageBase
 		
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, i.timezone, c.id, c.name, c.flags, t.langs, t.num_players, a.id, a.address, a.flags, ni.name,' .
+			'SELECT DISTINCT t.id, t.name, t.flags, t.start_time, t.duration, i.timezone, c.id, c.name, c.flags, t.langs, t.num_players, a.id, a.address, a.flags, ni.name,' .
 			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
@@ -302,7 +302,7 @@ class Page extends LeaguePageBase
 			echo '</td>';
 			foreach ($tournament->series as $series)
 			{
-				echo '<td width="64" align="center" valign="center">';
+				echo '<td width="36" align="center" valign="center">';
 				echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
 				echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
 				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);

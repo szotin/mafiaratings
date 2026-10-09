@@ -5,6 +5,8 @@ require_once 'include/pages.php';
 require_once 'include/seating.php';
 
 define('PREP_TAB_SCHEME', 0);
+// The new-registration email links straight here, by number - see
+// include/languages/*/email/tournament_new_reg.php. Renumbering the tabs means fixing that link.
 define('PREP_TAB_REGISTRATIONS', 1);
 define('PREP_TAB_PAIRS', 2);
 define('PREP_TAB_SEATING', 3);

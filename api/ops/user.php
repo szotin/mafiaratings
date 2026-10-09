@@ -12,7 +12,7 @@ require_once '../../include/series.php';
 
 define('CURRENT_VERSION', 0);
 
-function access_flags($flags, $exhibition_bit = 0)
+function access_flags($flags, $exhibition_bit = 0, $substitute_bit = 0)
 {
 	if (isset($_REQUEST['manager']))
 	{
@@ -59,6 +59,18 @@ function access_flags($flags, $exhibition_bit = 0)
 		else
 		{
 			$flags &= ~$exhibition_bit;
+		}
+	}
+
+	if ($substitute_bit != 0 && isset($_REQUEST['substitute']))
+	{
+		if ((int)$_REQUEST['substitute'])
+		{
+			$flags |= $substitute_bit;
+		}
+		else
+		{
+			$flags &= ~$substitute_bit;
 		}
 	}
 	return $flags;
@@ -108,7 +120,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~'.TOURNAMENT_FLAG_FINISHED.' WHERE id IN (SELECT tournament_id FROM tournament_regs WHERE user_id=?)', $src_id); // tournaments need to be rebuild to make sure rating in the registration is up to date
 		Db::exec(get_label('tournament'), 'DELETE FROM tournament_regs WHERE user_id = ? AND tournament_id IN (SELECT tournament_id FROM (SELECT tournament_id FROM tournament_regs WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('tournament'), 'UPDATE tournament_regs SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
-		Db::exec(get_label('series'), 'DELETE FROM series_places WHERE user_id = ? AND series_id IN (SELECT series_id FROM (SELECT series_id FROM series_places WHERE user_id = ?) x)', $src_id, $dst_id);
+		Db::exec(get_label('series'), 'DELETE FROM series_places WHERE user_id = ? AND (series_id, cut_stages) IN (SELECT series_id, cut_stages FROM (SELECT series_id, cut_stages FROM series_places WHERE user_id = ?) x)', $src_id, $dst_id);
 		Db::exec(get_label('series'), 'UPDATE series_places SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('league'), 'UPDATE league_requests SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
 		Db::exec(get_label('comment'), 'UPDATE event_comments SET user_id = ? WHERE user_id = ?', $dst_id, $src_id);
@@ -333,7 +345,7 @@ class ApiPage extends OpsApiPageBase
 				' JOIN addresses a ON a.id = t.address_id'.
 				' WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
-			$flags = access_flags($old_flags, USER_FLAG_EXHIBITION_PLAYER);
+			$flags = access_flags($old_flags, USER_FLAG_EXHIBITION_PLAYER, USER_FLAG_SUBSTITUTE);
 
 			Db::exec(get_label('user'), 'UPDATE tournament_regs SET flags = ? WHERE user_id = ? AND tournament_id = ?', $flags, $user_id, $tournament_id);
 			if (Db::affected_rows() > 0)
@@ -350,6 +362,16 @@ class ApiPage extends OpsApiPageBase
 				{
 					Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 					Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
+				}
+
+				// Out of series changes nothing about the tournament itself - the player stays in its
+				// standings - only what the series make of it. Every series holding this tournament
+				// is asked to rebuild.
+				if ((($flags ^ $old_flags) & USER_FLAG_SUBSTITUTE) != 0)
+				{
+					Db::exec(get_label('series'),
+						'UPDATE series s JOIN series_tournaments st ON st.series_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .
+						' WHERE st.tournament_id = ?', $tournament_id);
 				}
 			}
 		}

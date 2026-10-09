@@ -37,7 +37,7 @@ class Page extends LeaguePageBase
 			$future = ((int)$_REQUEST['future'] > 0);
 		}
 		
-		$condition = new SQL(' FROM series s LEFT OUTER JOIN tournaments f ON f.id = s.finals_id WHERE s.league_id = ?', $this->id);
+		$condition = new SQL(' FROM series s WHERE s.league_id = ?', $this->id);
 		if ($future)
 		{
 			$condition->add(' AND s.start_time + s.duration >= UNIX_TIMESTAMP()');
@@ -100,8 +100,8 @@ class Page extends LeaguePageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.type, s.langs,' .
-			' (SELECT count(*) FROM series_tournaments _ts JOIN tournaments _t ON _t.id = _ts.tournament_id WHERE _ts.series_id = s.id AND (_t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0) as tournaments, f.id, f.name, f.flags',
+			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs,' .
+			' (SELECT count(*) FROM series_tournaments _ts JOIN tournaments _t ON _t.id = _ts.tournament_id WHERE _ts.series_id = s.id AND (_t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0) as tournaments',
 			$condition);
 		if ($future)
 		{
@@ -118,12 +118,11 @@ class Page extends LeaguePageBase
 		echo '<tr class="th-long darker">';
 		echo '<td colspan="2" align="center">' . get_label('Series') . '</td>';
 		echo '<td width="60" align="center">' . get_label('Tournaments') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Finals') . '</td>';
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $series_type, $languages, $tournaments_count, $finals_id, $finals_name, $finals_flags) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $languages, $tournaments_count) = $row;
 
-			$playing = ($now >= $series_time && $now < $series_time + $series_duration && $series_type != SERIES_TYPE_RECURRING);
+			$playing = ($now >= $series_time && $now < $series_time + $series_duration && !series_is_infinite($series_time));
 			if ($playing)
 			{
 				echo '<tr class="dark">';
@@ -144,16 +143,11 @@ class Page extends LeaguePageBase
 			{
 				echo ' (' . get_label('playing now') . ')';
 			}
-			echo '</b><br>' . series_period($series_type, $series_time, $series_duration, $timezone) . '</a></td>';
+			echo '</b><br>' . series_period($series_time, $series_duration, $timezone) . '</a></td>';
 			echo '</tr></table>';
 			echo '</td>';
 			
 			echo '<td align="center"><a href="series_tournaments.php?bck=1&id=' . $series_id . '">' . $tournaments_count . '</a></td>';
-			
-			echo '<td align="center"><a href="tournament.php?bck=1&id=' . $finals_id . '">';
-			$tournament_pic->set($finals_id, $finals_name, $finals_flags);
-			$tournament_pic->show(ICONS_DIR, true, 56);
-			echo '</a></td>';
 			
 			echo '</tr>';
 		}

@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/scoring.php';
+require_once '../../include/systems.php';
 require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
@@ -200,34 +201,38 @@ class ApiPage extends OpsApiPageBase
 		$name = trim(get_optional_param('name', $old_name));
 		$this->check_name($name, $club_id, $scoring_id);
 		
-		$scoring = get_optional_param('scoring', NULL);
-		if (!is_null($scoring))
+		list ($current_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $scoring_id);
+		
+		// The version to write. An existing one is rewritten in place - that is what Save does,
+		// and the editor warns first when something already runs on it. One above the highest
+		// there is gets created and becomes the current version - that is the New version
+		// button, which only picks the number and leaves the writing to the save.
+		$versions = get_system_versions('scoring', $scoring_id);
+		$version = (int)get_optional_param('scoring_version', $current_version);
+		$exists = in_array($version, $versions, true);
+		if (!$exists && $version != max($versions) + 1)
 		{
-			if (is_string($scoring))
-			{
-				$scoring = json_decode($scoring);
-			}
-			check_scoring($scoring);
-			$function_flags = get_scoring_function_flags($scoring);
-			$scoring = json_encode($scoring);
+			throw new Exc(get_label('Unknown [0]', get_label('version')));
 		}
 		
-		list ($old_scoring, $version) = Db::record(get_label('scoring system'), 'SELECT v.scoring, s.version FROM scorings s JOIN scoring_versions v ON v.scoring_id = s.id AND v.version = s.version WHERE s.id = ?', $scoring_id);
+		// What is in it now - or in the current version when the one asked for is about to be
+		// created, so that a request naming only a new version gets a copy of the current one.
+		list ($old_scoring) = Db::record(get_label('scoring system'),
+			'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?',
+			$scoring_id, $exists ? $version : $current_version);
 		
-		$overwrite = (int)get_optional_param('overwrite', 0);
-		if ($old_scoring == $scoring)
+		$scoring = get_optional_param('scoring', $old_scoring);
+		if (is_string($scoring))
 		{
-			$scoring = NULL;
+			$scoring = json_decode($scoring);
 		}
-		else if (!$overwrite)
-		{
-			list ($usageCount) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . EVENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
-			if ($usageCount <= 0)
-			{
-				list ($usageCount) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $scoring_id, $version);
-			}
-			$overwrite = ($usageCount <= 0);
-		}
+		check_scoring($scoring);
+		$function_flags = get_scoring_function_flags($scoring);
+		$scoring = json_encode($scoring);
+		
+		// Rewriting a version with what it already holds leaves it alone. Creating one is a
+		// change even when its contents are a copy.
+		$changed = (!$exists || $old_scoring != $scoring);
 		
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
 		if (Db::affected_rows() > 0)
@@ -237,13 +242,14 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id, $league_id);
 		}
 		
-		if (is_null($scoring))
+		if (!$changed)
 		{
+			// The formulas are the same, so only what they add up to may have moved.
 			Db::exec(get_label('scoring system'), 'UPDATE scoring_versions SET functions = ? WHERE scoring_id = ? AND version = ?', $function_flags, $scoring_id, $version);
 		}
 		else
 		{
-			if ($overwrite)
+			if ($exists)
 			{
 				Db::exec(get_label('scoring system'), 'UPDATE scoring_versions SET scoring = ?, functions = ? WHERE scoring_id = ? AND version = ?', $scoring, $function_flags, $scoring_id, $version);
 				if (Db::affected_rows() > 0)
@@ -260,7 +266,7 @@ class ApiPage extends OpsApiPageBase
 			}
 			else
 			{
-				++$version;
+				$current_version = $version;
 				Db::exec(get_label('scoring system'), 'INSERT INTO scoring_versions (scoring_id, version, scoring, functions) VALUES (?, ?, ?, ?)', $scoring_id, $version, $scoring, $function_flags);
 				Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = ? WHERE id = ?', $version, $scoring_id);
 				if (Db::affected_rows() > 0)
@@ -274,20 +280,107 @@ class ApiPage extends OpsApiPageBase
 		}
 		Db::commit();
 		
+		// Which version the change landed on, and which one is current now - the same thing
+		// unless an older version was rewritten in place.
 		$this->response['scoring_version'] = (int)$version;
+		$this->response['current_version'] = (int)$current_version;
 	}
 	
 	function change_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change scoring system. If some of the past events or tournaments are already using this scoring system, the scoring rules are not overwritten. We create a new version of scoring rules. Old events contunie using old version. All newly created events use the new version. Events that already exist but not finished yet will use the new version unless overwite parameter is set.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change a scoring system. Which version is written is up to the <em>scoring_version</em> parameter: an existing one is rewritten where it is, and every tournament and round already scored on it is marked to be counted again; one number above the highest version there is creates that version and makes it the current one, leaving everything scored on the older versions as it was.');
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) updating requires <em>admin</em> permissions.');
 		$help->request_param('name', 'Scoring system name.', 'remains the same.');
-		$help->request_param('overwrite', '0 - create a new version if scoring system is already used, stay with the same version if not. 1 - overwrite the existing version even if it is used.', 'is 0.');
+		$help->request_param('scoring_version', 'The version to write. An existing version is rewritten where it is, and whatever was scored on it is counted again. One number above the highest version there is creates that version and makes it current. Any other number is refused.', 'is the current version.');
 		api_scoring_help($help->request_param('scoring', 'Scoring rules:', 'remain the same.'));
-		$help->response_param('version', 'Current scoring system version.');
+		$help->response_param('scoring_version', 'The version the change landed on.');
+		$help->response_param('current_version', 'Current scoring system version. The same as <em>scoring_version</em> unless an older version was rewritten in place.');
 		return $help;
 	}
 
+	//-------------------------------------------------------------------------------------------------------
+	// delete_version
+	//-------------------------------------------------------------------------------------------------------
+	function delete_version_op()
+	{
+		$scoring_id = (int)get_required_param('scoring_id');
+		$version = (int)get_required_param('scoring_version');
+		
+		Db::begin();
+		
+		list ($club_id, $league_id, $current_version) = Db::record(get_label('scoring system'), 'SELECT club_id, league_id, version FROM scorings WHERE id = ?', $scoring_id);
+		if (is_null($club_id))
+		{
+			if (is_null($league_id))
+			{
+				check_permissions(PERMISSION_ADMIN);
+			}
+			else
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
+		}
+		else
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+			if (!is_null($league_id))
+			{
+				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			}
+		}
+		
+		$versions = get_system_versions('scoring', $scoring_id);
+		if (!in_array($version, $versions, true))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('version')));
+		}
+		
+		// A system is its versions, so the last one left cannot go.
+		if (count($versions) < 2)
+		{
+			throw new Exc(get_label('The only version of a system can not be deleted.'));
+		}
+		
+		// Neither can one anything was scored on. The page does not offer it and the foreign keys
+		// would refuse it, but the answer should say what the matter is.
+		$used = get_used_system_versions('scoring', $scoring_id, array('tournaments', 'events'));
+		if (isset($used[$version]))
+		{
+			throw new Exc(get_label('This version is used in competitions and can not be deleted.'));
+		}
+		
+		// The system points at its current version, so that has to move off it first.
+		if ($version == $current_version)
+		{
+			$current_version = max(array_diff($versions, array($version)));
+			Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = ? WHERE id = ?', $current_version, $scoring_id);
+		}
+		
+		Db::exec(get_label('scoring system'), 'DELETE FROM scoring_versions WHERE scoring_id = ? AND version = ?', $scoring_id, $version);
+		
+		// Nothing is on this version, so nothing is cached for it either - except that its
+		// number comes free again, and a row left behind would be read as the next one's.
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE scoring_id = ? AND scoring_version = ?', $scoring_id, $version);
+		
+		$log_details = new stdClass();
+		$log_details->deleted_version = $version;
+		db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id, $league_id);
+		
+		Db::commit();
+		
+		$this->response['current_version'] = (int)$current_version;
+	}
+	
+	function delete_version_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Delete one version of a scoring system. Only a version nothing was scored on, and never the only version there is. When the version deleted is the current one, the highest of the rest takes its place.');
+		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) deleting requires <em>admin</em> permissions.');
+		$help->request_param('scoring_version', 'The version to delete.');
+		$help->response_param('current_version', 'Current scoring system version after the deletion.');
+		return $help;
+	}
+	
 	//-------------------------------------------------------------------------------------------------------
 	// delete
 	//-------------------------------------------------------------------------------------------------------

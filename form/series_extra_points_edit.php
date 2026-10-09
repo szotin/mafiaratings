@@ -17,8 +17,11 @@ try
 	}
 	$points_id = (int)$_REQUEST['points_id'];
 	
-	list($user_id, $series_id, $league_id, $club_id, $reason, $details, $points, $time) =
-		Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, s.league_id, s.club_id, p.reason, p.details, p.points, p.time FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
+	list($user_id, $series_id, $league_id, $club_id, $reason, $details, $points, $time, $stage, $series_start, $series_max_stars, $series_stages) =
+		Db::record(get_label('points'), 'SELECT p.user_id, p.series_id, s.league_id, s.club_id, p.reason, p.details, p.points, p.time, p.stage, s.start_time, s.max_stars, s.stages FROM series_extra_points p JOIN series s ON s.id = p.series_id WHERE p.id = ?', $points_id);
+	$series_stages = series_stage_count($series_stages);
+	$series_type = series_type($series_start, $series_max_stars);
+	$stage = series_stage($series_stages, $stage);
 	check_series_permissions(new SeriesOwner($league_id, $club_id), $series_id);
 	
 	echo '<table class="dialog_form" width="100%">';
@@ -26,6 +29,19 @@ try
 	echo '<tr><td width="120">' . get_label('Reason') . ':</td><td><input id="form-reason" value="' . $reason . '"></td></tr>';
 	echo '<tr><td valign="top">' . get_label('Details') . ':</td><td><textarea id="form-details" cols="93" rows="8">' . $details . '</textarea></td></tr>';
 	echo '<tr><td>' . get_label('Points') . ':</td><td><input type="number" style="width: 45px;" step="1" id="form-points" value="' . $points . '"></td></tr>';
+	
+	// Extra points are not a competition of the series, so which stage they count in has to be
+	// said. A series with no ladder has only one stage to say.
+	if ($series_stages > 1)
+	{
+		echo '<tr><td>' . get_label('Stage') . ':</td><td>';
+		echo '<select id="form-stage">';
+		foreach (get_series_stages($series_type, $series_stages) as $s => $stage_name)
+		{
+			show_option($s, $stage, $stage_name);
+		}
+		echo '</select></td></tr>';
+	}
 	echo '</table>';
 
 ?>
@@ -58,6 +74,7 @@ try
 				, reason: $("#form-reason").val()
 				, details: $("#form-details").val()
 				, points: $("#form-points").val()
+				, stage: $('#form-stage').length ? $('#form-stage').val() : <?php echo $stage; ?>
 			},
 			onSuccess);
 		}

@@ -67,7 +67,7 @@ try
 				' FROM tournament_regs tu'.
 				' JOIN users u ON u.id = tu.user_id'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN series_places sp ON sp.user_id = u.id AND series_id = ?'.
+				' LEFT OUTER JOIN series_places sp ON sp.user_id = u.id AND sp.series_id = ? AND sp.cut_stages = 0'.
 				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?'.
 				' WHERE tu.tournament_id = ? AND (tu.flags & ' . USER_PERM_PLAYER . ') <> 0 ORDER BY sp.score DESC, u.rating DESC, u.id', $series_id, $club_id, $tournament_id);
 			while ($row = $query->next())

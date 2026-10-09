@@ -1,14 +1,18 @@
 <?php
 
 require_once 'include/general_page_base.php';
+require_once 'include/systems.php';
 require_once 'include/scoring.php';
 
 class Page extends PageBase
 {
 	private $scoring;
 	private $scoring_id;
+	private $used_versions;
 	private $scoring_name;
 	private $scoring_version;
+	private $current_version;
+	private $versions;
 	
 	protected function prepare()
 	{
@@ -20,7 +24,7 @@ class Page extends PageBase
 		}
 		$scoring_id = (int)$_REQUEST['id'];
 		
-		list($this->scoring_id, $this->scoring, $this->scoring_name, $this->scoring_version, $club_id, $league_id) = Db::record(get_label('scoring system'), 'SELECT s.id, v.scoring, s.name, s.version, s.club_id, s.league_id FROM scorings s JOIN scoring_versions v ON v.scoring_id = s.id AND v.version = s.version WHERE s.id = ?', $scoring_id);
+		list($this->scoring_id, $this->scoring_name, $this->current_version, $club_id, $league_id) = Db::record(get_label('scoring system'), 'SELECT id, name, version, club_id, league_id FROM scorings WHERE id = ?', $scoring_id);
 		if (is_null($club_id))
 		{
 			if (is_null($league_id))
@@ -40,9 +44,17 @@ class Page extends PageBase
 				check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 			}
 		}
-		list($tournaments_count) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0', $this->scoring_id, $this->scoring_version);
-		list($events_count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE scoring_id = ? AND scoring_version = ? AND (flags & ' . EVENT_FLAG_FINISHED . ') <> 0', $this->scoring_id, $this->scoring_version);
-		$this->dependants = $tournaments_count + $events_count;
+		// Any version can be opened, not only the current one.
+		$this->versions = get_system_versions('scoring', $this->scoring_id);
+		$this->scoring_version = get_requested_system_version($this->versions, $this->current_version);
+		list($this->scoring) = Db::record(get_label('scoring system'),
+			'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?',
+			$this->scoring_id, $this->scoring_version);
+		
+		// Which versions some tournament or round has already been scored on. Saving one of those
+		// changes results that exist, so it is what the warning is about, and what makes the New
+		// version button worth offering.
+		$this->used_versions = get_used_system_versions('scoring', $this->scoring_id, array('tournaments', 'events'));
 		
 		$this->_title = get_label('Scoring system') . ': ' . $this->scoring_name;
 		
@@ -58,11 +70,17 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
-		echo '<p><button id="save" onclick="saveData(0)" disabled>' . get_label('Save') . '</button> <button id="save" onclick="viewJson()">' . get_label('View json') . '</button>';
-		if ($this->dependants > 0)
-		{
-			echo ' <button id="overwrite" onclick="overwriteData()" disabled>' . get_label('Overwrite current version') . '</button>';
-		}
+		// The same four buttons in the same order as the other two system editors: save what is
+		// on screen, start a version to put it in instead, drop a version nothing is on, edit
+		// the json by hand.
+		echo '<p>';
+		echo '<button id="save" onclick="saveData()" disabled>' . get_label('Save') . '</button>';
+		// A new version is only worth having while something already uses the one on screen.
+		// Otherwise it can be changed in place without touching any competition.
+		echo ' <button id="new-version" onclick="newVersion()"' . (isset($this->used_versions[$this->scoring_version]) ? '' : ' disabled') . '>' . get_label('New version') . '</button>';
+		// And a version nothing is on can go - as long as it is not the only one there is.
+		echo ' <button id="delete-version" onclick="deleteVersion()"' . (!isset($this->used_versions[$this->scoring_version]) && count($this->versions) > 1 ? '' : ' disabled') . '>' . get_label('Delete version') . '</button>';
+		echo ' <button onclick="editJson()">' . get_label('Edit json') . '</button>';
 		echo '</p>';
 		
 		echo '<ul id="lang-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
@@ -76,7 +94,7 @@ class Page extends PageBase
 		}
 		echo '</ul>';
 		
-		echo '<script src="js/scoring_editor.js"></script>';
+		echo '<script src="' . versioned_asset('js/scoring_editor.js') . '"></script>';
 		echo '<div id="scoring-editor"></div>';
 	}
 	
@@ -90,6 +108,7 @@ class Page extends PageBase
 			id: <?php echo $this->scoring_id; ?>,
 			name: "<?php echo $this->scoring_name; ?>",
 			version: <?php echo $this->scoring_version; ?>,
+			versions: [<?php echo implode(',', $this->versions); ?>],
 			strings:
 			{
 				civ: "<?php echo get_label('civilian'); ?>",
@@ -186,40 +205,140 @@ class Page extends PageBase
 		function onDataChange(d, isDirty)
 		{
 			data = d;
-			var dsb = !isDirty || !isScoringDataCorrect();
-			$('#save').prop('disabled', dsb);
-			$('#overwrite').prop('disabled', dsb);
+			var incorrect = !isScoringDataCorrect();
+			$('#save').prop('disabled', incorrect || !isDirty);
+			// A new version is only worth having while something already uses this one, and this
+			// one can only go while nothing does - and never if it is the only one left.
+			$('#new-version').prop('disabled', !isVersionUsed(data.version));
+			$('#delete-version').prop('disabled', isVersionUsed(data.version) || data.versions.length < 2);
 		}
 		
-		function saveData(ov)
+		// The version New version picked, until a save puts it there. It is in the picker but
+		// not in the database, so there is nothing to delete and nothing to come back to.
+		var unsavedVersion = 0;
+		
+		// The versions something already uses. A version that was just added is not one of
+		// them: it is a second old and nobody has had a chance to use it yet.
+		var usedVersions = [<?php echo implode(',', array_keys($this->used_versions)); ?>];
+		
+		function isVersionUsed(version)
 		{
-			console.log(data.scoring);
+			return usedVersions.indexOf(version) >= 0;
+		}
+		
+		// Opening another version is a page load, so anything unsaved would be lost.
+		function selectVersion(version)
+		{
+			if (version == data.version)
+			{
+				return;
+			}
+			if (dirty())
+			{
+				dlg.yesNo("<?php echo get_label('The changes are not saved yet and will be lost. Open another version anyway?'); ?>", null, null, function()
+				{
+					goTo({ version: version });
+				});
+				return;
+			}
+			goTo({ version: version });
+		}
+		
+		// Save writes the version on screen, in place. Which is the whole point while nothing
+		// uses it, and worth a word of warning once something does.
+		function saveData()
+		{
+			if (isVersionUsed(data.version))
+			{
+				dlg.yesNo("<?php echo get_label('This version of the system is already used in competitions. Your changes may change the tables of the tournaments and series that already exist. If you do not want to break anything, we recommend pressing New version first - then your changes will not touch the existing competitions. If you are sure of what you are doing, press Yes.'); ?>", null, null, function()
+				{
+					postData();
+				});
+				return;
+			}
+			postData();
+		}
+		
+		function postData()
+		{
 			var params =
 			{
 				op: 'change'
 				, scoring_id: data.id
 				, name: data.name
 				, scoring: JSON.stringify(data.scoring)
-				, overwrite: ov
+				, scoring_version: data.version
 			};
 			json.post("api/ops/scoring.php", params, function(response)
 			{
+				// A save that added a version gives the picker one more entry. This has to happen
+				// before setScoringVersion, which is what moves data.version.
+				if (data.versions.indexOf(response.scoring_version) < 0)
+				{
+					data.versions.push(response.scoring_version);
+				}
+				unsavedVersion = 0;
 				setScoringVersion(response.scoring_version);
 				dirty(false);
 			});
 		}
 		
-		function viewJson()
+		// A new version is a number and nothing else until it is saved: what is on screen stays
+		// as it is and becomes something to save, now into a version no competition is on.
+		function newVersion()
 		{
-			dlg.info(JSON.stringify(data.scoring), 'Json');
+			var version = 1;
+			for (var i = 0; i < data.versions.length; ++i)
+			{
+				if (data.versions[i] >= version)
+				{
+					version = data.versions[i] + 1;
+				}
+			}
+			data.versions.push(version);
+			unsavedVersion = version;
+			setScoringVersion(version);
+			dirty(true);
 		}
 		
-		function overwriteData()
+		// Dropping the version that was never saved is just going back to what is there. Any
+		// other one is a deletion, and the page comes back on whatever version is current then.
+		function deleteVersion()
 		{
-			dlg.yesNo("<?php echo get_label('The results of the existing tournaments will change. Are you sure you want to overwrite the current version?'); ?>", null, null, function()
+			if (data.version == unsavedVersion)
 			{
-				saveData(1);
+				dirty(false);
+				goTo({ version: undefined });
+				return;
+			}
+			dlg.yesNo("<?php echo get_label('Delete this version? This can not be undone.'); ?>", null, null, function()
+			{
+				var params =
+				{
+					op: 'delete_version'
+					, scoring_id: data.id
+					, scoring_version: data.version
+				};
+				json.post("api/ops/scoring.php", params, function(response)
+				{
+					dirty(false);
+					goTo({ version: response.current_version });
+				});
 			});
+		}
+		
+		function editJson()
+		{
+			dlg.form("form/system_json.php?type=scoring&id=" + data.id + "&version=" + data.version, null, 1200);
+		}
+		
+		// What that dialog calls with the json it was given. It saves nothing - this is the
+		// editor being handed other contents, and Save is still what writes them.
+		function applyJson(json)
+		{
+			data.scoring = json;
+			initScoringEditor(data, onDataChange);
+			dirty(true);
 		}
 		
 		initScoringEditor(data, onDataChange);

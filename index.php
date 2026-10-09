@@ -420,7 +420,7 @@ class Page extends GeneralPageBase
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, ' . series_owner_fields() . ' FROM series s' .
 			series_owner_join() .
-			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.type <> ' . SERIES_TYPE_RECURRING .
+			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.start_time <> ' . SERIES_INFINITE_START .
 			' AND (s.league_id IS NOT NULL');
 		if ($_profile != NULL)
 		{
