@@ -546,6 +546,60 @@ function series_club_condition($club_id, $series_alias = 's')
 		' OR ' . $a . '.id IN (SELECT series_id FROM series_clubs WHERE club_id = ' . $club_id . '))';
 }
 
+// Who may enter a tournament or a subseries into a series. An ordinary series takes them from
+// any club that can reach it - see series_club_condition() above. A private one takes them only
+// from the people who run it: a manager of the league or of the club it belongs to, a manager of
+// the series itself, or an admin. Being private hides nothing - the series is still listed, still
+// has standings, and anybody may look at it; what it does not take is entries.
+//
+// Returns the SQL condition for the series aliased as $series_alias, without a leading AND, for
+// whoever is logged in.
+function series_entry_condition($series_alias = 's')
+{
+	global $_profile;
+
+	$a = $series_alias;
+	$open = '(' . $a . '.flags & ' . SERIES_FLAG_PRIVATE . ') = 0';
+	if ($_profile == NULL)
+	{
+		return '(' . $open . ')';
+	}
+	if ($_profile->is_admin())
+	{
+		return '(TRUE)';
+	}
+
+	// The clubs are in the profile already. The other two sources are a table lookup each, and a
+	// list query cannot do one per row, so they go in as subqueries.
+	$mine = array();
+	$clubs = array();
+	foreach ($_profile->clubs as $club_id => $club)
+	{
+		if (($club->flags & USER_PERM_MANAGER) != 0)
+		{
+			$clubs[] = (int)$club_id;
+		}
+	}
+	if (count($clubs) > 0)
+	{
+		$mine[] = $a . '.club_id IN (' . implode(',', $clubs) . ')';
+	}
+	$user_id = (int)$_profile->user_id;
+	$mine[] = $a . '.league_id IN (SELECT league_id FROM league_managers WHERE user_id = ' . $user_id . ')';
+	$mine[] = $a . '.id IN (SELECT series_id FROM series_regs WHERE user_id = ' . $user_id .
+		' AND (flags & ' . USER_PERM_MANAGER . ') <> 0)';
+
+	return '(' . $open . ' OR ' . implode(' OR ', $mine) . ')';
+}
+
+// The same question about one series, for the operations that write the membership. Whoever this
+// says no to can neither add an entry nor remove one: a save by somebody else leaves the links
+// they cannot touch exactly as they were.
+function can_enter_series($flags, $owner, $series_id)
+{
+	return ($flags & SERIES_FLAG_PRIVATE) == 0 || is_series_manager($owner, $series_id);
+}
+
 // The clubs of a series that cannot be taken off it: the owning club, or every club of the owning
 // league. Keyed by club id so a page can tell them from the invited ones.
 function get_series_permanent_clubs($owner)

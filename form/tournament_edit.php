@@ -272,6 +272,8 @@ try
 			ended_after: '+' + strToDate($('#form-start').val())
 			, started_before: '+' + _end
 			, club_id: <?php echo $club_id; ?>
+			// A private series is not offered to anybody but the people who run it.
+			, can_enter: 1
 		},
 		function(series)
 		{

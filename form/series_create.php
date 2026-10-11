@@ -136,9 +136,11 @@ try
 	
 	echo '<tr><td colspan="2">';
 	
+	// Whoever runs a series may close it to outsiders. The two below are not for everybody.
+	echo '<input type="checkbox" id="form-private"> ' . get_label('private series. Only the people who run it may enter a tournament or a subseries into it.');
 	if (is_permitted(PERMISSION_ADMIN))
 	{
-		echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.');
+		echo '<br><input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.');
 	}
 	if ($owner_is_elite)
 	{
@@ -236,6 +238,8 @@ try
 			// leagues it belongs to - all three are what club_id means here. A league series: the
 			// series of that league only.
 			, <?php echo $is_club_series ? 'club_id' : 'league_id'; ?>: <?php echo $owner_id; ?>
+			// A private series is not offered to anybody but the people who run it.
+			, can_enter: 1
 			// A recurring tournament grades nothing and holds tournaments rather than subseries, so
 			// there is nothing for a subseries to be worth inside one. Having no dates it overlapped
 			// every window, which is why every one of them used to be on this list.
@@ -336,6 +340,7 @@ try
 		var _langs = mr.getLangs('form-');
 		
 		var _flags = 0;
+		if ($("#form-private").attr('checked')) _flags |= <?php echo SERIES_FLAG_PRIVATE; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
 		if ($("#form-elite").attr('checked')) _flags |= <?php echo SERIES_FLAG_ELITE; ?>;
 		

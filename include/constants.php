@@ -366,14 +366,16 @@ define('COMPETITION_BEST_BLACK', 0x40);
 //  6 - 0x0020 -     32 - series is finished - all scoring is complete
 //  7 - 0x0040 -     64 - series is pinned to the front page of the site (only site admins can do it)
 //  8 - 0x0080 -    128 - elite flag can be assigned to the series of the elite leagues. Tournaments/subseries of the elite series with more than one star become elite tournaments/series and players get higher rating.
+//  9 - 0x0100 -    256 - private - only the people who run the series may enter a tournament or a subseries into it.
 define('SERIES_FLAG_CANCELED', 0x8);
 define('SERIES_FLAG_DIRTY',    0x10);
 define('SERIES_FLAG_FINISHED', 0x20);
 define('SERIES_FLAG_PINNED', 0x40);
 define('SERIES_FLAG_ELITE', 0x80);
+define('SERIES_FLAG_PRIVATE', 0x100);
 define('NEW_SERIES_FLAGS', 0);
 define('SERIES_ADMIN_EDITABLE_MASK', 0x40); // SERIES_FLAG_PINNED
-define('SERIES_EDITABLE_MASK', 0xc0); // SERIES_FLAG_PINNED | SERIES_FLAG_ELITE
+define('SERIES_EDITABLE_MASK', 0x1c0); // SERIES_FLAG_PINNED | SERIES_FLAG_ELITE | SERIES_FLAG_PRIVATE
 
 define('SERIES_ICON_MASK', 0x7);
 define('SERIES_ICON_MASK_OFFSET', 0);

@@ -447,8 +447,12 @@ class ApiPage extends OpsApiPageBase
 		// create parent series records
 		foreach ($parent_series as $s)
 		{
-			list($smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
-				get_label('sеriеs'), 'SELECT max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
+			list($sflags, $smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
+				get_label('sеriеs'), 'SELECT flags, max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
+			if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
+			{
+				throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));
+			}
 			Db::exec(
 				get_label('sеriеs'),
 				'INSERT INTO series_tournaments (tournament_id, series_id, stars, stage) values (?, ?, ?, ?)',
@@ -686,12 +690,12 @@ class ApiPage extends OpsApiPageBase
 		{
 			$old_parent_series = array();
 			$query = new DbQuery(
-				'SELECT s.id, st.stars, st.stage, s.max_stars, s.stages, s.league_id, s.club_id' .
+				'SELECT s.id, st.stars, st.stage, s.max_stars, s.stages, s.league_id, s.club_id, s.flags' .
 				' FROM series_tournaments st JOIN series s ON s.id = st.series_id WHERE st.tournament_id = ?', $tournament_id);
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list($s->id, $s->stars, $s->stage, $s->max_stars, $s->stages, $s->league_id, $s->club_id) = $row;
+				list($s->id, $s->stars, $s->stage, $s->max_stars, $s->stages, $s->league_id, $s->club_id, $s->series_flags) = $row;
 				$s->stage = (int)$s->stage;
 				$old_parent_series[$s->id] = $s;
 			}
@@ -729,8 +733,12 @@ class ApiPage extends OpsApiPageBase
 				}
 				else
 				{
-					list($smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
-						get_label('sеriеs'), 'SELECT max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
+					list($sflags, $smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
+						get_label('sеriеs'), 'SELECT flags, max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
+					if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
+					{
+						throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));
+					}
 					Db::exec(
 						get_label('sеriеs'),
 						'INSERT INTO series_tournaments (tournament_id, series_id, stars, stage) values (?, ?, ?, ?)',
@@ -758,6 +766,12 @@ class ApiPage extends OpsApiPageBase
 			
 			foreach ($old_parent_series as $parent_series_id => $s)
 			{
+				// A link to a private series stays where it is unless the one taking it off runs that
+				// series. Whoever cannot add a tournament to it cannot take one out either.
+				if (!can_enter_series($s->series_flags, new SeriesOwner($s->league_id, $s->club_id), $parent_series_id))
+				{
+					continue;
+				}
 				Db::exec(
 					get_label('sеriеs'), 
 					'DELETE FROM series_tournaments WHERE tournament_id = ? AND series_id = ?', $tournament_id, $parent_series_id);

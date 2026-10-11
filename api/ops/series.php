@@ -160,6 +160,12 @@ class ApiPage extends OpsApiPageBase
 		// create parent series records
 		foreach ($parent_series as $s)
 		{
+			list($sflags, $sleague_id, $sclub_id) = Db::record(
+				get_label('sеriеs'), 'SELECT flags, league_id, club_id FROM series WHERE id = ?', $s->id);
+			if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
+			{
+				throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));
+			}
 			Db::exec(
 				get_label('sеriеs'), 
 				'INSERT INTO series_series (child_id, parent_id, stars) values (?, ?, ?)',
@@ -367,11 +373,13 @@ class ApiPage extends OpsApiPageBase
 		if (!is_null($parent_series))
 		{
 			$old_parent_series = array();
-			$query = new DbQuery('SELECT parent_id, stars FROM series_series WHERE child_id = ?', $series_id);
+			$query = new DbQuery(
+				'SELECT ss.parent_id, ss.stars, s.flags, s.league_id, s.club_id FROM series_series ss' .
+				' JOIN series s ON s.id = ss.parent_id WHERE ss.child_id = ?', $series_id);
 			while ($row = $query->next())
 			{
 				$s = new stdClass();
-				list($s->id, $s->stars) = $row;
+				list($s->id, $s->stars, $s->flags, $s->league_id, $s->club_id) = $row;
 				$old_parent_series[$s->id] = $s;
 			}
 			
@@ -393,6 +401,12 @@ class ApiPage extends OpsApiPageBase
 				}
 				else
 				{
+					list($sflags, $sleague_id, $sclub_id) = Db::record(
+						get_label('sеriеs'), 'SELECT flags, league_id, club_id FROM series WHERE id = ?', $s->id);
+					if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
+					{
+						throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));
+					}
 					Db::exec(
 						get_label('sеriеs'), 
 						'INSERT INTO series_series (child_id, parent_id, stars) values (?, ?, ?)',
@@ -405,6 +419,12 @@ class ApiPage extends OpsApiPageBase
 			
 			foreach ($old_parent_series as $parent_id => $s)
 			{
+				// A link to a private series stays where it is unless the one taking it off runs that
+				// series. Whoever cannot add a subseries to it cannot take one out either.
+				if (!can_enter_series($s->flags, new SeriesOwner($s->league_id, $s->club_id), $parent_id))
+				{
+					continue;
+				}
 				Db::exec(
 					get_label('sеriеs'), 
 					'DELETE FROM series_series WHERE child_id = ? AND parent_id = ?', $series_id, $parent_id);

@@ -26,6 +26,7 @@ class ApiPage extends GetApiPageBase
 		$club_id = (int)get_optional_param('club_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
 		$canceled = (int)get_optional_param('canceled', 0);
+		$can_enter = (int)get_optional_param('can_enter', 0);
 		$types = (int)get_optional_param('types', SERIES_TYPE_FILTER_ALL);
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
@@ -134,6 +135,13 @@ class ApiPage extends GetApiPageBase
 		// Unlike the series lists on the site, the API returns every type unless asked otherwise -
 		// a caller that filters nothing expects nothing filtered out.
 		$condition->add(series_type_filter_condition($types));
+		
+		// Only the series the caller may enter a competition into. What a private series leaves
+		// out is exactly this list - it is not hidden anywhere else.
+		if ($can_enter)
+		{
+			$condition->add(' AND ' . series_entry_condition());
+		}
 
 		switch ($canceled)
 		{
@@ -288,6 +296,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('club_id', 'Club id.  For example: <a href="series.php?club_id=1">' . PRODUCT_URL . '/api/get/series.php?club_id=1</a> returns the series that Russian Mafia of Vancouver runs itself plus all series of the leagues it belongs to.', '-');
 		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="series.php?langs=1">' . PRODUCT_URL . '/api/get/series.php?langs=1</a> returns all series that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('canceled', '0 - exclude canceled series (default); 1 - incude canceled series; 2 - canceled series only. For example: <a href="series.php?canceled=2">' . PRODUCT_URL . '/api/get/series.php?canceled=2</a> returns all canceled series.', '-');
+		$help->request_param('can_enter', '1 - return only the series that the logged in user may enter a tournament or a subseries into. A private series takes them only from the people who run it - a manager of the league or of the club it belongs to, a manager of the series itself, or an admin - so for anybody else such a series is left out. 0 - return them all (default).', 'is 0.');
 		$help->request_param('types', 'What series types to return. A bit combination of: ' . SERIES_TYPE_FILTER_SEASON . ' - seasons; ' . SERIES_TYPE_FILTER_SERIES . ' - series of tournaments; ' . SERIES_TYPE_FILTER_RECURRING . ' - recurring tournaments. For example: <a href="series.php?types=' . SERIES_TYPE_FILTER_RECURRING . '">' . PRODUCT_URL . '/api/get/series.php?types=' . SERIES_TYPE_FILTER_RECURRING . '</a> returns recurring tournaments only.', 'all types.');
 		$help->request_param('page', 'Page number. For example: <a href="series.php?page=1">' . PRODUCT_URL . '/api/get/series.php?page=1</a> returns the second page of series by time from newest to oldest.', '-');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="series.php?page_size=32">' . PRODUCT_URL . '/api/get/series.php?page_size=32</a> returns first 32 series; <a href="series.php?page_size=0">' . PRODUCT_URL . '/api/get/series.php?page_size=0</a> returns series in one page; <a href="series.php">' . PRODUCT_URL . '/api/get/series.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' series by alphabet.', '-');
