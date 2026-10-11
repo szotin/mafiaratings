@@ -205,8 +205,9 @@ try
 			ended_after: '+' + strToDate($('#form-start').val())
 			, started_before: _end
 			, club_id: <?php echo $club_id; ?>
-			// A private series is not offered to anybody but the people who run it.
-			, can_enter: 1
+			// Only the series this tournament can be part of: one where tournaments are played,
+			// and not one that is private to somebody else.
+			, can_enter: <?php echo SERIES_FLAG_PLAYS_TOURNAMENTS; ?>
 		},
 		function(series)
 		{

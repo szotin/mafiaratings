@@ -449,6 +449,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($sflags, $smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
 				get_label('sеriеs'), 'SELECT flags, max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
+			if ((series_plays($sflags) & SERIES_FLAG_PLAYS_TOURNAMENTS) == 0)
+			{
+				throw new Exc(get_label('This series does not take [0].', get_series_plays_name(SERIES_FLAG_PLAYS_TOURNAMENTS)));
+			}
 			if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
 			{
 				throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));
@@ -735,6 +739,10 @@ class ApiPage extends OpsApiPageBase
 				{
 					list($sflags, $smax_stars, $sstages, $sleague_id, $sclub_id) = Db::record(
 						get_label('sеriеs'), 'SELECT flags, max_stars, stages, league_id, club_id FROM series WHERE id = ?', $s->id);
+					if ((series_plays($sflags) & SERIES_FLAG_PLAYS_TOURNAMENTS) == 0)
+					{
+						throw new Exc(get_label('This series does not take [0].', get_series_plays_name(SERIES_FLAG_PLAYS_TOURNAMENTS)));
+					}
 					if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
 					{
 						throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));

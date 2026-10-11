@@ -32,6 +32,7 @@ try
 	$gaining_id = (int)$gaining_id;
 	$max_stars = series_max_stars($max_stars);
 	$stages = series_stage_count($stages);
+	$plays = series_plays($flags);
 	$infinite = series_is_infinite($start_time);
 	$type = series_type($start_time, $max_stars);
 	$league_id = (int)$league_id;
@@ -85,6 +86,15 @@ try
 	foreach (get_series_stages_options() as $option => $option_name)
 	{
 		show_option($option, $stages, $option_name);
+	}
+	echo '</select>';
+	echo '</td></tr>';
+
+	echo '<tr><td>' . get_label('Played in the series') . ':</td><td>';
+	echo '<select id="form-plays" onchange="onParamChange()">';
+	foreach (get_series_plays_options() as $option => $option_name)
+	{
+		show_option($option, $plays, $option_name);
 	}
 	echo '</select>';
 	echo '</td></tr>';
@@ -239,6 +249,7 @@ try
 		$('#form-infinite').prop('checked', d.infinite != 0);
 		$('#form-max-stars').val(d.max_stars);
 		$('#form-stages').val(d.stages);
+		$('#form-plays').val(d.plays);
 		onParamChange();
 	}
 
@@ -274,8 +285,9 @@ try
 			// leagues it belongs to - all three are what club_id means here. A league series: the
 			// series of that league only.
 			, <?php echo $is_club_series ? 'club_id' : 'league_id'; ?>: <?php echo $owner->id; ?>
-			// A private series is not offered to anybody but the people who run it.
-			, can_enter: 1
+			// Only the series a subseries can be part of: one where subseries are played, and not
+			// one that is private to somebody else.
+			, can_enter: <?php echo SERIES_FLAG_PLAYS_SERIES; ?>
 			// A recurring tournament grades nothing and holds tournaments rather than subseries, so
 			// there is nothing for a subseries to be worth inside one. Having no dates it overlapped
 			// every window, which is why every one of them used to be on this list.
@@ -396,6 +408,7 @@ try
 		var _langs = mr.getLangs('form-');
 
 		var _flags = 0;
+		_flags |= parseInt($('#form-plays').val());
 		if ($("#form-private").attr('checked')) _flags |= <?php echo SERIES_FLAG_PRIVATE; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo SERIES_FLAG_PINNED; ?>;
 		if ($("#form-elite").attr('checked')) _flags |= <?php echo SERIES_FLAG_ELITE; ?>;

@@ -252,6 +252,33 @@ function series_requested_stage($owner, $series_id, $stages, $entry, $default)
 	return series_stage($stages, $default);
 }
 
+// What is played in a series: tournaments, subseries, or both, as two bits of series.flags.
+// Never neither - a series that takes no competition at all has nothing to rank - so a row that
+// says so reads as tournaments, which is what every series was before the bits existed.
+//
+// It is a property of the series like its stars and its stages, but unlike those two it says
+// nothing about the type: a season usually holds both, a series of tournaments and a recurring
+// tournament hold tournaments, and any of them may be set to anything.
+function series_plays($flags)
+{
+	$plays = (int)$flags & SERIES_FLAGS_PLAYS_MASK;
+	return $plays == 0 ? SERIES_FLAG_PLAYS_TOURNAMENTS : $plays;
+}
+
+function get_series_plays_options()
+{
+	return array(
+		SERIES_FLAG_PLAYS_TOURNAMENTS => get_label('tournaments'),
+		SERIES_FLAG_PLAYS_SERIES => get_label('subseries'),
+		SERIES_FLAGS_PLAYS_MASK => get_label('tournaments and subseries'));
+}
+
+// What one of those bits is called in a refusal, for the one message both operations need.
+function get_series_plays_name($kind)
+{
+	return $kind == SERIES_FLAG_PLAYS_SERIES ? get_label('subseries') : get_label('tournaments');
+}
+
 // How many stars a series can hand out to a tournament or a subseries entered into it. Five is
 // what every series used before the maximum became a property of the series itself. Zero means
 // the series does not grade its tournaments at all.
@@ -359,11 +386,14 @@ function get_series_type_defaults($type)
 	switch ((int)$type)
 	{
 		case SERIES_TYPE_SEASON:
-			return array('infinite' => 0, 'max_stars' => SERIES_DEFAULT_MAX_STARS, 'stages' => 1);
+			return array('infinite' => 0, 'max_stars' => SERIES_DEFAULT_MAX_STARS, 'stages' => 1,
+				'plays' => SERIES_FLAGS_PLAYS_MASK);
 		case SERIES_TYPE_RECURRING:
-			return array('infinite' => 1, 'max_stars' => 0, 'stages' => 1);
+			return array('infinite' => 1, 'max_stars' => 0, 'stages' => 1,
+				'plays' => SERIES_FLAG_PLAYS_TOURNAMENTS);
 	}
-	return array('infinite' => 0, 'max_stars' => 0, 'stages' => 1);
+	return array('infinite' => 0, 'max_stars' => 0, 'stages' => 1,
+		'plays' => SERIES_FLAG_PLAYS_TOURNAMENTS);
 }
 
 function get_series_type_name($type)

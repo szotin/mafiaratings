@@ -95,8 +95,21 @@ class ApiPage extends OpsApiPageBase
 			$parent_series = array();
 		}
 
-		$flags = (int)get_optional_param('flags', NEW_SERIES_FLAGS);
+		$given_flags = get_optional_param('flags', NULL);
+		$flags = (int)(is_null($given_flags) ? NEW_SERIES_FLAGS : $given_flags);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + (NEW_SERIES_FLAGS & ~SERIES_EDITABLE_MASK);
+		// What is played in the series is two bits of the flags.
+		if (($flags & SERIES_FLAGS_PLAYS_MASK) == 0)
+		{
+			// Carrying neither of the two bits that say what is played in the series is not the same
+			// as leaving them out. A request that names the flags and names neither of these is
+			// describing a series nothing can be entered into, and there is no such series.
+			if (!is_null($given_flags))
+			{
+				throw new Exc(get_label('A series has to take tournaments, subseries, or both.'));
+			}
+			$flags |= $preset['plays'];
+		}
 		// Elite is a property of elite leagues. A club series is never elite.
 		if (($owner_flags & LEAGUE_FLAG_ELITE) == 0)
 		{
@@ -162,6 +175,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($sflags, $sleague_id, $sclub_id) = Db::record(
 				get_label('sеriеs'), 'SELECT flags, league_id, club_id FROM series WHERE id = ?', $s->id);
+			if ((series_plays($sflags) & SERIES_FLAG_PLAYS_SERIES) == 0)
+			{
+				throw new Exc(get_label('This series does not take [0].', get_series_plays_name(SERIES_FLAG_PLAYS_SERIES)));
+			}
 			if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
 			{
 				throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));
@@ -188,6 +205,7 @@ class ApiPage extends OpsApiPageBase
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
 		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 0 to ' . SERIES_MAX_STARS_LIMIT . '. Zero means the series does not grade its tournaments at all: it says which stage each of them belongs to instead.', 'whatever <q>type</q> implies.');
+		$help->request_param('flags', 'Series flags. What is played in the series is two of them, as a bit combination of: ' . SERIES_FLAG_PLAYS_TOURNAMENTS . ' - tournaments; ' . SERIES_FLAG_PLAYS_SERIES . ' - subseries. Naming the flags and naming neither of these is refused: there is no series that takes nothing. Leaving <q>flags</q> out altogether leaves the question to <q>type</q>. A series takes nothing else: entering a tournament into a series of subseries is refused, and so is the other way round.', 'whatever <q>type</q> implies.');
 		$help->request_param('stages', 'How many stages the series has, from 1 to ' . SERIES_MAX_STAGES . '. One means there is no ladder - every tournament is a tournament of the series. The stages of a series with n of them are ' . SERIES_STAGE_BASE . ' - the base stage - and 1..n-1, numbered the way tournaments number the rounds of their own playoff: ' . SERIES_STAGE_FINAL . ' - the final, ' . SERIES_STAGE_SEMIFINAL . ' - the semifinal, ' . SERIES_STAGE_QUARTERFINAL . ' - the quarterfinal, and so on.', 'whatever <q>type</q> implies.');
 		$help->request_param('infinite', 'Pass 1 for a series with no dates at all - one that is infinite in both directions, which is what a recurring tournament is. <q>start</q> and <q>end</q> are then ignored.', 'whatever <q>type</q> implies.');
 		$help->request_param('type', 'Not a property of a series and not stored: the type is derived from <q>max_stars</q> and <q>infinite</q>. Passing it here only supplies the shape such a series usually has, for whichever of those three is left out: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament.', SERIES_TYPE_SERIES . ' - a series of tournaments.');
@@ -244,8 +262,40 @@ class ApiPage extends OpsApiPageBase
 		$name = get_optional_param('name', $old_name);
 		$notes = get_optional_param('notes', $old_notes);
 		$langs = get_optional_param('langs', $old_langs);
-		$flags = (int)get_optional_param('flags', $old_flags);
+		$given_flags = get_optional_param('flags', NULL);
+		$flags = (int)(is_null($given_flags) ? $old_flags : $given_flags);
 		$flags = ($flags & SERIES_EDITABLE_MASK) + ($old_flags & ~SERIES_EDITABLE_MASK);
+		if (($flags & SERIES_FLAGS_PLAYS_MASK) == 0)
+		{
+			// Carrying neither of the two bits that say what is played in the series is not the same
+			// as leaving them out. A request that names the flags and names neither of these is
+			// describing a series nothing can be entered into, and there is no such series.
+			if (!is_null($given_flags))
+			{
+				throw new Exc(get_label('A series has to take tournaments, subseries, or both.'));
+			}
+			$flags |= series_plays($old_flags);
+		}
+		
+		// A series cannot stop taking a kind of competition it already holds: the members would
+		// stay in series_tournaments or series_series and keep being counted, while the series
+		// said it takes none of them. They have to be taken off it first.
+		if (($flags & SERIES_FLAG_PLAYS_TOURNAMENTS) == 0)
+		{
+			list ($held) = Db::record(get_label('tournament'), 'SELECT count(*) FROM series_tournaments WHERE series_id = ?', $series_id);
+			if ($held > 0)
+			{
+				throw new Exc(get_label('There are [0] in the series already. Take them off it before saying that it does not take them.', get_series_plays_name(SERIES_FLAG_PLAYS_TOURNAMENTS)));
+			}
+		}
+		if (($flags & SERIES_FLAG_PLAYS_SERIES) == 0)
+		{
+			list ($held) = Db::record(get_label('sеriеs'), 'SELECT count(*) FROM series_series WHERE parent_id = ?', $series_id);
+			if ($held > 0)
+			{
+				throw new Exc(get_label('There are [0] in the series already. Take them off it before saying that it does not take them.', get_series_plays_name(SERIES_FLAG_PLAYS_SERIES)));
+			}
+		}
 		// Elite is a property of elite leagues. A club series is never elite.
 		if (($owner_flags & LEAGUE_FLAG_ELITE) == 0)
 		{
@@ -403,6 +453,10 @@ class ApiPage extends OpsApiPageBase
 				{
 					list($sflags, $sleague_id, $sclub_id) = Db::record(
 						get_label('sеriеs'), 'SELECT flags, league_id, club_id FROM series WHERE id = ?', $s->id);
+					if ((series_plays($sflags) & SERIES_FLAG_PLAYS_SERIES) == 0)
+					{
+						throw new Exc(get_label('This series does not take [0].', get_series_plays_name(SERIES_FLAG_PLAYS_SERIES)));
+					}
 					if (!can_enter_series($sflags, new SeriesOwner($sleague_id, $sclub_id), $s->id))
 					{
 						throw new Exc(get_label('Only the people who run this series may enter a tournament or a subseries into it.'));
@@ -558,6 +612,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('series_id', 'Series id.');
 		$help->request_param('name', 'Series name.', 'remains the same.');
 		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 0 to ' . SERIES_MAX_STARS_LIMIT . '. Zero means the series does not grade its tournaments at all: it says which stage each of them belongs to instead. Lowering it leaves the stars already handed out alone.', 'remains the same.');
+		$help->request_param('flags', 'Series flags. What is played in the series is two of them, as a bit combination of: ' . SERIES_FLAG_PLAYS_TOURNAMENTS . ' - tournaments; ' . SERIES_FLAG_PLAYS_SERIES . ' - subseries. Naming the flags and naming neither of these is refused: there is no series that takes nothing. Leaving <q>flags</q> out altogether leaves the question alone. A kind the series already holds cannot be taken away: the tournaments or the subseries have to be taken off it first.', 'remain the same.');
 		$help->request_param('stages', 'How many stages the series has, from 1 to ' . SERIES_MAX_STAGES . '. See the create operation for the numbering. Lowering it leaves a tournament on a stage the series no longer has, and that tournament reads as the base stage from then on.', 'remains the same.');
 		$help->request_param('infinite', 'Pass 1 for a series with no dates at all - one that is infinite in both directions, which is what a recurring tournament is. Such a series ignores <q>start</q> and <q>end</q>; a series that stops being one must be given both.', 'remains the same.');
 		$help->request_param('type', 'Not a property of a series and not stored: the type is derived from <q>max_stars</q> and <q>infinite</q>. Passing it here only supplies the shape such a series usually has, for whichever of those three is left out - so passing it alone resets all three: ' . SERIES_TYPE_SEASON . ' - a season, ' . SERIES_TYPE_SERIES . ' - a series of tournaments, ' . SERIES_TYPE_RECURRING . ' - a recurring tournament.', 'the three properties remain the same.');
