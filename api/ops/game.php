@@ -686,6 +686,17 @@ class ApiPage extends OpsApiPageBase
 						}
 					}
 				}
+
+				// Make sure the event knows everybody the seating names, before $regs is read
+				// below: the game screen builds each seat's dropdown out of the registrations and
+				// then selects the seated player in it, so an unregistered one has no option to
+				// select and the seat comes up empty. assign_seating_to_event() registers them when
+				// the seating is applied; this is both a second guard and what fixes the events
+				// whose seating was applied before that was so.
+				if (isset($misc->seating->mapping))
+				{
+					register_seating_players($event_id, $misc->seating->mapping);
+				}
 				
 				$game = new stdClass();
 				$game->version = GAME_CURRENT_VERSION;

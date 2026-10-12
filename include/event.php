@@ -308,6 +308,39 @@ function get_event_reg_array($event_id)
 	return $regs;
 }
 
+// Registers on the event every player a seating names, skipping anyone already registered.
+//
+// A seating reaches the event as slots plus a mapping of slot to user, and the games read their
+// players straight out of it. The game screen, though, builds each seat's dropdown out of the
+// event's registrations and then selects the seated player in it - so a player the seating names
+// but the event does not know about has no option to select, and the seat shows up empty. The
+// moderator then types in a seating that was already there. It is also why it used to start
+// working from the second game on: entering the first one by hand registers those players.
+//
+// Entries are user ids, or objects carrying an id - both forms occur in misc.
+// Returns how many registrations were added.
+function register_seating_players($event_id, $mapping)
+{
+	$event_id = (int)$event_id;
+	$added = 0;
+	foreach ((array)$mapping as $entry)
+	{
+		$user_id = is_object($entry) ? (isset($entry->id) ? (int)$entry->id : 0) : (int)$entry;
+		if ($user_id <= 0)
+		{
+			continue;
+		}
+
+		// INSERT IGNORE instead of looking first: (event_id, user_id) is the primary key, so the
+		// insert is the check, and an existing registration keeps the flags and nickname it has.
+		Db::exec(get_label('registration'),
+			'INSERT IGNORE INTO event_regs (event_id, user_id, flags) VALUES (?, ?, ?)',
+			$event_id, $user_id, USER_PERM_PLAYER | USER_EVENT_NEW_PLAYER_FLAGS);
+		$added += Db::affected_rows();
+	}
+	return $added;
+}
+
 class EventPageBase extends PageBase
 {
 	protected $event;

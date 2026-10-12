@@ -2309,7 +2309,7 @@ class ApiPage extends OpsApiPageBase
 
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
-		$this->assign_seating_to_event($misc, $hash, $rounds, $final_mapping);
+		$this->assign_seating_to_event($event_id, $misc, $hash, $rounds, $final_mapping);
 		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
 	}
 	
@@ -2393,6 +2393,9 @@ class ApiPage extends OpsApiPageBase
 					// away. See show_seating_quality_bar() and tournament_preparation.php.
 					$misc->seating->manual = true;
 					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+					// A swap can bring in somebody the seating did not name before - a substitute -
+					// and the game screen can only show a player the event knows about.
+					register_seating_players($event_id, $misc->seating->mapping);
 				}
 			}
 		}
@@ -2500,7 +2503,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	// assign_seating_to_event — shared helper used by set_seating_op and import_dimtom_op
 	//-------------------------------------------------------------------------------------------------------
-	private function assign_seating_to_event($misc, $hash, $seating, $mapping)
+	private function assign_seating_to_event($event_id, $misc, $hash, $seating, $mapping)
 	{
 		list($pr, $pvr, $tr, $tvr, $nr, $nvr) = Db::record(get_label('seating'),
 			'SELECT players_runs, players_void_runs, tables_runs, tables_void_runs, numbers_runs, numbers_void_runs FROM seatings WHERE hash = ?',
@@ -2510,6 +2513,12 @@ class ApiPage extends OpsApiPageBase
 		$misc->seating->version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
 		$misc->seating->rounds  = $seating;
 		$misc->seating->mapping = $mapping;
+
+		// The games read their players out of the seating, but the game screen can only show a
+		// player the event knows about - an unregistered one leaves the seat looking empty and
+		// the moderator retypes a seating that was already there. So the seating brings its
+		// players onto the event with it.
+		register_seating_players($event_id, $mapping);
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -3216,7 +3225,7 @@ class ApiPage extends OpsApiPageBase
 			
 		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
 		if (is_null($misc)) { $misc = new stdClass(); }
-		$this->assign_seating_to_event($misc, $seatingDef->hash, $seating, $final_mapping);
+		$this->assign_seating_to_event($event_id, $misc, $seatingDef->hash, $seating, $final_mapping);
 		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
 	}
 
