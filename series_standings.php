@@ -189,6 +189,22 @@ class Page extends SeriesPageBase
 	{
 		global $_page, $_lang;
 
+		// The recount runs on a schedule, so a series that has been touched - a tournament of it
+		// scored, a membership changed, its gaining system rewritten - keeps showing what it showed
+		// before until the job gets to it. Better to say so than to let somebody read the old places
+		// as the current ones.
+		if ($this->flags & SERIES_FLAG_DIRTY)
+		{
+			echo '<p><table class="transp" width="100%"><tr><td>';
+			echo '<b>' . get_label('The results of this series are not recounted yet. They will be updated within an hour.') . '</b>';
+			echo '</td>';
+			if (is_series_manager($this->owner, $this->id))
+			{
+				echo '<td width="1" align="right" nowrap><button onclick="recount()">' . get_label('Recount the series') . '</button></td>';
+			}
+			echo '</tr></table></p>';
+		}
+
 		// A series with no dates and no ladder is the same tournament happening again, and its
 		// standings read as a history rather than as a table of points. Give such a series a
 		// ladder and it goes back to the ordinary table, stage column and cut-off switch and all:
@@ -356,6 +372,17 @@ class Page extends SeriesPageBase
 	protected function js()
 	{
 ?>		
+		// The whole job, not only this series. A series waiting for the recount may be waiting on a
+		// tournament of its own that has not been scored yet, and scoring tournaments is an earlier
+		// task of the same run. It is quick, and the page comes back with the new table.
+		function recount()
+		{
+			http.get("complete_competitions.php?time=60", function()
+			{
+				refr();
+			});
+		}
+		
 		function showGaining()
 		{
 			dlg.infoForm('form/gaining_show.php?id=<?php echo $this->gaining_id; ?>&version=<?php echo $this->gaining_version; ?>');
