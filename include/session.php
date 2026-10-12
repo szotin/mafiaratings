@@ -257,7 +257,9 @@ class Profile
 		return $csc;
 	}
 	
-	function is_league_manager($league_id)
+	// One row of league_managers per user and league, carrying the permissions they have in it
+	// the way club_regs and series_regs do - USER_PERM_MANAGER, USER_PERM_REFEREE.
+	function has_league_perm($perm, $league_id)
 	{
 		if ($this->is_admin())
 		{
@@ -269,8 +271,22 @@ class Profile
 			return false;
 		}
 		
-		list ($count) = Db::record(get_label('league'), 'SELECT count(*) FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $this->user_id);
+		list ($count) = Db::record(get_label('league'),
+			'SELECT count(*) FROM league_managers WHERE league_id = ? AND user_id = ? AND (flags & ?) <> 0',
+			$league_id, $this->user_id, $perm);
 		return $count > 0;
+	}
+	
+	function is_league_manager($league_id)
+	{
+		return $this->has_league_perm(USER_PERM_MANAGER, $league_id);
+	}
+	
+	// A referee in every tournament played in any series of the league - see
+	// is_tournament_series_referee().
+	function is_league_referee($league_id)
+	{
+		return $this->has_league_perm(USER_PERM_REFEREE, $league_id);
 	}
 	
 	function is_event_player($event_id)

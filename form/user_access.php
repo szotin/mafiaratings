@@ -49,6 +49,13 @@ try
 		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
 	}
+	else if (isset($_REQUEST['league_id']))
+	{
+		$league_id = (int)$_REQUEST['league_id'];
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		list($name, $user_flags) = Db::record(get_label('league'), 'SELECT l.name, lm.flags FROM league_managers lm JOIN leagues l ON l.id = lm.league_id WHERE lm.league_id = ? AND lm.user_id = ?', $league_id, $user_id);
+		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
+	}
 	else if (isset($_REQUEST['club_id']))
 	{
 		$club_id = (int)$_REQUEST['club_id'];
@@ -64,11 +71,15 @@ try
 	
 	$substitute_flag = isset($substitute_flag) ? $substitute_flag : 0;
 
-	if ($club_id > 0 || isset($series_id))
+	if ($club_id > 0 || isset($series_id) || isset($league_id))
 	{
 		echo '<input type="checkbox" id="form-manager" value="1"' . ((($user_flags & USER_PERM_MANAGER) != 0) ? ' checked' : '') . '> '.get_label('Manager');
 		echo '<br><input type="checkbox" id="form-referee" value="1"' . ((($user_flags & USER_PERM_REFEREE) != 0) ? ' checked' : '') . '> '.get_label('Referee');
-		echo '<br><input type="checkbox" id="form-player" value="1"' . ((($user_flags & USER_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player');
+		// A league has no players and no competitions of its own - only the people running it.
+		if (!isset($league_id))
+		{
+			echo '<br><input type="checkbox" id="form-player" value="1"' . ((($user_flags & USER_PERM_PLAYER) != 0) ? ' checked' : '') . '> '.get_label('Player');
+		}
 		if ($exhibition_flag != 0)
 		{
 			echo '<br><input type="checkbox" id="form-exhibition" value="1"' . ((($user_flags & $exhibition_flag) != 0) ? ' checked' : '') . '> '.get_label('Exhibition player');
@@ -115,6 +126,25 @@ try
 					player: ($("#form-player").attr("checked") ? 1 : 0),
 					exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0),
 					substitute: ($("#form-substitute").attr("checked") ? 1 : 0)
+				},
+				onSuccess);
+			}
+			</script>
+<?php
+		}
+		else if (isset($league_id))
+		{
+?>
+			<script>
+			function commit(onSuccess)
+			{
+				json.post("api/ops/user.php",
+				{
+					op: 'access',
+					user_id: <?php echo $user_id; ?>,
+					league_id: <?php echo $league_id; ?>,
+					manager: ($("#form-manager").attr("checked") ? 1 : 0),
+					moder: ($("#form-referee").attr("checked") ? 1 : 0)
 				},
 				onSuccess);
 			}

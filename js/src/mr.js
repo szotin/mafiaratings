@@ -364,16 +364,33 @@ var mr = new function()
 		dlg.form("form/league_decline.php?id=" + id, refr);
 	}
 	
-	this.addLeagueManager = function(leagueId)
+	// A user and the roles they are given, in a league or in a series. Which roles are on offer
+	// is the dialog's business: a league has no players of its own.
+	this.addLeagueUser = function(leagueId)
 	{
-		dlg.form("form/league_add_manager.php?league_id=" + leagueId, refr, 500);
+		dlg.form("form/add_permissions.php?league_id=" + leagueId, refr, 500);
 	}
 	
-	this.removeLeagueManager = function(leagueId, userId, confirmMessage)
+	this.addSeriesUser = function(seriesId)
+	{
+		dlg.form("form/add_permissions.php?series_id=" + seriesId, refr, 500);
+	}
+	
+	this.editLeagueAccess = function(userId, leagueId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&league_id=" + leagueId, refr, 400);
+	}
+	
+	this.editSeriesAccess = function(userId, seriesId)
+	{
+		dlg.form("form/user_access.php?user_id=" + userId + "&series_id=" + seriesId, refr, 400);
+	}
+	
+	this.removeLeagueUser = function(leagueId, userId, confirmMessage)
 	{
 		function _remove()
 		{
-			json.post("api/ops/league.php", { op: "remove_manager", league_id: leagueId, user_id: userId }, refr);
+			json.post("api/ops/league.php", { op: "remove_user", league_id: leagueId, user_id: userId }, refr);
 		}
 		
 		if (isString(confirmMessage))

@@ -393,7 +393,8 @@ CREATE TABLE `league_clubs` (
 DROP TABLE IF EXISTS `league_managers`;
 CREATE TABLE `league_managers` (
   `league_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL
+  `user_id` int(11) NOT NULL,
+  `flags` int(11) NOT NULL DEFAULT '4'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `league_pairs`;

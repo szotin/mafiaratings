@@ -944,6 +944,7 @@ class SeriesPageBase extends PageBase
 				// where a manager looks for it.
 				new MenuItem('javascript:mr.transferSeries(' . $this->id . ')', get_label('Transfer the series'), get_label('Give the series to another club or league.')),
 				new MenuItem('series_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Clubs allowed to enter their tournaments into [0]', $this->name)),
+				new MenuItem('series_regs.php?id=' . $this->id, get_label('Users'), get_label('Managers and referees of [0]', $this->name)),
 				new MenuItem(null, null, null),
 				new MenuItem('series_finance.php?id=' . $this->id, get_label('Financial report'), get_label('Financial report of the [0]', $this->name)),
 				new MenuItem(null, null, null),

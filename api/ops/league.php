@@ -542,8 +542,13 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
+		// One row per user and league, carrying the permissions they have in it, so this adds the
+		// manager bit to a row that may be there already for something else.
 		Db::begin();
-		Db::exec(get_label('league'), 'INSERT IGNORE INTO league_managers (league_id, user_id) VALUES (?, ?)', $league_id, $user_id);
+		Db::exec(get_label('league'),
+			'INSERT INTO league_managers (league_id, user_id, flags) VALUES (?, ?, ?)' .
+			' ON DUPLICATE KEY UPDATE flags = flags | VALUES(flags)',
+			$league_id, $user_id, USER_PERM_MANAGER);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_USER, 'becomes league manager', NULL, $user_id, NULL, $league_id);
@@ -570,18 +575,97 @@ class ApiPage extends OpsApiPageBase
 		$user_id = (int)get_required_param('user_id');
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
+		// Only the manager bit: a user who also referees the league stays on it as a referee.
+		// With nothing left they are off the league altogether.
 		Db::begin();
-		Db::exec(get_label('league'), 'DELETE FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $user_id);
+		Db::exec(get_label('league'),
+			'UPDATE league_managers SET flags = flags & ~' . USER_PERM_MANAGER . ' WHERE league_id = ? AND user_id = ?',
+			$league_id, $user_id);
 		if (Db::affected_rows() > 0)
 		{
 			db_log(LOG_OBJECT_USER, 'removed from league managers', NULL, $user_id, NULL, $league_id);
 		}
+		Db::exec(get_label('league'), 'DELETE FROM league_managers WHERE league_id = ? AND user_id = ? AND flags = 0', $league_id, $user_id);
 		Db::commit();
 	}
 	
 	function remove_manager_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Revoke league manager permission from a user.');
+		$help->request_param('league_id', 'League id.');
+		$help->request_param('user_id', 'User id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// add_user
+	//-------------------------------------------------------------------------------------------------------
+	function add_user_op()
+	{
+		$league_id = (int)get_required_param('league_id');
+		$user_id = (int)get_required_param('user_id');
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		
+		// A league has no players and no competitions of its own - only the people running it.
+		$flags = (int)get_optional_param('access_flags', USER_PERM_REFEREE) & (USER_PERM_MANAGER | USER_PERM_REFEREE);
+		if ($flags == 0)
+		{
+			throw new Exc(get_label('Please choose at least one role for the user.'));
+		}
+		
+		Db::begin();
+		Db::exec(get_label('league'),
+			'INSERT INTO league_managers (league_id, user_id, flags) VALUES (?, ?, ?)' .
+			' ON DUPLICATE KEY UPDATE flags = flags | VALUES(flags)',
+			$league_id, $user_id, $flags);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->league_id = $league_id;
+			$log_details->league_flags = $flags;
+			db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, NULL, $league_id);
+		}
+		Db::commit();
+		
+		$this->response['league_id'] = $league_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function add_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Give a user permissions in a league. A referee of the league referees every tournament played in any series of the league - including the subseries that belong to the league itself, and no subseries of another league.');
+		$help->request_param('league_id', 'League id.');
+		$help->request_param('user_id', 'User id.');
+		$help->request_param('access_flags', 'What the user becomes in the league, as a bit combination of: ' . USER_PERM_REFEREE . ' - a referee; ' . USER_PERM_MANAGER . ' - a manager. At least one of them is required. Nothing a user already has is taken away.', 'is ' . USER_PERM_REFEREE . ' - a referee.');
+		$help->response_param('league_id', 'League id.');
+		$help->response_param('user_id', 'User id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// remove_user
+	//-------------------------------------------------------------------------------------------------------
+	function remove_user_op()
+	{
+		$league_id = (int)get_required_param('league_id');
+		$user_id = (int)get_required_param('user_id');
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		
+		Db::begin();
+		Db::exec(get_label('league'), 'DELETE FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $user_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->league_id = $league_id;
+			$log_details->league_flags = 0;
+			db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, NULL, $league_id);
+		}
+		Db::commit();
+	}
+	
+	function remove_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Take a user off a league, with every permission they had in it.');
 		$help->request_param('league_id', 'League id.');
 		$help->request_param('user_id', 'User id.');
 		return $help;

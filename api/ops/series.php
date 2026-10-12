@@ -843,6 +843,88 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// add_user
+	//-------------------------------------------------------------------------------------------------------
+	function add_user_op()
+	{
+		$series_id = (int)get_required_param('series_id');
+		$user_id = (int)get_required_param('user_id');
+		
+		list ($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		check_series_permissions(new SeriesOwner($league_id, $club_id), $series_id);
+		
+		$flags = (int)get_optional_param('access_flags', USER_PERM_REFEREE) & USER_PERM_MASK;
+		if ($flags == 0)
+		{
+			throw new Exc(get_label('Please choose at least one role for the user.'));
+		}
+		
+		Db::begin();
+		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM series_regs WHERE series_id = ? AND user_id = ?', $series_id, $user_id);
+		if ($count == 0)
+		{
+			Db::exec(get_label('user'), 'INSERT INTO series_regs (series_id, user_id, flags) values (?, ?, ?)', $series_id, $user_id, $flags);
+			$log_details = new stdClass();
+			$log_details->series_id = $series_id;
+			$log_details->series_flags = $flags;
+			db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id, $league_id);
+		}
+		Db::commit();
+		
+		$this->response['series_id'] = $series_id;
+		$this->response['user_id'] = $user_id;
+	}
+	
+	function add_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Give a user permissions in a series. A manager of the series may do with it everything the managers of the league or the club running it may do; a referee of the series referees every tournament played in it. Neither reaches a subseries: a subseries is a series of its own and has its own people.');
+		$help->request_param('series_id', 'Series id.');
+		$help->request_param('user_id', 'User id.');
+		$help->request_param('access_flags', 'What the user becomes in the series, as a bit combination of: ' . USER_PERM_PLAYER . ' - a player; ' . USER_PERM_REFEREE . ' - a referee; ' . USER_PERM_MANAGER . ' - a manager. At least one of them is required. A user who is on the series already is left exactly as they were - use the <q>access</q> operation of api/ops/user.php to change them.', 'is ' . USER_PERM_REFEREE . ' - a referee.');
+		$help->response_param('series_id', 'Series id.');
+		$help->response_param('user_id', 'User id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// remove_user
+	//-------------------------------------------------------------------------------------------------------
+	function remove_user_op()
+	{
+		$series_id = (int)get_required_param('series_id');
+		$user_id = (int)get_required_param('user_id');
+		
+		list ($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		check_series_permissions(new SeriesOwner($league_id, $club_id), $series_id);
+		
+		Db::begin();
+		// The exhibition flag lives on the same row, and it is what keeps a player out of the
+		// standings, so the series is asked to count itself again.
+		list ($old_flags) = Db::record(get_label('user'), 'SELECT flags FROM series_regs WHERE series_id = ? AND user_id = ?', $series_id, $user_id);
+		Db::exec(get_label('user'), 'DELETE FROM series_regs WHERE series_id = ? AND user_id = ?', $series_id, $user_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->series_id = $series_id;
+			$log_details->series_flags = 0;
+			db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, $club_id, $league_id);
+			if (($old_flags & USER_FLAG_EXHIBITION_PLAYER) != 0)
+			{
+				Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $series_id);
+			}
+		}
+		Db::commit();
+	}
+	
+	function remove_user_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Take a user off a series, with every permission they had in it.');
+		$help->request_param('series_id', 'Series id.');
+		$help->request_param('user_id', 'User id.');
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
 	// add_club
 	//-------------------------------------------------------------------------------------------------------
 	function add_club_op()

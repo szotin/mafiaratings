@@ -22,13 +22,20 @@ define('PERMISSION_TOURNAMENT_MANAGER',  0x004000); // Users having manager perm
 define('PERMISSION_SERIES_PLAYER',       0x008000); // Users having player permission in the series
 define('PERMISSION_SERIES_REFEREE',      0x010000); // Users having referee permission for the series
 define('PERMISSION_SERIES_MANAGER',      0x020000); // Users having manager permission for the series
+define('PERMISSION_LEAGUE_REFEREE',      0x080000); // Users having referee permission in the league
 define('PERMISSION_ADMIN',               0x040000); // Mafia Ratings administrators
 
 define('PERMISSION_MASK_CLUB',           0x0000f8); // PERMISSION_CLUB_MEMBER | PERMISSION_CLUB_REPRESENTATIVE | PERMISSION_CLUB_PLAYER | PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER
-define('PERMISSION_MASK_LEAGUE',         0x000100); // PERMISSION_LEAGUE_MANAGER
-define('PERMISSION_MASK_EVENT',          0x000f00); // PERMISSION_EVENT_PLAYER | PERMISSION_EVENT_REFEREE | PERMISSION_EVENT_MANAGER
-define('PERMISSION_MASK_TOURNAMENT',     0x00f000); // PERMISSION_TOURNAMENT_PLAYER | PERMISSION_TOURNAMENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER
-define('PERMISSION_MASK_SERIES',         0x031000); // PERMISSION_SERIES_PLAYER | PERMISSION_SERIES_REFEREE | PERMISSION_SERIES_MANAGER
+define('PERMISSION_MASK_LEAGUE',         0x080100); // PERMISSION_LEAGUE_MANAGER | PERMISSION_LEAGUE_REFEREE
+// Three bits per group, where the offsets below say they are. These used to be written with a
+// nibble each - 0xf00, 0xf000, 0x31000 - which made the groups overlap: the event mask covered
+// PERMISSION_LEAGUE_MANAGER, the tournament mask covered PERMISSION_SERIES_PLAYER, and the
+// series mask had PERMISSION_TOURNAMENT_PLAYER in place of its own player bit. is_permitted()
+// gives out one id per group present in the request, in the order they are declared here, so an
+// overlap handed a group the id meant for the next one.
+define('PERMISSION_MASK_EVENT',          0x000e00); // PERMISSION_EVENT_PLAYER | PERMISSION_EVENT_REFEREE | PERMISSION_EVENT_MANAGER
+define('PERMISSION_MASK_TOURNAMENT',     0x007000); // PERMISSION_TOURNAMENT_PLAYER | PERMISSION_TOURNAMENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER
+define('PERMISSION_MASK_SERIES',         0x038000); // PERMISSION_SERIES_PLAYER | PERMISSION_SERIES_REFEREE | PERMISSION_SERIES_MANAGER
 define('PERMISSION_MASK_OWNER',          0x000004); // PERMISSION_OWNER
 
 define('PERMISSION_OFFSET_EVENT', 9);
@@ -96,18 +103,68 @@ function get_profile_tournament_permissions($tournament_id, $required_mask = 0)
 				list($flags) = $row;
 				return ($flags << PERMISSION_OFFSET_TOURNAMENT) & PERMISSION_MASK_TOURNAMENT;
 			}
+			if (($required_flags & USER_PERM_REFEREE) != 0 && is_tournament_series_referee(ANY_ID))
+			{
+				return PERMISSION_TOURNAMENT_REFEREE;
+			}
 		}
 		else if (is_numeric($tournament_id) && $tournament_id > 0)
 		{
+			$permissions = 0;
 			$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $tournament_id, $_profile->user_id);
 			if ($row = $query->next())
 			{
 				list($flags) = $row;
-				return ($flags << PERMISSION_OFFSET_TOURNAMENT) & PERMISSION_MASK_TOURNAMENT;
+				$permissions = ($flags << PERMISSION_OFFSET_TOURNAMENT) & PERMISSION_MASK_TOURNAMENT;
 			}
+			if (($permissions & PERMISSION_TOURNAMENT_REFEREE) == 0 && is_tournament_series_referee($tournament_id))
+			{
+				$permissions |= PERMISSION_TOURNAMENT_REFEREE;
+			}
+			return $permissions;
 		}
 	}
 	return 0;
+}
+
+// Whether whoever is logged in referees this tournament by way of a series it is in: a referee
+// of that series, or a referee of the league running it - a league referee referees every
+// tournament played in any series of the league.
+//
+// Only the series the tournament is in itself. Refereeing does not travel up: the referee of a
+// series is not thereby a referee of its subseries, and a league referee reaches a subseries
+// only when that subseries belongs to the same league - which is exactly what looking at the
+// series of the tournament, and no further, says.
+function is_tournament_series_referee($tournament_id)
+{
+	global $_profile;
+
+	if ($_profile == NULL)
+	{
+		return false;
+	}
+
+	// Whether there is any such tournament at all, for the pages that ask before they have one
+	// in hand. A series that is over or called off is not one of them.
+	if ($tournament_id == ANY_ID)
+	{
+		list ($count) = Db::record(get_label('tournament'),
+			'SELECT count(*) FROM series s' .
+			' LEFT OUTER JOIN series_regs sr ON sr.series_id = s.id AND sr.user_id = ?' .
+			' LEFT OUTER JOIN league_managers lm ON lm.league_id = s.league_id AND lm.user_id = ?' .
+			' WHERE (s.flags & ?) = 0 AND ((sr.flags & ?) <> 0 OR (lm.flags & ?) <> 0)',
+			$_profile->user_id, $_profile->user_id, SERIES_FLAG_FINISHED | SERIES_FLAG_CANCELED,
+			USER_PERM_REFEREE, USER_PERM_REFEREE);
+		return $count > 0;
+	}
+
+	list ($count) = Db::record(get_label('tournament'),
+		'SELECT count(*) FROM series_tournaments st JOIN series s ON s.id = st.series_id' .
+		' LEFT OUTER JOIN series_regs sr ON sr.series_id = s.id AND sr.user_id = ?' .
+		' LEFT OUTER JOIN league_managers lm ON lm.league_id = s.league_id AND lm.user_id = ?' .
+		' WHERE st.tournament_id = ? AND ((sr.flags & ?) <> 0 OR (lm.flags & ?) <> 0)',
+		$_profile->user_id, $_profile->user_id, $tournament_id, USER_PERM_REFEREE, USER_PERM_REFEREE);
+	return $count > 0;
 }
 
 function get_profile_series_permissions($series_id, $required_mask = 0)
@@ -296,16 +353,18 @@ function is_permitted($permissions, $id1 = 0, $id2 = 0, $id3 = 0, $id4 = 0, $id5
 				break;
 
 			case PERMISSION_LEAGUE_MANAGER:
+			case PERMISSION_LEAGUE_REFEREE:
+				$league_perm = $flag == PERMISSION_LEAGUE_REFEREE ? USER_PERM_REFEREE : USER_PERM_MANAGER;
 				if ($league_id == ANY_ID)
 				{
 					$query = new DbQuery(
 						'SELECT count(*) FROM league_managers lm JOIN leagues l ON l.id = lm.league_id' .
-						' WHERE lm.user_id = ? AND (l.flags & ?) = 0',
-						$_profile->user_id, LEAGUE_FLAG_CLOSED);
+						' WHERE lm.user_id = ? AND (l.flags & ?) = 0 AND (lm.flags & ?) <> 0',
+						$_profile->user_id, LEAGUE_FLAG_CLOSED, $league_perm);
 					list($cnt) = $query->next();
 					if ($cnt > 0) return true;
 				}
-				else if ($_profile->is_league_manager($league_id))
+				else if ($_profile->has_league_perm($league_perm, $league_id))
 				{
 					return true;
 				}

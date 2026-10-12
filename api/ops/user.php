@@ -306,6 +306,7 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_optional_param('event_id', 0);
 		$tournament_id = (int)get_optional_param('tournament_id', 0);
 		$series_id = (int)get_optional_param('series_id', 0);
+		$league_id = (int)get_optional_param('league_id', 0);
 
 		Db::begin();
 		if ($event_id > 0)
@@ -396,6 +397,32 @@ class ApiPage extends OpsApiPageBase
 				}
 			}
 		}
+		else if ($league_id > 0)
+		{
+			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+			list($old_flags) = Db::record(get_label('league'), 'SELECT flags FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $user_id);
+			$flags = access_flags($old_flags);
+			
+			// A league gives two permissions and no more: there is nothing to play or to be out of
+			// in a league itself. A row with neither left is not a row - the user is simply not one
+			// of the people running the league any more.
+			$flags &= USER_PERM_MANAGER | USER_PERM_REFEREE;
+			if ($flags == 0)
+			{
+				Db::exec(get_label('league'), 'DELETE FROM league_managers WHERE league_id = ? AND user_id = ?', $league_id, $user_id);
+			}
+			else
+			{
+				Db::exec(get_label('league'), 'UPDATE league_managers SET flags = ? WHERE league_id = ? AND user_id = ?', $flags, $league_id, $user_id);
+			}
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = new stdClass();
+				$log_details->league_id = $league_id;
+				$log_details->league_flags = $flags;
+				db_log(LOG_OBJECT_USER, 'permissions changed', $log_details, $user_id, NULL, $league_id);
+			}
+		}
 		else if ($club_id > 0)
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
@@ -443,6 +470,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('event_id', 'Event id.', 'whole site access is controlled (admin permission is requred for it).');
 		$help->request_param('tournament_id', 'Tournament id.', 'whole site access is controlled (admin permission is requred for it).');
 		$help->request_param('series_id', 'Series id.', 'whole site access is controlled (admin permission is requred for it).');
+		$help->request_param('league_id', 'League id. A league gives two permissions - <em>manager</em> and <em>moder</em>; revoking both of them takes the user off the league altogether.', 'whole site access is controlled (admin permission is requred for it).');
 		$help->request_param('club_id', 'Club id.', 'whole site access is controlled (admin permission is requred for it).');
 		$help->request_param('player', 'Player permission. 1 to grant, 0 to revoke. Does not work when none of club_id, event_id, tournament_id, or series_id is set.', 'remains the same');
 		$help->request_param('moder', 'Moderator/referee permission. 1 to grant, 0 to revoke. Does not work when none of club_id, event_id, tournament_id, or series_id is set.', 'remains the same');
