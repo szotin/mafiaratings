@@ -386,6 +386,23 @@ var mr = new function()
 		dlg.form("form/user_access.php?user_id=" + userId + "&series_id=" + seriesId, refr, 400);
 	}
 	
+	this.removeSeriesUser = function(seriesId, userId, confirmMessage)
+	{
+		function _remove()
+		{
+			json.post("api/ops/series.php", { op: "remove_user", series_id: seriesId, user_id: userId }, refr);
+		}
+		
+		if (isString(confirmMessage))
+		{
+			dlg.yesNo(confirmMessage, null, null, _remove);
+		}
+		else
+		{
+			_remove();
+		}
+	}
+	
 	this.removeLeagueUser = function(leagueId, userId, confirmMessage)
 	{
 		function _remove()
