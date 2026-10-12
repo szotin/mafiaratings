@@ -1174,7 +1174,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
-		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 			
 		Db::exec(get_label('user'), 'DELETE FROM event_regs WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
