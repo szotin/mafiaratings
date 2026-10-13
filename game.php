@@ -12,11 +12,14 @@ class Page extends PageBase
 	protected function add_headers()
 	{
 		global $_lang;
-		echo '<link rel="stylesheet" href="game.css" type="text/css" media="screen" />';
-		echo '<script src="js/game.js"></script>';
-		echo '<script src="js/game-ui.js"></script>';
-		echo '<script src="js/game_' . get_lang_code($_lang) . '.js"></script>';
-		echo '<script src="js/obs-websocket-js.js"></script>';
+		// Through versioned_asset like everything page_base.php loads: these are built files that
+		// change under the same name, and without the modification time in the address a browser
+		// keeps handing back the copy it already has.
+		echo '<link rel="stylesheet" href="' . versioned_asset('game.css') . '" type="text/css" media="screen" />';
+		echo '<script src="' . versioned_asset('js/game.js') . '"></script>';
+		echo '<script src="' . versioned_asset('js/game-ui.js') . '"></script>';
+		echo '<script src="' . versioned_asset('js/game_' . get_lang_code($_lang) . '.js') . '"></script>';
+		echo '<script src="' . versioned_asset('js/obs-websocket-js.js') . '"></script>';
 	}
 	
 	// no title to save space for the game

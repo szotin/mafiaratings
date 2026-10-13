@@ -1,24 +1,55 @@
 <?php
 
 require_once 'include/general_page_base.php';
+require_once 'include/tournament.php';
+require_once 'include/event.php';
 
 define('VIEW_GLYPHS', 0);
 define('VIEW_SCENE_SWITCHING', 1);
 define('VIEW_COUNT', 2);
 
-class Page extends GeneralPageBase
+// The page is opened from a tournament, from an event, or from the game screen of either, and it
+// should wear whatever it hangs under instead of coming up looking like the main page. The body
+// is the same in all three cases, so the class it extends is the only thing that differs - and
+// that much PHP is happy to decide right here. The bases want the thing's id in "id", while
+// every link here has always passed tournament_id or event_id, so the links are left as they are
+// and the id is handed over below.
+if (isset($_REQUEST['tournament_id']) && (int)$_REQUEST['tournament_id'] > 0)
+{
+	define('OBS_UNDER', 'tournament');
+	$_REQUEST['id'] = (int)$_REQUEST['tournament_id'];
+	class ObsPageBase extends TournamentPageBase {}
+}
+else if (isset($_REQUEST['event_id']) && (int)$_REQUEST['event_id'] > 0)
+{
+	define('OBS_UNDER', 'event');
+	$_REQUEST['id'] = (int)$_REQUEST['event_id'];
+	class ObsPageBase extends EventPageBase {}
+}
+else
+{
+	// Under nothing in particular: there is no event to set overlays up for, only the moderator's
+	// own scene switching.
+	define('OBS_UNDER', '');
+	class ObsPageBase extends GeneralPageBase {}
+}
+
+class Page extends ObsPageBase
 {
 	protected function add_headers()
 	{
-		echo '<script src="js/obs-websocket-js.js"></script>';
+		echo '<script src="' . versioned_asset('js/obs-websocket-js.js') . '"></script>';
 	}
 	
 	protected function prepare()
 	{
 		global $_profile;
-		
+
+		// Loads the tournament or the event this page hangs under, which is what gives the page
+		// its title and its menu.
+		parent::prepare();
 		check_permissions(PERMISSION_USER);
-		
+
 		$this->view = VIEW_GLYPHS;
 		if (isset($_REQUEST['view']))
 		{
@@ -30,26 +61,31 @@ class Page extends GeneralPageBase
 		}
 		
 		// The overlay URLs used to carry a secret token, which this page made up and stored on the
-		// event. They name a table now - what happens at a table goes out on the broadcast anyway
-		// - so no token is made any more and all that is left of it is this permission check.
+		// event. They name a table now - what happens at a table is on the stream anyway - so no
+		// token is made any more and all that is left of it is this permission check.
+		//
+		// The base has already loaded whatever we hang under, so nothing is read from the
+		// database here. Note that for an event it has also filled $this->tournament_id with the
+		// tournament that event belongs to, which is not the same as having been opened from the
+		// tournament - OBS_UNDER is what says which of the two happened.
 		$this->permitted = false;
-		$this->langs = LANG_ALL_VISUAL;
-
 		$this->event_id = 0;
 		$this->event_name = '';
-		if (isset($_REQUEST['event_id']))
+		if (OBS_UNDER == 'tournament')
 		{
-			$this->event_id = (int)$_REQUEST['event_id'];
-			list($club_id, $tournament_id, $this->langs, $this->event_name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, languages, name FROM events WHERE id = ?', $this->event_id);
-			$this->permitted = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->event_id, $tournament_id);
+			$this->tournament_id = $this->id;
+			$this->permitted = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id);
 		}
-
-		$this->tournament_id = 0;
-		if (isset($_REQUEST['tournament_id']))
+		else if (OBS_UNDER == 'event')
 		{
-			$this->tournament_id = (int)$_REQUEST['tournament_id'];
-			list($club_id, $this->langs) = Db::record(get_label('tournament'), 'SELECT club_id, langs FROM tournaments WHERE id = ?', $this->tournament_id);
-			$this->permitted = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->tournament_id);
+			$this->event_id = $this->id;
+			$this->event_name = $this->name;
+			$this->permitted = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->id, $this->tournament_id);
+		}
+		else
+		{
+			$this->tournament_id = 0;
+			$this->langs = LANG_ALL_VISUAL;
 		}
 
 		$this->user_id = $_profile->user_id;
@@ -374,7 +410,7 @@ class Page extends GeneralPageBase
 
 			// A tournament overlay follows its table from round to round; an event one stays in
 			// the one event. Either way the URL survives the whole thing and never needs retyping.
-			var scope = '<?php echo $this->tournament_id > 0 ? 'tournament_id=' . $this->tournament_id : 'event_id=' . $this->event_id; ?>';
+			var scope = '<?php echo OBS_UNDER == 'tournament' ? 'tournament_id=' . $this->tournament_id : 'event_id=' . $this->event_id; ?>';
 
 			function generateUrls()
 			{

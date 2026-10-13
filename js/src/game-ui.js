@@ -1450,12 +1450,12 @@ function uiConfig(txt, onClose)
 		}
 		html += '> ' + l('Rating') + '<br>'
 		
-		html += '<input type="checkbox" id="dlg-hide-roles"';
-		if (gameAreRolesHidden())
+		html += '<input type="checkbox" id="dlg-show-roles"';
+		if (!gameAreRolesHidden())
 		{
 			html += ' checked';
 		}
-		html += '> ' + l('HideRoles') + '<br>'
+		html += '> ' + l('ShowRoles') + '<br>'
 		
 		if (_obsScenes)
 		{
@@ -1490,7 +1490,7 @@ function uiConfig(txt, onClose)
 	{
 		_renderCallback = null;
 		gameSetIsRating($('#dlg-rating').attr('checked') ? 1 : 0);
-		gameHideRoles($('#dlg-hide-roles').attr('checked') ? 1 : 0);
+		gameHideRoles($('#dlg-show-roles').attr('checked') ? 0 : 1);
 		obsSetStreaming($('#dlg-streaming').attr('checked') ? 1 : 0);
 		if (langs.length > 1)
 		{

@@ -507,6 +507,10 @@ function create_tournament_round($address_id, $club_id, $start, $end, $notes, $l
 	{
 		$flags |= EVENT_FLAG_STREAMING;
 	}
+	if ($tournament_flags & TOURNAMENT_FLAG_HIDE_ROLES)
+	{
+		$flags |= EVENT_FLAG_HIDE_ROLES;
+	}
 	Db::exec(
 		get_label('round'),
 		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, players, tables, games) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',

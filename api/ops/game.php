@@ -733,6 +733,13 @@ class ApiPage extends OpsApiPageBase
 					$game->moderator->id = $referees[$table_num - 1];
 				}
 				$game->streaming = (($event_flags & EVENT_FLAG_STREAMING) != 0);
+				// Every game starts out the way its event says, and the moderator can still turn
+				// the roles on or off for the one they are running. The next game starts from the
+				// event again, so that turning them off for one game does not carry on.
+				if ($event_flags & EVENT_FLAG_HIDE_ROLES)
+				{
+					$game->hideRoles = true;
+				}
 
 				
 				$game->players = array(

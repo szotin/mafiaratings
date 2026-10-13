@@ -14,7 +14,7 @@ define('OBS_NO_LOGO', 'images/aml_logo.png'); // the picture shown instead of a 
 //   'players'   - the players only.
 // The pages take the same request params as api/get/current_game.php plus:
 //   locale        - the language of the page;
-//   hide_roles    - do not show who is who even when the site knows it;
+//   (whether the roles are shown is decided by the game itself, see EVENT_FLAG_HIDE_ROLES)
 //   hide_warnings - do not show warnings and the way the players died;
 //   retry_delay   - how often (in milliseconds) the page asks the site for the game state.
 function show_obs_page($view)
@@ -43,7 +43,6 @@ function show_obs_page($view)
 		}
 	}
 
-	$options->hideRoles = isset($_REQUEST['hide_roles']) && $_REQUEST['hide_roles'] !== 'false';
 	$options->hideWarnings = isset($_REQUEST['hide_warnings']) && $_REQUEST['hide_warnings'] !== 'false';
 	$options->retryDelay = OBS_RETRY_DELAY;
 	if (isset($_REQUEST['retry_delay']))

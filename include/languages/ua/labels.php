@@ -1772,6 +1772,7 @@ $labelMenu = array (
 'During shooting' => 'Під час стрілянини мафії', // game_obs.php, game_obs.php
 'Import scenes' => 'Імпортувати сцени', // game_obs.php, game_obs.php
 'video streaming games.' => 'відео трансляція ігор', // form/event_create.php, form/event_edit.php, form/round_create.php, form/tournament_create.php, form/tournament_edit.php, form/event_create.php, form/event_edit.php, form/round_create.php, form/tournament_create.php, form/tournament_edit.php
+'show the roles in the stream.' => 'показувати ролі у трансляції', // form/event_create.php, form/event_edit.php, form/round_create.php, form/tournament_create.php, form/tournament_edit.php
 '[0] black' => '[0] чорним', // view_game.php, view_game.php, view_game.php, form/game_player_view.php, view_game.php, view_game.php, view_game.php, form/game_player_view.php
 '[0] red' => '[0] червоним', // view_game.php, view_game.php, view_game.php, view_game.php, form/game_player_view.php, view_game.php, view_game.php, view_game.php, view_game.php, form/game_player_view.php
 '[0] leaves on record: [1]' => '[0] залишає під протокол: [1]', // view_game.php, view_game.php, view_game.php, view_game.php, form/game_player_view.php, view_game.php, view_game.php, view_game.php, view_game.php, form/game_player_view.php

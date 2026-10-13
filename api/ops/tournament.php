@@ -867,7 +867,26 @@ class ApiPage extends OpsApiPageBase
 			get_label('tournament'), 
 			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ?, preparation_stage = ? WHERE id = ?',
 			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $emo_id, $rules_code, $preparation_stage, $tournament_id);
-		if (Db::affected_rows() > 0 || $parent_series_changed)
+		// Remembered before anything else is written: every statement has affected rows of its
+		// own, and the logging below is asking about this one.
+		$tournament_changed = (Db::affected_rows() > 0);
+
+		// Whether the roles are shown is decided for the tournament as a whole, so turning it over
+		// here turns it over in every round. A round may still be set apart afterwards, and a game
+		// being played may still be set apart from its round - see EVENT_FLAG_HIDE_ROLES.
+		if (($flags & TOURNAMENT_FLAG_HIDE_ROLES) != ($old_flags & TOURNAMENT_FLAG_HIDE_ROLES))
+		{
+			if ($flags & TOURNAMENT_FLAG_HIDE_ROLES)
+			{
+				Db::exec(get_label('round'), 'UPDATE events SET flags = flags | ' . EVENT_FLAG_HIDE_ROLES . ' WHERE tournament_id = ?', $tournament_id);
+			}
+			else
+			{
+				Db::exec(get_label('round'), 'UPDATE events SET flags = flags & ~' . EVENT_FLAG_HIDE_ROLES . ' WHERE tournament_id = ?', $tournament_id);
+			}
+		}
+
+		if ($tournament_changed || $parent_series_changed)
 		{
 			$log_details = new stdClass();
 			if ($name != $old_name)

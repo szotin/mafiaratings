@@ -267,9 +267,15 @@ define('EVENT_FLAG_AWARD_BLACK', 0x4000);
 define('EVENT_FLAG_AWARD_DON', 0x8000);
 define('EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED', 0x10000);
 define('EVENT_FLAG_AWARD_NO_DON_IN_BLACK', 0x20000);
+// Keep the roles off the OBS overlays of this event's games. A tournament is usually played in a
+// room of its own where the players have no phones, so there the roles can be shown; at an
+// ordinary club event the players are sitting with their phones and could simply look them up.
+// Each new game of the event starts with this, and the moderator can still turn it either way
+// for the game they are running - see Game::hideRoles.
+define('EVENT_FLAG_HIDE_ROLES', 0x40000);
 define('EVENT_MASK_HIDDEN', 0x3); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER
 define('EVENT_ADMIN_EDITABLE_MASK', 0x200); // EVENT_FLAG_PINNED
-define('EVENT_EDITABLE_MASK', 0x3fe28); // EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_FUN | EVENT_FLAG_PINNED | EVENT_FLAG_STREAMING | EVENT_FLAG_AWARD_MVP | EVENT_FLAG_AWARD_RED | EVENT_FLAG_AWARD_SHERIFF | EVENT_FLAG_AWARD_BLACK | EVENT_FLAG_AWARD_DON | EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED | EVENT_FLAG_AWARD_NO_DON_IN_BLACK
+define('EVENT_EDITABLE_MASK', 0x7fe28); // EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_FUN | EVENT_FLAG_PINNED | EVENT_FLAG_STREAMING | EVENT_FLAG_AWARD_MVP | EVENT_FLAG_AWARD_RED | EVENT_FLAG_AWARD_SHERIFF | EVENT_FLAG_AWARD_BLACK | EVENT_FLAG_AWARD_DON | EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED | EVENT_FLAG_AWARD_NO_DON_IN_BLACK | EVENT_FLAG_HIDE_ROLES
 
 define('EVENT_ICON_MASK', 0x1c0);
 define('EVENT_ICON_MASK_OFFSET', 6);
@@ -327,8 +333,13 @@ define('TOURNAMENT_FLAG_ELITE', 0x2000000);
 define('TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED', 0x4000000);
 define('TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK', 0x8000000);
 define('TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE', 0x10000000);
+// Keep the roles off the OBS overlays, the way EVENT_FLAG_HIDE_ROLES does for one event. A
+// tournament hands this down to its rounds: they are created with it, and changing it on the
+// tournament sets it the same way on every round the tournament has. Off by default - a
+// tournament is played where the players cannot look the roles up.
+define('TOURNAMENT_FLAG_HIDE_ROLES', 0x20000000);
 define('TOURNAMENT_ADMIN_EDITABLE_MASK', 0x40); // TOURNAMENT_FLAG_PINNED
-define('TOURNAMENT_EDITABLE_MASK', 0x1dff7f70); // LONG_TERM | SINGLE_GAME | PINNED | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | FORCE_NUM_PLAYERS | REGISTRATION_CLOSED | STREAMING | AWARD_NO_SHERIFF_IN_RED | AWARD_NO_DON_IN_BLACK | HIDE_FROM_MAIN_PAGE
+define('TOURNAMENT_EDITABLE_MASK', 0x3dff7f70); // LONG_TERM | SINGLE_GAME | PINNED | MANUAL_SCORE | AWARD_* | HIDE_MASK_* | FORCE_NUM_PLAYERS | REGISTRATION_CLOSED | STREAMING | AWARD_NO_SHERIFF_IN_RED | AWARD_NO_DON_IN_BLACK | HIDE_FROM_MAIN_PAGE | HIDE_ROLES
 
 define('TOURNAMENT_ICON_MASK', 0x7);
 define('TOURNAMENT_ICON_MASK_OFFSET', 0);

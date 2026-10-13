@@ -169,7 +169,9 @@ try
 		echo '<br><input type="checkbox" id="form-pin"> '.get_label('pin to the main page.');
 	}
 	echo '<br><input type="checkbox" id="form-streaming"> '.get_label('video streaming games.');
-	
+	// An event of its own is played where the players have their phones on them, so this starts off.
+	echo '<br><input type="checkbox" id="form-show-roles"> '.get_label('show the roles in the stream.');
+
 	echo '</table>';
 	
 	echo '<table class="transp" width="100%"><tr>';
@@ -387,6 +389,7 @@ try
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo EVENT_FLAG_PINNED; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
+		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo EVENT_FLAG_HIDE_ROLES; ?>;
 		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_MVP; ?>;
 		if ($("#form-award-red").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_RED; ?>;
 		if ($("#form-award-black").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_BLACK; ?>;

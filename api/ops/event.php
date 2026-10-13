@@ -104,6 +104,10 @@ class ApiPage extends OpsApiPageBase
 			$tournament_id = NULL;
 			$round_num = 0;
 			$tournament_start_time = $tournament_duration = 0;
+			// An event of its own is played where the players have their phones on them, so the
+			// roles stay off the overlays unless somebody says otherwise. A tournament is the
+			// other way round, which is why a round of one takes this from the tournament below.
+			$default_flags |= EVENT_FLAG_HIDE_ROLES;
 		}
 		else
 		{
@@ -111,6 +115,10 @@ class ApiPage extends OpsApiPageBase
 			if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 			{
 				$default_flags |= EVENT_MASK_HIDDEN;
+			}
+			if ($tournament_flags & TOURNAMENT_FLAG_HIDE_ROLES)
+			{
+				$default_flags |= EVENT_FLAG_HIDE_ROLES;
 			}
 			$round_num = (int)get_optional_param('round_num', 0);
 		}

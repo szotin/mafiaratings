@@ -104,6 +104,13 @@ try
 		echo ' checked';
 	}
 	echo '> '.get_label('video streaming games.');
+	// A round starts out the way its tournament stands, and can be set apart afterwards.
+	echo '<br><input type="checkbox" id="form-show-roles"';
+	if (($tournament_flags & TOURNAMENT_FLAG_HIDE_ROLES) == 0)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('show the roles in the stream.');
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -189,6 +196,7 @@ try
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
+		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo EVENT_FLAG_HIDE_ROLES; ?>;
 		
 		var params =
 		{

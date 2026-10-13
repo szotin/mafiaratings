@@ -179,6 +179,8 @@ try
 	}
 	echo '<input type="checkbox" id="form-hide"> ' . get_label('hide from the main page.') . '<br>';
 	echo '<input type="checkbox" id="form-streaming" checked> ' . get_label('video streaming games.') . '<br>';
+	// A tournament is played where the players cannot look the roles up, so this starts on.
+	echo '<input type="checkbox" id="form-show-roles" checked> ' . get_label('show the roles in the stream.') . '<br>';
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -506,6 +508,7 @@ try
 		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
+		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_ROLES; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
 		_flags |= $("#form-hide-table").val();
 		_flags |= $("#form-hide-bonus").val();

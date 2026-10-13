@@ -7,9 +7,10 @@ var obs = new function()
 	var NO_LOGO = 'images/aml_logo.png'; // the picture shown instead of a logo that we do not have
 	var SEATS = 10; // a table has ten seats whether anybody is sitting at them or not
 
-	var options; // the options passed by obs.php
-	var game;    // the last game state we got from the site
-	var offline; // true when the site did not answer the last request
+	var options;   // the options passed by obs.php
+	var game;      // the last game state we got from the site
+	var offline;   // true when the site did not answer the last request
+	var hideRoles; // true when the game being played keeps its roles off the overlays
 
 	this.start = function(pageOptions)
 	{
@@ -33,6 +34,10 @@ var obs = new function()
 	{
 		var g = game ? game : { players: [], round: 0, phase: 'night', state: 'notStarted' };
 
+		// The game itself says whether its roles are shown, and the moderator can turn that over
+		// in the middle of it, so it is read afresh every time rather than settled at start-up.
+		hideRoles = (g.hideRoles === true);
+
 		showGamestats(g);
 		showReferee(g.moderator);
 		showRound(g);
@@ -51,7 +56,7 @@ var obs = new function()
 		}
 
 		var players = game.players ? game.players : [];
-		gamestats.className = 'gamestats' + (options.hideRoles ? ' hide-roles' : '') + (offline ? ' offline' : '');
+		gamestats.className = 'gamestats' + (hideRoles ? ' hide-roles' : '') + (offline ? ' offline' : '');
 
 		showSection('legacy', playersByNumbers(players, game.legacy));
 		showSection('sheriff-check', playersCheckedBy(players, 'checkedBySheriff'));
@@ -212,7 +217,7 @@ var obs = new function()
 		// A player who never uploaded a photo still has a face: the site gives them its default
 		// icon. So a seat stays face down only while there is nobody on it.
 		var known = (player.id > 0);
-		var role = !options.hideRoles && player.role ? player.role : '';
+		var role = !hideRoles && player.role ? player.role : '';
 
 		// Sitting down and being handed a role are the two things the card turns over for. Each
 		// of them gives it another half circle, always in the same direction.

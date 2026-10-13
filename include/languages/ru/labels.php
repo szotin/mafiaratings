@@ -1778,6 +1778,7 @@ $labelMenu = array (
 'During voting' => 'Во время голосования', // game_obs.php
 'During shooting' => 'Во время стрельбы мафии', // game_obs.php
 'video streaming games.' => 'видео трансляция игр', // form/event_create.php, form/event_edit.php, form/round_create.php, form/tournament_create.php, form/tournament_edit.php
+'show the roles in the stream.' => 'показывать роли в трансляции', // form/event_create.php, form/event_edit.php, form/round_create.php, form/tournament_create.php, form/tournament_edit.php
 '[0] black' => '[0] черным', // view_game.php, view_game.php, view_game.php, form/game_player_view.php
 '[0] red' => '[0] красным', // view_game.php, view_game.php, view_game.php, view_game.php, form/game_player_view.php
 '[0] leaves on record: [1]' => '[0] оставляет под протокол: [1]', // view_game.php, view_game.php, view_game.php, view_game.php, form/game_player_view.php

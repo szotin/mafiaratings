@@ -15,7 +15,11 @@ class ApiPage extends GetApiPageBase
 		$g = $this->game->data;
 		$game = new stdClass();
 		
+		// A game played with the roles hidden sends none of them, nor the checks. Saying so out
+		// loud as well lets an overlay leave out the places they would have gone, instead of
+		// showing empty ones for the whole game.
 		$show_roles = !isset($g->hideRoles) || !$g->hideRoles;
+		$game->hideRoles = !$show_roles;
 
 		// The roles are handed out in the "start" time of round 0, and the game cannot leave it
 		// until every one of them is given out. Only a mafia, a don or a sheriff is written down -
@@ -625,6 +629,7 @@ class ApiPage extends GetApiPageBase
 				$moderator->sub_param('iconUrl', 'URL of the moderator logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$moderator->sub_param('hasPhoto', 'True - if a moderator has custom photo. False - when moderator did not upload photo, or when id<=0, which means there is no moderator yet.');
 				$moderator->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
+			$param->sub_param('hideRoles', 'True when this game is played with the roles kept off the overlays. The players then have no role, and nobody has a checkedByDon or a checkedBySheriff. A game starts the way its event says and the moderator can turn it either way while the game is on.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
  			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');

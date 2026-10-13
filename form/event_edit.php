@@ -205,8 +205,15 @@ try
 		echo ' checked';
 	}
 	echo '> '.get_label('video streaming games.');
-	
-	echo '</td></tr>';	
+
+	echo '<br><input type="checkbox" id="form-show-roles"';
+	if (($flags & EVENT_FLAG_HIDE_ROLES) == 0)
+	{
+		echo ' checked';
+	}
+	echo '> '.get_label('show the roles in the stream.');
+
+	echo '</td></tr>';
 	echo '</table>';
 	
 ?>	
@@ -349,6 +356,7 @@ try
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo EVENT_FLAG_PINNED; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
+		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo EVENT_FLAG_HIDE_ROLES; ?>;
 		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_MVP; ?>;
 		if ($("#form-award-red").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_RED; ?>;
 		if ($("#form-award-black").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_BLACK; ?>;

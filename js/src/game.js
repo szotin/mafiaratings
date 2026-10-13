@@ -609,6 +609,7 @@ function gameAreRolesHidden()
 
 function gameHideRoles(hide)
 {
+	let hidden = gameAreRolesHidden();
 	if (hide)
 	{
 		game.hideRoles = true;
@@ -616,6 +617,13 @@ function gameHideRoles(hide)
 	else
 	{
 		delete game.hideRoles;
+	}
+
+	// Without this the change never left the screen: the overlays read the game from the server,
+	// and the game is only sent up when something has marked it dirty.
+	if (gameAreRolesHidden() != hidden)
+	{
+		gameDirty();
 	}
 }
 	

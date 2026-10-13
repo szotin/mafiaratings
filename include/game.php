@@ -3974,7 +3974,8 @@ class Game
 						'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, rules, scoring_id, scoring_version, scoring_options, fee, currency_id, round) ' .
 						'VALUES (?, ?, ?, ?, ?, \'\', ?, ?, ?, ?, ?, ?, ?, ?, 0)',
 						$name, $address_id, $data->clubId, $event_start, $event_duration,
-						EVENT_FLAG_ALL_CAN_REFEREE, $club_langs, $data->rules,
+						// Outside a tournament, like every event of its own - see alter202.sql.
+						EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_HIDE_ROLES, $club_langs, $data->rules,
 						$club_scoring_id, $scoring_version, $scoring_options, $fee, $currency_id);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 				

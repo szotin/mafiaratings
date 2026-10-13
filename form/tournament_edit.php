@@ -246,7 +246,15 @@ try
 		echo ' checked';
 	}
 	echo  '> ' . get_label('video streaming games.') . '<br>';
-	
+
+	// Turning this over here turns it over in every round of the tournament.
+	echo '<input type="checkbox" id="form-show-roles"';
+	if (($flags & TOURNAMENT_FLAG_HIDE_ROLES) == 0)
+	{
+		echo ' checked';
+	}
+	echo  '> ' . get_label('show the roles in the stream.') . '<br>';
+
 	echo '</td></tr>';
 	echo '</table>';
 	
@@ -538,6 +546,7 @@ try
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
+		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_ROLES; ?>;
 		_flags |= $("#form-hide-table").val();
 		_flags |= $("#form-hide-bonus").val();
 		
