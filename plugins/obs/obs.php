@@ -31,8 +31,11 @@ function show_obs_page($view)
 	$options = new stdClass();
 
 	// The game state is taken from our own site, so the pages work the same way on production and on a testing server.
+	// A page names a table - event_id or tournament_id together with table_num. user_id is what
+	// the overlays were addressed by before and still works, so sources set up back then keep
+	// playing without being retyped.
 	$options->params = array();
-	foreach (array('token', 'game_id', 'user_id', 'moderator_id', 'event_id', 'tournament_id', 'table_num', 'game_num') as $param)
+	foreach (array('event_id', 'tournament_id', 'table_num', 'game_num', 'user_id') as $param)
 	{
 		if (isset($_REQUEST[$param]))
 		{

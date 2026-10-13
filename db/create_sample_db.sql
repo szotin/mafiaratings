@@ -196,7 +196,6 @@ CREATE TABLE `events` (
   `rules` char(32) NOT NULL,
   `scoring_version` int(11) NOT NULL,
   `scoring_options` varchar(256) NOT NULL,
-  `security_token` char(32) DEFAULT NULL,
   `fee` int(11) DEFAULT NULL,
   `currency_id` int(11) DEFAULT NULL,
   `round` int(11) NOT NULL,
@@ -815,7 +814,6 @@ CREATE TABLE `tournaments` (
   `scoring_options` varchar(256) NOT NULL,
   `normalizer_id` int(11) DEFAULT NULL,
   `normalizer_version` int(11) DEFAULT NULL,
-  `security_token` char(32) DEFAULT NULL,
   `type` int(11) NOT NULL,
   `num_players` int(11) NOT NULL,
   `fee` int(11) DEFAULT NULL,
@@ -1104,11 +1102,11 @@ INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `durat
 INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (2, 'Club Cup 2024', NULL, 1, 1284784660, 31536000, 7, '', 0, '"0002000010000"', 1, 1, 0, NULL, NULL, 5);
 
 -- Tournament (finished) and its link to the season
-INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `security_token`, `type`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 'Sample Tournament', 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, NULL, 0, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
+INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `type`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 'Sample Tournament', 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, 0, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
 INSERT INTO `series_tournaments` (`tournament_id`, `series_id`, `stars`, `flags`, `fee`) VALUES (1, 1, 1, 0, NULL);
 
 -- Event (finished), belongs to the tournament
-INSERT INTO `events` (`id`, `name`, `address_id`, `club_id`, `start_time`, `notes`, `duration`, `flags`, `languages`, `scoring_id`, `standings_settings`, `tournament_id`, `rules`, `scoring_version`, `scoring_options`, `security_token`, `fee`, `currency_id`, `round`, `misc`, `players`, `tables`, `games`) VALUES (1, 'Sample Event', 1, 1, 1284784660, '', 21600, 16, 7, 1, NULL, 1, '0000100101000', 1, '{}', NULL, NULL, NULL, 0, NULL, 10, 1, 1);
+INSERT INTO `events` (`id`, `name`, `address_id`, `club_id`, `start_time`, `notes`, `duration`, `flags`, `languages`, `scoring_id`, `standings_settings`, `tournament_id`, `rules`, `scoring_version`, `scoring_options`, `fee`, `currency_id`, `round`, `misc`, `players`, `tables`, `games`) VALUES (1, 'Sample Event', 1, 1, 1284784660, '', 21600, 16, 7, 1, NULL, 1, '0000100101000', 1, '{}', NULL, NULL, 0, NULL, 10, 1, 1);
 
 -- Registrations for the 10 players who played the game (users 3..12)
 INSERT INTO `event_regs` (`event_id`, `user_id`, `coming_odds`, `people_with_me`, `late`, `nickname`, `flags`) VALUES

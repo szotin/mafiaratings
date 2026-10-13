@@ -461,17 +461,24 @@ class ApiPage extends GetApiPageBase
 		$this->club_pic = new Picture(CLUB_PICTURE);
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		
-		$token = get_required_param('token');
-		$game_id = (int)get_optional_param('game_id', 0);
+		// A table is named by the event or the tournament it stands in and by its number. Who is
+		// moderating it and who is logged in do not come into it - what is played at a table ends
+		// up on the broadcast anyway, so there is nothing here to keep behind a secret.
 		$user_id = (int)get_optional_param('user_id', 0);
-		$moderator_id = (int)get_optional_param('moderator_id', 0);
 		$event_id = (int)get_optional_param('event_id', 0);
 		$tournament_id = (int)get_optional_param('tournament_id', 0);
 		$table_num = (int)get_optional_param('table_num', 0);
 		$game_num = (int)get_optional_param('game_num', 0);
-		
+
+		// Without one of these there is no telling whose table is being asked about, and the
+		// answer would be whatever game happens to be the newest on the whole site.
+		if ($event_id <= 0 && $tournament_id <= 0 && $user_id <= 0)
+		{
+			throw new Exc('One of event_id, tournament_id or user_id must be set.');
+		}
+
 		$query = new DbQuery(
-			'SELECT g.game, e.security_token, t.security_token, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name'.
+			'SELECT g.game, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name'.
 			' FROM current_games g'.
 			' JOIN events e ON e.id = g.event_id'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
@@ -480,26 +487,27 @@ class ApiPage extends GetApiPageBase
 			' JOIN cities i ON i.id = a.city_id' .
 			' JOIN countries o ON o.id = i.country_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
-			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0');
+			' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
+			' WHERE 1'); // so that every filter below reads as its own condition
 		if ($user_id > 0)
 		{
 			$query->add(' AND g.user_id = ?', $user_id);
 		}
 		if ($event_id > 0)
 		{
-			$query->add(' AND g.event_id = ?', $event_id); 
+			$query->add(' AND g.event_id = ?', $event_id);
 		}
 		if ($tournament_id > 0)
 		{
-			$query->add(' AND e.tournament_id = ?', $tournament_id); 
+			$query->add(' AND e.tournament_id = ?', $tournament_id);
 		}
 		if ($table_num > 0)
 		{
-			$query->add(' AND g.table_num = ?', $table_num); 
+			$query->add(' AND g.table_num = ?', $table_num);
 		}
 		if ($game_num > 0)
 		{
-			$query->add(' AND g.game_num = ?', $game_num); 
+			$query->add(' AND g.game_num = ?', $game_num);
 		}
 		$query->add(' ORDER BY g.event_id DESC, g.table_num DESC, g.game_num DESC');
 		
@@ -511,21 +519,18 @@ class ApiPage extends GetApiPageBase
 		$best_rank = -1;
 		while ($row = $query->next())
 		{
-			list($game, $event_token, $tournament_token) = $row;
-			if ((!is_null($event_token) && $event_token === $token) || (!is_null($tournament_token) && $tournament_token === $token))
+			list($game) = $row;
+			$rank = $this->game_rank($game);
+			if ($rank > $best_rank)
 			{
-				$rank = $this->game_rank($game);
-				if ($rank > $best_rank)
-				{
-					$best_rank = $rank;
-					$best_row = $row;
-				}
+				$best_rank = $rank;
+				$best_row = $row;
 			}
 		}
 
 		if (!is_null($best_row))
 		{
-			list($game, $event_token, $tournament_token, $this->event_id, $this->event_name, $this->event_flags, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->stage, $this->club_id, $this->club_name, $this->club_flags, $this->city, $this->country) = $best_row;
+			list($game, $this->event_id, $this->event_name, $this->event_flags, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->stage, $this->club_id, $this->club_name, $this->club_flags, $this->city, $this->country) = $best_row;
 			$this->game = new Game($game);
 			$this->response['game'] = $this->new_game();
 		}
@@ -549,10 +554,11 @@ class ApiPage extends GetApiPageBase
 	protected function get_help()
 	{
 		$help = new ApiHelp(PERMISSION_EVERYONE);
-		$help->request_param('token', 'Event or tournament security token. Token can be found by club manager by clicking on token button with this <img scr="../../images/obs.png" width="32" height="32"> for club\'s event/tournament.');
-		$help->request_param('game_id', 'Return the specified game.', 'user_id or moderator_id must be set');
-		$help->request_param('user_id', 'Return incomplete game for the specified user account.', 'game_id or moderator_id must be set');
-		$help->request_param('moderator_id', 'Return incomplete game of the specified moderator.', 'user_id or game_id must be set');
+		$help->request_param('event_id', 'Return the game being played in this event. Together with table_num it names one table.', 'tournament_id or user_id must be set');
+		$help->request_param('tournament_id', 'Return the game being played in this tournament, in whichever of its rounds is under way. Together with table_num it names one table and follows it from round to round.', 'event_id or user_id must be set');
+		$help->request_param('table_num', 'Table number in the event, starting from 1.', 'any table of the event or tournament, whichever game is under way.');
+		$help->request_param('game_num', 'Game number at the table, starting from 1.', 'whichever game of the table is under way.');
+		$help->request_param('user_id', 'Return the game being moderated by this user account.', 'event_id or tournament_id must be set');
 		$param = $help->response_param('game', 'Game state.');
 			$param->sub_param('id', 'Game id.');
 			$tournament = $param->sub_param('tournament', 'Tournament information.', 'this is not a tournament game.');

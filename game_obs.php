@@ -29,47 +29,34 @@ class Page extends GeneralPageBase
 			}
 		}
 		
-		$this->token = NULL; 
+		// The overlay URLs used to carry a secret token, which this page made up and stored on the
+		// event. They name a table now - what happens at a table goes out on the broadcast anyway
+		// - so no token is made any more and all that is left of it is this permission check.
+		$this->permitted = false;
 		$this->langs = LANG_ALL_VISUAL;
-		
+
 		$this->event_id = 0;
 		$this->event_name = '';
 		if (isset($_REQUEST['event_id']))
 		{
 			$this->event_id = (int)$_REQUEST['event_id'];
-			list($club_id, $tournament_id, $this->token, $this->langs, $this->event_name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, security_token, languages, name FROM events WHERE id = ?', $this->event_id);
-			if (!is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->event_id, $tournament_id))
-			{
-				$this->token = NULL;
-			}
-			else if (is_null($this->token))
-			{
-				$this->token = rand_string(32);
-				Db::exec(get_label('event'), 'UPDATE events SET security_token = ? WHERE id = ?', $this->token, $this->event_id);
-			}
+			list($club_id, $tournament_id, $this->langs, $this->event_name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, languages, name FROM events WHERE id = ?', $this->event_id);
+			$this->permitted = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->event_id, $tournament_id);
 		}
-		
+
 		$this->tournament_id = 0;
 		if (isset($_REQUEST['tournament_id']))
 		{
 			$this->tournament_id = (int)$_REQUEST['tournament_id'];
-			list($club_id, $this->token, $this->langs) = Db::record(get_label('tournament'), 'SELECT club_id, security_token, langs FROM tournaments WHERE id = ?', $this->tournament_id);
-			if (!is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->tournament_id))
-			{
-				$this->token = NULL;
-			}
-			else if (is_null($this->token))
-			{
-				$this->token = rand_string(32);
-				Db::exec(get_label('tournament'), 'UPDATE tournaments SET security_token = ? WHERE id = ?', $this->token, $this->tournament_id);
-			}
+			list($club_id, $this->langs) = Db::record(get_label('tournament'), 'SELECT club_id, langs FROM tournaments WHERE id = ?', $this->tournament_id);
+			$this->permitted = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->tournament_id);
 		}
-		
+
 		$this->user_id = $_profile->user_id;
 		if (isset($_REQUEST['user_id']))
 		{
 			$this->user_id = (int)$_REQUEST['user_id'];
-			if ($this->user_id <= 0 && is_null($this->token))
+			if ($this->user_id <= 0)
 			{
 				$this->user_id = $_profile->user_id;
 			}
@@ -102,15 +89,12 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
-		if (is_null($this->token))
+		if (!$this->permitted)
 		{
-			$this->view == VIEW_SCENE_SWITCHING;
+			// Somebody who does not run this event has nothing to set up for it, but their own
+			// scene switching is still theirs.
+			$this->view = VIEW_SCENE_SWITCHING;
 			$this->show_scene_switching();
-		}
-		else if ($this->user_id <= 0)
-		{
-			$this->view == VIEW_GLYPHS;
-			$this->show_glyphs();
 		}
 		else
 		{
@@ -154,16 +138,7 @@ class Page extends GeneralPageBase
 		}
 		echo '</td>';
 		
-		if ($this->user_id <= 0)
-		{
-			echo '<td align="center">' . get_label('User account') . ': ';
-			show_user_input('user', '', '', get_label('Please select a user account that will be used to referee games.'), 'changeUser');
-			echo '</td>';
-		}
-		else
-		{
-			echo '<input type="hidden" value="' . $this->user_id . '">';
-		}
+		// The overlays name a table rather than a referee now, so there is no account to pick.
 		echo '<td align="right">' . get_label('Table') . ': <input id="table" type="number" min="1" value="1" style="width: 30px;" onchange="generateUrls()"></td>';
 		echo '</tr></table></p>';
 		
@@ -395,29 +370,19 @@ class Page extends GeneralPageBase
 ?>
 			var events = <?php echo json_encode($this->events); ?>;
 			var url = Array(<?php echo count($this->events) + 4; ?>).fill('');
-			var userId = <?php echo $this->user_id; ?>;
 			var site = '<?php echo get_server_url(); ?>';
-			
-			function changeUser(data)
-			{
-				userId = data ? data.id : 0;
-				generateUrls();
-			}
-			
+
+			// A tournament overlay follows its table from round to round; an event one stays in
+			// the one event. Either way the URL survives the whole thing and never needs retyping.
+			var scope = '<?php echo $this->tournament_id > 0 ? 'tournament_id=' . $this->tournament_id : 'event_id=' . $this->event_id; ?>';
+
 			function generateUrls()
 			{
-				if (userId > 0)
-				{
-					let params = '?user_id=' + userId + '&token=<?php echo $this->token; ?>&locale=' + $('#lang').val();
-					url[0] = site + '/plugins/obs/overlay.php' + params;
-					url[1] = site + '/plugins/obs/players.php' + params;
-					url[2] = site + '/plugins/obs/gamestats.php' + params;
-				}
-				else
-				{
-					url[0] = url[1] = url[2] = '<?php echo get_label('Please select a user account that will be used to referee games.'); ?>';
-				}
-				
+				let params = '?' + scope + '&table_num=' + $('#table').val() + '&locale=' + $('#lang').val();
+				url[0] = site + '/plugins/obs/overlay.php' + params;
+				url[1] = site + '/plugins/obs/players.php' + params;
+				url[2] = site + '/plugins/obs/gamestats.php' + params;
+
 				url[3] = site + '/plugins/standings.php?id=<?php echo $this->tournament_id; ?>&rows=' + $('#row').val() + '&columns=' + $('#col').val();
 				
 				for (let i = 0; i < events.length; ++i)
