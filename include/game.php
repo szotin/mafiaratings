@@ -3967,10 +3967,14 @@ class Game
 					
 					Db::exec(
 						get_label('event'), 
-						'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, fee, currency_id) ' .
-						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						// This event is made up to hold a game played outside any of them, so it has
+						// no notes and belongs to no tournament round. Both columns are NOT NULL
+						// with no default and have to be named: a strict MySQL refuses the row
+						// rather than filling them in.
+						'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, rules, scoring_id, scoring_version, scoring_options, fee, currency_id, round) ' .
+						'VALUES (?, ?, ?, ?, ?, \'\', ?, ?, ?, ?, ?, ?, ?, ?, 0)',
 						$name, $address_id, $data->clubId, $event_start, $event_duration,
-						EVENT_FLAG_ALL_CAN_REFEREE, $club_langs, $data->rules, 
+						EVENT_FLAG_ALL_CAN_REFEREE, $club_langs, $data->rules,
 						$club_scoring_id, $scoring_version, $scoring_options, $fee, $currency_id);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
 				

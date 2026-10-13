@@ -1465,7 +1465,10 @@ class ApiPage extends OpsApiPageBase
 		list($place) = Db::record(get_label('score'), 'SELECT count(*) FROM tournament_places WHERE tournament_id = ? AND (main_points + IFNULL(bonus_points,0) + IFNULL(shot_points,0) - ? > 0.0001 OR (main_points + IFNULL(bonus_points,0) + IFNULL(shot_points,0) - ? > -0.001 AND (IFNULL(bonus_points,0) - ? > 0.0001 OR (IFNULL(bonus_points,0) - ? > -0.001 AND user_id < ?))))', $tournament_id, $points, $points, $bp, $bp, $user_id);
 		++$place;
 		Db::exec(get_label('score'), 'UPDATE tournament_places SET place = place + 1 WHERE tournament_id = ? AND place >= ?', $tournament_id, $place);
-		Db::exec(get_label('score'), 'INSERT INTO tournament_places (tournament_id, user_id, place, main_points, bonus_points, shot_points, games_count) VALUES (?, ?, ?, ?, ?, ?, ?)', $tournament_id, $user_id, $place, $main_points, $bonus_points, $shot_points, $games_count);
+		// A score typed in by hand carries no nominations and no win count, and importance is
+		// worked out later by complete_competitions.php. All three are NOT NULL with no default,
+		// so a strict MySQL refuses the row unless the zeros are spelled out.
+		Db::exec(get_label('score'), 'INSERT INTO tournament_places (tournament_id, user_id, place, main_points, bonus_points, shot_points, games_count, importance, flags, wins) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0)', $tournament_id, $user_id, $place, $main_points, $bonus_points, $shot_points, $games_count);
 
 		$log_details = new stdClass();
 		$log_details->tournament_id = $tournament_id;

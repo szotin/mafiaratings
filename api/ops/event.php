@@ -1477,7 +1477,9 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		foreach ($event_ids as $event_id)
 		{
-			Db::exec(get_label('mailing'), 'INSERT INTO event_mailings (event_id, send_time, status, flags, langs, type) VALUES (?, ?, ' . MAILING_WAITING . ', ?, ?, ?)', $event_id, $time, $flags, $langs, $type);
+			// send_count is the counter send_emails.php adds to as it goes. Nothing has been sent
+			// yet, and the column is NOT NULL with no default, so the zero has to be put there.
+			Db::exec(get_label('mailing'), 'INSERT INTO event_mailings (event_id, send_time, status, flags, langs, type, send_count) VALUES (?, ?, ' . MAILING_WAITING . ', ?, ?, ?, 0)', $event_id, $time, $flags, $langs, $type);
 			list ($mailing_id) = Db::record(get_label('mailing'), 'SELECT LAST_INSERT_ID()');
 			list ($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $event_id);
 					
@@ -1621,8 +1623,11 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
+			// A tournament grown out of a single event follows no ready-made scheme, which is what
+			// the custom type means, and nobody has said how many players it is laid out for.
+			// Both columns are NOT NULL with no default and a strict MySQL wants them named.
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, type, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
+			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0, TOURNAMENT_TYPE_CUSTOM);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();

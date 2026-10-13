@@ -326,7 +326,9 @@ class ApiPage extends OpsApiPageBase
 					$flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
 					Db::exec(
 						get_label('round'), 
-						'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, misc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						// An imported round comes with no notes, and the column is NOT NULL with no
+						// default, so a strict MySQL wants it named rather than left out.
+						'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, misc) VALUES (?, ?, ?, ?, ?, \'\', ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$event_name, $address_id, $club_id, $start, $duration, $flags, $langs, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $event_misc);
 						
 					$log_details = new stdClass();

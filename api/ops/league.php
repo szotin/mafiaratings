@@ -376,8 +376,11 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-			$name, $langs, $flags, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
+			// default_rules is the rules code a club of this league starts from - see
+			// club_rules.php. Leaving it out stored an empty code, which is not a rules code at
+			// all, so it gets the same DEFAULT_RULES a league created by an admin gets above.
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, default_rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?, ?)',
+			$name, $langs, $flags, $url, $email, $phone, DEFAULT_RULES, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		

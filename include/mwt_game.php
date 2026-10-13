@@ -115,7 +115,10 @@ function convert_mwt_game($mwt_game)
 		$tournament_flags = TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK;
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, scoring_id, scoring_version, scoring_options, rules, flags, type, mwt_id) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			// num_players is how many players the tournament is laid out for. Nobody tells us for
+			// an imported one, and zero is what the rest of the code reads as "not said". It is
+			// NOT NULL with no default, so a strict MySQL will not put that zero there for us.
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, scoring_id, scoring_version, scoring_options, rules, flags, type, mwt_id, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
 			'MWT_' . $mwt_game->tournament_id, $club_id, $address_id, $start, $end - $start, LANG_ALL, $scoring_id, $scoring_version, '{}', $rules_code, $tournament_flags, TOURNAMENT_TYPE_FIIM_ONE_ROUND, $mwt_game->tournament_id);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		$log_details = new stdClass();
@@ -137,7 +140,8 @@ function convert_mwt_game($mwt_game)
 		$event_flags = EVENT_MASK_HIDDEN | EVENT_FLAG_ALL_CAN_REFEREE;
 		Db::exec(
 			get_label('round'), 
-			'INSERT INTO events (name, address_id, club_id, start_time, duration, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			// The main round carries no notes and is round 0 - both NOT NULL with no default.
+			'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round) values (?, ?, ?, ?, ?, \'\', ?, ?, ?, ?, ?, ?, ?, 0)',
 			$round_name, $address_id, $club_id, $start, $end - $start, $event_flags, LANG_ALL, $scoring_id, $scoring_version, '{}', $tournament_id, $rules_code);
 		list ($round_id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
 		$log_details = new stdClass();
