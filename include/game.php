@@ -4294,7 +4294,13 @@ class Game
 		}
 		else
 		{
-			Db::exec(get_label('game'), 'INSERT INTO rebuild_ratings (game_id) VALUES (?)', $game_id);
+			// A start_time and an end_time of 0 are what mark the request as not picked up yet -
+			// rebuild_ratings.php looks for exactly that. They are NOT NULL with no default, as
+			// are the counters, so under strict mode they have to be named rather than left to
+			// the server to zero out.
+			Db::exec(get_label('game'),
+				'INSERT INTO rebuild_ratings (game_id, start_time, end_time, average_game_proceeding_time, batch_size, games_proceeded, ratings_changed)' .
+					' VALUES (?, 0, 0, 0, 0, 0, 0)', $game_id);
 		}
 	}
 	

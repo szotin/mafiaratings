@@ -2,7 +2,7 @@
 
 $labels=array();
 $comments=array();
-$dirs = array('.', 'include', 'api', 'api/ops', 'api/get', 'api/control', 'form');
+$dirs = array('.', 'include', 'api', 'api/ops', 'api/get', 'api/control', 'form', 'plugins/obs');
 
 function write_labels($lang, $backup = false)
 {

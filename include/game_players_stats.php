@@ -863,13 +863,19 @@ class GamePlayersStats
 			// mr points removed
 			$player->mr_points = 0;
 			
+			// The four rating columns are filled in by the ratings pass that runs once the game is
+			// written down, so there is nothing to put in them here. They are NOT NULL with no
+			// default though, and a MySQL in strict mode refuses the whole row over that instead
+			// of quietly storing a zero - which is how the game stayed unfinished. So we store
+			// that zero ourselves.
 			Db::exec(
-				get_label('player'), 
+				get_label('player'),
 				'INSERT INTO players (game_id, user_id, nick_name, number, role, flags, ' .
 					'voted_civil, voted_mafia, voted_sheriff, voted_by_civil, voted_by_mafia, voted_by_sheriff, ' .
 					'nominated_civil, nominated_mafia, nominated_sheriff, nominated_by_civil, nominated_by_mafia, nominated_by_sheriff, ' .
-					'kill_round, kill_type, warns, was_arranged, checked_by_don, checked_by_sheriff, won, extra_points, extra_points_reason, game_end_time, is_rating, mr_points) ' .
-					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+					'kill_round, kill_type, warns, was_arranged, checked_by_don, checked_by_sheriff, won, extra_points, extra_points_reason, game_end_time, is_rating, mr_points, ' .
+					'rating_before, rating_earned, role_rating_before, rating_lock_until) ' .
+					'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, 0)',
 				$data->id, $player->id, $game_player->name, $player->number, $player->role, $player->scoring_flags,
 				$player->voted_civil, $player->voted_mafia, $player->voted_sheriff, $player->voted_by_civil, $player->voted_by_mafia, $player->voted_by_sheriff,
 				$player->nominated_civil, $player->nominated_mafia, $player->nominated_sheriff, $player->nominated_by_civil, $player->nominated_by_mafia, $player->nominated_by_sheriff,

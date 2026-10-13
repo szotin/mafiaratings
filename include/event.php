@@ -341,6 +341,48 @@ function register_seating_players($event_id, $mapping)
 	return $added;
 }
 
+// The referees of a tournament, in the order they are registered in. That order is the one the
+// preparation page shows and lets a manager change with its "move up" buttons, and it is what
+// decides the tables: the first referee takes table 1, the second one table 2, and so on.
+function get_tournament_referees($tournament_id)
+{
+	global $_lang;
+
+	$referees = array();
+	$query = new DbQuery(
+		'SELECT tr.user_id FROM tournament_regs tr'.
+		' JOIN users u ON u.id = tr.user_id'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+		' WHERE tr.tournament_id = ? AND (tr.flags & ?) <> 0 AND (tr.flags & ?) = 0'.
+		' ORDER BY tr.reg_order, nu.name',
+		$tournament_id, USER_PERM_REFEREE, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+	while ($row = $query->next())
+	{
+		list ($user_id) = $row;
+		$referees[] = (int)$user_id;
+	}
+	return $referees;
+}
+
+// A tournament keeps its referees on the tournament, not on each of its rounds, but the game
+// screen builds its moderator dropdown out of the event registrations - so a referee the event
+// does not know about cannot be picked and has to be typed in by hand. This brings them onto
+// the event. Returns them in registration order, see get_tournament_referees().
+function register_tournament_referees($event_id, $tournament_id)
+{
+	$event_id = (int)$event_id;
+	$referees = get_tournament_referees($tournament_id);
+	foreach ($referees as $user_id)
+	{
+		// INSERT IGNORE instead of looking first: (event_id, user_id) is the primary key, so the
+		// insert is the check, and an existing registration keeps the flags and nickname it has.
+		Db::exec(get_label('registration'),
+			'INSERT IGNORE INTO event_regs (event_id, user_id, flags) VALUES (?, ?, ?)',
+			$event_id, $user_id, USER_PERM_REFEREE);
+	}
+	return $referees;
+}
+
 class EventPageBase extends PageBase
 {
 	protected $event;

@@ -16,7 +16,14 @@ class ApiPage extends GetApiPageBase
 		$game = new stdClass();
 		
 		$show_roles = !isset($g->hideRoles) || !$g->hideRoles;
-		
+
+		// The roles are handed out in the "start" time of round 0, and the game cannot leave it
+		// until every one of them is given out. Only a mafia, a don or a sheriff is written down -
+		// a civilian is simply a player with no role. So until the deal is over, a player with no
+		// role has not been given one yet, which is not the same as being a civilian, and saying
+		// "town" for them would both be a lie and give the remaining black cards away.
+		$roles_distributed = isset($g->time) && $g->time->time != GAMETIME_START;
+
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		$game->club = new stdClass();
 		$game->club->name = $this->club_name;
@@ -144,7 +151,12 @@ class ApiPage extends GetApiPageBase
 			{
 				if (!isset($p->role) || $p->role == 'civ')
 				{
-					$player->role = 'town';
+					if ($roles_distributed)
+					{
+						$player->role = 'town';
+					}
+					// Else the player has no role yet. Leaving it out is what lets a client show
+					// the deal card by card instead of all at once when it is over.
 				}
 				else
 				{
@@ -491,19 +503,47 @@ class ApiPage extends GetApiPageBase
 		}
 		$query->add(' ORDER BY g.event_id DESC, g.table_num DESC, g.game_num DESC');
 		
+		// A moderator can have more than one unfinished game on their hands: opening a game screen
+		// leaves a row here even when nothing was ever played on it. So the highest game number is
+		// not the game being played - take the one that is actually under way, and fall back on
+		// the order above only between games of the same standing.
+		$best_row = NULL;
+		$best_rank = -1;
 		while ($row = $query->next())
 		{
-			list($game, $event_token, $tournament_token, $this->event_id, $this->event_name, $this->event_flags, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->stage, $this->club_id, $this->club_name, $this->club_flags, $this->city, $this->country) = $row;
+			list($game, $event_token, $tournament_token) = $row;
 			if ((!is_null($event_token) && $event_token === $token) || (!is_null($tournament_token) && $tournament_token === $token))
 			{
-				$this->game = new Game($game);
-				break;
+				$rank = $this->game_rank($game);
+				if ($rank > $best_rank)
+				{
+					$best_rank = $rank;
+					$best_row = $row;
+				}
 			}
 		}
-		if (isset($this->game))
+
+		if (!is_null($best_row))
 		{
+			list($game, $event_token, $tournament_token, $this->event_id, $this->event_name, $this->event_flags, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->stage, $this->club_id, $this->club_name, $this->club_flags, $this->city, $this->country) = $best_row;
+			$this->game = new Game($game);
 			$this->response['game'] = $this->new_game();
 		}
+	}
+
+	// How much this unfinished game looks like the one being played right now.
+	private function game_rank($game)
+	{
+		$g = json_decode($game);
+		if (!isset($g->time))
+		{
+			return 0; // the screen was opened, nothing has happened on it yet
+		}
+		if ($g->time->time == GAMETIME_END)
+		{
+			return 1; // played out, waiting for the moderator to write it down
+		}
+		return 2; // under way
 	}
 	
 	protected function get_help()
@@ -553,7 +593,7 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('iconUrl', 'URL of the user logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$players->sub_param('hasPhoto', 'True - if a player has custom photo. False - when player did not upload photo, or when id<=0, which means there is no player.');
 				$players->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
-				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don". It is set only when the flag hideRoles is not set in the game.');
+				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don". It is set only when the flag hideRoles is not set in the game. It is also not set while the roles are still being handed out - a player gets their role here as soon as the moderator gives it to them, and the ones left without a role are not known to be civilians yet.');
 				$players->sub_param('warnings', 'Number of warnings.');
 				$players->sub_param('techFouls', 'Number of technical fouls.');
 				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');

@@ -409,9 +409,9 @@ class Page extends GeneralPageBase
 				if (userId > 0)
 				{
 					let params = '?user_id=' + userId + '&token=<?php echo $this->token; ?>&locale=' + $('#lang').val();
-					url[1] = site + '/obs_plugins/players-overlay-plugin/#/players' + params;
-					url[2] = site + '/obs_plugins/players-overlay-plugin/#/gamestats' + params;
-					url[0] = site + '/obs_plugins/players-overlay-plugin/#/overlay' + params;
+					url[0] = site + '/plugins/obs/overlay.php' + params;
+					url[1] = site + '/plugins/obs/players.php' + params;
+					url[2] = site + '/plugins/obs/gamestats.php' + params;
 				}
 				else
 				{

@@ -12,7 +12,7 @@ Local development URL: `http://127.0.0.1/projects/mafiaratings`
 
 - **Server:** EasyPHP DevServer 14.1 VC11 (required for local dev)
 - **Database:** MySQL — the full schema is built from scratch by running `db/create_database.sql` (the initial pre-`alter1` base) followed by `db/alter1.sql` through the latest `db/alter*.sql` in order. This chain is **verified to build cleanly and reproduce the production schema exactly** (same 82 tables and all columns; only a few auto-generated index names differ cosmetically). `db/create_sample_db.sql` embeds an equivalent schema snapshot plus sample data for quickly seeding a local database.
-- **PHP 7+**, **Node.js/npm** (for Angular plugin), **Java 8+** (for JS compiler)
+- **PHP 7+**, **Java 8+** (for JS compiler)
 
 ## Build Commands
 
@@ -27,15 +27,6 @@ them); only `labels_*.js`, `game_*.js` and `seating_*.js` are copied instead, be
 compiler escapes their Cyrillic to `\uXXXX` and makes them *bigger* — that is what the comment
 at the top of compile.bat is about, and it does not mean the other files are copied too. To
 rebuild a single file, run its one line from inside `js/src`.
-
-### Angular Plugin (OBS Overlay)
-From `plugins/obs/PlayersOverlayPlugin/`:
-```bash
-npm start              # Dev server at :4200
-npm run build          # Development build
-npm run build-prod     # Production build (sets base href for deployment)
-npm test               # Run Karma/Jasmine tests
-```
 
 ## Architecture
 
@@ -54,10 +45,11 @@ Bit-flag based, defined in `include/constants.php`. Eight levels from player to 
 - Source files in `js/src/`, compiled outputs in `js/`.
 - Multilingual: each module has per-language files (e.g., `game_en.js`, `game_ru.js`, `game_ua.js`). Supported languages: English, Russian, Ukrainian.
 
-### Angular Plugin
-- Located in `plugins/obs/PlayersOverlayPlugin/` — Angular 13 app for OBS streaming overlays.
-- Uses OBS WebSocket JS for real-time OBS Studio integration.
-- i18n via ngx-translate.
+### OBS Studio Overlays
+- `plugins/obs/` — the pages shown as browser sources in OBS Studio: `overlay.php`, `players.php` and `gamestats.php`. All three are built by `obs.php` and refreshed by `obs.js`; `obs.css` and `images/` hold the look.
+- They poll `api/get/current_game.php` on their own site by a relative URL, so the same code works on production and on a testing server with no configuration.
+- `obs.js` is plain JavaScript loaded as it is — it is not compiled by the Closure Compiler, and it does not use jQuery.
+- `game_obs.php` is the page where a club manager copies the URLs of these overlays.
 
 ### Database Migrations
 Build a fresh database by running `db/create_database.sql` (the initial base schema) and then applying `db/alter1.sql` through the latest `db/alter*.sql` in order. New migrations go in the next `db/alterNNN.sql`, etc.

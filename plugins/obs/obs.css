@@ -1,0 +1,425 @@
+/*  Styles of the OBS Studio browser source pages. The pages are shown on top of a video, so
+    everything that is not painted here must stay transparent. */
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	background-color: transparent;
+	color: #fff;
+	font-family: 'Roboto Slab', serif;
+	line-height: 1.4;
+	overflow: hidden; /* a browser source in OBS Studio has no scrollbars */
+}
+
+body.overlay {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.top-bar {
+	display: flex;
+	align-items: center;
+	flex: 0 1 auto;
+	height: 100px;
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+@keyframes fade-in {
+	0% { opacity: 0.5; }
+	100% { opacity: 1; }
+}
+
+@keyframes fade-out {
+	0% { opacity: 1; }
+	100% { opacity: 0.5; }
+}
+
+@keyframes flash {
+	0%, 50%, 100% { opacity: 1; }
+	25%, 75% { opacity: 0; }
+}
+
+/*--------------------------------------------------------------------------------------
+    the info bar: the best move, the checks of the sheriff and of the don, and the nominees
+  --------------------------------------------------------------------------------------*/
+.gamestats {
+	display: flex;
+	align-items: center;
+	padding: 17px;
+	font-size: 2em;
+	line-height: normal;
+}
+
+.gamestats.offline {
+	opacity: 0.8;
+}
+
+.connection-status {
+	font-size: .7em;
+	color: rgb(255, 0, 0);
+}
+
+.gamestats:not(.offline) .connection-status {
+	display: none;
+}
+
+/* when the roles are hidden there is nothing to tell about the checks */
+.gamestats.hide-roles .sheriff-check,
+.gamestats.hide-roles .don-check {
+	display: none;
+}
+
+.section {
+	display: flex;
+	margin-right: 50px;
+}
+
+.section .label {
+	min-width: 60px;
+	min-height: 60px;
+	border-top-left-radius: 15px;
+	border-bottom-left-radius: 15px;
+	background-color: #000;
+	background-size: 50px;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+
+.section.legacy { min-width: 150px; }
+.section.sheriff-check { min-width: 200px; }
+.section.don-check { min-width: 200px; }
+
+.section.legacy .label { background-image: url(images/killed_1.png); }
+.section.sheriff-check .label { background-image: url(images/sheriff.png); }
+.section.don-check .label { background-image: url(images/don.png); }
+.section.nominees .label { background-image: url(images/voted_white.png); }
+
+.section.empty .label {
+	border-top-right-radius: 15px;
+	border-bottom-right-radius: 15px;
+	animation: fade-out 3s forwards;
+}
+
+.section.data .label {
+	animation: fade-in 1.5s;
+}
+
+.section .elements {
+	display: flex;
+	min-height: 60px;
+}
+
+.element {
+	min-width: 40px;
+	min-height: 60px;
+	padding: 12px;
+	color: #fff;
+	background-color: rgba(90, 90, 90, 0.8);
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	animation: flash 1.5s;
+}
+
+.element:last-child {
+	border-top-right-radius: 15px;
+	border-bottom-right-radius: 15px;
+}
+
+.gamestats:not(.hide-roles) .element.role-town { background-image: url(images/red_player_bg.jpg); }
+.gamestats:not(.hide-roles) .element.role-don,
+.gamestats:not(.hide-roles) .element.role-maf { background-image: url(images/black_player_bg.jpg); }
+.gamestats:not(.hide-roles) .element.role-sheriff { background-image: url(images/green_player_bg.jpg); }
+
+/*--------------------------------------------------------------------------------------
+    the referee and the round in the right corner of the info bar
+  --------------------------------------------------------------------------------------*/
+.referee,
+.round {
+	position: relative;
+	display: flex;
+	align-items: center;
+	overflow: hidden;
+	margin-right: 16.5px;
+	font-size: 2em;
+	border-radius: 15px;
+}
+
+.referee {
+	min-width: 200px;
+	margin-left: auto; /* everything before the referee stays in the left corner */
+}
+
+.round {
+	min-width: 100px;
+}
+
+.referee::before,
+.round::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.4);
+	border-radius: 15px;
+	z-index: -1;
+}
+
+.referee .photo,
+.round .photo {
+	height: 66px;
+	overflow: hidden;
+	background-color: #000;
+	border-radius: 15px;
+}
+
+.referee .photo img,
+.round .photo img {
+	width: 66px;
+	height: 66px;
+	object-fit: contain;
+}
+
+.referee .name,
+.round .name {
+	margin: 0 20px;
+	font-family: 'Gagalin', sans-serif;
+	letter-spacing: 3px;
+	white-space: nowrap;
+}
+
+/*--------------------------------------------------------------------------------------
+    the players
+  --------------------------------------------------------------------------------------*/
+.players {
+	position: relative;
+	display: flex;
+	justify-content: space-around;
+	align-items: flex-start;
+	width: 100vw;
+	min-width: 1920px;
+	max-width: 1920px;
+	height: 100vh;
+	min-height: 250px;
+	max-height: 250px;
+	margin: 20px auto 0 auto;
+}
+
+body.overlay .players {
+	flex: 0 1 auto;
+	margin-top: auto; /* the players stay at the bottom of the screen */
+}
+
+.player-card {
+	position: relative;
+	width: 190px;
+	height: 210px;
+	perspective: 600px;
+}
+
+.player-card-inner {
+	height: 210px;
+	transform-style: preserve-3d;
+}
+
+/* Every change worth showing gives the card another half circle, always the same way round, so
+   the two sides take turns facing us. The angle keeps going instead of swinging back: -360 is
+   the same picture as 0, which is what makes the next half circle carry on from there. */
+@keyframes turn-to-back {
+	from { transform: rotateY(0deg); }
+	to { transform: rotateY(-180deg); }
+}
+
+@keyframes turn-to-front {
+	from { transform: rotateY(-180deg); }
+	to { transform: rotateY(-360deg); }
+}
+
+.player-card-inner.to-back {
+	transform: rotateY(-180deg);
+	animation: turn-to-back 1s;
+}
+
+.player-card-inner.to-front {
+	transform: rotateY(-360deg);
+	animation: turn-to-front 1s;
+}
+
+/* The card turns another half circle for every change worth showing, so the angle grows past
+   360 and is set by obs.js rather than here. The two sides take turns facing us. */
+.card-face {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 180px;
+	height: 200px;
+	backface-visibility: hidden;
+}
+
+.card-face.turned-away {
+	transform: rotateY(180deg);
+}
+
+.player-bg,
+.player-photo {
+	width: 170px;
+	height: 200px;
+	border-radius: 10px;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	transform: scale(0.95);
+}
+
+.player-card.dead .player-bg,
+.player-card.dead .player-photo {
+	transform: translate(0, 50px) scale(0.95);
+}
+
+.player-card.speaking .player-bg,
+.player-card.speaking .player-photo {
+	transform: scale(1.1);
+}
+
+.player-bg {
+	position: absolute;
+	/* Red is where every card starts, and red is where a civilian stays - which is six of the ten
+	   and everybody at all until the deal begins. */
+	background-image: url(images/red_player_bg.jpg);
+}
+
+.card-face.role-don .player-bg,
+.card-face.role-maf .player-bg { background-image: url(images/black_player_bg.jpg); }
+.card-face.role-sheriff .player-bg { background-image: url(images/green_player_bg.jpg); }
+
+.player-card.dead .player-bg { filter: grayscale(30%) opacity(85%); }
+
+.player-photo {
+	position: relative;
+	box-shadow: 0 0 50px rgba(0, 0, 0, 0.315);
+	transition: transform 0.5s;
+	background-image: url(images/aml_masters.png); /* the back of the card, for a seat with nobody on it */
+}
+
+/* The default icon of a player with no photo of their own is small and flat, so it is shown
+   whole in the free part of the card rather than blown up to fill it. */
+.card-face.no-photo .player-photo {
+	background-size: 96px auto;
+	background-position: center 36%;
+}
+
+.player-card.dead .player-photo { filter: grayscale(80%) opacity(80%); }
+.player-card.speaking .player-photo { box-shadow: inset 0 0 20px #fff; }
+
+.player-name-bar {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: flex;
+	align-items: center;
+	min-height: 30px;
+	background-color: rgba(0, 0, 0, 0.5);
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+}
+
+.player-number {
+	width: 30px;
+	height: 30px;
+	background-color: rgba(0, 0, 0, 0.9);
+	border-bottom-left-radius: 10px;
+}
+
+.player-name {
+	width: 100%;
+	white-space: nowrap;
+}
+
+.player-number,
+.player-name {
+	font-size: 1.3rem;
+	text-align: center;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+/* the glyph of the role in the top left corner */
+.player-role {
+	position: absolute;
+	top: 5px;
+	left: 5px;
+	width: 40px;
+	height: 40px;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	border-bottom-right-radius: 10px;
+	/* No fading in: the glyph is put on the side that is facing away, and the turn is what shows
+	   it off. */
+}
+
+.card-face.role-sheriff .player-role { background-image: url(images/sheriff.png); }
+.card-face.role-don .player-role { background-image: url(images/don.png); }
+.card-face.role-maf .player-role { background-image: url(images/pistol.png); }
+
+/* the warnings or the way the player died in the top right corner */
+.player-mark {
+	position: absolute;
+	top: 0;
+	right: 0;
+	min-width: 30px;
+	max-width: 50px;
+	height: 35px;
+	padding: 0 5px;
+	text-align: center;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	border-top-right-radius: 10px;
+	border-bottom-left-radius: 10px;
+}
+
+.player-mark span {
+	color: #fff;
+	font-size: 1.5rem;
+	font-weight: 800;
+	letter-spacing: 0.2rem;
+}
+
+.player-card.warnings-1 .player-mark,
+.player-card.warnings-2 .player-mark { background-color: rgba(0, 0, 0, 0.5); }
+
+.player-card.warnings-3 .player-mark,
+.player-card.warnings-4 .player-mark,
+.player-card.death-kickOut .player-mark { background-color: rgba(255, 0, 0, 0.603); }
+
+.player-card.death-voting .player-mark,
+.player-card.death-shooting .player-mark {
+	top: 5px;
+	right: 5px;
+	width: 40px;
+	height: 40px;
+	background-color: transparent;
+}
+
+.player-card.death-voting .player-mark { background-image: url(images/voted_white.png); }
+
+/* the player was shot in the night. The number of the night is painted on the picture. */
+.player-card.death-shooting .player-mark { background-image: url(images/shooting_white.png); }
+.player-card.death-shooting.round-0 .player-mark { background-image: url(images/killed_1.png); }
+.player-card.death-shooting.round-1 .player-mark { background-image: url(images/killed_2.png); }
+.player-card.death-shooting.round-2 .player-mark { background-image: url(images/killed_3.png); }
+.player-card.death-shooting.round-3 .player-mark { background-image: url(images/killed_4.png); }
+.player-card.death-shooting.round-4 .player-mark { background-image: url(images/killed_5.png); }
+.player-card.death-shooting.round-5 .player-mark { background-image: url(images/killed_6.png); }
+.player-card.death-shooting.round-6 .player-mark { background-image: url(images/killed_7.png); }
+.player-card.death-shooting.round-7 .player-mark { background-image: url(images/killed_8.png); }
+.player-card.death-shooting.round-8 .player-mark { background-image: url(images/killed_9.png); }

@@ -613,7 +613,16 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($club_id, $tournament_id, $rules, $misc, $languages, $event_flags) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, misc, languages, flags FROM events WHERE id = ?', $event_id);
 			check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
-			
+
+			// Before $regs is read below: the referees of a tournament are registered on the
+			// tournament and the event has never heard of them, so the moderator dropdown came up
+			// without a single one of them in it.
+			$referees = array();
+			if (!is_null($tournament_id))
+			{
+				$referees = register_tournament_referees($event_id, $tournament_id);
+			}
+
 			$langs = array();
 			$lang = LANG_NO;
 			while (($lang = get_next_lang($lang, $languages)) != LANG_NO)
@@ -712,13 +721,16 @@ class ApiPage extends OpsApiPageBase
 					$game->tournamentId = (int)$tournament_id;
 				}
 				$game->moderator = new stdClass();
+				$game->moderator->id = 0;
 				if (!is_null($seating) && count($seating) > 10)
 				{
+					// Some seatings name the referee of the table themselves, in the 11th seat.
 					$game->moderator->id = $seating[10];
 				}
-				else
+				else if (isset($referees[$table_num - 1]))
 				{
-					$game->moderator->id = 0;
+					// Otherwise the referees take the tables in the order they are registered in.
+					$game->moderator->id = $referees[$table_num - 1];
 				}
 				$game->streaming = (($event_flags & EVENT_FLAG_STREAMING) != 0);
 

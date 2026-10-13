@@ -594,7 +594,12 @@ function initiate_session($lang_code = NULL)
 
     session_start();
 	// localization
-	if (isset($_SESSION['lang_code']))
+	if (is_valid_lang_code($lang_code))
+	{
+		// The language is requested for this page only. It does not change the language of the session.
+		$_lang = get_lang_by_code($lang_code);
+	}
+	else if (isset($_SESSION['lang_code']))
 	{
 		$lang_code = $_SESSION['lang_code'];
 		$_lang = get_lang_by_code($lang_code);

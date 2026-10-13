@@ -1,0 +1,124 @@
+<?php
+
+require_once '../../include/session.php';
+
+// How often (in milliseconds) the page asks the site for the game state. The game screen itself
+// saves what the moderator does once a second, so this is the other half of the delay between a
+// click on a role and the card turning over on the stream.
+define('OBS_RETRY_DELAY', 1000);
+define('OBS_NO_LOGO', 'images/aml_logo.png'); // the picture shown instead of a logo that we do not have
+
+// Shows a browser source page for OBS Studio. $view is one of:
+//   'overlay'   - the info bar and the players;
+//   'gamestats' - the info bar only;
+//   'players'   - the players only.
+// The pages take the same request params as api/get/current_game.php plus:
+//   locale        - the language of the page;
+//   hide_roles    - do not show who is who even when the site knows it;
+//   hide_warnings - do not show warnings and the way the players died;
+//   retry_delay   - how often (in milliseconds) the page asks the site for the game state.
+function show_obs_page($view)
+{
+	if (isset($_REQUEST['locale']))
+	{
+		initiate_session(correct_lang($_REQUEST['locale']));
+	}
+	else
+	{
+		initiate_session();
+	}
+
+	$options = new stdClass();
+
+	// The game state is taken from our own site, so the pages work the same way on production and on a testing server.
+	$options->params = array();
+	foreach (array('token', 'game_id', 'user_id', 'moderator_id', 'event_id', 'tournament_id', 'table_num', 'game_num') as $param)
+	{
+		if (isset($_REQUEST[$param]))
+		{
+			$options->params[$param] = $_REQUEST[$param];
+		}
+	}
+
+	$options->hideRoles = isset($_REQUEST['hide_roles']) && $_REQUEST['hide_roles'] !== 'false';
+	$options->hideWarnings = isset($_REQUEST['hide_warnings']) && $_REQUEST['hide_warnings'] !== 'false';
+	$options->retryDelay = OBS_RETRY_DELAY;
+	if (isset($_REQUEST['retry_delay']))
+	{
+		$options->retryDelay = max((int)$_REQUEST['retry_delay'], 100);
+	}
+
+	$options->labels = new stdClass();
+	$options->labels->referee = get_label('Referee');
+	$options->labels->stages = array(get_label('round'), get_label('finals'), get_label('semis'), get_label('quarters'));
+
+	echo '<!DOCTYPE HTML>';
+	echo '<html><head>';
+	echo '<meta content="text/html; charset=utf-8" http-equiv="Content-Type">';
+	echo '<title>' . get_label('OBS Studio integration') . '</title>';
+	echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700">';
+	echo '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gagalin">';
+	echo '<link rel="stylesheet" href="' . obs_file('obs.css') . '">';
+	echo '<script src="' . obs_file('obs.js') . '"></script>';
+	echo '</head><body class="' . $view . '">';
+
+	if ($view == 'overlay')
+	{
+		echo '<div class="top-bar">';
+		show_gamestats();
+		show_referee();
+		show_round();
+		echo '</div>';
+	}
+	else if ($view == 'gamestats')
+	{
+		show_gamestats();
+	}
+
+	if ($view != 'gamestats')
+	{
+		echo '<div class="players" id="players"></div>';
+	}
+
+	echo '<script>obs.start(' . json_encode($options) . ');</script>';
+	echo '</body></html>';
+}
+
+// OBS Studio keeps a browser source open for a whole tournament and holds on to what it once
+// loaded, so a changed script or stylesheet would never reach it. Naming the file by the time it
+// was changed makes every change a new address, which no cache can answer with the old file.
+function obs_file($name)
+{
+	$time = filemtime(__DIR__ . '/' . $name);
+	return $time ? $name . '?' . $time : $name;
+}
+
+// The info bar: the best move, the checks, and the nominees. obs.js fills the sections in.
+function show_gamestats()
+{
+	echo '<div class="gamestats" id="gamestats">';
+	foreach (array('legacy', 'sheriff-check', 'don-check', 'nominees') as $section)
+	{
+		echo '<div class="section ' . $section . ' empty" id="' . $section . '"><div class="label"></div><div class="elements"></div></div>';
+	}
+	echo '<div class="connection-status">' . get_label('OFFLINE') . '</div>';
+	echo '</div>';
+}
+
+function show_referee()
+{
+	echo '<div class="referee" id="referee">';
+	echo '<div class="photo"><img id="referee-photo" src="' . OBS_NO_LOGO . '"></div>';
+	echo '<span class="name" id="referee-name">' . get_label('Referee') . '</span>';
+	echo '</div>';
+}
+
+function show_round()
+{
+	echo '<div class="round" id="round" style="display: none;">';
+	echo '<div class="photo"><img id="round-logo" src="' . OBS_NO_LOGO . '"></div>';
+	echo '<span class="name" id="round-name"></span>';
+	echo '</div>';
+}
+
+?>
