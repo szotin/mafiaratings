@@ -30,19 +30,23 @@ obs_screen_head(
 		'<div class="head-sub">' . htmlspecialchars($c->event_name) . ' &middot; ' . get_label('Table [0], Game [1]', $c->table_num, $c->next_game_num) . '</div>',
 	'');
 
+// Five and five, the way a table is drawn. A game with fewer seats than that simply has no
+// second row - an empty one would still take its share of the screen.
 echo '<div class="screen-body upcoming">';
-echo '<div class="card-row">';
-for ($i = 0; $i < count($seating) && $i < 5; ++$i)
+$number = 1;
+foreach (array(array_slice($seating, 0, 5), array_slice($seating, 5)) as $row)
 {
-	obs_card($i + 1, isset($players[$seating[$i]]) ? $players[$seating[$i]] : NULL);
+	if (empty($row))
+	{
+		continue;
+	}
+	obs_card_row(count($row));
+	foreach ($row as $id)
+	{
+		obs_card($number++, isset($players[$id]) ? $players[$id] : NULL);
+	}
+	echo '</div>';
 }
-echo '</div>';
-echo '<div class="card-row">';
-for ($i = 5; $i < count($seating); ++$i)
-{
-	obs_card($i + 1, isset($players[$seating[$i]]) ? $players[$seating[$i]] : NULL);
-}
-echo '</div>';
 echo '</div>';
 
 ?>

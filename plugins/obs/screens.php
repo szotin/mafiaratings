@@ -255,6 +255,14 @@ function obs_players($user_ids, $event_id, $tournament_id, $club_id)
 	return $players;
 }
 
+// Opens a row of cards, and is closed by the caller with a plain </div>. How many cards are
+// coming is handed to the stylesheet, which cannot count them and needs the number to work out
+// how wide one of them may be - see .card in between.css.
+function obs_card_row($count, $extra_class = '')
+{
+	echo '<div class="card-row ' . $extra_class . '" style="--cards: ' . max((int)$count, 1) . '">';
+}
+
 // One card. $player may be NULL - a seat whose player we do not know still keeps its number.
 function obs_card($number, $player, $extra_class = '', $corner = '')
 {

@@ -89,7 +89,7 @@ function obs_results_row($seats, $players, $row_class)
 	{
 		return;
 	}
-	echo '<div class="card-row ' . $row_class . '">';
+	obs_card_row(count($seats), $row_class);
 	foreach ($seats as $p)
 	{
 		switch ($p->role)
