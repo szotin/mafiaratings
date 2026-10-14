@@ -33,9 +33,11 @@ body.between {
 	--row-gap: 1.75rem; /* between the two rows of cards */
 	/* The heading is the title over the subtitle - 2.6em * 1.1 and 1.3em * 1.4 - and its margin. */
 	--head: 6.2rem;
-	/* The height one of the two rows of cards may take. Together with the width a card is allowed
-	   this is what settles its size, see .card. */
-	--row-h: calc((100vh - 2 * var(--pad) - var(--head) - var(--row-gap)) / 2);
+	/* What the two rows of cards have between them, and the height one of them may take.
+	   Together with the width a card is allowed this is what settles its size, see .card. */
+	--body-h: calc(100vh - 2 * var(--pad) - var(--head));
+	--row-h: calc((var(--body-h) - var(--row-gap)) / 2);
+	--strip: 6.5rem; /* the strip of checks under the results, where there is one */
 	/* The shape of a card, kept whatever the screen. */
 	--card-w: 3;
 	--card-h: 4;
@@ -115,6 +117,13 @@ body.between {
 	align-items: flex-start;
 	width: 100%;
 	gap: var(--gap);
+}
+
+/* The strip of checks stands below the cards and takes its room out of theirs. --row-h has to
+   be worked out again rather than inherited: a custom property is resolved where it is written,
+   so changing what it is made of lower down would not reach it. */
+.results.with-info .card-row {
+	--row-h: calc((var(--body-h) - var(--row-gap) - var(--strip)) / 2);
 }
 
 /* A card is the largest of its shape that fits both ways: the width its row can spare for one of
@@ -244,6 +253,117 @@ body.between {
 .card.role-don .card-corner { background-image: url(images/don.png); }
 .card.role-maf .card-corner { background-image: url(images/pistol.png); }
 .card.role-sheriff .card-corner { background-image: url(images/sheriff.png); }
+
+/* Under the number, facing the role glyph across the card: what the overlay had in the corner
+   while the game was played - the warnings a player was carrying, or the way they died. The
+   same marks and the same grounds as .player-mark in obs.css. */
+.card-mark {
+	position: absolute;
+	top: 1.875rem;
+	left: 0.375rem;
+	min-width: 1.875rem;
+	height: 2.1875rem;
+	padding: 0 0.3125rem;
+	text-align: center;
+	font-size: 1.2em;
+	font-weight: 800;
+	letter-spacing: 0.125rem;
+	border-radius: 0.5rem;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	z-index: 2;
+}
+
+.card-mark.warnings-1,
+.card-mark.warnings-2 { background-color: rgba(0, 0, 0, 0.6); }
+
+.card-mark.warnings-3,
+.card-mark.warnings-4,
+.card-mark.death-kickOut { background-color: rgba(255, 0, 0, 0.6); }
+
+/* A death of its own picture carries no text, so the box is square and has no ground. */
+.card-mark.death-voting,
+.card-mark.death-shooting {
+	min-width: 0;
+	width: 2.625rem;
+	height: 2.625rem;
+	padding: 0;
+	filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.6));
+}
+
+.card-mark.death-voting { background-image: url(images/voted_white.png); }
+
+/* Shot in the night. Which night it was is painted on the picture. */
+.card-mark.death-shooting { background-image: url(images/shooting_white.png); }
+.card-mark.death-shooting.round-0 { background-image: url(images/killed_1.png); }
+.card-mark.death-shooting.round-1 { background-image: url(images/killed_2.png); }
+.card-mark.death-shooting.round-2 { background-image: url(images/killed_3.png); }
+.card-mark.death-shooting.round-3 { background-image: url(images/killed_4.png); }
+.card-mark.death-shooting.round-4 { background-image: url(images/killed_5.png); }
+.card-mark.death-shooting.round-5 { background-image: url(images/killed_6.png); }
+.card-mark.death-shooting.round-6 { background-image: url(images/killed_7.png); }
+.card-mark.death-shooting.round-7 { background-image: url(images/killed_8.png); }
+.card-mark.death-shooting.round-8 { background-image: url(images/killed_9.png); }
+
+/*--------------------------------------------------------------------------------------
+    the strip under the results: the best move and the two sets of checks
+  --------------------------------------------------------------------------------------*/
+.info {
+	display: flex;
+	flex: 0 0 auto;
+	justify-content: center;
+	align-items: center;
+	gap: 3rem;
+	height: var(--strip);
+}
+
+.info-section {
+	display: flex;
+	align-items: stretch;
+	font-size: 1.8em;
+}
+
+/* The icon says what the numbers beside it are, the same three the info bar used. */
+.info-label {
+	width: 3.25rem;
+	background-color: rgba(0, 0, 0, 0.75);
+	background-size: 2.5rem;
+	background-position: center;
+	background-repeat: no-repeat;
+	border-top-left-radius: 0.75rem;
+	border-bottom-left-radius: 0.75rem;
+}
+
+.info-section.legacy .info-label { background-image: url(images/killed_1.png); }
+.info-section.sheriff-check .info-label { background-image: url(images/sheriff.png); }
+.info-section.don-check .info-label { background-image: url(images/don.png); }
+
+.info-items {
+	display: flex;
+}
+
+.info-item {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.75rem;
+	padding: 0.25rem 0.5rem;
+	font-weight: 700;
+	background-color: rgba(90, 90, 90, 0.8);
+	background-size: cover;
+	background-position: center;
+}
+
+.info-item:last-child {
+	border-top-right-radius: 0.75rem;
+	border-bottom-right-radius: 0.75rem;
+}
+
+.info-item.role-town { background-image: url(images/red_player_bg.jpg); }
+.info-item.role-maf,
+.info-item.role-don { background-image: url(images/black_player_bg.jpg); }
+.info-item.role-sheriff { background-image: url(images/green_player_bg.jpg); }
 
 /*--------------------------------------------------------------------------------------
     the title, put up when no other screen has anything to say

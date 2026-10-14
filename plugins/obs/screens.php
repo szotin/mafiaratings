@@ -264,7 +264,9 @@ function obs_card_row($count, $extra_class = '')
 }
 
 // One card. $player may be NULL - a seat whose player we do not know still keeps its number.
-function obs_card($number, $player, $extra_class = '', $corner = '')
+// $mark, when there is one, is the badge under the number: ->class says what it is and ->text
+// what is written on it, if anything - the picture ones carry nothing.
+function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NULL)
 {
 	if (!is_null($player) && isset($player->has_photo) && !$player->has_photo)
 	{
@@ -276,6 +278,10 @@ function obs_card($number, $player, $extra_class = '', $corner = '')
 	if ($corner != '')
 	{
 		echo '<div class="card-corner">' . $corner . '</div>';
+	}
+	if (!is_null($mark))
+	{
+		echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
 	}
 	echo '<div class="card-photo"' . (is_null($player) ? '' : ' style="background-image: url(' . $player->photo . ')"') . '></div>';
 	echo '<div class="card-club">';
