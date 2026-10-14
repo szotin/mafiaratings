@@ -1,5 +1,23 @@
 <?php
 
+// Adds the file's modification time to its address, so that a browser - and anything caching
+// in front of the site - fetches it again after a deploy instead of serving the copy it
+// already has. Without it a changed script can go on being served from a cache for hours:
+// Cloudflare sits in front of the site with a four hour cache on static files, which is long
+// enough for a deploy to look like it did nothing while the pages run new code against an old
+// script. The number only changes when the file does, so the caching still works the rest of
+// the time. A file that cannot be found is left alone - better an unversioned address than none.
+//
+// It lives here rather than in page_base.php because include/chart.php wants it too, and that
+// one is pulled in by api/control/chart.php where there is no page base at all. session.php
+// starts with utilities.php, so from here it reaches everywhere.
+function versioned_asset($path)
+{
+	$full = __DIR__ . '/../' . $path;
+	$time = @filemtime($full);
+	return $time ? ($path . '?v=' . $time) : $path;
+}
+
 function rand_string($length)
 {
 	$chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";	

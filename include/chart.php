@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/localization.php';
+require_once __DIR__ . '/utilities.php'; // versioned_asset
 
 define('MAX_CHARTS_COUNT', 5);
 
@@ -104,9 +105,9 @@ function chart_array_to_list($player_array, $chart_count)
 // Put it to the overriden PageBase::add_headers() function.
 function add_chart_headers()
 {
-	echo '<script src="js/moment.js"></script>';
-	echo '<script src="js/Chart.min.js"></script>';
-	echo '<script src="js/mr.chart.js"></script>';
+	echo '<script src="' . versioned_asset('js/moment.js') . '"></script>';
+	echo '<script src="' . versioned_asset('js/Chart.min.js') . '"></script>';
+	echo '<script src="' . versioned_asset('js/mr.chart.js') . '"></script>';
 }
 
 class ChartPoint
