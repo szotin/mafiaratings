@@ -1,0 +1,312 @@
+/*  Styles of the between-games screens. Same family as obs.css - the Gagalin headings, the red
+    and black player grounds, the rounded cards - but laid out full screen rather than as a strip
+    over a video. */
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body.between {
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+	color: #fff;
+	font-family: 'Roboto Slab', serif;
+	line-height: 1.4;
+	background: #1e2227 url(images/black_player_bg.jpg) center / cover;
+}
+
+.screen {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	padding: 28px 36px;
+}
+
+/*--------------------------------------------------------------------------------------
+    the heading every screen shares
+  --------------------------------------------------------------------------------------*/
+.screen-head {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	gap: 24px;
+	margin-bottom: 24px;
+}
+
+.head-left,
+.head-right {
+	flex: 1 1 0;
+	font-size: 1.6em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.head-right {
+	text-align: right;
+	opacity: 0.85;
+}
+
+.head-middle {
+	flex: 0 0 auto;
+	text-align: center;
+}
+
+.head-title {
+	font-family: 'Gagalin', sans-serif;
+	letter-spacing: 3px;
+	font-size: 2.6em;
+	line-height: 1.1;
+}
+
+.head-sub {
+	font-size: 1.3em;
+	opacity: 0.8;
+}
+
+/*--------------------------------------------------------------------------------------
+    the body, and the rows of cards the results and the upcoming seating are made of
+  --------------------------------------------------------------------------------------*/
+.screen-body {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	justify-content: center;
+	gap: 28px;
+	min-height: 0;
+}
+
+.card-row {
+	display: flex;
+	flex: 1 1 0;
+	justify-content: center;
+	align-items: stretch;
+	width: 100%;
+	gap: 20px;
+	min-height: 0;
+}
+
+/* The cards share out the width of their row, so a row of five reaches across the screen the
+   same way a row of seven does. The cap is what stops a short row from turning into a handful
+   of enormous cards. */
+.card {
+	flex: 1 1 0;
+	max-width: 340px;
+}
+
+/* The black team sits above the town on the results screen, kept a little smaller - it is the
+   shorter row, and letting it reach the cap would make it the biggest thing on the screen. */
+.results .black-row .card {
+	max-width: 260px;
+}
+
+.card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	border-radius: 14px;
+	overflow: hidden;
+	background-size: cover;
+	background-position: center;
+	/* Red is where a card sits unless its role says otherwise, the same as on the overlays. */
+	background-image: url(images/red_player_bg.jpg);
+	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.card.role-maf,
+.card.role-don { background-image: url(images/black_player_bg.jpg); }
+.card.role-sheriff { background-image: url(images/green_player_bg.jpg); }
+
+.card.best {
+	outline: 3px solid rgba(255, 206, 0, 0.9);
+	outline-offset: -3px;
+}
+
+.card-no {
+	position: absolute;
+	top: 0;
+	left: 0;
+	min-width: 34px;
+	padding: 2px 8px;
+	text-align: center;
+	font-size: 1.2em;
+	font-weight: 700;
+	background-color: rgba(0, 0, 0, 0.75);
+	border-bottom-right-radius: 12px;
+	z-index: 2;
+}
+
+.card-name {
+	flex: 0 0 auto;
+	padding: 4px 10px 4px 46px;
+	font-size: 1.2em;
+	font-weight: 700;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	background-color: rgba(0, 0, 0, 0.55);
+}
+
+/* Takes whatever the card has left after the name and the club, so that two rows of cards fill
+   the screen between them however wide the cards turn out to be. */
+.card-photo {
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-image: url(images/aml_masters.png); /* a seat we have no face for */
+}
+
+/* The default icon of a player who never uploaded a photo is small and flat, so it is shown
+   whole in the middle of the card instead of being cropped and blown up to fill it. */
+.card.no-photo .card-photo {
+	background-size: 58%;
+	background-color: rgba(0, 0, 0, 0.28);
+}
+
+.card-club {
+	flex: 0 0 auto;
+	padding: 6px 10px;
+	background-color: rgba(0, 0, 0, 0.55);
+	font-size: 0.95em;
+}
+
+.card-club-name {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.card-country {
+	opacity: 0.7;
+	font-size: 0.9em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* The glyph of the role in the corner, the same three the overlays use. The best player of the
+   game is marked by the gold edge of .card.best rather than another badge, so that the sheriff's
+   star keeps meaning the sheriff. */
+.card-corner {
+	position: absolute;
+	top: 30px;
+	right: 6px;
+	width: 42px;
+	height: 42px;
+	background-size: contain;
+	background-position: center;
+	background-repeat: no-repeat;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+	z-index: 2;
+}
+
+.card.role-don .card-corner { background-image: url(images/don.png); }
+.card.role-maf .card-corner { background-image: url(images/pistol.png); }
+.card.role-sheriff .card-corner { background-image: url(images/sheriff.png); }
+
+/*--------------------------------------------------------------------------------------
+    the title, put up when no other screen has anything to say
+  --------------------------------------------------------------------------------------*/
+.title {
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	text-align: center;
+}
+
+.title-tournament {
+	font-family: 'Gagalin', sans-serif;
+	letter-spacing: 4px;
+	font-size: 4.2em;
+	line-height: 1.1;
+}
+
+.title-round {
+	font-size: 2.2em;
+	opacity: 0.85;
+}
+
+.title-table {
+	font-size: 1.6em;
+	opacity: 0.6;
+}
+
+/*--------------------------------------------------------------------------------------
+    the tournament table
+  --------------------------------------------------------------------------------------*/
+.standings {
+	flex-direction: row;
+	align-items: stretch;
+	gap: 36px;
+}
+
+.standings-column {
+	display: flex;
+	flex: 1 1 0;
+	flex-direction: column;
+	/* Stacked from the top, so that the last column - the one holding whatever is left of the
+	   table - starts level with the full columns beside it rather than floating half way down. */
+	justify-content: flex-start;
+	gap: 12px;
+	min-width: 0;
+}
+
+/* A row takes its share of a full column rather than of the column it happens to be in, so that
+   the last column - which holds whatever is left of the table - keeps the same row height as the
+   full ones beside it. --rows is the number of rows a column holds, set by screen_standings.php.
+   The cap keeps a table asked for in three lines from turning into three huge bars. */
+.standings-row {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	height: calc((100% - (var(--rows, 10) - 1) * 12px) / var(--rows, 10));
+	max-height: 112px;
+	min-height: 0;
+	gap: 18px;
+	padding: 6px 20px;
+	border-radius: 12px;
+	background-color: rgba(0, 0, 0, 0.5);
+	font-size: 1.9em;
+}
+
+.standings-place {
+	flex: 0 0 auto;
+	min-width: 56px;
+	text-align: center;
+	font-weight: 700;
+	opacity: 0.85;
+}
+
+.standings-photo {
+	flex: 0 0 auto;
+	width: 64px;
+	height: 64px;
+	border-radius: 8px;
+	background-size: cover;
+	background-position: center;
+	background-color: rgba(255, 255, 255, 0.08);
+}
+
+.standings-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.standings-points {
+	flex: 0 0 auto;
+	font-weight: 700;
+	min-width: 70px;
+	text-align: right;
+}

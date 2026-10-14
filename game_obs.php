@@ -98,29 +98,8 @@ class Page extends ObsPageBase
 			}
 		}
 		
-		if ($this->view == VIEW_GLYPHS)
-		{
-			$this->events = array();
-			if ($this->event_id > 0)
-			{
-				$e = new stdClass();
-				$e->id = $this->event_id;
-				$e->name = $this->event_name;
-				$this->events[] = $e;
-			}
-			else
-			{
-				$query = new DbQuery('SELECT id, name FROM events WHERE tournament_id = ?', $this->tournament_id);
-				while ($row = $query->next())
-				{
-					list ($eid, $ename) = $row;
-					$e = new stdClass();
-					$e->id = $eid;
-					$e->name = $ename;
-					$this->events[] = $e;
-				}
-			}
-		}
+		// The rounds of the tournament used to be listed here, one next-game source per round.
+		// between.php follows the rounds by itself now, so there is nothing left to list.
 	}
 
 	protected function show_body()
@@ -183,17 +162,12 @@ class Page extends ObsPageBase
 		echo '<tr><td class="dark">' . get_label('Glyphs and info full screen') . ':</td><td id="url-0"></td><td>1920 x 1080</td><td align="center"><button onclick="copyUrl(0)">' . get_label('Copy') . '</button></td></tr>';
 		echo '<tr><td class="dark">' . get_label('Glyphs only') . ':</td><td id="url-1"></td><td>1920 x 260</td><td align="center"><button onclick="copyUrl(1)">' . get_label('Copy') . '</button></td></tr>';
 		echo '<tr><td class="dark">' . get_label('Info only') . ':</td><td id="url-2"></td><td>1920 x 100</td><td align="center"><button onclick="copyUrl(2)">' . get_label('Copy') . '</button></td></tr>';
-		echo '<tr><td class="dark">' . get_label('Tournament table') . ':</td><td id="url-3"></td><td>';
-		echo '<table class="transp" width="100%">';
-		echo '<tr><td>' . get_label('rows') . ':</td><td><input id="row" style="width: 30px;" type="number" min="1" value="10" onchange="generateUrls()"></td></tr>';
-		echo '<tr><td>' . get_label('columns') . ':</td><td><input id="col" style="width: 30px;" type="number" min="1" value="1" onchange="generateUrls()"></td></tr>';
-		echo '</table></td><td align="center"><button onclick="copyUrl(3)">' . get_label('Copy') . '</button></td></tr>';
-		for ($i = 0; $i < count($this->events); ++$i)
-		{
-			$e = $this->events[$i];
-			echo '<tr><td class="dark">' . get_label('Next game for [0]', $e->name) . ':</td><td id="url-' . ($i + 4) . '"></td><td>880 x 240</td><td align="center"><button onclick="copyUrl(' . ($i + 4) . ')">' . get_label('Copy') . '</button></td></tr>';
-		}
-		echo '</tr></table></p>';
+		// One source for everything shown between games: the result of the game just played, who
+		// sits down next, and the tournament table, one after another. It replaces the separate
+		// standings and next-game sources there used to be here.
+		echo '<tr><td class="dark">' . get_label('Between games') . ':</td><td id="url-3"></td><td>1920 x 1080</td>';
+		echo '<td align="center"><button onclick="copyUrl(3)">' . get_label('Copy') . '</button></td></tr>';
+		echo '</table></p>';
 	}
 	
 	function show_scene_switching()
@@ -404,8 +378,7 @@ class Page extends ObsPageBase
 		else
 		{
 ?>
-			var events = <?php echo json_encode($this->events); ?>;
-			var url = Array(<?php echo count($this->events) + 4; ?>).fill('');
+			var url = Array(4).fill('');
 			var site = '<?php echo get_server_url(); ?>';
 
 			// A tournament overlay follows its table from round to round; an event one stays in
@@ -419,13 +392,9 @@ class Page extends ObsPageBase
 				url[1] = site + '/plugins/obs/players.php' + params;
 				url[2] = site + '/plugins/obs/gamestats.php' + params;
 
-				url[3] = site + '/plugins/standings.php?id=<?php echo $this->tournament_id; ?>&rows=' + $('#row').val() + '&columns=' + $('#col').val();
-				
-				for (let i = 0; i < events.length; ++i)
-				{
-					url[i + 4] = site + '/plugins/next_game.php?table_num=' + $('#table').val() + '&id=' + events[i].id;
-				}
-				
+				// The same table as the overlays, so this source needs no setting up of its own.
+				url[3] = site + '/plugins/obs/between.php' + params;
+
 				for (let i = 0; i < url.length; ++i)
 				{
 					if (url[i].startsWith("htt"))

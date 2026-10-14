@@ -2060,6 +2060,12 @@ $labelMenu = array (
 'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас немає готової рассадки для цієї конфігурації. Ми згенерували для вас найпростішу початкову рассадку і зараз її покращуємо та оптимізуємо.<p>Ви можете зачекати кілька годин для покращеної версії. Або ви можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">натиснути тут</a> і оптимізувати прямо зараз.</p>', // include/seating.php, include/seating.php
 'The results of this series are not recounted yet. They will be updated within an hour.' => 'Результати серії ще не перераховані. Їх буде оновлено протягом години.', // series_standings.php
 'Recount the series' => 'Перерахувати серію', // series_standings.php
+'Upcoming' => 'Наступна гра', // plugins/obs/screen_upcoming.php
+'Town win' => 'Перемога міста', // plugins/obs/screen_results.php
+'Mafia win' => 'Перемога мафії', // plugins/obs/screen_results.php
+'Tie' => 'Нічия', // plugins/obs/screen_results.php
+'Independent Player' => 'Поза клубом', // plugins/obs/screens.php
+'Between games' => 'Між іграми', // game_obs.php
 );
 
 return $labelMenu;
