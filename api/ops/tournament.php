@@ -871,6 +871,33 @@ class ApiPage extends OpsApiPageBase
 		// own, and the logging below is asking about this one.
 		$tournament_changed = (Db::affected_rows() > 0);
 
+		// The rounds of a tournament are played inside it, so when its dates move the rounds move
+		// with them. A round that began with the tournament begins with it still, and one that ran
+		// to its end runs to the new end - which is what makes stretching a tournament stretch the
+		// rounds nobody has given dates of their own. The rest keep theirs and are only kept
+		// inside the tournament, the way finish_op keeps them inside a tournament cut short.
+		if ($start != $old_start || $duration != $old_duration)
+		{
+			$old_end = $old_start + $old_duration;
+			$end = $start + $duration;
+			$query = new DbQuery('SELECT id, start_time, duration FROM events WHERE tournament_id = ?', $tournament_id);
+			while ($row = $query->next())
+			{
+				list ($round_id, $round_start, $round_duration) = $row;
+				$round_start = (int)$round_start;
+				$round_end = $round_start + (int)$round_duration;
+
+				$round_start = ($round_start <= $old_start) ? $start : max($round_start, $start);
+				$round_end = ($round_end >= $old_end) ? $end : min($round_end, $end);
+				// A round squeezed out of the tournament altogether keeps what is left of it.
+				$round_start = min($round_start, $end);
+				$round_end = max($round_end, $round_start);
+
+				Db::exec(get_label('round'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?',
+					$round_start, $round_end - $round_start, $round_id);
+			}
+		}
+
 		// Whether the roles are shown is decided for the tournament as a whole, so turning it over
 		// here turns it over in every round. A round may still be set apart afterwards, and a game
 		// being played may still be set apart from its round - see EVENT_FLAG_HIDE_ROLES.
