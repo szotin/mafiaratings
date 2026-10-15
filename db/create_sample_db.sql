@@ -55,7 +55,7 @@ CREATE TABLE `bug_reports` (
   `game_num` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `game` text NOT NULL,
-  `log` text,
+  `log` mediumtext,
   `comment` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -159,7 +159,7 @@ CREATE TABLE `current_games` (
   `game_num` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `game` text NOT NULL,
-  `log` text
+  `log` mediumtext
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `dons`;

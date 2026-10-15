@@ -185,6 +185,7 @@ var obs = new function()
 		'<div class="player-photo">' +
 			'<div class="player-role"></div>' +
 			'<div class="player-mark"><span></span></div>' +
+			'<div class="player-fouls"></div>' +
 			'<div class="player-name-bar"><div class="player-number"></div><div class="player-name"></div></div>' +
 		'</div>';
 
@@ -242,6 +243,7 @@ var obs = new function()
 		face.getElementsByClassName('player-photo')[0].style.backgroundImage =
 			known ? 'url(' + (player.hasPhoto ? player.photoUrl : player.iconUrl) + ')' : '';
 		showPlayerMark(face.getElementsByClassName('player-mark')[0], player);
+		showPlayerFouls(face.getElementsByClassName('player-fouls')[0], player);
 
 		// The number belongs to the seat rather than to the player, so both sides carry it.
 		var numbers = card.getElementsByClassName('player-number');
@@ -268,7 +270,9 @@ var obs = new function()
 		card.className = 'player-card' + state;
 	}
 
-	// The top right corner of the card shows either the warnings of a living player, or the way a dead one died.
+	// The top right corner of the card shows either the warnings of a living player, or the way a
+	// dead one died. One cross is a player the referee removed; two is one who took their team
+	// down with them.
 	function showPlayerMark(mark, player)
 	{
 		var dead = (player.state == 'dead');
@@ -277,9 +281,13 @@ var obs = new function()
 		{
 			text = new Array(player.warnings + 1).join('!');
 		}
-		else if (dead && player.deathType == 'kickOut')
+		else if (dead && (player.deathType == 'kickOut' || player.deathType == 'techFouls'))
 		{
 			text = 'X';
+		}
+		else if (dead && player.deathType == 'oppositeTeamWins')
+		{
+			text = 'XX';
 		}
 
 		// Voting and shooting are marked by a picture set in obs.css, so the mark stays empty but visible.
@@ -287,6 +295,16 @@ var obs = new function()
 
 		mark.style.display = !options.hideWarnings && (text != '' || picture) ? '' : 'none';
 		mark.getElementsByTagName('span')[0].textContent = text;
+	}
+
+	// The technical fouls, in the corner across from the warnings. They are counted apart from
+	// the warnings and cost a player the game at two, so they are shown apart from them as well -
+	// and they stay up after the player is gone, whichever way they went.
+	function showPlayerFouls(fouls, player)
+	{
+		var count = player.techFouls ? player.techFouls : 0;
+		fouls.style.display = !options.hideWarnings && count > 0 ? '' : 'none';
+		fouls.textContent = options.labels.techFouls + (count > 1 ? ' ' + count : '');
 	}
 
 	//--------------------------------------------------------------------------------------

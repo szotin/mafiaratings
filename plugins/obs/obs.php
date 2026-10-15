@@ -53,6 +53,9 @@ function show_obs_page($view)
 	$options->labels = new stdClass();
 	$options->labels->referee = get_label('Referee');
 	$options->labels->stages = array(get_label('round'), get_label('finals'), get_label('semis'), get_label('quarters'));
+	// Short enough to sit in the corner of a card. The rest of what a card says about a player -
+	// their warnings, the way they left - is marks rather than words.
+	$options->labels->techFouls = get_label('TF');
 
 	echo '<!DOCTYPE HTML>';
 	echo '<html><head>';

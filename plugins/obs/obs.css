@@ -394,6 +394,24 @@ body.overlay .players {
 	letter-spacing: 0.2rem;
 }
 
+/* The technical fouls, across the card from the warnings. Amber rather than red: two of them
+   cost a player the game, so they are a step above a warning without being the removal itself. */
+.player-fouls {
+	position: absolute;
+	top: 0;
+	left: 0;
+	min-width: 30px;
+	height: 35px;
+	padding: 4px 6px 0;
+	text-align: center;
+	color: #fff;
+	font-size: 1.1rem;
+	font-weight: 800;
+	background-color: rgba(190, 120, 0, 0.75);
+	border-top-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+}
+
 .player-card.warnings-1 .player-mark,
 .player-card.warnings-2 .player-mark { background-color: rgba(0, 0, 0, 0.5); }
 

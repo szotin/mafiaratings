@@ -1519,7 +1519,7 @@ class Game
 				{
 					if ($gametime == NULL || $this->compare_gametimes($gametime, $techFoul) < 0)
 					{
-						$gametime = $techFouls;
+						$gametime = $techFoul;
 					}
 				}
 			}

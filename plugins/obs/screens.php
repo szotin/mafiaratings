@@ -2,6 +2,7 @@
 
 require_once '../../include/session.php';
 require_once '../../include/picture.php';
+require_once '../../include/game.php'; // GAMETIME_END
 require_once 'obs.php'; // obs_file() - the same cache-busting the overlays use
 
 // Shared by the screens that between.php shows one after another. Each screen is an ordinary
@@ -28,42 +29,73 @@ function obs_screen_start()
 	}
 }
 
-// The lowest game number at this table that has neither been played nor is being played right
-// now. This is next_game.php's reckoning, kept because it is the right one: a game that is on
-// the table at this moment is not the next one, and a gap in the played numbers is.
-function obs_next_game_num($event_id, $table_num)
+// What is on the table right now, as the moderator's screen has it. ->playing is the game under
+// way; ->done is one that has been played out and is on the last screen, where the referee
+// enters the bonus points. Either may be NULL and usually one of them is.
+//
+// A game reaches the games table only once the moderator is finished with it, which can be a
+// good while after the table is done playing it, so this is the only place to learn what is
+// going on. A game whose screen was merely opened and never started is not on the table at all
+// and is left out of both.
+function obs_table_state($event_id, $table_num)
 {
-	$playing = array();
-	$query = new DbQuery('SELECT game_num, game FROM current_games WHERE event_id = ? AND table_num = ?', $event_id, $table_num);
+	$state = new stdClass();
+	$state->playing = NULL;
+	$state->done = NULL;
+
+	$query = new DbQuery('SELECT game_num, game FROM current_games WHERE event_id = ? AND table_num = ? ORDER BY game_num', $event_id, $table_num);
 	while ($row = $query->next())
 	{
 		list ($num, $game) = $row;
-		$game = json_decode($game);
-		if (isset($game->time)) // started, so the table is busy with it
+		$log = json_decode($game);
+		if (is_null($log) || !isset($log->time))
 		{
-			$playing[(int)$num] = true;
+			continue;
+		}
+
+		$g = new stdClass();
+		$g->game_num = (int)$num;
+		$g->log = $log;
+		if ($log->time->time == GAMETIME_END)
+		{
+			$state->done = $g;
+		}
+		else
+		{
+			$state->playing = $g;
 		}
 	}
+	return $state;
+}
 
-	$game_num = 1;
-	while (isset($playing[$game_num]))
+// The number of the game this table is coming to. The game under way is it - it is not written
+// down until it is over, and the seating being shown is still its own. Once it is played out,
+// though, it is behind us, and the next game is the lowest number nobody has played - which is
+// not always the one after it: games are sometimes played out of order, when one has to be
+// replayed or when somebody is missing.
+function obs_next_game_num($event_id, $table_num, $state)
+{
+	if (!is_null($state->playing))
 	{
-		++$game_num;
+		return $state->playing->game_num;
 	}
 
-	$query = new DbQuery('SELECT game_num FROM games WHERE event_id = ? AND table_num = ? ORDER BY game_num', $event_id, $table_num);
+	$played = array();
+	$query = new DbQuery('SELECT game_num FROM games WHERE event_id = ? AND table_num = ?', $event_id, $table_num);
 	while ($row = $query->next())
 	{
 		list ($num) = $row;
-		if ($game_num != $num)
-		{
-			break;
-		}
-		do
-		{
-			++$game_num;
-		}
-		while (isset($playing[$game_num]));
+		$played[(int)$num] = true;
+	}
+	if (!is_null($state->done))
+	{
+		$played[$state->done->game_num] = true; // played out, only its bonus points are still coming
+	}
+
+	$game_num = 1;
+	while (isset($played[$game_num]))
+	{
+		++$game_num;
 	}
 	return $game_num;
 }
@@ -137,9 +169,23 @@ function obs_context()
 	$c->event_id = 0;
 	$c->event_name = '';
 	$c->next_game_num = 0;
-	foreach ($c->rounds as $r)
+	$c->done = NULL; // the game played out at this table but not yet written down, if there is one
+	$settled = -1;   // how far down the rounds we got
+	foreach ($c->rounds as $index => $r)
 	{
-		$next = obs_next_game_num($r->id, $table_num);
+		$state = obs_table_state($r->id, $table_num);
+		$next = obs_next_game_num($r->id, $table_num, $state);
+
+		// A game that has only just been played out is the news of this table whichever round we
+		// end up in, so it is picked up here and carried along - the round it was played in can
+		// be the one we are about to leave behind, when it was the last game of that round.
+		if (!is_null($state->done))
+		{
+			$state->done->event_id = $r->id;
+			$state->done->event_name = $r->name;
+			$c->done = $state->done;
+		}
+
 		if ($r->games > 0 && $next > $r->games)
 		{
 			continue; // this round is played out at this table
@@ -149,6 +195,7 @@ function obs_context()
 		$c->event_name = $r->name;
 		$c->round_num = (int)$r->round_num;
 		$c->next_game_num = ($r->games > 0) ? $next : 0; // no seating, so nothing to call upcoming
+		$settled = $index;
 		break;
 	}
 
@@ -156,10 +203,35 @@ function obs_context()
 	// that its results still have somewhere to come from.
 	if ($c->event_id <= 0 && count($c->rounds) > 0)
 	{
-		$last = $c->rounds[count($c->rounds) - 1];
+		$settled = count($c->rounds) - 1;
+		$last = $c->rounds[$settled];
 		$c->event_id = $last->id;
 		$c->event_name = $last->name;
 		$c->round_num = (int)$last->round_num;
+	}
+
+	// Which round the game behind us comes from. Normally the one the table is in - a round that
+	// is really starting has a game coming up, and then the game before it belongs to the round
+	// before and is left there. But a round we only moved into because the one before was played
+	// out is not yet where the table is: with nothing to play and nothing played in it, the last
+	// game of the round before is still the news of this table, and stays up.
+	$c->results_event_id = $c->event_id;
+	$c->results_event_name = $c->event_name;
+	if ($c->next_game_num <= 0 && $settled >= 0)
+	{
+		$played = array();
+		$query = new DbQuery('SELECT DISTINCT event_id FROM games WHERE tournament_id = ? AND table_num = ?', $tournament_id, $table_num);
+		while ($row = $query->next())
+		{
+			list ($id) = $row;
+			$played[(int)$id] = true;
+		}
+
+		for ($i = $settled; $i >= 0 && !isset($played[$c->results_event_id]); --$i)
+		{
+			$c->results_event_id = $c->rounds[$i]->id;
+			$c->results_event_name = $c->rounds[$i]->name;
+		}
 	}
 
 	return $c->event_id > 0 ? $c : NULL;
@@ -264,8 +336,9 @@ function obs_card_row($count, $extra_class = '')
 }
 
 // One card. $player may be NULL - a seat whose player we do not know still keeps its number.
-// $mark, when there is one, is the badge under the number: ->class says what it is and ->text
-// what is written on it, if anything - the picture ones carry nothing.
+// $mark, when there is one, is what the card says about how the player's game went: ->class and
+// ->text are the badge under the number - the picture ones carry no text - and ->fouls, when it
+// is not zero, puts the technical fouls in the corner across from it.
 function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NULL)
 {
 	if (!is_null($player) && isset($player->has_photo) && !$player->has_photo)
@@ -281,7 +354,14 @@ function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NUL
 	}
 	if (!is_null($mark))
 	{
-		echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
+		if ($mark->class != '')
+		{
+			echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
+		}
+		if ($mark->fouls > 0)
+		{
+			echo '<div class="card-fouls">' . get_label('TF') . ($mark->fouls > 1 ? ' ' . $mark->fouls : '') . '</div>';
+		}
 	}
 	echo '<div class="card-photo"' . (is_null($player) ? '' : ' style="background-image: url(' . $player->photo . ')"') . '></div>';
 	echo '<div class="card-club">';

@@ -2066,6 +2066,7 @@ $labelMenu = array (
 'Tie' => 'Ничья', // plugins/obs/screen_results.php
 'Independent Player' => 'Вне клуба', // plugins/obs/screens.php
 'Between games' => 'Между играми', // game_obs.php
+'TF' => 'ТФ', // plugins/obs/obs.php, plugins/obs/screens.php
 );
 
 return $labelMenu;

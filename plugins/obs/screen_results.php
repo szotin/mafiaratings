@@ -1,8 +1,6 @@
 <?php
 
-require_once 'screens.php';
-require_once '../../include/scoring.php'; // SCORING_FLAG_BEST_PLAYER
-require_once '../../include/game.php';    // DEATH_TYPE_*
+require_once 'screens.php'; // which pulls in game.php, for the DEATH_TYPE_* the marks go by
 
 // How the game before this one went at this table. Not shown when the round has not had a game
 // yet - the first game of a round has nothing behind it. Note that this looks only inside the
@@ -14,50 +12,117 @@ require_once '../../include/game.php';    // DEATH_TYPE_*
 
 obs_screen_start();
 
+// The game a seat was in, as the rest of this page wants it: who sat where, how it ended, and
+// the log it was played by. A game is written down with the very log its moderator played it
+// by, so a game that is over and one that is still on the last screen read exactly the same
+// way and there is one way of reading them.
+function obs_results_game($log, $event_id, $event_name, $game_num)
+{
+	$g = new stdClass();
+	$g->event_id = $event_id;
+	$g->event_name = $event_name;
+	$g->game_num = $game_num;
+	$g->moderator_id = isset($log->moderator->id) ? (int)$log->moderator->id : 0;
+
+	$g->result = GAME_RESULT_TIE;
+	if (isset($log->winner))
+	{
+		if ($log->winner == 'maf')
+		{
+			$g->result = GAME_RESULT_MAFIA;
+		}
+		else if ($log->winner == 'civ')
+		{
+			$g->result = GAME_RESULT_TOWN;
+		}
+	}
+
+	$g->log = isset($log->players) && is_array($log->players) ? $log->players : array();
+	$g->seats = array();
+	foreach ($g->log as $i => $p)
+	{
+		$seat = new stdClass();
+		$seat->user_id = isset($p->id) ? (int)$p->id : 0;
+		$seat->nick_name = isset($p->name) ? $p->name : '';
+		$seat->number = $i + 1;
+		$seat->role = ROLE_CIVILIAN;
+		if (isset($p->role))
+		{
+			switch ($p->role)
+			{
+			case 'don':
+				$seat->role = ROLE_DON;
+				break;
+			case 'maf':
+				$seat->role = ROLE_MAFIA;
+				break;
+			case 'sheriff':
+				$seat->role = ROLE_SHERIFF;
+				break;
+			}
+		}
+		// The bonus points the referee hands out at the end are in the log too, so the best
+		// player gets their gold edge as soon as they are named.
+		$bonus = isset($p->bonus) ? (is_array($p->bonus) ? $p->bonus : array($p->bonus)) : array();
+		$seat->best = in_array('bestPlayer', $bonus);
+		$g->seats[] = $seat;
+	}
+	return $g;
+}
+
+// The last game recorded at this table in the round the results belong to - which is the round
+// the table is in, except when it has moved on to one that has not started, see obs_context().
+function obs_results_recorded($c)
+{
+	// The last game is the one played last, not the one with the highest number: a game that has
+	// been replayed is the news of the table again, whatever its number in the round.
+	$query = new DbQuery(
+		'SELECT result, game_num, moderator_id, json FROM games WHERE event_id = ? AND table_num = ?'.
+		' ORDER BY end_time DESC, id DESC LIMIT 1', $c->results_event_id, $c->table_num);
+	$row = $query->next();
+	if (!$row)
+	{
+		return NULL; // nothing played in this round yet
+	}
+	list ($result, $game_num, $moderator_id, $json) = $row;
+
+	$log = is_null($json) ? NULL : json_decode($json);
+	if (is_null($log))
+	{
+		return NULL; // too old to have a log, or a broken one - there is nothing to draw
+	}
+
+	$g = obs_results_game($log, $c->results_event_id, $c->results_event_name, $game_num);
+	// The row is what the site itself goes by, so it has the last word over the log.
+	$g->result = (int)$result;
+	$g->moderator_id = (int)$moderator_id;
+	return $g;
+}
+
 $c = obs_context();
 if (is_null($c))
 {
 	return;
 }
 
-// The last game played at this table in the round we are in.
-$query = new DbQuery(
-	'SELECT id, result, game_num, moderator_id, json FROM games WHERE event_id = ? AND table_num = ?'.
-	' ORDER BY game_num DESC LIMIT 1', $c->event_id, $c->table_num);
-$row = $query->next();
-if (!$row)
+// A game the table has played out is the news the moment it ends, long before the referee is
+// done entering its bonus points and it reaches the games table.
+$g = is_null($c->done)
+	? obs_results_recorded($c)
+	: obs_results_game($c->done->log, $c->done->event_id, $c->done->event_name, $c->done->game_num);
+if (is_null($g) || empty($g->seats))
 {
-	return; // first game of the round
-}
-list ($game_id, $result, $game_num, $moderator_id, $json) = $row;
-
-// The log of the game, by seat. Everything the overlays showed while it was played is in here.
-$log = is_null($json) ? NULL : json_decode($json);
-$log = (!is_null($log) && isset($log->players) && is_array($log->players)) ? $log->players : array();
-
-$query = new DbQuery(
-	'SELECT user_id, nick_name, number, role, won, flags FROM players WHERE game_id = ? ORDER BY number', $game_id);
-$seats = array();
-$ids = array();
-while ($row = $query->next())
-{
-	$p = new stdClass();
-	list ($p->user_id, $p->nick_name, $p->number, $p->role, $p->won, $p->flags) = $row;
-	$p->user_id = (int)$p->user_id;
-	$p->role = (int)$p->role;
-	$p->best = ((int)$p->flags & SCORING_FLAG_BEST_PLAYER) != 0;
-	$seats[] = $p;
-	$ids[] = $p->user_id;
-}
-if (empty($seats))
-{
-	return;
+	return; // first game of the round, and nothing played out on the table either
 }
 
-$ids[] = (int)$moderator_id;
-$players = obs_players($ids, $c->event_id, $c->tournament_id, $c->club_id);
+$ids = array((int)$g->moderator_id);
+foreach ($g->seats as $seat)
+{
+	$ids[] = $seat->user_id;
+}
+$players = obs_players($ids, $g->event_id, $c->tournament_id, $c->club_id);
 
-switch ((int)$result)
+switch ($g->result)
 {
 case GAME_RESULT_MAFIA:
 	$winner = get_label('Mafia win');
@@ -70,17 +135,17 @@ default:
 	break;
 }
 
-$moderator = isset($players[(int)$moderator_id]) ? $players[(int)$moderator_id]->name : '';
+$moderator = isset($players[$g->moderator_id]) ? $players[$g->moderator_id]->name : '';
 obs_screen_head(
 	htmlspecialchars($c->tournament_name),
 	'<div class="head-title">' . $winner . '</div>' .
-		'<div class="head-sub">' . htmlspecialchars($c->event_name) . ' &middot; ' . get_label('Table [0], Game [1]', $c->table_num, $game_num) . '</div>',
+		'<div class="head-sub">' . htmlspecialchars($g->event_name) . ' &middot; ' . get_label('Table [0], Game [1]', $c->table_num, $g->game_num) . '</div>',
 	$moderator == '' ? '' : get_label('Referee') . ': ' . htmlspecialchars($moderator));
 
 // The black team on its own row above the town, the way the result of a game is read.
 $black = array();
 $red = array();
-foreach ($seats as $p)
+foreach ($g->seats as $p)
 {
 	if ($p->role == ROLE_MAFIA || $p->role == ROLE_DON)
 	{
@@ -128,16 +193,31 @@ function obs_results_mark($p)
 	$type = (is_null($death) || !isset($death->type)) ? '' : $death->type;
 
 	$mark = new stdClass();
+	$mark->class = '';
 	$mark->text = '';
+	// The technical fouls are counted apart from the warnings and cost a player the game at two,
+	// so they are shown apart from them too - and they stay up whichever way the player left.
+	$mark->fouls = 0;
+	if (isset($p->techFouls))
+	{
+		$mark->fouls = is_array($p->techFouls) ? count($p->techFouls) : (int)$p->techFouls;
+	}
+
 	if ($warnings > 0 && ($type == '' || $type == DEATH_TYPE_WARNINGS))
 	{
 		$mark->class = 'warnings-' . min($warnings, 4);
 		$mark->text = str_repeat('!', $warnings);
 	}
-	else if ($type == DEATH_TYPE_KICK_OUT)
+	else if ($type == DEATH_TYPE_KICK_OUT || $type == DEATH_TYPE_TECH_FOULS)
 	{
 		$mark->class = 'death-kickOut';
 		$mark->text = 'X';
+	}
+	else if ($type == DEATH_TYPE_TEAM_KICK_OUT)
+	{
+		// Removed, and the other team won by it. Two crosses rather than one.
+		$mark->class = 'death-kickOut';
+		$mark->text = 'XX';
 	}
 	else if ($type == DEATH_TYPE_DAY)
 	{
@@ -149,11 +229,8 @@ function obs_results_mark($p)
 		// before the one the death is written down in - the same reckoning current_game.php does.
 		$mark->class = 'death-shooting round-' . max((int)$death->round - 1, 0);
 	}
-	else
-	{
-		return NULL; // gave up, or left with their team - the overlay showed nothing for those
-	}
-	return $mark;
+
+	return ($mark->class == '' && $mark->fouls <= 0) ? NULL : $mark;
 }
 
 function obs_results_row($seats, $players, $log, $row_class)
@@ -204,7 +281,7 @@ function obs_results_section($class, $numbers, $roles)
 // The three things the info bar carried through the game: the best move of the player shot in
 // the first night, and the two sets of checks, each in the order they were made.
 $roles = array();
-foreach ($seats as $p)
+foreach ($g->seats as $p)
 {
 	$roles[(int)$p->number] = obs_results_role($p->role);
 }
@@ -212,7 +289,7 @@ foreach ($seats as $p)
 $legacy = array();
 $sheriff = array();
 $don = array();
-foreach ($log as $i => $p)
+foreach ($g->log as $i => $p)
 {
 	if (isset($p->legacy) && is_array($p->legacy))
 	{
@@ -233,8 +310,8 @@ asort($don);
 $info = !empty($legacy) || !empty($sheriff) || !empty($don);
 
 echo '<div class="screen-body results' . ($info ? ' with-info' : '') . '">';
-obs_results_row($black, $players, $log, 'black-row');
-obs_results_row($red, $players, $log, 'red-row');
+obs_results_row($black, $players, $g->log, 'black-row');
+obs_results_row($red, $players, $g->log, 'red-row');
 if ($info)
 {
 	echo '<div class="info">';
