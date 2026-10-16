@@ -18,62 +18,55 @@ try
 		throw new Exc(get_label('Unknown [0]', get_label('event')));
 	}
 
-	list($club_id, $tournament_id, $event_round, $misc_str) = Db::record(get_label('event'),
-		'SELECT club_id, tournament_id, round, misc FROM events WHERE id = ?', $event_id);
+	list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
+		'SELECT club_id, tournament_id, misc FROM events WHERE id = ?', $event_id);
 	check_permissions(
 		PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
 		PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
 		$club_id, $event_id, $tournament_id);
 
 	$misc = is_null($misc_str) ? null : json_decode($misc_str);
-	$reg_users = array();
 
-	if ((int)$event_round > 0)
+	// Everybody who could stand in this round: the players of the tournament, and whoever the
+	// seating names on top of them. Two of them seated means a swap, one of them seated means
+	// the other is a substitute taking their place - a player of the tournament who did not
+	// make it into this round, which is what the list is for.
+	$player_ids = array();
+	if (!is_null($misc) && isset($misc->seating) && isset($misc->seating->mapping))
 	{
-		// Non-main round: all accepted non-referee tournament registrations.
+		foreach ($misc->seating->mapping as $uid)
+		{
+			$uid = is_object($uid) ? (isset($uid->id) ? (int)$uid->id : 0) : (int)$uid;
+			if ($uid > 0)
+			{
+				$player_ids[$uid] = true;
+			}
+		}
+	}
+
+	$q = new DbQuery(
+		'SELECT user_id FROM tournament_regs WHERE tournament_id = ? AND (flags & ?) = 0 AND (flags & ?) = 0',
+		$tournament_id, USER_TOURNAMENT_FLAG_NOT_ACCEPTED, USER_PERM_REFEREE);
+	while ($row = $q->next())
+	{
+		$player_ids[(int)$row[0]] = true;
+	}
+
+	$reg_users = array();
+	if (!empty($player_ids))
+	{
 		$q = new DbQuery(
 			'SELECT u.id, n.name FROM users u' .
 			' JOIN names n ON n.id = u.name_id AND (n.langs & ?) <> 0' .
-			' JOIN tournament_regs tr ON tr.user_id = u.id AND tr.tournament_id = ?' .
-			' WHERE (tr.flags & ?) = 0 AND (tr.flags & ?) = 0' .
+			' WHERE u.id IN (' . implode(',', array_keys($player_ids)) . ')' .
 			' ORDER BY n.name',
-			$_lang, $tournament_id, USER_TOURNAMENT_FLAG_NOT_ACCEPTED, USER_PERM_REFEREE);
+			$_lang);
 		while ($row = $q->next())
 		{
 			$u = new stdClass();
 			$u->id   = (int)$row[0];
 			$u->name = $row[1];
 			$reg_users[] = $u;
-		}
-	}
-	else
-	{
-		// Main round: only players already assigned in the current seating.
-		$player_ids = array();
-		if (!is_null($misc) && isset($misc->seating) && isset($misc->seating->mapping))
-		{
-			foreach ($misc->seating->mapping as $uid)
-			{
-				$uid = (int)$uid;
-				if ($uid > 0)
-					$player_ids[] = $uid;
-			}
-		}
-		if (!empty($player_ids))
-		{
-			$q = new DbQuery(
-				'SELECT u.id, n.name FROM users u' .
-				' JOIN names n ON n.id = u.name_id AND (n.langs & ?) <> 0' .
-				' WHERE u.id IN (' . implode(',', $player_ids) . ')' .
-				' ORDER BY n.name',
-				$_lang);
-			while ($row = $q->next())
-			{
-				$u = new stdClass();
-				$u->id   = (int)$row[0];
-				$u->name = $row[1];
-				$reg_users[] = $u;
-			}
 		}
 	}
 

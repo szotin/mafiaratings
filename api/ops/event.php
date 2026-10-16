@@ -2380,8 +2380,10 @@ class ApiPage extends OpsApiPageBase
 				$slot2 = -1;
 				foreach ($mapping as $slot => $uid)
 				{
-					if ((int)$uid === $user1_id) $slot1 = $slot;
-					if ((int)$uid === $user2_id) $slot2 = $slot;
+					// A mapping names a player either by id or by an object carrying one.
+					$uid = is_object($uid) ? (isset($uid->id) ? (int)$uid->id : 0) : (int)$uid;
+					if ($uid === $user1_id) $slot1 = $slot;
+					if ($uid === $user2_id) $slot2 = $slot;
 				}
 
 				if ($game > 0)
@@ -2390,13 +2392,18 @@ class ApiPage extends OpsApiPageBase
 					$misc->seating->manual = true;
 					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
 				}
-				else if ($slot1 >= 0)
+				else if ($slot1 >= 0 || $slot2 >= 0)
 				{
 					// Swapping the mapping exchanges the two players everywhere at once, which is
 					// what the whole seating is: the rounds hold slots and the mapping says who
-					// each slot is. It also lets a player who is not seated at all take another's
-					// place, which is how a substitute is put in.
-					$mapping[$slot1] = $user2_id;
+					// each slot is.
+					//
+					// With only one of them in it this is a substitution instead: whoever is not
+					// playing this round takes the seat of the one who is, in every game of it.
+					// Which of the two was named first does not matter - the dialog does not ask
+					// anybody to put the substitute second, so it must not depend on that.
+					if ($slot1 >= 0)
+						$mapping[$slot1] = $user2_id;
 					if ($slot2 >= 0)
 						$mapping[$slot2] = $user1_id;
 					$misc->seating->mapping = array_values($mapping);
@@ -2407,8 +2414,16 @@ class ApiPage extends OpsApiPageBase
 					$misc->seating->manual = true;
 					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
 					// A swap can bring in somebody the seating did not name before - a substitute -
-					// and the game screen can only show a player the event knows about.
+					// and the game screen can only show a player the event knows about. This is
+					// also what puts them on the round's list of players.
 					register_seating_players($event_id, $misc->seating->mapping);
+				}
+				else
+				{
+					// Neither of them plays this round, so there is no seat to put anybody in.
+					// Said out loud: the dialog offers every player of the tournament, and
+					// choosing two who are both sitting this round out used to do nothing at all.
+					throw new Exc(get_label('Neither of these players is in the seating of this round.'));
 				}
 			}
 		}
@@ -2472,10 +2487,12 @@ class ApiPage extends OpsApiPageBase
 
 	function swap_seating_players_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Swap two players in the seating mapping.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER,
+			'Swap two players in the seating of a round. When only one of them is in it, the other takes their seat in every game of the round instead - a substitution - and is registered on the event. The order the two are named in does not matter.');
 		$help->request_param('event_id', 'The event (round) id.');
 		$help->request_param('user1_id', 'First user id.');
 		$help->request_param('user2_id', 'Second user id.');
+		$help->request_param('game', 'Swap their seats in this game only, numbered from 1. Both must play it. 0 or missing swaps them in every game.', 'every game.');
 		return $help;
 	}
 
