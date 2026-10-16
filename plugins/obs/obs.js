@@ -304,7 +304,8 @@ var obs = new function()
 	{
 		var count = player.techFouls ? player.techFouls : 0;
 		fouls.style.display = !options.hideWarnings && count > 0 ? '' : 'none';
-		fouls.textContent = options.labels.techFouls + (count > 1 ? ' ' + count : '');
+		// A cross apiece, the mark the game pages use for a technical foul.
+		fouls.textContent = new Array(count + 1).join('✘');
 	}
 
 	//--------------------------------------------------------------------------------------

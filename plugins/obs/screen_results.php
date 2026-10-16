@@ -173,10 +173,10 @@ function obs_results_role($role)
 	return 'town';
 }
 
-// What the overlay had in the corner of this player's card when the game ended: how many
-// warnings they were carrying, or the way they died. The rule is showPlayerMark() in obs.js, kept
-// the same here so that a game looks the way it looked while it was played - one mark, and a
-// death that has a picture of its own takes the place of the warnings.
+// The badge in the corner of this player's card: the way they left the game. What they
+// collected along the way - the warnings, the technical fouls - is not on these cards at all.
+// Ten of them side by side is a lot to read in the ten seconds a screen is up, and how a game
+// ended is the part worth carrying; the game pages have the rest.
 function obs_results_mark($p)
 {
 	if (is_null($p))
@@ -184,31 +184,14 @@ function obs_results_mark($p)
 		return NULL;
 	}
 
-	$warnings = 0;
-	if (isset($p->warnings))
-	{
-		$warnings = is_array($p->warnings) ? count($p->warnings) : (int)$p->warnings;
-	}
 	$death = isset($p->death) ? $p->death : NULL;
 	$type = (is_null($death) || !isset($death->type)) ? '' : $death->type;
 
 	$mark = new stdClass();
 	$mark->class = '';
 	$mark->text = '';
-	// The technical fouls are counted apart from the warnings and cost a player the game at two,
-	// so they are shown apart from them too - and they stay up whichever way the player left.
-	$mark->fouls = 0;
-	if (isset($p->techFouls))
-	{
-		$mark->fouls = is_array($p->techFouls) ? count($p->techFouls) : (int)$p->techFouls;
-	}
 
-	if ($warnings > 0 && ($type == '' || $type == DEATH_TYPE_WARNINGS))
-	{
-		$mark->class = 'warnings-' . min($warnings, 4);
-		$mark->text = str_repeat('!', $warnings);
-	}
-	else if ($type == DEATH_TYPE_KICK_OUT || $type == DEATH_TYPE_TECH_FOULS)
+	if ($type == DEATH_TYPE_KICK_OUT || $type == DEATH_TYPE_WARNINGS || $type == DEATH_TYPE_TECH_FOULS)
 	{
 		$mark->class = 'death-kickOut';
 		$mark->text = 'X';
@@ -230,7 +213,7 @@ function obs_results_mark($p)
 		$mark->class = 'death-shooting round-' . max((int)$death->round - 1, 0);
 	}
 
-	return ($mark->class == '' && $mark->fouls <= 0) ? NULL : $mark;
+	return $mark->class == '' ? NULL : $mark;
 }
 
 function obs_results_row($seats, $players, $log, $row_class)

@@ -2066,9 +2066,9 @@ $labelMenu = array (
 'Tie' => 'Нічия', // plugins/obs/screen_results.php
 'Independent Player' => 'Поза клубом', // plugins/obs/screens.php
 'Between games' => 'Між іграми', // game_obs.php
-'TF' => 'ТФ', // plugins/obs/obs.php, plugins/obs/screens.php
 'Neither of these players is in the seating of this round.' => 'Жоден із цих гравців не бере участі в розсадці цього раунду.', // api/ops/event.php
 'Flag' => 'Прапор', // countries.php
+'Technical fouls' => 'Технічні фоли', // view_game.php
 );
 
 return $labelMenu;

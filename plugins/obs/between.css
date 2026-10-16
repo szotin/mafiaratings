@@ -269,9 +269,9 @@ body.between {
 .card.role-maf .card-corner { background-image: url(images/pistol.png); }
 .card.role-sheriff .card-corner { background-image: url(images/sheriff.png); }
 
-/* Under the number, facing the role glyph across the card: what the overlay had in the corner
-   while the game was played - the warnings a player was carrying, or the way they died. The
-   same marks and the same grounds as .player-mark in obs.css. */
+/* Under the number: the way the player left the game, in the same marks and on the same grounds
+   as .player-mark in obs.css. Warnings and technical fouls are left off these cards - see
+   obs_results_mark() in screen_results.php. */
 .card-mark {
 	position: absolute;
 	top: 1.875rem;
@@ -290,34 +290,6 @@ body.between {
 	z-index: 2;
 }
 
-/* The technical fouls, across the card from the mark and under the glyph of the role. Amber
-   rather than red: two of them cost a player the game, so they stand a step above a warning
-   without being the removal itself. */
-.card-fouls {
-	position: absolute;
-	top: 1.875rem;
-	right: 0.375rem;
-	min-width: 1.875rem;
-	height: 2.1875rem;
-	padding: 0.25rem 0.375rem 0;
-	text-align: center;
-	font-size: 1em;
-	font-weight: 800;
-	border-radius: 0.5rem;
-	background-color: rgba(190, 120, 0, 0.8);
-	z-index: 2;
-}
-
-/* On the results screen the role glyph has that corner, so the fouls move down below it. */
-.card-corner ~ .card-fouls {
-	top: 4.75rem;
-}
-
-.card-mark.warnings-1,
-.card-mark.warnings-2 { background-color: rgba(0, 0, 0, 0.6); }
-
-.card-mark.warnings-3,
-.card-mark.warnings-4,
 .card-mark.death-kickOut { background-color: rgba(255, 0, 0, 0.6); }
 
 /* A death of its own picture carries no text, so the box is square and has no ground. */

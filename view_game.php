@@ -490,6 +490,37 @@ class Page extends PageBase
 		}
 	}
 	
+	// How many warnings and how many technical fouls a player ended the game with. Either is
+	// written down as a count or as the list of the times it happened, depending on how much
+	// the game recorded - see the feature flags of the log.
+	private function count_fouls($fouls)
+	{
+		if (!isset($fouls))
+		{
+			return 0;
+		}
+		return is_array($fouls) ? count($fouls) : (int)$fouls;
+	}
+
+	// The marks the round view of this page already uses for them: a tick for a warning, a cross
+	// for a technical foul, one after another with nothing between them. Empty when the player
+	// collected neither, so that a caller can leave the whole line out.
+	private function fouls_html($player)
+	{
+		$html = '';
+		$warnings = $this->count_fouls(isset($player->warnings) ? $player->warnings : NULL);
+		$tech_fouls = $this->count_fouls(isset($player->techFouls) ? $player->techFouls : NULL);
+		if ($warnings > 0)
+		{
+			$html .= '<span title="' . get_label('Warnings') . '">' . str_repeat('✔', $warnings) . '</span>';
+		}
+		if ($tech_fouls > 0)
+		{
+			$html .= '<span title="' . get_label('Technical fouls') . '">' . str_repeat('✘', $tech_fouls) . '</span>';
+		}
+		return $html;
+	}
+
 	private function show_player_html($num)
 	{
 		$player = $this->game->data->players[$num-1];
@@ -790,7 +821,9 @@ class Page extends PageBase
 			echo '<td width="20" class="darker" align="center">' . $i . '</td>';
 			echo '<td>';
 			$this->show_player_html($i);
-			echo '</td><td width="100">';
+			// The fouls stand where the round view puts them: before how the player died. Narrow:
+			// three marks is as many as a player who stays in the game can have.
+			echo '</td><td width="50" align="center"><big>' . $this->fouls_html($player) . '</big></td><td width="100">';
 			if (isset($player->death))
 			{
 				echo '<table class="transp"><tr><td width="30"><img src="images/dead.png" width="24" height="24"></td><td>';
@@ -1593,7 +1626,10 @@ class Page extends PageBase
 			}
 		}
 		
-		echo '<table class="bordered" width="100%"><tr><td width="1">';
+		// A fixed height, and everything hung from the top of it: the lines under the picture
+		// come and go - a player with no warnings has one line fewer - and the block would
+		// otherwise shift up and down as one steps from player to player.
+		echo '<table class="bordered" width="100%"><tr height="200"><td width="1" valign="top">';
 		if ($player_id > 0)
 		{
 			$user_pic =
@@ -1614,7 +1650,7 @@ class Page extends PageBase
 		{
 			echo '<img src="images/tnails/user.png">';
 		}
-		echo '</td><td align="center"><h3><p>' . get_label('Number [0]', $this->player_num) . '</p><p>' . $full_player_name . '</p><p>';
+		echo '</td><td align="center" valign="top"><h3><p>' . get_label('Number [0]', $this->player_num) . '</p><p>' . $full_player_name . '</p><p>';
 		if (!isset($player->role) || $player->role == 'civ')
 		{
 			echo get_label('Civilian') . '</p><p><img src="images/civ.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
@@ -1631,7 +1667,17 @@ class Page extends PageBase
 		{
 			echo get_label('Don') . '</p><p><img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;"> ';
 		}
-		echo '</p></h3></td></tr>';
+		echo '</p>';
+
+		// What the player collected over the game, on the line under their role. The log below
+		// says when each of them happened; this is the total, which is what decides whether
+		// they left the game over it - four warnings or two technical fouls.
+		$fouls = $this->fouls_html($player);
+		if ($fouls != '')
+		{
+			echo '<p>' . get_label('Warnings') . ': ' . $fouls . '</p>';
+		}
+		echo '</h3></td></tr>';
 
 		if ($show_bonus)
 		{

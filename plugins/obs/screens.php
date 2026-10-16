@@ -342,9 +342,9 @@ function obs_card_row($count, $extra_class = '')
 }
 
 // One card. $player may be NULL - a seat whose player we do not know still keeps its number.
-// $mark, when there is one, is what the card says about how the player's game went: ->class and
-// ->text are the badge under the number - the picture ones carry no text - and ->fouls, when it
-// is not zero, puts the technical fouls in the corner across from it.
+// $mark, when there is one, is the badge under the number saying how the player left the game:
+// ->class is what it is and ->text what is written on it, if anything - the picture ones carry
+// no text.
 function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NULL)
 {
 	if (!is_null($player) && isset($player->has_photo) && !$player->has_photo)
@@ -358,17 +358,11 @@ function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NUL
 	{
 		echo '<div class="card-corner">' . $corner . '</div>';
 	}
-	if (!is_null($mark))
+	if (!is_null($mark) && $mark->class != '')
 	{
-		if ($mark->class != '')
-		{
-			echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
-		}
-		if ($mark->fouls > 0)
-		{
-			echo '<div class="card-fouls">' . get_label('TF') . ($mark->fouls > 1 ? ' ' . $mark->fouls : '') . '</div>';
-		}
+		echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
 	}
+
 	echo '<div class="card-photo"' . (is_null($player) ? '' : ' style="background-image: url(' . $player->photo . ')"') . '></div>';
 	// The club along the bottom, with the flag of the country in the corner beside it - a flag is
 	// read at a glance and leaves the whole line to the club, which a second line of text did not.
