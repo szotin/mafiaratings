@@ -2068,6 +2068,7 @@ $labelMenu = array (
 'Between games' => 'Между играми', // game_obs.php
 'TF' => 'ТФ', // plugins/obs/obs.php, plugins/obs/screens.php
 'Neither of these players is in the seating of this round.' => 'Ни один из этих игроков не участвует в рассадке этого раунда.', // api/ops/event.php
+'Flag' => 'Флаг', // countries.php
 );
 
 return $labelMenu;

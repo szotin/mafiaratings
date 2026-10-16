@@ -6,6 +6,26 @@ require_once __DIR__ . '/location.php';
 define('UNDEFINED_COUNTRY', -1);
 define('ALL_COUNTRIES', 0);
 
+// The flag of a country, by its two letter code. The flags come with the site - one file per
+// code in images/flags - rather than being uploaded one country at a time, so there is nothing
+// to keep in the database about them: the code is the whole link between a country and its flag.
+//
+// Returns '' when there is no such file. Not every code in the table has one: cs, for instance,
+// is Serbia and Montenegro, which stopped existing before the set was drawn.
+function country_flag_url($code)
+{
+	$code = strtolower(trim($code));
+	if ($code == '' || !preg_match('/^[a-z]{2}$/', $code))
+	{
+		return '';
+	}
+	if (!file_exists(__DIR__ . '/../' . FLAGS_DIR . $code . '.png'))
+	{
+		return '';
+	}
+	return get_server_url(false) . '/' . FLAGS_DIR . $code . '.png';
+}
+
 function retrieve_country_id($country)
 {
 	global $_profile;

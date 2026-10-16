@@ -74,7 +74,8 @@ class Page extends GeneralPageBase
 		echo '<tr class="darker">';
 		echo '<td width="56">';
 		echo '<button class="icon" onclick="mr.createCountry()" title="' . get_label('Create country') . '"><img src="images/create.png" border="0"></button>';
-		echo '</td><td>'.get_label('Country').'</td>';
+		echo '</td><td width="40">'.get_label('Flag').'</td>';
+		echo '<td>'.get_label('Country').'</td>';
 		echo '<td width="200">'.get_label('National currency').'</td>';
 		echo '<td width="50">'.get_label('Code').'</td></tr>';
 		while ($row = $query->next())
@@ -82,6 +83,12 @@ class Page extends GeneralPageBase
 			list($id, $name, $flags, $code, $currency_name) = $row;
 			echo '<tr><td class="dark">';
 			show_country_buttons($id, $name, $flags);
+			echo '</td><td align="center">';
+			// Small: a flag is read at a glance and the list is long. A code the set has no flag
+			// for - an old one, like cs - gets the blank flag instead.
+			$flag_url = country_flag_url($code);
+			echo '<img src="' . ($flag_url == '' ? 'images/country.png' : $flag_url) .
+				'" width="32" title="' . htmlspecialchars($name) . '" border="0">';
 			echo '</td><td>' . $name . '</td>';
 			echo '</td><td>' . $currency_name . '</td>';
 			echo '</td><td>' . $code . '</td></tr>';

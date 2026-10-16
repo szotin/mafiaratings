@@ -2,7 +2,8 @@
 
 require_once '../../include/session.php';
 require_once '../../include/picture.php';
-require_once '../../include/game.php'; // GAMETIME_END
+require_once '../../include/game.php';    // GAMETIME_END
+require_once '../../include/country.php'; // country_flag_url()
 require_once 'obs.php'; // obs_file() - the same cache-busting the overlays use
 
 // Shared by the screens that between.php shows one after another. Each screen is an ordinary
@@ -291,7 +292,7 @@ function obs_players($user_ids, $event_id, $tournament_id, $club_id)
 
 	$players = array();
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.flags, eu.flags, tu.flags, cu.flags, uc.id, uc.name, uc.flags, nn.name'.
+		'SELECT u.id, nu.name, u.flags, eu.flags, tu.flags, cu.flags, uc.id, uc.name, uc.flags, o.code, nn.name'.
 		' FROM users u'.
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 		' LEFT OUTER JOIN clubs uc ON uc.id = u.club_id'.
@@ -307,8 +308,13 @@ function obs_players($user_ids, $event_id, $tournament_id, $club_id)
 	{
 		$p = new stdClass();
 		list ($p->id, $p->name, $user_flags, $event_flags, $tournament_flags, $club_flags,
-			$p->club_id, $p->club_name, $club_pic_flags, $p->country) = $row;
+			$p->club_id, $p->club_name, $club_pic_flags, $country_code, $p->country) = $row;
 		$p->id = (int)$p->id;
+
+		// The flag of the country stands in the corner of the card instead of its name. A code
+		// the set has no flag for shows nothing at all: the blank flag the site puts in its place
+		// on its own pages would be an empty white box on a card.
+		$p->flag = country_flag_url($country_code);
 
 		$pic->
 			set($p->id, $p->name, (int)$event_flags, 'e' . $event_id)->
@@ -364,11 +370,17 @@ function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NUL
 		}
 	}
 	echo '<div class="card-photo"' . (is_null($player) ? '' : ' style="background-image: url(' . $player->photo . ')"') . '></div>';
+	// The club along the bottom, with the flag of the country in the corner beside it - a flag is
+	// read at a glance and leaves the whole line to the club, which a second line of text did not.
 	echo '<div class="card-club">';
 	if (!is_null($player))
 	{
 		echo '<div class="card-club-name">' . htmlspecialchars($player->club) . '</div>';
-		echo '<div class="card-country">' . htmlspecialchars($player->country) . '</div>';
+		if (isset($player->flag) && $player->flag != '')
+		{
+			echo '<div class="card-flag" style="background-image: url(' . $player->flag . ')" title="' .
+				htmlspecialchars($player->country) . '"></div>';
+		}
 	}
 	echo '</div>';
 	echo '</div>';

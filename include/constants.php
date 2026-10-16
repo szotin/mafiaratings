@@ -181,6 +181,9 @@ define('ALBUM_PICS_DIR', 'pics/album/');
 define('EVENT_PICS_DIR', 'pics/event/');
 define('TOURNAMENT_PICS_DIR', 'pics/tournament/');
 define('SERIES_PICS_DIR', 'pics/series/');
+// The flags of the countries, one file per two letter country code. They are part of the site
+// rather than something anybody uploads, which is why they sit in images and not in pics.
+define('FLAGS_DIR', 'images/flags/');
 define('SOUNDS_DIR', 'sounds/');
 
 define('TNAILS_DIR', 'tnails/');
