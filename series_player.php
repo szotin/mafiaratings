@@ -953,6 +953,9 @@ class Page extends SeriesPageBase
 					case KILL_TYPE_WARNINGS:
 						echo '<tr><td class="dark" width="300">'.get_label('Killed by warnings in round').' ' . $surviving->round . ':</td><td>';
 						break;
+					case KILL_TYPE_TECH_FOULS:
+						echo '<tr><td class="dark" width="300">'.get_label('Killed by technical fouls in round').' ' . $surviving->round . ':</td><td>';
+						break;
 					case KILL_TYPE_GIVE_UP:
 						echo '<tr><td class="dark" width="300">'.get_label('Left the game in round').' ' . $surviving->round . ':</td><td>';
 						break;

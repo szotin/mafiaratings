@@ -2069,6 +2069,8 @@ $labelMenu = array (
 'Neither of these players is in the seating of this round.' => 'Ни один из этих игроков не участвует в рассадке этого раунда.', // api/ops/event.php
 'Flag' => 'Флаг', // countries.php
 'Technical fouls' => 'Технические фолы', // view_game.php
+'Killed by technical fouls' => 'Убитых техническими фолами', // address_stats.php, club_stats.php, event_stats.php, league_stats.php, series_stats.php, stats.php, tournament_stats.php
+'Killed by technical fouls in round' => 'Убит(а) за технические фолы в раунде', // event_player.php, series_player.php, tournament_player.php, user_stats.php
 );
 
 return $labelMenu;

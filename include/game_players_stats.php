@@ -401,8 +401,10 @@ class GamePlayersStats
 					$player->kill_type = KILL_TYPE_GIVE_UP;
 					break;
 				case DEATH_TYPE_WARNINGS:
-				case DEATH_TYPE_TECH_FOULS: // Note that warnings and tech fouls share the same stats counter. They should be split in the future.
 					$player->kill_type = KILL_TYPE_WARNINGS;
+					break;
+				case DEATH_TYPE_TECH_FOULS:
+					$player->kill_type = KILL_TYPE_TECH_FOULS;
 					break;
 				case DEATH_TYPE_KICK_OUT:
 					$player->kill_type = KILL_TYPE_KICK_OUT;

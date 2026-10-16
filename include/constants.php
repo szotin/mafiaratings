@@ -537,6 +537,9 @@ define('KILL_TYPE_WARNINGS', 3);
 define('KILL_TYPE_GIVE_UP', 4);
 define('KILL_TYPE_KICK_OUT', 5);
 define('KILL_TYPE_TEAM_KICK_OUT', 6);
+// Leaving over the second technical foul. Games written down before this went into the warnings
+// counter with the fourth-warning deaths, and are left there: nothing is recounted.
+define('KILL_TYPE_TECH_FOULS', 7);
 
 define('BROADCAST_STATUS_NOT_STARTED', 0);
 define('BROADCAST_STATUS_STARTED', 1);

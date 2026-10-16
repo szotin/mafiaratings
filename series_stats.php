@@ -186,6 +186,9 @@ class Page extends SeriesPageBase
 				case KILL_TYPE_WARNINGS:
 					echo get_label('Killed by warnings');
 					break;
+				case KILL_TYPE_TECH_FOULS:
+					echo get_label('Killed by technical fouls');
+					break;
 				case KILL_TYPE_GIVE_UP:
 					echo get_label('Gave up');
 					break;
