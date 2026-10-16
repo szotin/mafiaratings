@@ -138,8 +138,8 @@ return array
 		
 	'matter' =>
 	'<h3>Description</h3>
-		<p><code>matter(type)</code></p>
-		<p>Returns 0 or 1 depending on if some event happened in the game.</p>
+		<p><code>matter(type, type, ...)</code></p>
+		<p>Returns 0 or 1 depending on if some event happened in the game. Several types mean any one of them is enough.</p>
 	<h3>Parameters</h3>
 		<dl>
 			<dt>type</dt><dd>The code of the happened event. Codes:<ol start="0">
@@ -170,12 +170,13 @@ return array
 				<li>Got the worst move status from the referee (aka auto-bonus)</li>
 				<li>Team kicked out (opposite team wins)</li>
 				<li>Tie</li>
+				<li>The player left the game over two technical fouls</li>
 			</ol></dd>
 		</dl>
 	<h3>Examples</h3>
-		<p><code>matter(8) && matter(2) ? 0.2 : 0</code> 0.2 if the player was killed the first night and their team lost.<br> 
-		<code>matter(8) && !matter(23) && !matter(10) && !matter(11) ? -0.4 : 0</code> -0.4 if the player was killed the first night and left no black players in the legacy.<br> 
-		<code>matter(12) || matter(13) ? -0.5 : 0</code> -0.5 if the player got 4 warnings, or was mod-killed.</p>',
+		<p><code>matter(8) && matter(2) ? 0.2 : 0</code> 0.2 if the player was killed the first night and their team lost.<br>
+		<code>matter(8) && !matter(23) && !matter(10) && !matter(11) ? -0.4 : 0</code> -0.4 if the player was killed the first night and left no black players in the legacy.<br>
+		<code>matter(12, 13, 27) ? -0.5 : 0</code> -0.5 if the player got 4 warnings, or two technical fouls, or was mod-killed.</p>',
 
 	'table' =>
 	'<h3>Description</h3>

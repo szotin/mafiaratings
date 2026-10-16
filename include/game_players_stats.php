@@ -206,9 +206,13 @@ class GamePlayersStats
 				{
 					$player->scoring_flags |= SCORING_FLAG_SURRENDERED;
 				}
-				else if ($death_type == DEATH_TYPE_WARNINGS || $death_type == DEATH_TYPE_TECH_FOULS) // Note that warnings and tech fouls share the same scoring flag. The should be split in the future.
+				else if ($death_type == DEATH_TYPE_WARNINGS)
 				{
 					$player->scoring_flags |= SCORING_FLAG_WARNINGS_4;
+				}
+				else if ($death_type == DEATH_TYPE_TECH_FOULS)
+				{
+					$player->scoring_flags |= SCORING_FLAG_TECH_FOULS;
 				}
 				else if ($death_type == DEATH_TYPE_KICK_OUT)
 				{

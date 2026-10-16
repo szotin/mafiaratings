@@ -175,6 +175,7 @@ class Page extends PageBase
 				<?php echo '"' . SCORING_FLAG_FIRST_LEGACY_2 . '": "' . $for . get_label('guessing [0] mafia (after being killed the first night)', 2) . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_FIRST_LEGACY_1 . '": "' . $for . get_label('guessing [0] mafia (after being killed the first night)', 1) . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_WARNINGS_4 . '": "' . $for . get_label('getting 4 warnigs') . '"'; ?>,
+				<?php echo '"' . SCORING_FLAG_TECH_FOULS . '": "' . $for . get_label('getting 2 technical fouls') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_KICK_OUT . '": "' . $for . get_label('beign kicked out from the game') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_SURRENDERED . '": "' . $for . get_label('surrender (leaving the game by accepting the loss)') . '"'; ?>,
 				<?php echo '"' . SCORING_FLAG_ALL_VOTES_VS_MAF . '": "' . $for . get_label('voting against mafia only (should participate in at least 3 votings)') . '"'; ?>,

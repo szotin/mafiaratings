@@ -2071,6 +2071,7 @@ $labelMenu = array (
 'Technical fouls' => 'Технічні фоли', // view_game.php
 'Killed by technical fouls' => 'Вбитих технічними фолами', // address_stats.php, club_stats.php, event_stats.php, league_stats.php, series_stats.php, stats.php, tournament_stats.php
 'Killed by technical fouls in round' => 'Вбитий(а) за технічні фоли в раунді', // event_player.php, series_player.php, tournament_player.php, user_stats.php
+'getting 2 technical fouls' => '2 технічні фоли', // scoring.php, include/scoring.php
 );
 
 return $labelMenu;

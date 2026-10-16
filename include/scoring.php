@@ -54,7 +54,8 @@ define('SCORING_FLAG_FIRST_LEGACY_1', 0x800000); // 8388608: Matter 23 - Guessed
 define('SCORING_FLAG_WORST_MOVE', 0x1000000); // 16777216: Matter 24 - Worst move
 define('SCORING_FLAG_TEAM_KICK_OUT', 0x2000000); // 33554432: Matter 25 - Team kicked out (opposite team wins)
 define('SCORING_FLAG_TIE', 0x4000000); // 67108864: Matter 26 - Tie
-define('SCORING_FLAG_END', 0x8000000); // 134217728: Just marks the end of flags for loops
+define('SCORING_FLAG_TECH_FOULS', 0x8000000); // 134217728: Matter 27 - Killed by two technical fouls
+define('SCORING_FLAG_END', 0x10000000); // 268435456: Just marks the end of flags for loops
 
 define('SCORING_SORTING_MAIN_POINTS', 'm');
 define('SCORING_SORTING_LEGACY_POINTS', 'g');
@@ -115,18 +116,25 @@ $_scoring_groups = array(SCORING_GROUP_MAIN, SCORING_GROUP_EXTRA, SCORING_GROUP_
 
 class EvFuncMatter extends EvFunction
 {
+	// Any one of them is enough: matter(12, 27) is 1 when the player got four warnings or two
+	// technical fouls, which beats writing the same thing as matter(12) || matter(27). One
+	// argument reads exactly as it always did.
 	public function evaluate($evaluator, $args)
 	{
+		$flags = $evaluator->get_var('matter');
 		if (count($args) <= 0)
 		{
-			$matter = 0;
+			return ($flags & 1) ? 1 : 0; // matter() alone has always asked about matter 0
 		}
-		else
+
+		foreach ($args as $arg)
 		{
-			$matter = round($args[0]->evaluate());
+			if ($flags & (1 << round($arg->evaluate())))
+			{
+				return 1;
+			}
 		}
-		$flag = 1 << $matter;
-		return ($evaluator->get_var('matter') & $flag) ? 1 : 0;
+		return 0;
 	}
 
 	public function name()
@@ -2241,6 +2249,9 @@ function get_scoring_matter_label($policy, $include_roles = false)
 				break;
 			case SCORING_FLAG_WARNINGS_4:
 				$l = get_label('getting 4 warnigs');
+				break;
+			case SCORING_FLAG_TECH_FOULS:
+				$l = get_label('getting 2 technical fouls');
 				break;
 			case SCORING_FLAG_KICK_OUT:
 				$l = get_label('beign kicked out from the game');
