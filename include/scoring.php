@@ -1323,6 +1323,92 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 	return $scores;
 }
                           
+// What a player is called is not kept in the cache, only which player they are.
+//
+// A player can be written down in more than one alphabet - the names table holds a row per
+// language, and the same user is Фантомас in Russian and Fantomas everywhere else - so a name
+// stored in the cache would be shown to everybody in whichever language happened to fill it
+// in. These two keep it out: the names are dropped on the way in and read back on the way
+// out, in the language of the page that asked for the table. It costs one query by id, and it
+// buys something besides the language: a player who changes their name is called by the new
+// one at once, rather than whenever somebody next clears the cache.
+//
+// A tournament played in teams has teams for rows, and a team's name is its own - it has
+// nothing to do with the users table and must be left alone. A team is known by the players
+// it carries rather than by anything about its own row.
+function _scores_player_rows($scores, &$rows)
+{
+	foreach ($scores as $row)
+	{
+		if (!is_object($row))
+		{
+			continue;
+		}
+		if (isset($row->players) && is_array($row->players))
+		{
+			_scores_player_rows($row->players, $rows);
+		}
+		else if (isset($row->id))
+		{
+			$rows[] = $row;
+		}
+	}
+}
+
+function scores_forget_names($scores)
+{
+	$rows = array();
+	_scores_player_rows($scores, $rows);
+	foreach ($rows as $row)
+	{
+		unset($row->name);
+	}
+}
+
+function scores_read_names($scores)
+{
+	global $_lang;
+
+	$rows = array();
+	_scores_player_rows($scores, $rows);
+	if (empty($rows))
+	{
+		return;
+	}
+
+	$ids = array();
+	foreach ($rows as $row)
+	{
+		$ids[(int)$row->id] = true;
+	}
+
+	// Same reckoning as the queries that build the scores: whichever name of this player is
+	// written in the language being asked for.
+	$lang = isset($_lang) ? (int)$_lang : LANG_DEFAULT;
+	$names = array();
+	$query = new DbQuery(
+		'SELECT u.id, n.name FROM users u'.
+		' JOIN names n ON n.id = u.name_id AND (n.langs & '.$lang.') <> 0'.
+		' WHERE u.id IN ('.implode(',', array_keys($ids)).')');
+	while ($row = $query->next())
+	{
+		$names[(int)$row[0]] = $row[1];
+	}
+
+	foreach ($rows as $row)
+	{
+		$id = (int)$row->id;
+		if (isset($names[$id]))
+		{
+			$row->name = $names[$id];
+		}
+		else if (!isset($row->name))
+		{
+			$row->name = ''; // a player the users table no longer has
+		}
+	}
+}
+
 function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num)
 {
 	if (is_null($players_list) && isset($scoring->id) && isset($scoring->version) && (!isset($options->custom) || !$options->custom))
@@ -1337,12 +1423,16 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		{
 			list ($scores) = $row;
 			Db::commit();
-			return json_decode($scores);
+			$scores = json_decode($scores);
+			scores_read_names($scores);
+			return $scores;
 		}
 		$scores = _event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num);
+		scores_forget_names($scores);
 		Db::exec(get_label('score'), 'INSERT INTO event_scores_cache (event_id, flags, scoring_id, scoring_version, scores) VALUES (?, ?, ?, ?, ?)',
 			$event_id, $lod_flags, $scoring->id, $scoring->version, json_encode($scores)); 
 		Db::commit();
+		scores_read_names($scores);
 		return $scores;
 	}
 	return _event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num);
@@ -2055,12 +2145,16 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		{
 			list ($scores) = $row;
 			Db::commit();
-			return json_decode($scores);
+			$scores = json_decode($scores);
+			scores_read_names($scores);
+			return $scores;
 		}
 		$scores = _tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options);
+		scores_forget_names($scores);
 		Db::exec(get_label('score'), 'INSERT INTO tournament_scores_cache (tournament_id, flags, scoring_id, scoring_version, normalizer_id, normalizer_version, scores) VALUES (?, ?, ?, ?, ?, ?, ?)',
 			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer_id, $normalizer_version, json_encode($scores));
 		Db::commit();
+		scores_read_names($scores);
 		return $scores;
 	}
 	return _tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options);
