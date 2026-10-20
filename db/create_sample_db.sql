@@ -325,7 +325,9 @@ CREATE TABLE `games` (
   `tournament_id` int(11) DEFAULT NULL,
   `json` text NOT NULL,
   `feature_flags` int(11) NOT NULL DEFAULT '0',
-  `flags` int(11) NOT NULL DEFAULT '0'
+  `flags` int(11) NOT NULL DEFAULT '0',
+  `maf_alive` tinyint(2) DEFAULT NULL,
+  `civ_alive` tinyint(2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `game_comments`;

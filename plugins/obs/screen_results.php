@@ -39,6 +39,12 @@ function obs_results_game($log, $event_id, $event_name, $game_num)
 
 	$g->log = isset($log->players) && is_array($log->players) ? $log->players : array();
 	$g->seats = array();
+	// Who was still at the table at the end, and whether the game was given away by a team kick
+	// out. The same reckoning the game itself is saved by, see Game::update() - a player with a
+	// death of any kind has left the table, and a team kick out ends the game on the spot.
+	$g->maf_alive = 0;
+	$g->civ_alive = 0;
+	$g->team_kick_out = false;
 	foreach ($g->log as $i => $p)
 	{
 		$seat = new stdClass();
@@ -66,6 +72,23 @@ function obs_results_game($log, $event_id, $event_name, $game_num)
 		$bonus = isset($p->bonus) ? (is_array($p->bonus) ? $p->bonus : array($p->bonus)) : array();
 		$seat->best = in_array('bestPlayer', $bonus);
 		$g->seats[] = $seat;
+
+		if (isset($p->death))
+		{
+			$death_type = is_string($p->death) ? $p->death : (isset($p->death->type) ? $p->death->type : '');
+			if ($death_type == DEATH_TYPE_TEAM_KICK_OUT)
+			{
+				$g->team_kick_out = true;
+			}
+		}
+		else if ($seat->role == ROLE_MAFIA || $seat->role == ROLE_DON)
+		{
+			++$g->maf_alive;
+		}
+		else
+		{
+			++$g->civ_alive;
+		}
 	}
 	return $g;
 }
@@ -122,27 +145,43 @@ foreach ($g->seats as $seat)
 }
 $players = obs_players($ids, $g->event_id, $c->tournament_id, $c->club_id);
 
+// Said in the colour of the team that won it, so that the result is read before the words are.
+//
+// A win for the mafia is said with the score it came at - the 1 on 1, 2 on 2 or 3 on 3 everyone
+// at the table will be talking about anyway. A game given away by a team kick out is named for
+// that instead, whichever side it handed the win to: it stopped mid-play, so the mafia never
+// drew level and the numbers left on the table would say a score that was never played.
 switch ($g->result)
 {
 case GAME_RESULT_MAFIA:
-	$winner = get_label('Mafia win');
+	$winner = ($g->maf_alive > 0 && !$g->team_kick_out)
+		? get_label('Mafia win [0] on [1]', $g->maf_alive, $g->civ_alive)
+		: get_label('Mafia win');
+	$winner_class = ' won-black';
 	break;
 case GAME_RESULT_TOWN:
 	$winner = get_label('Town win');
+	$winner_class = ' won-red';
 	break;
 default:
 	$winner = get_label('Tie');
+	$winner_class = '';
 	break;
+}
+if ($g->team_kick_out)
+{
+	$winner .= ' &middot; ' . get_label('Mod team kills');
 }
 
 $moderator = isset($players[$g->moderator_id]) ? $players[$g->moderator_id]->name : '';
 obs_screen_head(
 	htmlspecialchars($c->tournament_name),
-	'<div class="head-title">' . $winner . '</div>' .
+	'<div class="head-title' . $winner_class . '">' . $winner . '</div>' .
 		'<div class="head-sub">' . htmlspecialchars($g->event_name) . ' &middot; ' . get_label('Table [0], Game [1]', $c->table_num, $g->game_num) . '</div>',
 	$moderator == '' ? '' : get_label('Referee') . ': ' . htmlspecialchars($moderator));
 
-// The black team on its own row above the town, the way the result of a game is read.
+// A team to a row, the winners on top. The black team reads above the town by default, which is
+// how the result of a game is written out, and a game the town won turns the two round.
 $black = array();
 $red = array();
 foreach ($g->seats as $p)
@@ -293,8 +332,16 @@ asort($don);
 $info = !empty($legacy) || !empty($sheriff) || !empty($don);
 
 echo '<div class="screen-body results' . ($info ? ' with-info' : '') . '">';
-obs_results_row($black, $players, $g->log, 'black-row');
-obs_results_row($red, $players, $g->log, 'red-row');
+if ($g->result == GAME_RESULT_TOWN)
+{
+	obs_results_row($red, $players, $g->log, 'red-row');
+	obs_results_row($black, $players, $g->log, 'black-row');
+}
+else
+{
+	obs_results_row($black, $players, $g->log, 'black-row');
+	obs_results_row($red, $players, $g->log, 'red-row');
+}
 if ($info)
 {
 	echo '<div class="info">';

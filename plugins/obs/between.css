@@ -23,10 +23,23 @@ body.between {
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
-	color: #fff;
+	color: var(--ink);
 	font-family: 'Roboto Slab', serif;
 	line-height: 1.4;
 	background: #1e2227 url(images/black_player_bg.jpg) center / cover;
+
+	/* What the page is made of, which the background param picks - see between.php. These are
+	   the dark ones, and they are also what the see-through page uses, since it stands over
+	   whatever the scene behind the browser source is showing and has to carry its own
+	   contrast. The cards are not in here: they have photographs of their own under them and
+	   look the same whatever the page does. */
+	--ink: #fff;                      /* lettering standing on the page itself */
+	--panel: rgba(0, 0, 0, 0.55);     /* something laid on the page - a pane, a table row */
+	--panel-line: rgba(255, 255, 255, 0.08);
+	--row: rgba(255, 255, 255, 0.07); /* a line inside a pane, lifted off it */
+	--chip-line: rgba(255, 255, 255, 0.3);
+	--slice-line: rgba(255, 255, 255, 0.25); /* between two slices of the pie */
+	--slice-opacity: 0.75;            /* how much of the ground the pie lets through */
 
 	--pad: 1.75rem;     /* what the screen keeps clear round its edge */
 	--gap: 1.25rem;     /* between two cards */
@@ -41,6 +54,79 @@ body.between {
 	/* The shape of a card, kept whatever the screen. */
 	--card-w: 3;
 	--card-h: 4;
+}
+
+/* Light. The lettering turns over with the ground, and so does the way a pane is told from
+   the page it lies on: on the dark wall a pane is a darker patch of it, and here it is one
+   too - a wash of ink over a pale ground rather than a pane of white, which would have the
+   table and the pie standing out of the page instead of being set into it. The pie is given
+   back most of its opacity: colours that let a dark ground through only deepen, but over a
+   light one they wash out. */
+body.between.bg-light {
+	--ink: #15181c;
+	--panel: rgba(23, 29, 40, 0.26);
+	--panel-line: rgba(0, 0, 0, 0.1);
+	--row: rgba(23, 29, 40, 0.07);
+	--chip-line: rgba(0, 0, 0, 0.22);
+	--slice-line: rgba(255, 255, 255, 0.6);
+	--slice-opacity: 0.92;
+	background-color: #e7e9ee;
+	background-image: radial-gradient(circle at 50% 30%, #f5f6f9 0%, #d8dbe2 100%);
+}
+
+/* Swells running across the page, so that what is laid over them is seen to be laid over
+   something: the pane and the pie both let a little of the ground through, and against a flat
+   colour there is nothing to see through them.
+
+   Sheets rather than lines, because what is wanted is depth. Each one is a wavy edge with
+   everything below it filled, and the fill is bright where the edge is, falls away as the
+   surface turns from the light, and darkens again at the far side where the sheet runs under
+   the next one. Above its edge it drops a soft shadow onto the sheet behind. Nothing is
+   outlined anywhere: all of it is light and the lack of light, which is what makes it read as
+   something lying over something else rather than as a drawing of a wave.
+
+   The four in the tile are of four different lengths and depths and lie at uneven distances
+   apart, so that what repeats is a stretch of water rather than a wave. Every length divides
+   the width of the tile, which is what lets it join itself; each sheet is drawn well past
+   both edges so its shadow has something to fall on there and no seam shows; and the top of
+   the tile and the bottom both come back to nothing, which joins it the other way. The tile
+   is drawn here rather than kept as a file: it is a kilobyte and one less thing to deploy.
+
+   It gets a layer of its own because a page cannot turn its own background: this one is
+   bigger than the screen, laid on the slant, and sent behind the content. */
+body.between.bg-light::before {
+	content: '';
+	position: fixed;
+	left: -30%;
+	top: -30%;
+	width: 160%;
+	height: 160%;
+	z-index: -1;
+	transform: rotate(18deg);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cdefs%3E%3ClinearGradient id='a' gradientUnits='userSpaceOnUse' x1='0' y1='60' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.95'/%3E%3Cstop offset='.4' stop-color='%23ffffff' stop-opacity='.12'/%3E%3Cstop offset='1' stop-color='%23c3cad8' stop-opacity='.35'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' gradientUnits='userSpaceOnUse' x1='0' y1='160' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.95'/%3E%3Cstop offset='.4' stop-color='%23ffffff' stop-opacity='.12'/%3E%3Cstop offset='1' stop-color='%23c3cad8' stop-opacity='.35'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' gradientUnits='userSpaceOnUse' x1='0' y1='250' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.95'/%3E%3Cstop offset='.4' stop-color='%23ffffff' stop-opacity='.12'/%3E%3Cstop offset='1' stop-color='%23c3cad8' stop-opacity='.3'/%3E%3C/linearGradient%3E%3ClinearGradient id='d' gradientUnits='userSpaceOnUse' x1='0' y1='330' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.9'/%3E%3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dx='0' dy='-6' stdDeviation='10' flood-color='%238693a8' flood-opacity='.38'/%3E%3C/filter%3E%3C/defs%3E%3Cpath filter='url(%23s)' fill='url(%23a)' d='M-300 60 q150 -52 300 0 t300 0 t300 0 t300 0 L900 400 L-300 400 Z'/%3E%3Cpath filter='url(%23s)' fill='url(%23b)' d='M-300 160 q75 -40 150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 L900 400 L-300 400 Z'/%3E%3Cpath filter='url(%23s)' fill='url(%23c)' d='M-300 250 q50 -28 100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 L900 400 L-300 400 Z'/%3E%3Cpath filter='url(%23s)' fill='url(%23d)' d='M-300 330 q75 -32 150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 L900 400 L-300 400 Z'/%3E%3C/svg%3E");
+	background-size: 135rem 90rem;
+	background-repeat: repeat;
+}
+
+/* See-through, for laying the screens straight over the picture from the table. Nothing is
+   painted behind them, swells and all; the panes and the cards bring their own ground. It
+   goes with either set of colours, so it comes after both of them and only takes the ground
+   away. */
+body.between.bg-clear {
+	background: transparent;
+}
+
+body.between.bg-clear::before {
+	display: none;
+}
+
+/* With a ground behind it, the light pane is a wash of ink that sets the table into the page.
+   With nothing behind it there is no page to be set into, and dark lettering has to be read
+   over whatever the scene happens to be showing - so the pane turns back into a pane, pale
+   and solid enough to carry it. */
+body.between.bg-light.bg-clear {
+	--panel: rgba(255, 255, 255, 0.82);
+	--row: rgba(23, 29, 40, 0.07);
 }
 
 .screen {
@@ -86,6 +172,22 @@ body.between {
 	letter-spacing: 0.1875rem;
 	font-size: 2.6em;
 	line-height: 1.1;
+}
+
+/* Who won, in the colour of their team. The screen stands on a dark ground, so the red is a
+   bright one and carries a shadow to lift it off the photograph behind it. Black on near-black
+   would not be read at all, so the black team's is as dark as it can be said and still be a
+   word: a light rim round the letters and a glow behind them, which is what the eye picks up
+   rather than the fill. */
+.head-title.won-red {
+	color: #f03a3e;
+	text-shadow: 0 0 1.2rem rgba(0, 0, 0, 0.9), 0 0.15rem 0.4rem rgba(0, 0, 0, 0.8);
+}
+
+.head-title.won-black {
+	color: #0b0d10;
+	text-shadow: 0 0 0.45rem rgba(255, 255, 255, 0.95), 0 0 1.1rem rgba(255, 255, 255, 0.7),
+		0 0 2.4rem rgba(255, 255, 255, 0.4);
 }
 
 .head-sub {
@@ -143,6 +245,14 @@ body.between {
    shorter row, and letting it reach the cap would make it the biggest thing on the screen. */
 .results .black-row .card {
 	max-width: 16.25rem;
+}
+
+/* A card brings its own ground with it - a photograph of a red, black or green wall - so its
+   lettering is white whatever the page around it is doing. The same goes for the strip of
+   checks under the results: every number on it sits on a chip of its own. */
+.card,
+.info {
+	color: #fff;
 }
 
 .card {
@@ -452,7 +562,7 @@ body.between {
 	gap: 1.125rem;
 	padding: 0.375rem 1.25rem;
 	border-radius: 0.75rem;
-	background-color: rgba(0, 0, 0, 0.5);
+	background-color: var(--panel);
 	font-size: 1.9em;
 }
 
@@ -471,7 +581,7 @@ body.between {
 	border-radius: 0.5rem;
 	background-size: cover;
 	background-position: center;
-	background-color: rgba(255, 255, 255, 0.08);
+	background-color: var(--row);
 }
 
 .standings-name {
@@ -487,4 +597,212 @@ body.between {
 	font-weight: 700;
 	min-width: 4.375rem;
 	text-align: right;
+}
+
+/*--------------------------------------------------------------------------------------
+    how the tournament has been going: the pie, and the legend beside it
+  --------------------------------------------------------------------------------------*/
+/* The pie and its legend stand side by side and share the room equally. The pie is square and
+   takes whichever of its two sides is the shorter, so it keeps its shape on any screen. */
+/* The pie and its legend take the room, and the standing of the two sides is a strip under
+   them that takes only what it needs.
+
+   The whole lot sits on a dark pane. The screen stands on a photograph of a concrete wall, and
+   the pale end of the greys and the lettering of the legend were both reading against whatever
+   happened to be behind them; the pane gives them one even ground, and takes the glare off the
+   wall without hiding it. */
+.stats {
+	gap: 1.5rem;
+	padding: 1.75rem 2.25rem;
+	border-radius: 1.5rem;
+	background-color: var(--panel);
+	border: 0.0625rem solid var(--panel-line);
+	/* Drawn round the pie and the legend rather than round the screen: the pane is only as wide
+	   as what stands in it, and the wall shows either side of it. */
+	align-self: center;
+	max-width: 100%;
+
+	--pane-pad: 1.75rem;  /* what the pane keeps clear inside its own edge, top and bottom */
+	--totals-h: 5.2rem;   /* the strip of standings under the pie, with a little to spare */
+	/* How big the pie is drawn. A definite size, not a share of the room: the pane is measured
+	   from the pie, so asking the pie for a share of the pane would be asking it to measure
+	   itself. What is left of the body once the pane's own padding, the strip and the gap
+	   above it are taken off. */
+	--pie-h: calc(var(--body-h) - 2 * var(--pane-pad) - var(--totals-h) - 1.5rem);
+}
+
+.stats-main {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	gap: 4rem;
+	min-height: 0;
+}
+
+.stats-pie {
+	flex: 0 0 auto;
+	width: var(--pie-h);
+	height: var(--pie-h);
+}
+
+/* The slices let the wall through the same way the pane does, so the pie sits in the picture
+   rather than on top of it. The lettering on them is left solid - it has to be read. */
+.stats-pie path,
+.stats-pie circle {
+	fill-opacity: var(--slice-opacity);
+}
+
+.stats-pie svg {
+	width: 100%;
+	height: 100%;
+	/* The slices are told apart by the line between them rather than by their colours alone,
+	   which matters where two greys meet. */
+	stroke: var(--slice-line);
+	stroke-width: 0.5;
+}
+
+/* Painted on the slice, so it is given a dark rim: the share on the pale grey of a 3 on 3 has
+   to read as well as the one on the red. The rim goes under the letters rather than over them,
+   which is what paint-order is for. */
+.stats-share {
+	fill: #fff;
+	font-family: 'Roboto Slab', serif;
+	font-weight: 700;
+	font-size: 6.5px;
+	text-anchor: middle;
+	dominant-baseline: central;
+	stroke: rgba(0, 0, 0, 0.6);
+	stroke-width: 1.1;
+	paint-order: stroke fill;
+}
+
+.stats-legend {
+	display: flex;
+	flex: 0 1 auto;
+	flex-direction: column;
+	justify-content: center;
+	gap: 1.1rem;
+	min-width: 0;
+}
+
+/* Lifted off the pane rather than sunk into it - a second layer of black on black would only
+   go muddy. */
+.stats-row {
+	display: flex;
+	align-items: center;
+	gap: 1.25rem;
+	font-size: 1.7em;
+	background-color: var(--row);
+	border-radius: 0.5rem;
+	padding: 0.5rem 1.25rem;
+}
+
+.stats-chip {
+	flex: 0 0 auto;
+	width: 2.2rem;
+	height: 2.2rem;
+	border-radius: 0.35rem;
+	border: 0.1rem solid var(--chip-line);
+}
+
+.stats-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.stats-count {
+	flex: 0 0 auto;
+	font-weight: 700;
+	min-width: 3.5rem;
+	text-align: right;
+}
+
+.stats-share-num {
+	flex: 0 0 auto;
+	min-width: 5rem;
+	text-align: right;
+	opacity: 0.7;
+}
+
+/* Who has been winning, in two numbers - the thing the slices add up to but none of them says.
+   Bigger than the legend, because at ten feet from the screen this is the line people read. */
+.stats-totals {
+	display: flex;
+	flex: 0 0 auto;
+	justify-content: center;
+	align-items: baseline;
+	gap: 4.5rem;
+}
+
+.stats-total {
+	display: flex;
+	align-items: baseline;
+	gap: 1rem;
+}
+
+.stats-total-name {
+	font-size: 2.1em;
+	opacity: 0.8;
+}
+
+.stats-total-share {
+	font-family: 'Gagalin', sans-serif;
+	font-size: 3.2em;
+	letter-spacing: 0.0625rem;
+	text-shadow: 0 0 0.9rem rgba(0, 0, 0, 0.85);
+}
+
+/*--------------------------------------------------------------------------------------
+    what the light page does differently
+  --------------------------------------------------------------------------------------*/
+/* Everything above is written in the tokens, so this is only the handful of places where a
+   colour is doing a job rather than being one. All of them are shadows: on a dark wall a word
+   is lifted off the ground by darkening round it or by a halo of light, and neither of those
+   says anything on a pale one. */
+body.between.bg-light .head-title.won-red {
+	color: #c3272c;
+	text-shadow: none;
+}
+
+body.between.bg-light .head-title.won-black {
+	color: #15181c;
+	text-shadow: none;
+}
+
+body.between.bg-light .stats-total-share {
+	text-shadow: none;
+}
+
+/*--------------------------------------------------------------------------------------
+    the colours of the standings line under the pie
+  --------------------------------------------------------------------------------------*/
+/* Named by side rather than written into the page, because these are words and have to answer
+   to what they are written on: the grey that reads as the black team against a dark wall is
+   gone on a pale one, and the gold that carries there is too light here. */
+.stats-total-share.town { color: #e03a3e; }
+.stats-total-share.mafia { color: #b4bdc6; }
+.stats-total-share.tie { color: #c9a227; }
+
+body.between.bg-light .stats-total-share.town { color: #c3272c; }
+body.between.bg-light .stats-total-share.mafia { color: #3a434d; }
+body.between.bg-light .stats-total-share.tie { color: #96780f; }
+
+/* The see-through page has no say in what ends up behind it, and the heading is the one piece
+   of lettering with nothing of its own underneath it. A shadow carries it over a bright scene
+   as well as a dark one; the cards and the panes look after their own. */
+body.between.bg-clear .screen-head,
+body.between.bg-clear .standings-note {
+	text-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.9), 0 0 1.4rem rgba(0, 0, 0, 0.75);
+}
+
+/* The light one writes its heading in dark letters, and darkening round a dark letter does
+   nothing for it. A halo of light is what carries it over a dark scene. */
+body.between.bg-light.bg-clear .screen-head,
+body.between.bg-light.bg-clear .standings-note {
+	text-shadow: 0 0 0.5rem rgba(255, 255, 255, 0.95), 0 0 1.4rem rgba(255, 255, 255, 0.8);
 }

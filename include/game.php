@@ -4167,14 +4167,54 @@ class Game
 		
 		$table_num = isset($data->tableNum) ? $data->tableNum : NULL;
 		$game_num = isset($data->gameNum) ? $data->gameNum : NULL;
-		
+
+		// Who was still at the table when it ended, which is how a game is talked about
+		// afterwards: the town takes the last mafioso out, the mafia draws level at 1 on 1, 2 on
+		// 2 or 3 on 3. A player with a death of any kind has left the table, whether they were
+		// shot, voted out or sent away by the referee.
+		//
+		// A team kick out is noted on the way past. One player is sent away and the other team
+		// wins there and then, so the game was decided off the table and the numbers above say
+		// nothing about how close it was - which is why it is counted as its own kind of result
+		// rather than as an ordinary win.
+		$maf_alive = 0;
+		$civ_alive = 0;
+		$team_kick_out = false;
+		$game_players = (isset($data->players) && is_array($data->players)) ? $data->players : array();
+		foreach ($game_players as $game_player)
+		{
+			if (!is_object($game_player))
+			{
+				continue;
+			}
+			if (isset($game_player->death))
+			{
+				$death = $game_player->death;
+				$death_type = is_string($death) ? $death : (isset($death->type) ? $death->type : '');
+				if ($death_type == DEATH_TYPE_TEAM_KICK_OUT)
+				{
+					$team_kick_out = true;
+				}
+				continue;
+			}
+			if (isset($game_player->role) && ($game_player->role == 'maf' || $game_player->role == 'don'))
+			{
+				++$maf_alive;
+			}
+			else
+			{
+				++$civ_alive;
+			}
+		}
+
 		Db::exec(get_label('game'),
 			'UPDATE games SET json = ?, feature_flags = ?, club_id = ?, event_id = ?, tournament_id = ?, moderator_id = ?, ' .
 				'language = ?, start_time = ?, end_time = ?, result = ?, ' .
-				'rules = ?, flags = ?, table_num = ?, game_num = ? WHERE id = ?',
+				'rules = ?, flags = ?, table_num = ?, game_num = ?, maf_alive = ?, civ_alive = ? WHERE id = ?',
 			$json, $this->flags, $data->clubId, $data->eventId, $tournament_id, $data->moderator->id,
 			$language, $data->startTime, $data->endTime, $game_result,
-			$data->rules, $is_data_rating ? GAME_FLAG_RATING : 0, $table_num, $game_num, $data->id);
+			$data->rules, ($is_data_rating ? GAME_FLAG_RATING : 0) | ($team_kick_out ? GAME_FLAG_TEAM_KICK_OUT : 0),
+			$table_num, $game_num, $maf_alive, $civ_alive, $data->id);
 		
 		if (($flags & GAME_FLAG_CANCELED) == 0)
 		{

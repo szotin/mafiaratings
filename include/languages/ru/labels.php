@@ -2072,6 +2072,11 @@ $labelMenu = array (
 'Killed by technical fouls' => 'Убитых техническими фолами', // address_stats.php, club_stats.php, event_stats.php, league_stats.php, series_stats.php, stats.php, tournament_stats.php
 'Killed by technical fouls in round' => 'Убит(а) за технические фолы в раунде', // event_player.php, series_player.php, tournament_player.php, user_stats.php
 'getting 2 technical fouls' => '2 технических фола', // scoring.php, include/scoring.php
+'Mafia [0] on [1]' => 'Мафия [0] в [1]', // plugins/obs/screen_stats.php
+'Mafia win [0] on [1]' => 'Победа мафии [0] в [1]', // plugins/obs/screen_results.php
+'Mod team kill, town win' => 'ППК — победа города', // plugins/obs/screen_stats.php
+'Mod team kill, mafia win' => 'ППК — победа мафии', // plugins/obs/screen_stats.php
+'Town' => 'Город', // plugins/obs/screen_stats.php
 );
 
 return $labelMenu;

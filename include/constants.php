@@ -239,9 +239,11 @@ define('DEFAULT_COLUMN_COUNT', 5);
 //  1  - 0x0001 -      1 - rating game when set
 //  2  - 0x0002 -      2 - canceled
 //  3  - 0x0004 -      4 - exported from MWT site
+//  4  - 0x0008 -      8 - won by a team kick out (ППК) rather than at the table
 define('GAME_FLAG_RATING', 0x1);
 define('GAME_FLAG_CANCELED', 0x2);
 define('GAME_FLAG_FIIM', 0x4);
+define('GAME_FLAG_TEAM_KICK_OUT', 0x8);
 
 // event flags
 //  1  - 0x0001 -      1 - event should not be shown in the event list before the end of the event
