@@ -902,6 +902,26 @@ CREATE TABLE `tournament_scores_cache` (
   `scores` mediumtext NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `event_streams`;
+CREATE TABLE `event_streams` (
+  `event_id` int(11) NOT NULL,
+  `table_num` int(11) NOT NULL,
+  `lang` int(11) NOT NULL DEFAULT '0',
+  `delay` int(11) NOT NULL DEFAULT '10',
+  `screens` varchar(128) NOT NULL DEFAULT '',
+  `flags` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `tournament_streams`;
+CREATE TABLE `tournament_streams` (
+  `tournament_id` int(11) NOT NULL,
+  `table_num` int(11) NOT NULL,
+  `lang` int(11) NOT NULL DEFAULT '0',
+  `delay` int(11) NOT NULL DEFAULT '10',
+  `screens` varchar(128) NOT NULL DEFAULT '',
+  `flags` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 DROP TABLE IF EXISTS `tournament_teams`;
 CREATE TABLE `tournament_teams` (
   `id` int(11) NOT NULL,

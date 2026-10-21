@@ -22,22 +22,33 @@ if (is_null($c))
 $rows = isset($_REQUEST['rows']) ? max((int)$_REQUEST['rows'], 1) : 10;
 $columns = isset($_REQUEST['columns']) ? max((int)$_REQUEST['columns'], 1) : 2;
 
-list ($scoring, $normalizer) = Db::record(get_label('tournament'),
-	'SELECT s.scoring, n.normalizer FROM tournaments t'.
-	' JOIN scoring_versions s ON s.scoring_id = t.scoring_id AND s.version = t.scoring_version'.
-	' LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version'.
-	' WHERE t.id = ?', $c->tournament_id);
-
-$scoring = json_decode($scoring);
+// An event of its own is added up on its own, by the scoring it is played with. A round of a
+// tournament is not: what is worth putting on the screen there is the tournament table, which
+// is what the table beside it is playing for.
+list ($scoring_json) = Db::record(get_label('score'),
+	'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $c->scoring_id, $c->scoring_version);
+$scoring = json_decode($scoring_json);
 $scoring->id = (int)$c->scoring_id;           // both are wanted for the caching inside scoring.php
 $scoring->version = (int)$c->scoring_version;
 
-$normalizer = json_decode(is_null($normalizer) ? '{}' : $normalizer);
-$normalizer->id = (int)$c->normalizer_id;
-$normalizer->version = (int)$c->normalizer_version;
+if ($c->is_tournament)
+{
+	list ($normalizer) = Db::record(get_label('tournament'),
+		'SELECT n.normalizer FROM tournaments t'.
+		' LEFT OUTER JOIN normalizer_versions n ON n.normalizer_id = t.normalizer_id AND n.version = t.normalizer_version'.
+		' WHERE t.id = ?', $c->tournament_id);
+	$normalizer = json_decode(is_null($normalizer) ? '{}' : $normalizer);
+	$normalizer->id = (int)$c->normalizer_id;
+	$normalizer->version = (int)$c->normalizer_version;
 
-$players = tournament_scores($c->tournament_id, $c->tournament_flags, NULL, SCORING_LOD_PER_GROUP,
-	$scoring, $normalizer, json_decode($c->scoring_options));
+	$players = tournament_scores($c->tournament_id, $c->tournament_flags, NULL, SCORING_LOD_PER_GROUP,
+		$scoring, $normalizer, json_decode($c->scoring_options));
+}
+else
+{
+	$players = event_scores($c->event_id, NULL, SCORING_LOD_PER_GROUP,
+		$scoring, json_decode($c->scoring_options), 0, 0);
+}
 if (empty($players))
 {
 	return; // hidden, or nothing played yet
@@ -57,6 +68,10 @@ foreach ($players as $player)
 // and the screen does not come up at all.
 function obs_standings_note($c)
 {
+	if (!$c->is_tournament)
+	{
+		return ''; // an event of its own holds nothing back: there is one table and it is all here
+	}
 	if ($c->tournament_flags & TOURNAMENT_FLAG_FINISHED)
 	{
 		return ''; // it is all out in the open once the tournament is over

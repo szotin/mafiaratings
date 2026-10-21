@@ -1,0 +1,339 @@
+<?php
+
+require_once 'include/general_page_base.php';
+require_once 'include/tournament.php';
+require_once 'include/event.php';
+require_once 'include/stream.php';
+
+// How the sources for a stream are set up, a tab per table: the addresses to point OBS at, and
+// everything the between-games screens do. The source is pointed at a table and nothing else,
+// so what is set here reaches the screens by itself - they ask the site what to do every few
+// seconds. Nobody has to retype an address in OBS, or even be at the machine it runs on.
+//
+// The first tab is every table at once. Only the setting that is touched there is sent, and it
+// goes to every table; whatever else each table was set up with stays as it was.
+//
+// The page hangs under a tournament or under an event, and should wear whatever it hangs
+// under. The body is the same either way, so the class it extends is the only thing that
+// differs - the same as game_obs.php does. The bases want the thing's id in "id", so it is
+// handed over here and the links go on saying which of the two they mean.
+if (isset($_REQUEST['event_id']) && (int)$_REQUEST['event_id'] > 0)
+{
+	define('STREAMS_UNDER_EVENT', true);
+	$_REQUEST['id'] = (int)$_REQUEST['event_id'];
+	class StreamsPageBase extends EventPageBase {}
+}
+else
+{
+	define('STREAMS_UNDER_EVENT', false);
+	if (isset($_REQUEST['tournament_id']))
+	{
+		$_REQUEST['id'] = (int)$_REQUEST['tournament_id'];
+	}
+	class StreamsPageBase extends TournamentPageBase {}
+}
+
+define('VIEW_ALL_TABLES', 0);
+
+class Page extends StreamsPageBase
+{
+	private $owner;  // the tournament or the event the tables belong to
+	private $view;   // which tab is open: a table, or every table at once
+	private $tables; // how many tables are played at, as far as anything says so
+	private $spare;  // whether a tab is kept past them for a table nobody has counted yet
+
+	protected function prepare()
+	{
+		parent::prepare();
+
+		// A round of a tournament is set up through its tournament: the table keeps its look
+		// from round to round, so there is one set of settings rather than one per round.
+		$this->owner = STREAMS_UNDER_EVENT ? stream_owner(0, $this->id) : stream_tournament($this->id);
+		$this->tables = stream_table_count($this->owner);
+
+		// A seating says how many tables there are, so where there is one the tabs are the
+		// tables and that is the end of it. Where there is none - nothing seated yet, or an
+		// event that never seats anything - there is no telling, and a spare tab is kept at
+		// the end so that a table can be set up before anybody has played at it.
+		$this->spare = (stream_seated_tables($this->owner) <= 0);
+		$last = $this->tables + ($this->spare ? 1 : 0);
+
+		$this->view = VIEW_ALL_TABLES;
+		if (isset($_REQUEST['view']))
+		{
+			$this->view = (int)$_REQUEST['view'];
+			if ($this->view < VIEW_ALL_TABLES || $this->view > $last)
+			{
+				$this->view = VIEW_ALL_TABLES;
+			}
+		}
+	}
+
+	// What the form shows for one table: one value per control rather than the flags word the
+	// settings are stored in, since the controls are told apart on the first tab one by one.
+	//
+	// The language is the one the screens actually come up in, not whether it was named at the
+	// table or taken from the tournament - two tables speaking the same language agree,
+	// however each of them came by it.
+	private function form_settings($settings)
+	{
+		$form = new stdClass();
+		$form->lang = $settings->lang_resolved;
+		$form->delay = $settings->delay;
+		$form->screens = $settings->screens;
+		$form->dark = ($settings->flags & STREAM_FLAG_DARK) ? 1 : 0;
+		$form->transparent = ($settings->flags & STREAM_FLAG_TRANSPARENT) ? 1 : 0;
+		return $form;
+	}
+
+	// The first tab has no table of its own, so what it shows is whatever every table agrees
+	// on, and nothing where they disagree. Each control is asked separately: tables that are
+	// set up differently in one thing may well agree in all the others, and saying so about
+	// every one of them would be no help to anybody.
+	private function all_tables_settings()
+	{
+		$all = NULL;
+		for ($table = 1; $table <= $this->tables; ++$table)
+		{
+			$form = $this->form_settings(stream_settings($this->owner, $table));
+			if (is_null($all))
+			{
+				$all = $form;
+				continue;
+			}
+
+			// NULL is "the tables do not agree", which the form shows as nothing chosen rather
+			// than as some table's answer standing in for the rest.
+			foreach (array('lang', 'delay', 'screens', 'dark', 'transparent') as $name)
+			{
+				if (!is_null($all->$name) && $all->$name !== $form->$name)
+				{
+					$all->$name = NULL;
+				}
+			}
+		}
+		return $all;
+	}
+
+	private function show_setting($name, $content)
+	{
+		echo '<tr><td class="dark" width="220" align="right">' . $name . ':</td><td>' . $content . '</td></tr>';
+	}
+
+	// One of two answers, or neither of them when the tables do not agree about it.
+	private function choice($name, $value, $off, $on)
+	{
+		$html = '<select id="' . $name . '" onchange="streamChanged(\'' . $name . '\')">';
+		if (is_null($value))
+		{
+			$html .= '<option value="" selected>&mdash;</option>';
+		}
+		$html .= '<option value="0"' . ($value === 0 ? ' selected' : '') . '>' . $off . '</option>';
+		$html .= '<option value="1"' . ($value === 1 ? ' selected' : '') . '>' . $on . '</option>';
+		return $html . '</select>';
+	}
+
+	// The address of a browser source, ready to be taken to OBS: in a box that can be read and
+	// selected, with the copy button stuck to the end of it, and the size the source wants.
+	private function show_url($name, $id, $url, $size)
+	{
+		$this->show_setting($name,
+			'<span class="stream-url"><input id="' . $id . '" type="text" readonly value="' . htmlspecialchars($url) . '">' .
+			'<button title="' . get_label('Copy') . '" onclick="copyUrl(\'' . $id . '\')"><img src="images/copy.png"></button></span> ' .
+			$size);
+	}
+
+	protected function show_body()
+	{
+		check_permissions(STREAMS_UNDER_EVENT
+			? (PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER)
+			: (PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER), $this->club_id, $this->id);
+
+		echo '<div class="tab">';
+		echo '<button ' . ($this->view == VIEW_ALL_TABLES ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_ALL_TABLES . '})">' . get_label('All tables') . '</button>';
+		for ($table = 1; $table <= $this->tables + ($this->spare ? 1 : 0); ++$table)
+		{
+			echo '<button ' . ($this->view == $table ? 'class="active" ' : '') . 'onclick="goTo({view:' . $table . '})">' . get_label('Table [0]', $table) . '</button>';
+		}
+		echo '</div>';
+
+		$table = $this->view;
+		$settings = ($table == VIEW_ALL_TABLES)
+			? $this->all_tables_settings()
+			: $this->form_settings(stream_settings($this->owner, $table));
+		$langs = array(LANG_ENGLISH => 'English', LANG_RUSSIAN => 'Русский', LANG_UKRAINIAN => 'Українська');
+		$site = get_server_url();
+		$locale = is_null($settings->lang) ? '' : '&locale=' . get_lang_code($settings->lang);
+		$scope = (STREAMS_UNDER_EVENT ? 'event_id=' : 'tournament_id=') . $this->id . '&table_num=' . $table;
+
+		echo '<div class="tabcontent">';
+
+		// The cards over the game itself. They are three sources rather than one so that a
+		// stream can put the players and the info bar wherever it likes.
+		echo '<h3 class="stream-section">' . get_label('Glyphs') . '</h3>';
+		echo '<table class="bordered light" width="100%">';
+		if ($table != VIEW_ALL_TABLES)
+		{
+			$this->show_url(get_label('Glyphs and info full screen'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope . $locale, '1920 x 1080');
+			$this->show_url(get_label('Glyphs only'), 'url-players', $site . '/plugins/obs/players.php?' . $scope . $locale, '1920 x 260');
+			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope . $locale, '1920 x 100');
+		}
+
+		// Whether the roles are shown is decided for the tournament as a whole and handed down
+		// to every round, so it reads the same on every tab and changing it anywhere changes it
+		// everywhere. See TOURNAMENT_FLAG_HIDE_ROLES.
+		$hide_roles = STREAMS_UNDER_EVENT ? EVENT_FLAG_HIDE_ROLES : TOURNAMENT_FLAG_HIDE_ROLES;
+		$show_roles = (($this->flags & $hide_roles) == 0) ? 1 : 0;
+		$html = '<select id="roles" onchange="rolesChanged()">';
+		$html .= '<option value="1"' . ($show_roles ? ' selected' : '') . '>' . get_label('Yes') . '</option>';
+		$html .= '<option value="0"' . ($show_roles ? '' : ' selected') . '>' . get_label('No') . '</option>';
+		$html .= '</select>';
+		$this->show_setting(get_label('Show roles'), $html);
+		echo '</table>';
+
+		// One source for everything shown between games: the game just played, who sits down
+		// next, the tournament table and how it has been going.
+		echo '<h3 class="stream-section">' . get_label('Between games') . '</h3>';
+		echo '<table class="bordered light" width="100%">';
+		if ($table != VIEW_ALL_TABLES)
+		{
+			$this->show_url(get_label('URL'), 'url-between', $site . '/plugins/obs/between.php?' . $scope, '1920 x 1080');
+		}
+
+		// A table that has never been given a language of its own is shown with the one the
+		// tournament is played in, which is what its screens come up in anyway. There is no
+		// entry for "whichever the tournament is" - it is already the one standing there.
+		$html = '<select id="lang" onchange="streamChanged(\'lang\')">';
+		if (is_null($settings->lang))
+		{
+			$html .= '<option value="" selected>&mdash;</option>';
+		}
+		foreach ($langs as $lang => $lang_name)
+		{
+			$html .= '<option value="' . $lang . '"' . ($settings->lang === $lang ? ' selected' : '') . '>' . $lang_name . '</option>';
+		}
+		$html .= '</select>';
+		$this->show_setting(get_label('Language'), $html);
+
+		$html = '<input id="delay" type="number" min="' . STREAM_MIN_DELAY . '" max="' . STREAM_MAX_DELAY . '"' .
+			(is_null($settings->delay) ? '' : ' value="' . $settings->delay . '"') .
+			' style="width: 70px" onchange="streamChanged(\'delay\')"> ' . get_label('sec');
+		$this->show_setting(get_label('Delay'), $html);
+
+		// In the order they are shown, since that is what the arrows are for. The ones switched
+		// off keep a place in the list too - they have to stand somewhere, and where they stand
+		// is where they come back when they are switched on again.
+		$html = '<div class="stream-screens" id="screens">';
+		$shown = is_null($settings->screens) ? array() : $settings->screens;
+		foreach (stream_screen_order($shown) as $name)
+		{
+			$checked = in_array($name, $shown) ? ' checked' : '';
+			$html .= '<span class="stream-screen" data-screen="' . $name . '">';
+			$html .= '<button class="icon" title="' . get_label('Move left') . '" onclick="moveScreen(this, -1)">&#9664;</button>';
+			$html .= '<label><input type="checkbox"' . $checked . ' onchange="streamChanged(\'screens\')"> ' . stream_screen_label($name) . '</label>';
+			$html .= '<button class="icon" title="' . get_label('Move right') . '" onclick="moveScreen(this, 1)">&#9654;</button>';
+			$html .= '</span>';
+		}
+		$html .= '</div>';
+		$this->show_setting(get_label('Screens'), $html);
+
+		$this->show_setting(get_label('Background'),
+			$this->choice('dark', $settings->dark, get_label('Light'), get_label('Dark')));
+		$this->show_setting(get_label('Transparent'),
+			$this->choice('transparent', $settings->transparent, get_label('No'), get_label('Yes')));
+
+		echo '</table>';
+		echo '<p id="stream-saved" style="visibility: hidden"><b>' . get_label('Saved.') . '</b></p>';
+		echo '</div>';
+	}
+
+	protected function js()
+	{
+		parent::js();
+?>
+		// Which of the two the tables belong to, named the way the api asks for it.
+		var owner = { <?php echo STREAMS_UNDER_EVENT ? 'event_id' : 'tournament_id'; ?>: <?php echo $this->id; ?> };
+		var tableNum = <?php echo $this->view; ?>;
+
+		function copyUrl(id)
+		{
+			let box = document.getElementById(id);
+			box.select();
+			navigator.clipboard.writeText(box.value);
+		}
+
+		// Whether the roles are shown belongs to the tournament rather than to one table, so it
+		// goes to the tournament and every round follows it.
+		function rolesChanged()
+		{
+			json.post("api/ops/stream.php",
+			Object.assign({
+				op: "set"
+				, table_num: tableNum
+				, hide_roles: ($('#roles').val() == '1') ? 0 : 1
+			}, owner),
+			saved);
+		}
+
+		// The order the screens are shown in is the order they stand in on the page, so moving
+		// one is moving the thing itself rather than setting a number somewhere.
+		function moveScreen(button, step)
+		{
+			let screen = button.parentNode;
+			let next = (step < 0) ? screen.previousElementSibling : screen.nextElementSibling;
+			if (next == null)
+				return;
+
+			if (step < 0)
+				screen.parentNode.insertBefore(screen, next);
+			else
+				screen.parentNode.insertBefore(next, screen);
+			streamChanged('screens');
+		}
+
+		// Saved as it is changed rather than on a button: there is nothing here that is only
+		// half said, and a manager watching the screens wants to see what a change does.
+		//
+		// Only the setting that was touched is sent. On the tab of one table that makes no
+		// difference, but on the first tab it is the whole point: it goes to every table, and
+		// a table keeps everything it was set up with apart from the one thing being changed.
+		function streamChanged(setting)
+		{
+			let params = Object.assign({ op: "set", table_num: tableNum }, owner);
+
+			if (setting == 'screens')
+			{
+				let screens = [];
+				let shown = document.getElementById('screens').children;
+				for (let i = 0; i < shown.length; ++i)
+				{
+					if (shown[i].querySelector('input').checked)
+						screens.push(shown[i].dataset.screen);
+				}
+				params.screens = screens.join(',');
+			}
+			else
+			{
+				let value = $('#' + setting).val();
+				if (value === '' || value === null)
+					return; // the tables do not agree and nothing has been chosen yet
+				params[setting] = value;
+			}
+
+			json.post("api/ops/stream.php", params, saved);
+		}
+
+		function saved()
+		{
+			let note = document.getElementById('stream-saved');
+			note.style.visibility = 'visible';
+			setTimeout(function() { note.style.visibility = 'hidden'; }, 1500);
+		}
+<?php
+	}
+}
+
+$page = new Page();
+$page->run(get_label('Stream settings'));
+
+?>

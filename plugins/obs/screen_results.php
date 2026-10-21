@@ -177,7 +177,7 @@ $moderator = isset($players[$g->moderator_id]) ? $players[$g->moderator_id]->nam
 obs_screen_head(
 	htmlspecialchars($c->tournament_name),
 	'<div class="head-title' . $winner_class . '">' . $winner . '</div>' .
-		'<div class="head-sub">' . htmlspecialchars($g->event_name) . ' &middot; ' . get_label('Table [0], Game [1]', $c->table_num, $g->game_num) . '</div>',
+		obs_screen_sub($g->event_name, $c->table_num, $g->game_num),
 	$moderator == '' ? '' : get_label('Referee') . ': ' . htmlspecialchars($moderator));
 
 // A team to a row, the winners on top. The black team reads above the town by default, which is

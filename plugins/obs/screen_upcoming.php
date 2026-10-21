@@ -27,7 +27,7 @@ $players = obs_players($seating, $c->event_id, $c->tournament_id, $c->club_id);
 obs_screen_head(
 	htmlspecialchars($c->tournament_name),
 	'<div class="head-title">' . get_label('Upcoming') . '</div>' .
-		'<div class="head-sub">' . htmlspecialchars($c->event_name) . ' &middot; ' . get_label('Table [0], Game [1]', $c->table_num, $c->next_game_num) . '</div>',
+		obs_screen_sub($c->event_name, $c->table_num, $c->next_game_num),
 	'');
 
 // Five and five, the way a table is drawn. A game with fewer seats than that simply has no

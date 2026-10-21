@@ -392,8 +392,10 @@ class Page extends ObsPageBase
 				url[1] = site + '/plugins/obs/players.php' + params;
 				url[2] = site + '/plugins/obs/gamestats.php' + params;
 
-				// The same table as the overlays, so this source needs no setting up of its own.
-				url[3] = site + '/plugins/obs/between.php' + params;
+				// The same table as the overlays. It takes no language of its own and nothing
+				// else either: what it shows is set under Management / Stream settings, and it
+				// reads that as it runs, so this address never has to be typed again.
+				url[3] = site + '/plugins/obs/between.php?' + scope + '&table_num=' + $('#table').val();
 
 				for (let i = 0; i < url.length; ++i)
 				{

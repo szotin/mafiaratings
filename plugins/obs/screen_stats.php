@@ -29,10 +29,12 @@ $ppk_maf = 0;
 $maf = array(0, 0, 0, 0); // by the mafia left at the table; [0] is the games that never said
 // The brackets round the mask are not decoration: & binds looser than <> in MySQL, so without
 // them the server compares 8 with 0 first and ands the flags with the 1 that comes out.
+// Over the tournament, or over the event when it is one of its own.
 $query = new DbQuery(
 	'SELECT result, maf_alive, (flags & ' . GAME_FLAG_TEAM_KICK_OUT . ') <> 0, COUNT(*) FROM games'.
-	' WHERE tournament_id = ? AND (flags & ' . GAME_FLAG_CANCELED . ') = 0'.
-	' GROUP BY result, maf_alive, (flags & ' . GAME_FLAG_TEAM_KICK_OUT . ') <> 0', $c->tournament_id);
+	' WHERE ' . ($c->is_tournament ? 'tournament_id' : 'event_id') . ' = ? AND (flags & ' . GAME_FLAG_CANCELED . ') = 0'.
+	' GROUP BY result, maf_alive, (flags & ' . GAME_FLAG_TEAM_KICK_OUT . ') <> 0',
+	$c->is_tournament ? $c->tournament_id : $c->event_id);
 while ($row = $query->next())
 {
 	list ($result, $maf_alive, $team_kick_out, $count) = $row;

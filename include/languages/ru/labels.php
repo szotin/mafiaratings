@@ -2077,6 +2077,21 @@ $labelMenu = array (
 'Mod team kill, town win' => 'ППК — победа города', // plugins/obs/screen_stats.php
 'Mod team kill, mafia win' => 'ППК — победа мафии', // plugins/obs/screen_stats.php
 'Town' => 'Город', // plugins/obs/screen_stats.php
+'Stream settings' => 'Управление трансляциями', // tournament_streams.php, include/stream.php
+'Delay' => 'Задержка', // tournament_streams.php, include/stream.php
+'Screens' => 'Экраны', // tournament_streams.php, include/stream.php
+'Background' => 'Фон', // tournament_streams.php, include/stream.php
+'Transparent' => 'Прозрачный', // tournament_streams.php, include/stream.php
+'Dark' => 'Тёмный', // tournament_streams.php, include/stream.php
+'Light' => 'Светлый', // tournament_streams.php, include/stream.php
+'Saved.' => 'Сохранено.', // tournament_streams.php, include/stream.php
+'Previous game' => 'Прошлая игра', // tournament_streams.php, include/stream.php
+'Next game' => 'Следующая игра', // tournament_streams.php, include/stream.php
+'Set up what is shown between games at each table: the language, which screens are shown and how long for, and the ground they stand on.' => 'Настройка того, что показывается между играми за каждым столом: язык, какие экраны показывать и как долго, и фон под ними.', // tournament_streams.php, include/stream.php
+'Move left' => 'Сдвинуть влево', // tournament_streams.php
+'Move right' => 'Сдвинуть вправо', // tournament_streams.php
+'All tables' => 'Все столы', // tournament_streams.php
+'Show roles' => 'Показывать роли', // tournament_streams.php
 );
 
 return $labelMenu;

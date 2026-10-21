@@ -1,0 +1,242 @@
+<?php
+
+require_once 'db.php';
+require_once 'constants.php';
+require_once 'languages.php';
+require_once 'localization.php'; // get_label
+
+// How the between-games screens are set up at one table. The browser source in OBS is pointed
+// at a table and nothing else; everything else is read from here, which is what lets a club
+// manager change it from the site while the source is running.
+//
+// A table belongs to one of two things, and the settings follow it there. A tournament keeps
+// its tables from round to round, so the settings are the tournament's and every round reads
+// the same ones. An event played on its own has tables of its own and nothing above it. The
+// two are told apart by a stream owner, which is what the rest of this file is written in
+// terms of: the pair of tables holds the same columns and differs only in what it is keyed by.
+//
+// A table with no row of its own runs on the defaults. That is the usual case rather than an
+// odd one: a row is written the first time somebody sets something for that table.
+
+define('STREAM_DEFAULT_DELAY', 10); // seconds a screen stays up
+define('STREAM_MIN_DELAY', 1);
+define('STREAM_MAX_DELAY', 600);
+
+// Which of the two a table hangs under. A round of a tournament is the tournament's: pass the
+// tournament, not the round.
+function stream_tournament($tournament_id)
+{
+	$owner = new stdClass();
+	$owner->is_tournament = true;
+	$owner->id = (int)$tournament_id;
+	$owner->table = 'tournament_streams';
+	$owner->column = 'tournament_id';
+	return $owner;
+}
+
+function stream_event($event_id)
+{
+	$owner = new stdClass();
+	$owner->is_tournament = false;
+	$owner->id = (int)$event_id;
+	$owner->table = 'event_streams';
+	$owner->column = 'event_id';
+	return $owner;
+}
+
+// What the request named, as an owner. A round of a tournament resolves to its tournament, an
+// event of its own to itself, and anything we cannot make sense of to NULL.
+function stream_owner($tournament_id, $event_id)
+{
+	$tournament_id = (int)$tournament_id;
+	$event_id = (int)$event_id;
+	if ($tournament_id > 0)
+	{
+		return stream_tournament($tournament_id);
+	}
+	if ($event_id > 0)
+	{
+		list ($tournament_id) = Db::record(get_label('event'), 'SELECT tournament_id FROM events WHERE id = ?', $event_id);
+		return ((int)$tournament_id > 0) ? stream_tournament($tournament_id) : stream_event($event_id);
+	}
+	return NULL;
+}
+
+// The screens between.js can be told to show, in the order they are shown when nobody has said
+// otherwise. The short name is what is stored and what appears in the settings; the file is
+// where between.js fetches the screen from.
+function stream_screens()
+{
+	return array(
+		'results' => 'screen_results.php',
+		'standings' => 'screen_standings.php',
+		'upcoming' => 'screen_upcoming.php',
+		'stats' => 'screen_stats.php');
+}
+
+// Every screen, in the order they stand in for this table: the ones being shown first, in the
+// order they are shown, and then the ones that are switched off, in the order they come in by
+// default. A screen that is switched off still has to stand somewhere, and where it stands is
+// where it comes back when it is switched on again.
+function stream_screen_order($shown)
+{
+	$order = $shown;
+	foreach (array_keys(stream_screens()) as $name)
+	{
+		if (!in_array($name, $order))
+		{
+			$order[] = $name;
+		}
+	}
+	return $order;
+}
+
+// What a screen is called where somebody is choosing between them. Spelled out one by one
+// rather than built from the short name, so that the labels can be found by searching for them
+// the way every other label in the site can.
+function stream_screen_label($name)
+{
+	switch ($name)
+	{
+	case 'results':
+		return get_label('Previous game');
+	case 'upcoming':
+		return get_label('Next game');
+	case 'standings':
+		return get_label('Standings');
+	case 'stats':
+		return get_label('Wins');
+	}
+	return $name;
+}
+
+// The language the games are played in, as far as anything says so. langs is a mask of every
+// language the thing is run in; the screens need one, so the lowest of them is taken, and
+// English when nothing says anything.
+function stream_default_lang($owner)
+{
+	if ($owner->is_tournament)
+	{
+		list ($langs, $club_langs) = Db::record(get_label('tournament'),
+			'SELECT t.langs, c.langs FROM tournaments t JOIN clubs c ON c.id = t.club_id WHERE t.id = ?', $owner->id);
+	}
+	else
+	{
+		list ($langs, $club_langs) = Db::record(get_label('event'),
+			'SELECT e.languages, c.langs FROM events e JOIN clubs c ON c.id = e.club_id WHERE e.id = ?', $owner->id);
+	}
+
+	$langs = (int)$langs;
+	if ($langs == 0)
+	{
+		$langs = (int)$club_langs;
+	}
+	for ($lang = 1; $lang > 0 && $lang < LANG_ALL; $lang <<= 1)
+	{
+		if ($langs & $lang)
+		{
+			return $lang;
+		}
+	}
+	return LANG_DEFAULT;
+}
+
+// How many tables the seating is laid for - the widest round of it. Zero when there is no
+// seating, which is the only case where nothing says for certain how many tables there are:
+// a seating is a statement, while games played and tables already set up are only evidence
+// that there are at least that many.
+function stream_seated_tables($owner)
+{
+	$tables = 0;
+	$query = $owner->is_tournament
+		? new DbQuery('SELECT misc FROM events WHERE tournament_id = ?', $owner->id)
+		: new DbQuery('SELECT misc FROM events WHERE id = ?', $owner->id);
+	while ($row = $query->next())
+	{
+		list ($misc) = $row;
+		$misc = is_null($misc) ? NULL : json_decode($misc);
+		if (is_null($misc) || !isset($misc->seating->rounds) || !is_array($misc->seating->rounds))
+		{
+			continue;
+		}
+		foreach ($misc->seating->rounds as $round)
+		{
+			if (is_array($round))
+			{
+				$tables = max($tables, count($round));
+			}
+		}
+	}
+	return $tables;
+}
+
+// How many tables are played at, which is what the settings page has a tab for each of.
+// Nothing says so outright, so it is taken from the three places that know: the seating, the
+// highest table a game has been written down at, and the highest table somebody has already
+// set up. At least one, so that something nobody has played yet can still be set up.
+function stream_table_count($owner)
+{
+	$where = $owner->is_tournament ? 'tournament_id' : 'event_id';
+	list ($played) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM games WHERE ' . $where . ' = ?', $owner->id);
+	list ($set_up) = Db::record(get_label('event'), 'SELECT MAX(table_num) FROM ' . $owner->table . ' WHERE ' . $owner->column . ' = ?', $owner->id);
+	return max(1, stream_seated_tables($owner), (int)$played, (int)$set_up);
+}
+
+// What the screens at this table are to do. Returns an object whatever the table is, so that
+// the callers never have to tell a table that has been set up from one that has not.
+//
+// lang is kept as it is stored, where 0 means "whatever the games are played in" rather than a
+// language of its own. What that works out to is lang_resolved, which is what the screens are
+// actually shown in. Anything writing the settings back has to use the first, or a table left
+// on the default would quietly be nailed to one language.
+function stream_settings($owner, $table_num)
+{
+	$all = stream_screens();
+
+	$settings = new stdClass();
+	$settings->table_num = (int)$table_num;
+	$settings->lang = 0;
+	$settings->delay = STREAM_DEFAULT_DELAY;
+	$settings->screens = array_keys($all);
+	$settings->flags = 0;
+
+	$query = new DbQuery('SELECT lang, delay, screens, flags FROM ' . $owner->table .
+		' WHERE ' . $owner->column . ' = ? AND table_num = ?', $owner->id, $table_num);
+	if ($row = $query->next())
+	{
+		list ($lang, $delay, $screens, $flags) = $row;
+		$settings->lang = (int)$lang;
+		$settings->delay = (int)$delay;
+		$settings->flags = (int)$flags;
+
+		// An empty list is every screen rather than none: a source showing nothing at all would
+		// look like one that is broken, and there is no reason anybody would ask for it.
+		$wanted = stream_parse_screens($screens);
+		if (!empty($wanted))
+		{
+			$settings->screens = $wanted;
+		}
+	}
+
+	$settings->lang_resolved = ($settings->lang > 0) ? $settings->lang : stream_default_lang($owner);
+	$settings->delay = min(max($settings->delay, STREAM_MIN_DELAY), STREAM_MAX_DELAY);
+	return $settings;
+}
+
+// The stored list, as names we know. Anything else in it is dropped rather than taken for a
+// screen, and a name repeated is kept once.
+function stream_parse_screens($screens)
+{
+	$all = stream_screens();
+	$wanted = array();
+	foreach (preg_split('/[\s,;]+/', strtolower(trim($screens))) as $name)
+	{
+		if (isset($all[$name]) && !in_array($name, $wanted))
+		{
+			$wanted[] = $name;
+		}
+	}
+	return $wanted;
+}
+
+?>

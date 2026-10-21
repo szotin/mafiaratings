@@ -225,6 +225,7 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_emo.php?id=' . $this->id, get_label('[0] integration', 'Emotion.games'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'emotion.games')),
 				new MenuItem(null, null, null),
 				new MenuItem('game_obs.php?bck=1&user_id=0&tournament_id=' . $this->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.')),
+				new MenuItem('streams.php?tournament_id=' . $this->id, get_label('Stream settings'), get_label('Set up what is shown between games at each table: the language, which screens are shown and how long for, and the ground they stand on.')),
 				new MenuItem('tournament_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);

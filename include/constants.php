@@ -245,6 +245,12 @@ define('GAME_FLAG_CANCELED', 0x2);
 define('GAME_FLAG_FIIM', 0x4);
 define('GAME_FLAG_TEAM_KICK_OUT', 0x8);
 
+// tournament stream flags - how the between-games screens are drawn at one table
+//  1  - 0x0001 -      1 - the dark wall rather than the pale ground a table gets by default
+//  2  - 0x0002 -      2 - no ground at all, so the scene behind the source shows through
+define('STREAM_FLAG_DARK', 0x1);
+define('STREAM_FLAG_TRANSPARENT', 0x2);
+
 // event flags
 //  1  - 0x0001 -      1 - event should not be shown in the event list before the end of the event
 //  2  - 0x0002 -      2 - event should not be shown in the event list after the end of the event

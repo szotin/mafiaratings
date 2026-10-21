@@ -128,6 +128,45 @@ function obs_seated_games($misc, $table_num)
 // runs out the answer moves on to the next one by itself, which is what makes the upcoming
 // screen show the first game of the next round after the last game of this one.
 //
+// An event of its own - a club night rather than a round of something - is a table standing on
+// its own too. There are no rounds to walk and no tournament above it, so the event is the
+// whole of the context: the games played at this table are its games, the table is its table,
+// and the standings are its own. ->is_tournament tells the screens which of the two they are
+// looking at, since a few of them have something to say in one case and not the other.
+function obs_event_context($event_id, $table_num)
+{
+	$c = new stdClass();
+	$c->is_tournament = false;
+	$c->table_num = $table_num;
+	$c->tournament_id = 0;
+	$c->tournament_flags = 0;
+	$c->normalizer_id = 0;
+	$c->normalizer_version = 0;
+
+	list ($name, $c->club_id, $c->scoring_id, $c->scoring_version, $c->scoring_options) = Db::record(get_label('event'),
+		'SELECT name, club_id, scoring_id, scoring_version, scoring_options FROM events WHERE id = ?', $event_id);
+
+	// The event is what the screens head themselves with, and there is no round under it to
+	// name a second time.
+	$c->tournament_name = $name;
+	$c->event_id = $event_id;
+	$c->event_name = '';
+	$c->round_num = 0;
+
+	$state = obs_table_state($event_id, $table_num);
+	$c->next_game_num = obs_next_game_num($event_id, $table_num, $state);
+	$c->done = $state->done;
+	if (!is_null($c->done))
+	{
+		$c->done->event_id = $event_id;
+		$c->done->event_name = '';
+	}
+
+	$c->results_event_id = $event_id;
+	$c->results_event_name = '';
+	return $c;
+}
+
 // Returns NULL when the request names no table we can make sense of.
 function obs_context()
 {
@@ -139,6 +178,10 @@ function obs_context()
 	{
 		list ($tournament_id) = Db::record(get_label('event'), 'SELECT tournament_id FROM events WHERE id = ?', $event_id);
 		$tournament_id = (int)$tournament_id;
+		if ($tournament_id <= 0)
+		{
+			return obs_event_context($event_id, $table_num);
+		}
 	}
 	if ($tournament_id <= 0)
 	{
@@ -146,6 +189,7 @@ function obs_context()
 	}
 
 	$c = new stdClass();
+	$c->is_tournament = true;
 	$c->table_num = $table_num;
 	$c->tournament_id = $tournament_id;
 	list ($c->tournament_name, $c->tournament_flags, $c->club_id, $c->scoring_id, $c->scoring_version,
@@ -381,6 +425,19 @@ function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NUL
 }
 
 // A screen prints its heading through this so that they all look alike.
+// The line under the title of a screen: which round, which table, which game. An event of its
+// own has no round to name - the screen is already headed with its name - so it says only
+// where it is.
+function obs_screen_sub($round_name, $table_num, $game_num)
+{
+	$where = get_label('Table [0], Game [1]', $table_num, $game_num);
+	if ($round_name == '')
+	{
+		return '<div class="head-sub">' . $where . '</div>';
+	}
+	return '<div class="head-sub">' . htmlspecialchars($round_name) . ' &middot; ' . $where . '</div>';
+}
+
 function obs_screen_head($left, $middle, $right)
 {
 	echo '<div class="screen-head">';

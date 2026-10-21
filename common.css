@@ -234,3 +234,25 @@ button.best { border: 1px outset #dddddd; height: 28px; width: 60px; margin: 0px
 button.best[checked] { border: 1px solid #909090; padding: 0px; background-color: #aaccdd; }
 button.best[disabled] { border: 1px solid #909090; padding: 0px; color: #808080; background-color: transparent; }
 button.best:active { border: 1px inset #dddddd; padding: 0px;  }
+
+/* The screens of a between-games source, in the order they are shown - tournament_streams.php.
+   Kept on one line: the order is read along it, and an arrow at the end of a wrapped line would
+   look as though it meant something else. The arrows that move a screen sit either side of it. */
+div.stream-screens { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 4px; }
+span.stream-screen { display: inline-flex; align-items: center; white-space: nowrap; border: 1px solid #c0cccc; border-radius: 4px; background-color: #f4f8f8; }
+span.stream-screen label { display: inline-block; min-width: 110px; padding: 2px 4px; white-space: nowrap; }
+span.stream-screen button.icon { border: none; background: transparent; color: #406070; cursor: pointer; padding: 2px 4px; font-size: 11px; line-height: 1; }
+span.stream-screen button.icon:hover { color: #000000; }
+
+/* The address of a browser source, with the copy button stuck to the end of the box it is in
+   - tournament_streams.php. */
+span.stream-url { display: inline-flex; align-items: stretch; vertical-align: middle; }
+span.stream-url input { width: 520px; max-width: 60vw; border: 1px solid #c0cccc; border-right: none; border-radius: 3px 0 0 3px; padding: 2px 4px; font-family: inherit; font-size: inherit; background-color: #ffffff; }
+span.stream-url button { border: 1px solid #c0cccc; border-radius: 0 3px 3px 0; background-color: #e8f8f8; cursor: pointer; padding: 0 6px; }
+span.stream-url button:hover { background-color: #cfdfdf; }
+span.stream-url button img { display: block; width: 16px; height: 16px; }
+
+/* The sections of the stream settings - streams.php. Each has a table under it, so they are
+   given room to stand apart, and the first one is lifted a little off the tabs above it. */
+h3.stream-section { margin: 20px 0 6px; }
+h3.stream-section:first-child { margin-top: 10px; }

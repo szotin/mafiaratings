@@ -503,6 +503,12 @@ class EventPageBase extends PageBase
 			}
 			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name));
 			$manager_menu[] = new MenuItem('game_obs.php?bck=1&user_id=0&event_id=' . $this->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
+			// A round of a tournament is set up through its tournament, where one set of
+			// settings covers the table for every round of it.
+			$manager_menu[] = new MenuItem(
+				is_null($this->tournament_id) ? ('streams.php?event_id=' . $this->id) : ('streams.php?tournament_id=' . $this->tournament_id),
+				get_label('Stream settings'),
+				get_label('Set up what is shown between games at each table: the language, which screens are shown and how long for, and the ground they stand on.'));
 			$manager_menu[] = new MenuItem('event_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts'));
 			
 			if ($this->is_manager && is_null($this->tournament_id))
