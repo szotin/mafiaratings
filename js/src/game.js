@@ -152,6 +152,9 @@ function gameInit(eventId, tableNum, gameNum, gameOnChange, errorListener, conne
 	});
 }
 
+// Set when the moderator turns the roles over, and cleared once the server has been told.
+var _hideRolesSaid = false;
+
 function gameSave(onSuccess)
 {
 	if (_isDirty && _runSaving)
@@ -163,9 +166,25 @@ function gameSave(onSuccess)
 			// console.log('Saving');
 			// console.log(lastSaved);
 			// console.log(log.slice(lastSaved));
-			json.post('api/ops/game.php', { op: 'set_current', event_id: game.eventId, table_num: game.tableNum, game_num: game.gameNum, game: JSON.stringify(game), logIndex: lastSaved, log: JSON.stringify(log.slice(lastSaved))}, 
-			function() // success
+			let params = { op: 'set_current', event_id: game.eventId, table_num: game.tableNum, game_num: game.gameNum, game: JSON.stringify(game), logIndex: lastSaved, log: JSON.stringify(log.slice(lastSaved)) };
+			if (_hideRolesSaid)
 			{
+				params.hide_roles = gameAreRolesHidden() ? 1 : 0;
+			}
+			json.post('api/ops/game.php', params, 
+			function(data) // success
+			{
+				// Somebody else may have turned the roles over while this game was being
+				// played, so the screen takes back what the server says is true of them now.
+				_hideRolesSaid = false;
+				if (isSet(data) && isSet(data.hideRoles) && data.hideRoles != gameAreRolesHidden())
+				{
+					if (data.hideRoles)
+						game.hideRoles = true;
+					else
+						delete game.hideRoles;
+					_gameOnChange(false);
+				}
 				// The game is not needed in the local storage any more because the server has it.
 				delete localStorage['game'];
 				_isDirty = false;
@@ -623,6 +642,11 @@ function gameHideRoles(hide)
 	// and the game is only sent up when something has marked it dirty.
 	if (gameAreRolesHidden() != hidden)
 	{
+		// Said outright on the next save. A club manager can turn this over from the stream
+		// settings while the game is being played, so the server keeps what it has rather than
+		// taking it from the copy this screen sends - unless the moderator has just said so,
+		// which is what this is.
+		_hideRolesSaid = true;
 		gameDirty();
 	}
 }

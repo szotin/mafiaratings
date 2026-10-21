@@ -913,6 +913,45 @@ class ApiPage extends OpsApiPageBase
 		return $log_changed;
 	}
 	
+	// The game as it should be stored, with hideRoles settled. The moderator's screen keeps its
+	// own copy of the game and sends the whole of it every second, so anything another person
+	// changed in the meantime would be wiped out by the next save. Whether the roles are shown
+	// is exactly that: a club manager can turn it over from the stream settings while the game
+	// is being played. So the stored value is kept unless the moderator says otherwise, and
+	// hide_roles is how they say it.
+	//
+	// Returns the game as json, and leaves the effective value in $this->response so that the
+	// screen that sent it can bring its own copy up to date.
+	private function merge_hidden_roles($game, $stored)
+	{
+		$data = json_decode($game);
+		if (is_null($data) || !is_object($data))
+		{
+			return $game; // not ours to understand; store it as it came
+		}
+
+		if (isset($_REQUEST['hide_roles']))
+		{
+			$hide = ((int)$_REQUEST['hide_roles'] != 0);
+		}
+		else
+		{
+			$kept = is_null($stored) ? NULL : json_decode($stored);
+			$hide = (is_object($kept) && isset($kept->hideRoles) && $kept->hideRoles);
+		}
+
+		if ($hide)
+		{
+			$data->hideRoles = true;
+		}
+		else
+		{
+			unset($data->hideRoles);
+		}
+		$this->response['hideRoles'] = $hide;
+		return json_encode($data);
+	}
+
 	function set_current_op()
 	{
 		global $_profile, $_lang;
@@ -945,10 +984,18 @@ class ApiPage extends OpsApiPageBase
 				throw new Exc(get_label('Game [0] table [1] has already been played (#[2]). Remove the existing game if you want to replay it.', $game_num, $table_num, $gid));
 			}
 			
-			$query = new DbQuery('SELECT user_id, log FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
+			$query = new DbQuery('SELECT user_id, log, game FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
 			if ($row = $query->next())
 			{
-				list ($user_id, $log) = $row;
+				list ($user_id, $log, $stored) = $row;
+
+				// Whether the roles are shown is the one thing about a game under way that
+				// somebody else may change while it is being played - a club manager, from the
+				// stream settings. The moderator's screen sends the whole game every second
+				// from its own copy, which knows nothing of that, so this one field is taken
+				// from what is already stored rather than from what was sent. The moderator
+				// changes it by saying so outright, in hide_roles, and then that wins.
+				$game = $this->merge_hidden_roles($game, $stored);
 				$log_changed = false;
 				if (!is_null($log_tail))
 				{
@@ -1018,6 +1065,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('game', 'Json string defining current game state.');
 		$help->request_param('log', 'Addition to the array of previous states of the game.', 'log is not modified');
 		$help->request_param('logIndex', 'At which index should the provided log be added to the prev states of the game. The records after the logIndex+log.length are cut.<p>Examples:<br>recorded log is []. We send logIndex:1,log:[1,2]. Result is [null,1,2].<br>We send logIndex:2,log[3,4,5]. Result is: [null,1,3,4,5]<br>We send logIndex:3,log:[]. Result is: [null,1,3,4].<br>We send logIndex:0,log:[1,2]. Result is: [1,2]', 'end of the log is used');
+		$help->request_param('hide_roles', '1 keeps the roles off the overlays for this game, 0 shows them. Send it only when the moderator has just said so: hideRoles in "game" is ignored, since a club manager may have turned it over from the stream settings since this screen last read the game.', 'whatever the game is stored with is kept.');
+		$help->response_param('hideRoles', 'Whether the roles are kept off the overlays now that the game is saved. The screen that sent the game should bring its own copy up to date with it.');
 		return $help;
 	}
 

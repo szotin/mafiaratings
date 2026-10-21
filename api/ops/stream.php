@@ -9,17 +9,67 @@ class ApiPage extends OpsApiPageBase
 {
 	//-------------------------------------------------------------------------------------------------------
 	// set
+	// A game already being played carries its own answer about the roles - it was given one
+	// when it was created - and the overlays read it from there, so turning the setting over
+	// has to reach it or nothing changes on the stream until the next game. The moderator's
+	// screen sends the whole game every second from its own copy, but it no longer carries
+	// this field over: api/ops/game.php keeps what is stored unless the moderator says
+	// otherwise. So writing it here holds.
+	private function set_played_roles($owner, $table_num, $hide)
+	{
+		$where = $owner->is_tournament ? 'e.tournament_id = ?' : 'e.id = ?';
+		$query = new DbQuery(
+			'SELECT g.event_id, g.table_num, g.game_num, g.game FROM current_games g'.
+			' JOIN events e ON e.id = g.event_id WHERE ' . $where, $owner->id);
+		$games = array();
+		while ($row = $query->next())
+		{
+			$games[] = $row;
+		}
+
+		foreach ($games as $row)
+		{
+			list ($event_id, $table, $game_num, $game) = $row;
+			if ($table_num > 0 && (int)$table != $table_num)
+			{
+				continue; // another table, which this is not about
+			}
+
+			$data = json_decode($game);
+			if (is_null($data) || !is_object($data))
+			{
+				continue;
+			}
+			if ($hide == (isset($data->hideRoles) && $data->hideRoles))
+			{
+				continue; // already saying so
+			}
+
+			if ($hide)
+			{
+				$data->hideRoles = true;
+			}
+			else
+			{
+				unset($data->hideRoles);
+			}
+			Db::exec(get_label('game'), 'UPDATE current_games SET game = ? WHERE event_id = ? AND table_num = ? AND game_num = ?',
+				json_encode($data), $event_id, $table, $game_num);
+		}
+	}
+
 	// Whether the roles are shown is decided for the whole thing rather than at a table, so it
 	// is done once. A tournament hands it down to every round of it, the same as
 	// api/ops/tournament.php does when the tournament itself is edited; an event of its own
 	// has only itself to set.
-	private function set_roles($owner)
+	private function set_roles($owner, $table_num)
 	{
 		if (!isset($_REQUEST['hide_roles']))
 		{
 			return;
 		}
 		$hide = ((int)$_REQUEST['hide_roles'] != 0);
+		$this->set_played_roles($owner, $table_num, $hide);
 
 		if (!$owner->is_tournament)
 		{
@@ -65,7 +115,7 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER, $club_id, $owner->id);
 		}
 
-		$this->set_roles($owner);
+		$this->set_roles($owner, $table_num);
 
 		// Table 0 is every table there is.
 		$tables = array();
