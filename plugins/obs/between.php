@@ -47,11 +47,17 @@ echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Robot
 echo '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gagalin">';
 echo '<link rel="stylesheet" href="' . obs_file('between.css') . '">';
 echo '<script src="' . obs_file('between.js') . '"></script>';
+// Changes the OBS scene from inside the source. Outside OBS it does nothing.
+echo '<script src="' . obs_file('scenes.js') . '"></script>';
 // The ground a table gets unless it says otherwise, so that the page is not one colour for the
 // moment it takes the first answer to come back and then another.
 echo '</head><body class="between bg-light">';
 echo '<div class="screen" id="screen"></div>';
 echo '<script>obs.start(' . json_encode($options) . ');</script>';
+// The scene is asked for far more often than the settings are: a screen can wait ten
+// seconds for a change to the language, but a scene has to follow the game.
+echo '<script>obsScenes.start(' . json_encode($options->settingsUrl) . ', ' .
+	json_encode($options->params) . ', ' . OBS_SCENE_DELAY . ');</script>';
 echo '</body></html>';
 
 ?>

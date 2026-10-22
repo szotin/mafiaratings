@@ -355,8 +355,7 @@ CREATE TABLE `game_settings` (
   `flags` int(11) NOT NULL,
   `prompt_sound_id` int(11) DEFAULT NULL,
   `end_sound_id` int(11) DEFAULT NULL,
-  `feature_flags` int(11) NOT NULL,
-  `obs_scenes` text
+  `feature_flags` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `gate_sessions`;
@@ -909,7 +908,12 @@ CREATE TABLE `event_streams` (
   `lang` int(11) NOT NULL DEFAULT '0',
   `delay` int(11) NOT NULL DEFAULT '10',
   `screens` varchar(128) NOT NULL DEFAULT '',
-  `flags` int(11) NOT NULL DEFAULT '0'
+  `flags` int(11) NOT NULL DEFAULT '0',
+  `scene` varchar(128) NOT NULL DEFAULT '',
+  `scene_time` int(11) NOT NULL DEFAULT '0',
+  `scenes` text,
+  `scene_events` text,
+  `control_level` int(11) NOT NULL DEFAULT '-1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `tournament_streams`;
@@ -919,7 +923,12 @@ CREATE TABLE `tournament_streams` (
   `lang` int(11) NOT NULL DEFAULT '0',
   `delay` int(11) NOT NULL DEFAULT '10',
   `screens` varchar(128) NOT NULL DEFAULT '',
-  `flags` int(11) NOT NULL DEFAULT '0'
+  `flags` int(11) NOT NULL DEFAULT '0',
+  `scene` varchar(128) NOT NULL DEFAULT '',
+  `scene_time` int(11) NOT NULL DEFAULT '0',
+  `scenes` text,
+  `scene_events` text,
+  `control_level` int(11) NOT NULL DEFAULT '-1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `tournament_teams`;

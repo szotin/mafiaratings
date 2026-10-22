@@ -1462,7 +1462,20 @@ class Game
 	
 	function get_last_round()
 	{
+		// While a game is still being played, the round it is in counts too. Without it a game
+		// that has reached a round where nothing has been written down yet - nobody nominated,
+		// nobody shot, nobody checked - looks as though it ended before that round, and then
+		// every player still alive in it is taken for dead.
+		//
+		// A game that is over is left exactly as it was counted before: it is read back from
+		// what was played and nothing else, so no game already written down is counted any
+		// differently because of this.
 		$last_round = 0;
+		if (isset($this->data->time) && isset($this->data->time->round) &&
+			(!isset($this->data->time->time) || $this->data->time->time != GAMETIME_END))
+		{
+			$last_round = (int)$this->data->time->round;
+		}
 		foreach ($this->data->players as $player)
 		{
 			if (isset($player->nominating))

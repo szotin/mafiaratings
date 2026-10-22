@@ -502,13 +502,19 @@ class EventPageBase extends PageBase
 				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->name));
 			}
 			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name));
-			$manager_menu[] = new MenuItem('game_obs.php?bck=1&user_id=0&event_id=' . $this->id, get_label('OBS Studio integration'), get_label('Instructions how to add game informaton to OBS Studio.'));
 			// A round of a tournament is set up through its tournament, where one set of
-			// settings covers the table for every round of it.
-			$manager_menu[] = new MenuItem(
-				is_null($this->tournament_id) ? ('streams.php?event_id=' . $this->id) : ('streams.php?tournament_id=' . $this->tournament_id),
-				get_label('Stream settings'),
-				get_label('Set up what is shown between games at each table: the language, which screens are shown and how long for, and the ground they stand on.'));
+			// settings covers the table for every round of it - so the question asked here is
+			// the one that page will ask, and a referee of this round alone is not offered a
+			// page that would turn them away.
+			if (is_null($this->tournament_id)
+				? is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $this->club_id, $this->id)
+				: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->tournament_id))
+			{
+				$manager_menu[] = new MenuItem(
+					is_null($this->tournament_id) ? ('streams.php?event_id=' . $this->id) : ('streams.php?tournament_id=' . $this->tournament_id),
+					get_label('Stream settings'),
+					get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.'));
+			}
 			$manager_menu[] = new MenuItem('event_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts'));
 			
 			if ($this->is_manager && is_null($this->tournament_id))

@@ -3,7 +3,6 @@ if (typeof _l == "undefined") _l = {};
 _l["ShowRoles"] = "show the roles in the stream";
 _l["SwapRolesFail"] = "Unable to swap roles for players {1} and {2} because if we swap their roles game is over. Please go back.";
 _l["SwapRole"] = "Swap roles with";
-_l["Streaming"] = "video streaming";
 _l["ViewGame"] = "View game log";
 _l["Accurate"] = "Please specify how accurate you are while entering data. Uncheck everything that you skip:";
 _l["feature_a"] = "static arrangements";

@@ -434,19 +434,27 @@ class ApiPage extends GetApiPageBase
 		if ($game->phase != 'night' && isset($g->time))
 		{
 			$game->nominees = array();
-			$i = $first = $this->game->who_speaks_first($g->time->round);
-			do
+
+			// Round the table from whoever speaks first. When there is nobody to speak first -
+			// which is what an empty table would come to - there is nothing to go round either:
+			// starting from a seat that is not a seat, we would never arrive back at it.
+			$first = $this->game->who_speaks_first($g->time->round);
+			if ($first >= 1 && $first <= 10)
 			{
-				$p = $g->players[$i - 1];
-				if (isset($p->nominating) && $g->time->round < count($p->nominating))
+				$i = $first;
+				do
 				{
-					$game->nominees[] = $p->nominating[$g->time->round];
-				}
-				if (++$i > 10)
-				{
-					$i = 1;
-				}					
-			} while ($i != $first);
+					$p = $g->players[$i - 1];
+					if (isset($p->nominating) && $g->time->round < count($p->nominating))
+					{
+						$game->nominees[] = $p->nominating[$g->time->round];
+					}
+					if (++$i > 10)
+					{
+						$i = 1;
+					}
+				} while ($i != $first);
+			}
 			
 			$game->votingCanceled = $this->game->is_voting_canceled($g->time->round);
 		}

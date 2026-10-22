@@ -42,6 +42,16 @@ class ApiPage extends GetApiPageBase
 		$stream->background = ($settings->flags & STREAM_FLAG_DARK) ? 'dark' : 'light';
 		$stream->transparent = ($settings->flags & STREAM_FLAG_TRANSPARENT) ? 1 : 0;
 
+		// Which OBS scene this table should be showing. A browser source can change the scene
+		// itself, so these are what it needs to know: what the game is asking for as it is
+		// played, and what somebody has asked for by hand. The order from a person carries the
+		// time it was given, which is how a source tells a new one from the one it has already
+		// carried out - it stands until the game moves the automatic scene on by itself.
+		$stream->scene = new stdClass();
+		$stream->scene->auto = stream_played_scene($owner, $table_num, $settings);
+		$stream->scene->manual = $settings->scene;
+		$stream->scene->manualTime = $settings->scene_time;
+
 		$this->response['stream'] = $stream;
 	}
 
@@ -58,6 +68,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('locale', 'The language the screens are shown in.');
 			$param->sub_param('background', 'The ground they stand on: "dark" or "light".');
 			$param->sub_param('transparent', '1 when nothing is painted behind them, 0 otherwise.');
+			$param->sub_param('scene', 'Which OBS scene the table should be showing. "auto" is what the game being played is asking for, "manual" what somebody asked for by hand, and "manualTime" when they asked. A browser source follows the manual one when its time is newer than the last it carried out, and the automatic one whenever that changes.');
 		return $help;
 	}
 }

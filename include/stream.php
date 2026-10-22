@@ -199,15 +199,31 @@ function stream_settings($owner, $table_num)
 	$settings->delay = STREAM_DEFAULT_DELAY;
 	$settings->screens = array_keys($all);
 	$settings->flags = 0;
+	$settings->scene = '';          // the standing order from a person, if there is one
+	$settings->scene_time = 0;
+	$settings->scenes = array();    // what the source reported about the OBS it runs in
+	$settings->control_level = -1;  // and how much it is allowed to do there
+	$settings->scene_events = array(); // the scene the game asks for in each of its phases
 
-	$query = new DbQuery('SELECT lang, delay, screens, flags FROM ' . $owner->table .
+	$query = new DbQuery('SELECT lang, delay, screens, flags, scene, scene_time, scenes, scene_events, control_level FROM ' . $owner->table .
 		' WHERE ' . $owner->column . ' = ? AND table_num = ?', $owner->id, $table_num);
 	if ($row = $query->next())
 	{
-		list ($lang, $delay, $screens, $flags) = $row;
+		list ($lang, $delay, $screens, $flags, $scene, $scene_time, $scene_names, $scene_events, $control_level) = $row;
 		$settings->lang = (int)$lang;
 		$settings->delay = (int)$delay;
 		$settings->flags = (int)$flags;
+		$settings->scene = $scene;
+		$settings->scene_time = (int)$scene_time;
+		$settings->control_level = (int)$control_level;
+
+		$scene_names = is_null($scene_names) ? NULL : json_decode($scene_names);
+		if (is_array($scene_names))
+		{
+			$settings->scenes = $scene_names;
+		}
+
+		$settings->scene_events = stream_parse_scene_events($scene_events);
 
 		// An empty list is every screen rather than none: a source showing nothing at all would
 		// look like one that is broken, and there is no reason anybody would ask for it.
@@ -221,6 +237,207 @@ function stream_settings($owner, $table_num)
 	$settings->lang_resolved = ($settings->lang > 0) ? $settings->lang : stream_default_lang($owner);
 	$settings->delay = min(max($settings->delay, STREAM_MIN_DELAY), STREAM_MAX_DELAY);
 	return $settings;
+}
+
+// Level of control a browser source needs before it may change a scene. The numbers are
+// obs-browser's own; 4 is ADVANCED, which is the Page permissions setting of the same name.
+define('STREAM_CONTROL_ADVANCED', 4);
+
+// The scene the game being played at this table is asking for. The game says what is happening
+// at the table and nothing else - whose speech it is, whether it is night, whether the roles
+// are being handed out - and which scene that comes to is worked out here, against what the
+// table was set up with. The moderator's screen used to do it and carry the answer in the game;
+// doing it here means a change to the switching reaches a game already under way instead of
+// waiting for that screen to be reloaded, and that the one place the sources ask is the one
+// place that decides.
+//
+// Empty when the table has been told not to switch by itself, when nothing is set up for it,
+// when no game is being played at it, or when nothing is set up for the phase that game is in.
+function stream_played_scene($owner, $table_num, $settings)
+{
+	$scene_events = $settings->scene_events;
+	if (($settings->flags & STREAM_FLAG_NO_AUTO_SCENE) != 0 || empty($scene_events))
+	{
+		return '';
+	}
+
+	$where = $owner->is_tournament ? 'e.tournament_id = ?' : 'e.id = ?';
+	$query = new DbQuery(
+		'SELECT g.game FROM current_games g JOIN events e ON e.id = g.event_id'.
+		' WHERE ' . $where . ' AND g.table_num = ?', $owner->id, $table_num);
+	while ($row = $query->next())
+	{
+		list ($game) = $row;
+		$data = json_decode($game);
+		if (!is_object($data))
+		{
+			continue;
+		}
+
+		$scene = stream_game_scene($scene_events, $data);
+		if ($scene != '')
+		{
+			return $scene;
+		}
+	}
+	return '';
+}
+
+// Which of the scenes a game in this state is asking for. A seat that is speaking comes first,
+// then the phase by its own name, and failing both the plain day or night the phase belongs to
+// - so a table that names nothing but a day scene and a night scene still follows the game.
+function stream_game_scene($scene_events, $game)
+{
+	if (!isset($game->time) || !isset($game->time->time))
+	{
+		return '';
+	}
+
+	// A seat with no scene of its own carries on with the scene of the seat before it, round
+	// the table, so that one scene can cover a run of seats without being named against each.
+	$seats = array_fill(0, 10, '');
+	$phases = array();
+	foreach ($scene_events as $pair)
+	{
+		$seat = (int)$pair->event;
+		if ((string)$seat === $pair->event && $seat >= 1 && $seat <= 10)
+		{
+			$seats[$seat - 1] = $pair->scene;
+		}
+		else if ($pair->event != '')
+		{
+			$phases[$pair->event] = $pair->scene; // one row to a phase - see stream_parse_scene_events
+		}
+	}
+
+	$carry = '';
+	for ($i = 0; $i < 10; ++$i)
+	{
+		if ($seats[$i] == '')
+		{
+			$seats[$i] = $carry;
+		}
+		else
+		{
+			$carry = $seats[$i];
+		}
+	}
+	for ($i = 0; $carry != '' && $i < 10 && $seats[$i] == ''; ++$i)
+	{
+		$seats[$i] = $carry; // the seats before the first one named carry on round from the last
+	}
+
+	$speaker = isset($game->time->speaker) ? (int)$game->time->speaker : 0;
+	if ($speaker >= 1 && $speaker <= 10 && $seats[$speaker - 1] != '')
+	{
+		return $seats[$speaker - 1];
+	}
+
+	// The two ways a vote is reached are the same thing to watch.
+	$phase = $game->time->time;
+	if ($phase == 'voting start' || $phase == 'voting kill all')
+	{
+		$phase = 'voting';
+	}
+	if (isset($phases[$phase]))
+	{
+		return $phases[$phase];
+	}
+
+	$phase = stream_game_is_night($game) ? 'night' : 'day';
+	return isset($phases[$phase]) ? $phases[$phase] : '';
+}
+
+// Whether the phase a game is in belongs to the night. The same answer as gameIsNight() in
+// js/src/game.js, which is where the phases are given their names.
+function stream_game_is_night($game)
+{
+	switch ($game->time->time)
+	{
+	case 'start':
+	case 'arrangement':
+	case 'relaxed sitting':
+	case 'night start':
+	case 'shooting':
+	case 'don':
+	case 'sheriff':
+	case 'night end':
+		return true;
+	case 'end':
+		return isset($game->winner) && $game->winner == 'maf';
+	}
+	return false;
+}
+
+// The phases of a game a scene can be asked for in, in the order they are offered, as the keys
+// stream_game_scene() matches a game against. The first is "no phase", which is what a scene
+// that has not been given one yet stands at. The ten numbers are the seats: a scene against a
+// seat is shown while that seat is speaking.
+function stream_game_events()
+{
+	$events = array(
+		'' => '',
+		'day' => get_label('In the daytime'),
+		'night' => get_label('In the nighttime'),
+		'start' => get_label('During roles distribution'),
+		'end' => get_label('On game end'),
+		'arrangement' => get_label('During arrangement'),
+		'relaxed sitting' => get_label('During relaxed sitting'));
+	for ($i = 1; $i <= 10; ++$i)
+	{
+		$events[(string)$i] = get_label('On player [0] speach', $i);
+	}
+	$events['voting'] = get_label('During voting');
+	$events['shooting'] = get_label('During shooting');
+	$events['don'] = get_label('During don\'s check');
+	$events['sheriff'] = get_label('During sheriff\'s check');
+	return $events;
+}
+
+// What is stored against the phases, read back as a list of scene and event pairs. Anything
+// that is not a pair of strings, or names a phase we do not know, is dropped rather than
+// handed on; a table that was set up when we offered something else should not be able to
+// confuse what reads it.
+//
+// A phase belongs to one row and no more. Two rows naming the same one would be two answers
+// to the same question with nothing to say which is meant, so the second is dropped here as
+// well as being kept off the page. A row with no phase yet is in nobody's way.
+function stream_parse_scene_events($json)
+{
+	$events = array();
+	$stored = is_null($json) ? NULL : json_decode($json);
+	if (!is_array($stored))
+	{
+		return $events;
+	}
+
+	$known = stream_game_events();
+	$taken = array();
+	foreach ($stored as $pair)
+	{
+		if (!is_object($pair) || !isset($pair->scene) || !isset($pair->event))
+		{
+			continue;
+		}
+		if (!is_string($pair->scene) || !is_string($pair->event) || !isset($known[$pair->event]))
+		{
+			continue;
+		}
+		if ($pair->event != '')
+		{
+			if (isset($taken[$pair->event]))
+			{
+				continue;
+			}
+			$taken[$pair->event] = true;
+		}
+
+		$event = new stdClass();
+		$event->scene = $pair->scene;
+		$event->event = $pair->event;
+		$events[] = $event;
+	}
+	return $events;
 }
 
 // The stored list, as names we know. Anything else in it is dropped rather than taken for a

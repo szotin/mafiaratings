@@ -15,8 +15,8 @@ require_once 'include/stream.php';
 //
 // The page hangs under a tournament or under an event, and should wear whatever it hangs
 // under. The body is the same either way, so the class it extends is the only thing that
-// differs - the same as game_obs.php does. The bases want the thing's id in "id", so it is
-// handed over here and the links go on saying which of the two they mean.
+// differs. The bases want the thing's id in "id", so it is handed over here and the links
+// go on saying which of the two they mean.
 if (isset($_REQUEST['event_id']) && (int)$_REQUEST['event_id'] > 0)
 {
 	define('STREAMS_UNDER_EVENT', true);
@@ -145,9 +145,12 @@ class Page extends StreamsPageBase
 
 	protected function show_body()
 	{
+		// The referees as well as the managers: at most tournaments it is the referees who run
+		// the stream, and the scene somebody has to switch when the moderator forgets is
+		// theirs to switch.
 		check_permissions(STREAMS_UNDER_EVENT
-			? (PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER)
-			: (PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER), $this->club_id, $this->id);
+			? (PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE)
+			: (PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE), $this->club_id, $this->id);
 
 		echo '<div class="tab">';
 		echo '<button ' . ($this->view == VIEW_ALL_TABLES ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_ALL_TABLES . '})">' . get_label('All tables') . '</button>';
@@ -167,6 +170,53 @@ class Page extends StreamsPageBase
 		$scope = (STREAMS_UNDER_EVENT ? 'event_id=' : 'tournament_id=') . $this->id . '&table_num=' . $table;
 
 		echo '<div class="tabcontent">';
+
+		// Switching the scene by hand. The moderator's own screen does it by the phase of the
+		// game, so this is for when nobody is - the moderator is not using that, or forgot -
+		// and somebody at the commentary desk or watching the tournament switches instead. It
+		// stands until the game asks for a different scene by itself.
+		//
+		// Only on the tab of one table: a scene belongs to the OBS standing beside it, and
+		// there is no sense in asking every table to show the same one. And only once that
+		// OBS has said what scenes it has, which a browser source of ours does as soon as it
+		// is opened - until then there is nothing to choose from and nothing worth saying, so
+		// neither of these sections is there at all.
+		$stored = ($table == VIEW_ALL_TABLES) ? NULL : stream_settings($this->owner, $table);
+		if (!is_null($stored) && !empty($stored->scenes))
+		{
+			echo '<h3 class="stream-section">' . get_label('Scene') . '</h3>';
+			echo '<table class="bordered light" width="100%">';
+
+			$html = '<select id="scene" onchange="sceneChanged()">';
+			foreach ($stored->scenes as $name)
+			{
+				$html .= '<option value="' . htmlspecialchars($name) . '"' .
+					($stored->scene === $name ? ' selected' : '') . '>' . htmlspecialchars($name) . '</option>';
+			}
+			$html .= '</select>';
+			$this->show_setting(get_label('Scene'), $html);
+
+			if ($stored->control_level >= 0 && $stored->control_level < STREAM_CONTROL_ADVANCED)
+			{
+				$this->show_setting('', '<b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b>');
+			}
+			echo '</table>';
+
+			// Switching by itself, which is what happens the rest of the time: the site reads
+			// the phase the game at this table is in and answers with the scene set against it,
+			// and the browser sources follow. The rows are drawn by the script, since they are
+			// added and taken away as they are set up.
+			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';
+
+			// Turned off at a table that is switched by hand. The rows stay where they are -
+			// they are just not acted on - so turning it back on brings back what was set up.
+			$no_auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) != 0;
+			echo '<table class="bordered light" width="100%">';
+			$this->show_setting(get_label('Turn off'),
+				'<input type="checkbox" id="no-auto-scenes" onchange="autoScenesChanged()"' . ($no_auto ? ' checked' : '') . '>');
+			echo '</table>';
+			echo '<div id="scene-events"' . ($no_auto ? ' style="display: none"' : '') . '></div>';
+		}
 
 		// The cards over the game itself. They are three sources rather than one so that a
 		// stream can put the players and the info bar wherever it likes.
@@ -254,6 +304,261 @@ class Page extends StreamsPageBase
 		// Which of the two the tables belong to, named the way the api asks for it.
 		var owner = { <?php echo STREAMS_UNDER_EVENT ? 'event_id' : 'tournament_id'; ?>: <?php echo $this->id; ?> };
 		var tableNum = <?php echo $this->view; ?>;
+<?php
+		// Everything below belongs to a tab that has the scene sections on it, which is the
+		// tab of one table whose OBS has said what scenes it has. Where they are not shown
+		// there is nothing here for them to work on either.
+		$stored = ($this->view == VIEW_ALL_TABLES) ? NULL : stream_settings($this->owner, $this->view);
+		if (!is_null($stored) && !empty($stored->scenes))
+		{
+			$events = array();
+			foreach (stream_game_events() as $key => $label)
+			{
+				$events[] = array($key, $label);
+			}
+?>
+		// Asked for by hand. The browser sources at that table pick it up within a couple of
+		// seconds and change the scene themselves.
+		function sceneChanged()
+		{
+			json.post("api/ops/stream.php",
+			Object.assign({ op: "scene", table_num: tableNum, scene: $('#scene').val() }, owner),
+			saved);
+		}
+
+		// The scenes this table's OBS reported, and which of them the game asks for in each of
+		// its phases. The phases are read as the sources ask, so a change here reaches a game
+		// already under way within a second or two.
+		var sceneNames = <?php echo json_encode($stored->scenes); ?>;
+		var sceneEvents = <?php echo json_encode($stored->scene_events); ?>;
+		var gameEvents = <?php echo json_encode($events); ?>;
+
+		function renderSceneEvents()
+		{
+			let html = '<table class="bordered light" width="100%"><tr class="header">' +
+				'<td width="32"><button class="icon" onclick="addSceneEvent()"><img src="images/create.png"></button></td>' +
+				// The phase is as wide as it has to be and no wider; the scene takes the rest of
+				// the table, since a scene can be called anything at all.
+				'<td width="280"><?php echo get_label('When'); ?></td>' +
+				'<td><?php echo get_label('Scene'); ?><span style="float: right"><button onclick="autoSceneEvents()">' +
+				'<?php echo get_label('Assign scenes automatically'); ?></button></span></td></tr>';
+
+			for (let i = 0; i < sceneEvents.length; ++i)
+			{
+				html += '<tr><td><button class="icon" onclick="deleteSceneEvent(' + i + ')"><img src="images/delete.png"></button></td>' +
+					'<td>' + picker('se-event-' + i, gameEvents, sceneEvents[i].event, takenEvents(i)) + '</td>' +
+					'<td>' + picker('se-scene-' + i, sceneNames, sceneEvents[i].scene, []) + '</td></tr>';
+			}
+			$('#scene-events').html(html + '</table>');
+		}
+
+		// The phases the other rows have taken. A phase belongs to one row and no more: two
+		// rows naming the same one would be two answers to the same question, and nothing
+		// could say which of them is meant. Rows that have not been given a phase yet are not
+		// in anybody's way.
+		function takenEvents(row)
+		{
+			let taken = [];
+			for (let i = 0; i < sceneEvents.length; ++i)
+			{
+				if (i != row && sceneEvents[i].event != '')
+					taken.push(sceneEvents[i].event);
+			}
+			return taken;
+		}
+
+		// One dropdown of the rows above. The list is either plain names - the scenes - or
+		// pairs of what is stored and what it is called, which is what the phases are. What
+		// another row has taken is left out, except for this row's own answer.
+		function picker(id, list, chosen, taken)
+		{
+			let html = '<select id="' + id + '" onchange="sceneEventsChanged()">';
+			let found = false;
+			for (const item of list)
+			{
+				let value = Array.isArray(item) ? item[0] : item;
+				let text = Array.isArray(item) ? item[1] : item;
+				let selected = (value == chosen);
+				if (!selected && taken.indexOf(value) >= 0)
+					continue;
+				found = found || selected;
+				html += '<option value="' + escapeHtml(value) + '"' + (selected ? ' selected' : '') + '>' + escapeHtml(text) + '</option>';
+			}
+
+			// A scene that has been renamed or taken out of OBS since this was set up is still
+			// shown, so that it is plain what the row says rather than the row quietly
+			// standing for something else.
+			if (!found && chosen != '')
+				html = '<select id="' + id + '" onchange="sceneEventsChanged()"><option value="' + escapeHtml(chosen) + '" selected>' + escapeHtml(chosen) + '</option>' + html.substring(html.indexOf('>') + 1);
+
+			return html + '</select>';
+		}
+
+		function escapeHtml(text)
+		{
+			return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+		}
+
+		// Turning the switching off hides the rows rather than forgetting them: nothing is sent
+		// but the one flag, and what is set up against the phases stays as it is.
+		function autoScenesChanged()
+		{
+			let off = document.getElementById('no-auto-scenes').checked;
+			document.getElementById('scene-events').style.display = off ? 'none' : '';
+			json.post("api/ops/stream.php",
+			Object.assign({ op: "set", table_num: tableNum, auto_scenes: off ? 0 : 1 }, owner),
+			saved);
+		}
+
+		function addSceneEvent()
+		{
+			sceneEvents.push({ scene: sceneNames.length > 0 ? sceneNames[0] : '', event: '' });
+			renderSceneEvents();
+			sceneEventsChanged();
+		}
+
+		// The three scenes nearly every table has, and what people call them. These are names
+		// to match against what the OBS reported, not anything shown on the page, so they are
+		// in the languages a scene collection is likely to be built in rather than in the
+		// language of whoever is reading this page.
+		var sceneGuesses = [
+			{ what: <?php echo json_encode(get_label('Day')); ?>, events: ['day'],
+				names: ['day', 'день', 'дневная', 'денна', 'game', 'игра', 'гра', 'table', 'стол', 'стіл'] },
+			{ what: <?php echo json_encode(get_label('Night')); ?>, events: ['night', 'start'],
+				names: ['night', 'ночь', 'ночная', 'ніч', 'нічна'] },
+			{ what: <?php echo json_encode(get_label('Break')); ?>, events: ['end'],
+				names: ['break', 'перерыв', 'перерва', 'pause', 'пауза', 'brb', 'intermission', 'заставка'] }];
+
+		// Fills in what can be guessed and leaves alone what cannot. A whole name counts
+		// before a name that is only part of a longer one, and the night and the break are
+		// looked for before the day, so that a scene called "Game night" goes to the night
+		// rather than to the day for the sake of the word "game" in it.
+		//
+		// A phase that is already set is left as it is - this adds, it does not overwrite.
+		// Except where the scene it names is not among the ones the OBS reported: that row
+		// does nothing at all, so it is treated as empty and filled in rather than left to
+		// point at a scene that has been renamed or taken away.
+		function autoSceneEvents()
+		{
+			let known = {};
+			for (const name of sceneNames)
+				known[name] = true;
+
+			let row = {}, busy = {};
+			for (let i = 0; i < sceneEvents.length; ++i)
+			{
+				let pair = sceneEvents[i];
+				if (pair.event == '')
+					continue;
+				row[pair.event] = i;
+				if (known[pair.scene])
+					busy[pair.event] = true;
+			}
+
+			let taken = {}, found = {};
+			for (let whole = 1; whole >= 0; --whole)
+			{
+				for (const g of [1, 2, 0])
+				{
+					if (found[g])
+						continue;
+					for (const scene of sceneNames)
+					{
+						if (taken[scene])
+							continue;
+						let name = scene.toLowerCase().trim();
+						let hit = sceneGuesses[g].names.some(function(n)
+							{ return whole ? (name == n) : (name.indexOf(n) >= 0); });
+						if (hit)
+						{
+							found[g] = scene;
+							taken[scene] = true;
+							break;
+						}
+					}
+				}
+			}
+
+			let added = 0;
+			for (let g = 0; g < sceneGuesses.length; ++g)
+			{
+				if (!found[g])
+					continue;
+				for (const event of sceneGuesses[g].events)
+				{
+					if (busy[event])
+						continue;
+					if (event in row)
+						sceneEvents[row[event]].scene = found[g]; // the row was pointing at nothing
+					else
+						sceneEvents.push({ scene: found[g], event: event });
+					busy[event] = true;
+					++added;
+				}
+			}
+
+			// What could not be found is worth saying outright, whether or not anything else
+			// was filled in: it is the one thing the person has to finish by hand, and naming
+			// it saves them going through the list to work out which.
+			let missing = [];
+			for (let g = 0; g < sceneGuesses.length; ++g)
+			{
+				if (!found[g])
+					missing.push(sceneGuesses[g].what);
+			}
+
+			if (added > 0)
+			{
+				// The rows first, because what is sent is read back out of them.
+				renderSceneEvents();
+				sceneEventsChanged();
+			}
+
+			if (missing.length > 0)
+			{
+				dlg.info(<?php echo json_encode(get_label('There is nothing among the scenes of this table that looks like [0]. Set it by hand, or rename the scenes in OBS Studio and try again.', '%WHAT%')); ?>
+					.replace('%WHAT%', missing.join(', ')));
+			}
+			else if (added == 0)
+			{
+				dlg.info(<?php echo json_encode(get_label('Every scene that could be recognised is set up already.')); ?>);
+			}
+		}
+
+		function deleteSceneEvent(i)
+		{
+			sceneEvents.splice(i, 1);
+			renderSceneEvents();
+			sceneEventsChanged();
+		}
+
+		// Read back out of the rows rather than kept in step one control at a time, so that
+		// what is sent is what the page shows.
+		function sceneEventsChanged()
+		{
+			sceneEvents = [];
+			for (let i = 0; ; ++i)
+			{
+				let scene = document.getElementById('se-scene-' + i);
+				if (scene == null)
+					break;
+				sceneEvents.push({ scene: scene.value, event: document.getElementById('se-event-' + i).value });
+			}
+
+			renderSceneEvents();
+			json.post("api/ops/stream.php",
+			Object.assign({
+				op: "scene_events"
+				, table_num: tableNum
+				, scene_events: JSON.stringify(sceneEvents)
+			}, owner),
+			saved);
+		}
+
+		renderSceneEvents();
+<?php
+		}
+?>
 
 		function copyUrl(id)
 		{

@@ -6,6 +6,8 @@ require_once '../../include/session.php';
 // saves what the moderator does once a second, so this is the other half of the delay between a
 // click on a role and the card turning over on the stream.
 define('OBS_RETRY_DELAY', 1000);
+// How often (in milliseconds) a source asks which OBS scene the table should be showing.
+define('OBS_SCENE_DELAY', 2000);
 define('OBS_NO_LOGO', 'images/aml_logo.png'); // the picture shown instead of a logo that we do not have
 
 // Shows a browser source page for OBS Studio. $view is one of:
@@ -65,6 +67,9 @@ function show_obs_page($view)
 	echo '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gagalin">';
 	echo '<link rel="stylesheet" href="' . obs_file('obs.css') . '">';
 	echo '<script src="' . obs_file('obs.js') . '"></script>';
+	// Changes the OBS scene from inside the source, which is why there is no
+	// obs-websocket here. Outside OBS it does nothing at all.
+	echo '<script src="' . obs_file('scenes.js') . '"></script>';
 	echo '</head><body>';
 
 	if ($view == 'overlay')
@@ -86,6 +91,8 @@ function show_obs_page($view)
 	}
 
 	echo '<script>obs.start(' . json_encode($options) . ');</script>';
+	echo '<script>obsScenes.start("../../api/get/stream.php?op=settings", ' .
+		json_encode($options->params) . ', ' . OBS_SCENE_DELAY . ');</script>';
 	echo '</body></html>';
 }
 

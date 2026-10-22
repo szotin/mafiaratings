@@ -9,6 +9,23 @@ class ApiPage extends OpsApiPageBase
 {
 	//-------------------------------------------------------------------------------------------------------
 	// set
+	// Who may set a table up: whoever runs the thing the table belongs to.
+	// Who may set a stream up: the managers, and the referees with them. Running the stream is
+	// usually the referees' job, so the page and everything it writes through are open to them.
+	private function check_owner_permissions($owner)
+	{
+		if ($owner->is_tournament)
+		{
+			list ($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $owner->id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $owner->id);
+		}
+		else
+		{
+			list ($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $owner->id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $club_id, $owner->id);
+		}
+	}
+
 	// A game already being played carries its own answer about the roles - it was given one
 	// when it was created - and the overlays read it from there, so turning the setting over
 	// has to reach it or nothing changes on the stream until the next game. The moderator's
@@ -92,6 +109,147 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// scene
+	//-------------------------------------------------------------------------------------------------------
+	// An order to show a scene, given by a person rather than by the game. The moderator's own
+	// screen switches the scenes by the phase of the game; this is for when nobody is doing
+	// that - the moderator is not using the automatic switching, or forgot - and somebody at
+	// the commentary desk or watching the tournament switches by hand. It stands until the
+	// game moves the automatic scene on by itself.
+	function scene_op()
+	{
+		$table_num = max((int)get_required_param('table_num'), 1);
+		$scene = trim(get_required_param('scene'));
+		$owner = stream_owner(get_optional_param('tournament_id', 0), get_optional_param('event_id', 0));
+		if (is_null($owner))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('tournament')));
+		}
+		$this->check_owner_permissions($owner);
+
+		$settings = stream_settings($owner, $table_num);
+		Db::exec(get_label('event'),
+			'INSERT INTO ' . $owner->table . ' (' . $owner->column . ', table_num, lang, delay, screens, flags, scene, scene_time)'.
+			' VALUES (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())'.
+			' ON DUPLICATE KEY UPDATE scene = ?, scene_time = UNIX_TIMESTAMP()',
+			$owner->id, $table_num, $settings->lang, $settings->delay, implode(',', $settings->screens), $settings->flags, $scene,
+			$scene);
+	}
+
+	function scene_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE | PERMISSION_EVENT_REFEREE, 'Asks the browser sources at a table to show an OBS scene. It stands until the game being played asks for a different one by itself.');
+		$help->request_param('tournament_id', 'Tournament id.', 'event_id is used.');
+		$help->request_param('event_id', 'Event id.', 'tournament_id is used.');
+		$help->request_param('table_num', 'Table number.');
+		$help->request_param('scene', 'Name of the OBS scene to show.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// scene_events
+	//-------------------------------------------------------------------------------------------------------
+	// Which scene the game itself asks for in each of its phases. The game says nothing but
+	// what is happening at the table; the site works out from this which scene that comes to,
+	// and the browser sources ask it and do the switching. It belongs to the table rather than
+	// to whoever is moderating at it, because the scenes it names are the scenes of the OBS
+	// standing beside that table.
+	function scene_events_op()
+	{
+		$table_num = max((int)get_required_param('table_num'), 1);
+		$owner = stream_owner(get_optional_param('tournament_id', 0), get_optional_param('event_id', 0));
+		if (is_null($owner))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('tournament')));
+		}
+		$this->check_owner_permissions($owner);
+
+		// Read back through the same parser the settings are read with, so that whatever is
+		// stored is something we would hand to the game screen - a pair we would drop there is
+		// dropped here instead of being kept and quietly ignored for ever after.
+		$events = stream_parse_scene_events(get_optional_param('scene_events', '[]'));
+		if (count($events) > 64)
+		{
+			$events = array_slice($events, 0, 64);
+		}
+		$events = json_encode($events);
+
+		$settings = stream_settings($owner, $table_num);
+		Db::exec(get_label('event'),
+			'INSERT INTO ' . $owner->table . ' (' . $owner->column . ', table_num, lang, delay, screens, flags, scene_events)'.
+			' VALUES (?, ?, ?, ?, ?, ?, ?)'.
+			' ON DUPLICATE KEY UPDATE scene_events = ?',
+			$owner->id, $table_num, $settings->lang, $settings->delay, implode(',', $settings->screens), $settings->flags, $events,
+			$events);
+	}
+
+	function scene_events_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE | PERMISSION_EVENT_REFEREE, 'Which OBS scene the game asks for in each of its phases at one table. The moderator screen reads it when a game is opened.');
+		$help->request_param('tournament_id', 'Tournament id.', 'event_id is used.');
+		$help->request_param('event_id', 'Event id.', 'tournament_id is used.');
+		$help->request_param('table_num', 'Table number.');
+		$help->request_param('scene_events', 'Json array of {"scene": name, "event": phase} pairs. The phases are "day", "night", "start", "end", "arrangement", "relaxed sitting", "voting", "shooting", "don", "sheriff" and "1" to "10" for the seat that is speaking.', 'the table is left with no automatic switching.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// scenes
+	//-------------------------------------------------------------------------------------------------------
+	// What a browser source reports about the OBS it is running in. Nobody is logged in there -
+	// the overlays are open to anyone who has the address, the same as the pages they show - so
+	// this is not behind a permission. All it can do is change the list of names the settings
+	// page offers and what it says about the source's permissions, so it is kept short and
+	// plain and nothing is done with it but showing it.
+	function scenes_op()
+	{
+		$table_num = max((int)get_required_param('table_num'), 1);
+		$owner = stream_owner(get_optional_param('tournament_id', 0), get_optional_param('event_id', 0));
+		if (is_null($owner))
+		{
+			throw new Exc(get_label('Unknown [0]', get_label('tournament')));
+		}
+
+		$control_level = (int)get_optional_param('control_level', -1);
+		$scenes = json_decode(get_optional_param('scenes', '[]'));
+		$names = array();
+		if (is_array($scenes))
+		{
+			foreach ($scenes as $name)
+			{
+				if (is_string($name) && $name != '' && mb_strlen($name) <= 128 && !in_array($name, $names))
+				{
+					$names[] = $name;
+				}
+				if (count($names) >= 64)
+				{
+					break;
+				}
+			}
+		}
+
+		$settings = stream_settings($owner, $table_num);
+		$names = json_encode($names);
+		Db::exec(get_label('event'),
+			'INSERT INTO ' . $owner->table . ' (' . $owner->column . ', table_num, lang, delay, screens, flags, scenes, control_level)'.
+			' VALUES (?, ?, ?, ?, ?, ?, ?, ?)'.
+			' ON DUPLICATE KEY UPDATE scenes = ?, control_level = ?',
+			$owner->id, $table_num, $settings->lang, $settings->delay, implode(',', $settings->screens), $settings->flags, $names, $control_level,
+			$names, $control_level);
+	}
+
+	function scenes_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_EVERYONE, 'What a browser source reports about the OBS it runs in, so that the stream settings page has scenes to offer and can say when a source is not allowed to switch them.');
+		$help->request_param('tournament_id', 'Tournament id.', 'event_id is used.');
+		$help->request_param('event_id', 'Event id.', 'tournament_id is used.');
+		$help->request_param('table_num', 'Table number.');
+		$help->request_param('scenes', 'Json array of the scene names in that OBS.', 'nothing is reported.');
+		$help->request_param('control_level', "What the source is allowed to do, as obs-browser counts it. 4 and up is what changing a scene needs.", '-1, which is "not known".');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// Only what was asked for is changed, and everything else the table was set up with stays
 	// as it was. That is what lets one setting be sent to every table at once without carrying
 	// the other settings of whichever table the sender happened to be looking at.
@@ -104,17 +262,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Unknown [0]', get_label('tournament')));
 		}
 
-		if ($owner->is_tournament)
-		{
-			list ($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $owner->id);
-			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $owner->id);
-		}
-		else
-		{
-			list ($club_id) = Db::record(get_label('event'), 'SELECT club_id FROM events WHERE id = ?', $owner->id);
-			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER, $club_id, $owner->id);
-		}
-
+		$this->check_owner_permissions($owner);
 		$this->set_roles($owner, $table_num);
 
 		// Table 0 is every table there is.
@@ -168,6 +316,14 @@ class ApiPage extends OpsApiPageBase
 			{
 				$flags = ((int)$_REQUEST['transparent'] != 0) ? ($flags | STREAM_FLAG_TRANSPARENT) : ($flags & ~STREAM_FLAG_TRANSPARENT);
 			}
+			// Asked for the right way round and stored the other, so that a table nobody has
+			// said anything about switches by itself, which is what it did before there was
+			// anything to say. What is set up against the phases is left untouched either way:
+			// turning it off is turning it off, not throwing it away.
+			if (isset($_REQUEST['auto_scenes']))
+			{
+				$flags = ((int)$_REQUEST['auto_scenes'] != 0) ? ($flags & ~STREAM_FLAG_NO_AUTO_SCENE) : ($flags | STREAM_FLAG_NO_AUTO_SCENE);
+			}
 
 			Db::exec(get_label('event'),
 				'INSERT INTO ' . $owner->table . ' (' . $owner->column . ', table_num, lang, delay, screens, flags) VALUES (?, ?, ?, ?, ?, ?)'.
@@ -179,7 +335,7 @@ class ApiPage extends OpsApiPageBase
 
 	function set_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_EVENT_MANAGER, 'Sets up the between-games screens at a table. Only the settings named in the request are changed; the rest are left as they were.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE | PERMISSION_EVENT_REFEREE, 'Sets up the between-games screens at a table. Only the settings named in the request are changed; the rest are left as they were.');
 		$help->request_param('tournament_id', 'Tournament id.', 'event_id is used.');
 		$help->request_param('event_id', 'Event id. A round of a tournament sets up the tournament; an event of its own sets up itself.', 'tournament_id is used.');
 		$help->request_param('table_num', 'Table number. 0 is every table there is.');
@@ -188,6 +344,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('screens', 'Which screens to show and in what order, by their short names, separated by commas: results, upcoming, standings, stats.', 'left as it is.');
 		$help->request_param('dark', '1 draws the screens on the dark wall instead of the pale ground they get by default.', 'left as it is.');
 		$help->request_param('transparent', '1 paints no ground at all, so the scene behind the browser source shows through.', 'left as it is.');
+		$help->request_param('auto_scenes', '1 switches the OBS scenes at this table by the phase of the game being played, 0 leaves them to be switched by hand. What is set up against the phases is kept either way.', 'left as it is.');
 		$help->request_param('hide_roles', '1 keeps the roles off the overlays. It belongs to the tournament rather than to one table, so it is set for the whole of it and every round follows.', 'left as it is.');
 		return $help;
 	}

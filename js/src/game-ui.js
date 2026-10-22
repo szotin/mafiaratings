@@ -1457,15 +1457,6 @@ function uiConfig(txt, onClose)
 		}
 		html += '> ' + l('ShowRoles') + '<br>'
 		
-		if (_obsScenes)
-		{
-			html += '<input type="checkbox" id="dlg-streaming"';
-			if (isSet(game.streaming) && game.streaming)
-			{
-				html += ' checked';
-			}
-			html += '> ' + l('Streaming') + '<br>'
-		}
 		html += '</td></tr>';
 
 		html += '<tr><td colspan="2"><p>' + l('Accurate') + '</p>';
@@ -1491,7 +1482,6 @@ function uiConfig(txt, onClose)
 		_renderCallback = null;
 		gameSetIsRating($('#dlg-rating').attr('checked') ? 1 : 0);
 		gameHideRoles($('#dlg-show-roles').attr('checked') ? 0 : 1);
-		obsSetStreaming($('#dlg-streaming').attr('checked') ? 1 : 0);
 		if (langs.length > 1)
 		{
 			gameSetLang($('#dlg-lang').val());

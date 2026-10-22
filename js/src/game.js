@@ -119,8 +119,6 @@ function gameInit(eventId, tableNum, gameNum, gameOnChange, errorListener, conne
 		regs = data.regs;
 		langs = data.langs;
 		
-		obsInit(data.obs_scenes);
-		
 		// If the game exists in the local storage, we use it instead of the server one.
 		// It can exist only when saving the game failed last time.
 		if (typeof localStorage == "object")
@@ -2762,10 +2760,7 @@ function gameNext()
 			case 'end':
 				// remove temporary fields
 				let time = game.time;
-				let obsScene = null;
 				delete game.time;
-				if (isSet(game.obsScene))
-					delete game.obsScene;
 				
 				_runSaving = false; // stop saving current game
 				json.post('api/ops/game.php', { op: 'create', json: JSON.stringify(game) }, function()
@@ -2777,8 +2772,6 @@ function gameNext()
 				{
 					// restore temporary fields
 					game.time = time;
-					if (obsScene)
-						game.obsScene = obsScene;
 					
 					_runSaving = true; // resume saving current game in case of error
 					return true;
@@ -2787,10 +2780,12 @@ function gameNext()
 			}
 		}
 		gameDirty();
-		obsAfterNext();
 	}
 }
 
+// Whether the game is on a stream, which its tournament or its event says and nothing here
+// changes - see EVENT_FLAG_STREAMING. It lengthens the end of the night by a step. It has
+// nothing to do with the OBS scenes any more: those follow whether the table has any set up.
 function gameIsStreaming()
 {
 	return isSet(game.streaming) && game.streaming;
@@ -2824,129 +2819,6 @@ function gameBack()
 		}
 		lastSaved = Math.min(lastSaved, log.length);
 		gameDirty();
-		obsAfterBack();
 	}
 }
 
-// OBS Studio interaction
-// Web sockets: https://github.com/obs-websocket-community-projects/obs-websocket-js
-// Protocol: https://github.com/obsproject/obs-websocket/blob/master/docs/generated/protocol.md#setcurrentprogramscene
-var _obsScenes = null;
-var _obsPlayers = [null,null,null,null,null,null,null,null,null,null];
-var _currentObsScene = '';
-
-function obsInit(scenes)
-{
-	_obsScenes = scenes;
-	if (_obsScenes != null)
-	{
-		for (let i = 0; i < _obsScenes.scenes.length;)
-		{
-			let s = _obsScenes.scenes[i];
-			let n = parseInt(s.event);
-			if (n >= 1 && n <= 10)
-			{
-				_obsPlayers[n-1] = s.scene;
-				_obsScenes.scenes.splice(i, 1);
-			}
-			else if (s.event == '')
-				_obsScenes.scenes.splice(i, 1);
-			else
-				++i;
-		}
-		
-		let scene = null;
-		for (let i = 0; i < 10; ++i)
-			if (_obsPlayers[i] == null)
-				_obsPlayers[i] = scene;
-			else
-				scene = _obsPlayers[i];
-		
-		if (scene != null)
-		{
-			for (let i = 0; i < 10; ++i)
-				if (_obsPlayers[i] == null)
-					_obsPlayers[i] = scene;
-				else
-					break;
-		}
-	}
-}
-
-function obsSetStreaming(on)
-{
-	if (_obsScenes)
-	{
-		game.streaming = !!on;
-	}
-}
-
-async function _obsSwitchScene(sceneName)
-{
-	try
-	{
-		const obs = new OBSWebSocket();
-		await obs.connect(_obsScenes.url, _obsScenes.password);
-		await obs.call('SetCurrentProgramScene', {sceneName: sceneName});
-		await obs.disconnect();
-	}
-	catch (error)
-	{
-		console.error('Failed to connect to OBS Studio', error.code, error.message);
-	}
-}
-
-function obsSwitchScene(sceneName)
-{
-	game.obsScene = sceneName;
-	if (_currentObsScene != sceneName)
-	{
-		_obsSwitchScene(sceneName);
-		_currentObsScene = sceneName;
-	}
-}
-
-function obsProceedEvent(ev)
-{
-	if (_obsScenes != null)
-	{
-		if (ev == 'voting start' || ev == 'voting kill all')
-		{
-			ev = 'voting';
-		}
-		
-		let scene = null;
-		for (let s of _obsScenes.scenes)
-		{
-			if (s.event == ev)
-			{
-				scene = s;
-				break;
-			}
-		}
-		
-		if (scene)
-		{
-			obsSwitchScene(scene.scene);
-			return true;
-		}
-	}
-	return false;
-}
-
-function obsAfterNext()
-{
-	if (_obsScenes != null && gameIsStreaming())
-	{
-		if (isSet(game.time.speaker) && _obsPlayers[game.time.speaker-1] != null)
-			obsSwitchScene(_obsPlayers[game.time.speaker-1]);
-		else if (!obsProceedEvent(game.time.time))
-			obsProceedEvent(gameIsNight() ? 'night' : 'day');
-	}
-}
-	
-function obsAfterBack()
-{
-	if (_obsScenes != null && gameIsStreaming() && isSet(game.obsScene))
-		obsSwitchScene(game.obsScene);
-}

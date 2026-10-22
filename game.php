@@ -19,7 +19,6 @@ class Page extends PageBase
 		echo '<script src="' . versioned_asset('js/game.js') . '"></script>';
 		echo '<script src="' . versioned_asset('js/game-ui.js') . '"></script>';
 		echo '<script src="' . versioned_asset('js/game_' . get_lang_code($_lang) . '.js') . '"></script>';
-		echo '<script src="' . versioned_asset('js/obs-websocket-js.js') . '"></script>';
 	}
 	
 	// no title to save space for the game
@@ -589,16 +588,25 @@ class Page extends PageBase
 			echo '<li type="separator"></li>';
 			// echo '<li id="voting" class="ops-item"><a href="#" onclick="gameToggleVoting()"><img src="images/vote.png" class="text"> <span id="voting-txt">'.get_label('Cancel voting').'</span></a></li>';
 			// echo '<li type="separator"></li>';
-			echo '<li id="obs" class="ops-item"><a href="#" onclick="goTo(\'game_obs.php\',{bck:1,';
-			if (is_null($tournament_id))
+			// Everything about the stream is set up on one page now - the addresses of the
+			// overlays, what is shown between games, and which scene goes with which phase
+			// of the game. A round of a tournament is set up through its tournament, so the
+			// question asked here is the one that page will ask.
+			if (is_null($tournament_id)
+				? is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $club_id, $this->event_id)
+				: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id))
 			{
-				echo 'event_id:' . $this->event_id;
+				echo '<li id="obs" class="ops-item"><a href="#" onclick="goTo(\'streams.php\',{bck:1,';
+				if (is_null($tournament_id))
+				{
+					echo 'event_id:' . $this->event_id;
+				}
+				else
+				{
+					echo 'tournament_id:' . $tournament_id;
+				}
+				echo '})"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
 			}
-			else
-			{
-				echo 'tournament_id:' . $tournament_id;
-			}
-			echo '})"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
 		}
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSetRules()"><img src="images/rules.png" class="text"> '.get_label('Rules').'</a></li>';
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
