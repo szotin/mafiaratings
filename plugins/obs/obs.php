@@ -55,14 +55,17 @@ function show_obs_page($view)
 	$options->labels->stages = array(get_label('round'), get_label('finals'), get_label('semis'), get_label('quarters'));
 
 	echo '<!DOCTYPE HTML>';
-	echo '<html><head>';
+	// The page says on the html element which of the three it is, so that the stylesheet
+	// knows the size this one is meant to be given. The name is not the one the body carries:
+	// the body classes are what the parts are styled by, and the root must not pick those up.
+	echo '<html class="view-' . $view . '"><head>';
 	echo '<meta content="text/html; charset=utf-8" http-equiv="Content-Type">';
 	echo '<title>' . get_label('OBS Studio integration') . '</title>';
 	echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700">';
 	echo '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gagalin">';
 	echo '<link rel="stylesheet" href="' . obs_file('obs.css') . '">';
 	echo '<script src="' . obs_file('obs.js') . '"></script>';
-	echo '</head><body class="' . $view . '">';
+	echo '</head><body>';
 
 	if ($view == 'overlay')
 	{
