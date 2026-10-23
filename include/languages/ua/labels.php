@@ -2072,6 +2072,7 @@ $labelMenu = array (
 'Break' => 'Перерва', // streams.php, streams.php
 'There is nothing among the scenes of this table that looks like [0]. Set it by hand, or rename the scenes in OBS Studio and try again.' => 'Серед сцен цього столу немає нічого схожого на: [0]. Задайте вручну або перейменуйте сцени в OBS Studio і спробуйте ще раз.', // streams.php, streams.php
 'Every scene that could be recognised is set up already.' => 'Усе, що вдалося розпізнати, вже призначено.', // streams.php, streams.php
+'Turn on' => 'Увімкнути', // streams.php, streams.php
 'town\'s vicory' => 'перемога міста', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'перемога мафії', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Ігровий день ще не розпочався. Поточні рейтинги:', // event_screen.php, event_screen.php
@@ -2089,7 +2090,7 @@ $labelMenu = array (
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу отримувати адміністративні сповіщення, коли хтось робить зміни в організаціях/змаганнях, якими я керую.', // form/account_edit.php, form/account_edit.php
 'We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'Ми знайшли схожу, але не зовсім таку саму рассадку. Вона досить хороша, але ми можемо зробити краще.<p>Ви можете зачекати кілька годин для покращеної версії. Або ви можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">натиснути тут</a> і оптимізувати прямо зараз.</p>', // include/seating.php, include/seating.php
 'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас немає готової рассадки для цієї конфігурації. Ми згенерували для вас найпростішу початкову рассадку і зараз її покращуємо та оптимізуємо.<p>Ви можете зачекати кілька годин для покращеної версії. Або ви можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">натиснути тут</a> і оптимізувати прямо зараз.</p>', // include/seating.php, include/seating.php
-'Turn off' => 'Вимкнути', // streams.php
+'Auto' => 'Авто', // game.php
 );
 
 return $labelMenu;

@@ -123,12 +123,12 @@ function _uiRender(resetTimer)
 	
 	let status = '';
 	let control1Html = '';
+	let statusTitle = ''; // which day or night it is, said above the hint rather than beside the buttons
 	let nomsStr = '';
 	let noms = null;
 	if (!isSet(game.time))
 	{
 		status = l('StartGame');
-		$('#info').html('');
 		if (_settingsFlags & 16/*GAME_SETTINGS_RANDOMIZE_SEATING*/)
 		{
 			control1Html = '<button class="day-vote" onclick="gameRandomizeSeats()">' + l('RandSeats') + '</button>';
@@ -721,9 +721,10 @@ function _uiRender(resetTimer)
 			}
 			break;
 		}
-		$('#info').html(l(info, game.time.round));
+		statusTitle = l(info, game.time.round);
 	}
 	
+	$('#status-title').html(statusTitle);
 	$('#status').html(status);
 	$('#control-1').html(control1Html);
 	$('#game-next').prop('disabled', !gameCanGoNext());

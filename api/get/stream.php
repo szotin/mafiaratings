@@ -51,6 +51,11 @@ class ApiPage extends GetApiPageBase
 		$stream->scene->auto = stream_played_scene($owner, $table_num, $settings);
 		$stream->scene->manual = $settings->scene;
 		$stream->scene->manualTime = $settings->scene_time;
+		// And what somebody could ask for. The moderator's screen offers these as buttons when
+		// the game is not switching the scenes by itself, so that the scene can be changed
+		// without leaving the game for OBS.
+		$stream->scene->names = $settings->scenes;
+		$stream->scene->switching = (($settings->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0) ? 1 : 0;
 
 		$this->response['stream'] = $stream;
 	}
@@ -68,7 +73,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('locale', 'The language the screens are shown in.');
 			$param->sub_param('background', 'The ground they stand on: "dark" or "light".');
 			$param->sub_param('transparent', '1 when nothing is painted behind them, 0 otherwise.');
-			$param->sub_param('scene', 'Which OBS scene the table should be showing. "auto" is what the game being played is asking for, "manual" what somebody asked for by hand, and "manualTime" when they asked. A browser source follows the manual one when its time is newer than the last it carried out, and the automatic one whenever that changes.');
+			$param->sub_param('scene', 'Which OBS scene the table should be showing. "auto" is what the game being played is asking for, "manual" what somebody asked for by hand, and "manualTime" when they asked. A browser source follows the manual one when its time is newer than the last it carried out, and the automatic one whenever that changes. "names" are all the scenes the OBS at this table reported, and "switching" is 1 when the scenes are changed by the phase of the game and 0 when they are left to be changed by hand.');
 		return $help;
 	}
 }

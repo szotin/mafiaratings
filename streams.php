@@ -210,12 +210,14 @@ class Page extends StreamsPageBase
 
 			// Turned off at a table that is switched by hand. The rows stay where they are -
 			// they are just not acted on - so turning it back on brings back what was set up.
-			$no_auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) != 0;
+			// It is stored the other way round, as "do not switch", so that a table nobody has
+			// said anything about goes on switching as it always did.
+			$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
 			echo '<table class="bordered light" width="100%">';
-			$this->show_setting(get_label('Turn off'),
-				'<input type="checkbox" id="no-auto-scenes" onchange="autoScenesChanged()"' . ($no_auto ? ' checked' : '') . '>');
+			$this->show_setting(get_label('Turn on'),
+				'<input type="checkbox" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
 			echo '</table>';
-			echo '<div id="scene-events"' . ($no_auto ? ' style="display: none"' : '') . '></div>';
+			echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
 		}
 
 		// The cards over the game itself. They are three sources rather than one so that a
@@ -403,10 +405,10 @@ class Page extends StreamsPageBase
 		// but the one flag, and what is set up against the phases stays as it is.
 		function autoScenesChanged()
 		{
-			let off = document.getElementById('no-auto-scenes').checked;
-			document.getElementById('scene-events').style.display = off ? 'none' : '';
+			let on = document.getElementById('auto-scenes').checked;
+			document.getElementById('scene-events').style.display = on ? '' : 'none';
 			json.post("api/ops/stream.php",
-			Object.assign({ op: "set", table_num: tableNum, auto_scenes: off ? 0 : 1 }, owner),
+			Object.assign({ op: "set", table_num: tableNum, auto_scenes: on ? 1 : 0 }, owner),
 			saved);
 		}
 

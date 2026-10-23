@@ -622,7 +622,12 @@ class Page extends PageBase
 		$pic->show(ICONS_DIR, false, 60);
 		echo '</button>';
 		echo '</td>';
-		echo '<td id="status" align="center"></td>';
+		echo '<td align="center">';
+		echo '<table class="transp" id="status-box" width="100%">';
+		echo '<tr><td id="status-title"></td></tr>';
+		echo '<tr><td id="status"></td></tr>';
+		echo '</table>';
+		echo '</td>';
 		
 		echo '<td width="320" id="clock">';
 		// echo '<table id="t-area" class="timer timer-0" width="100%"><tr>';
@@ -673,7 +678,7 @@ class Page extends PageBase
 		
 		echo '<div class="btn-panel"><table class="transp" width="100%"><tr>';
 		echo '<td><button class="game-btn" id="game-back" onclick="uiBack()"><img src="images/prev.png" class="text" title="' . get_label('Back') . '"></button></td>';
-		echo '<td id="info" align="center"></td>';
+		echo '<td align="center"><div id="scene-btns"></div></td>';
 		echo '<td align="right"><button class="game-btn" id="game-next" onclick="uiNext()" title="' . get_label('Next') . '"><img src="images/next.png" class="text"></button></td>';
 		echo '</tr></table></div>';
 		echo '<span id="sound"></span>';
@@ -799,11 +804,123 @@ class Page extends PageBase
 		}
 	}
 	
+	protected function js()
+	{
+		parent::js();
+?>
+		// The scenes of the OBS standing beside this table, offered as buttons between Back and
+		// Next while the game is not switching them by itself. Both the list and whether the
+		// switching is on are settled elsewhere - the list by that OBS, the switching on the
+		// stream settings page - and both can change while a game is being played, so they are
+		// asked for again now and then rather than once when the game was opened.
+		var _sceneEvent = 0, _sceneTable = 0;
+		var _sceneNames = [], _sceneSwitching = true, _sceneCurrent = '';
+		// What the game last asked for, and what somebody asked for over the top of it. A hand
+		// switch stands until the game moves the scene on by itself, which is the same rule the
+		// browser sources follow, so the two of them agree about what is showing.
+		var _sceneAuto = '', _sceneOverride = '';
+
+		function sceneButtonsStart(eventId, tableNum)
+		{
+			_sceneEvent = eventId;
+			_sceneTable = tableNum;
+			sceneButtonsRead();
+			setInterval(sceneButtonsRead, 5000);
+		}
+
+		// Quietly: nobody is waiting for this, and a moment when the site does not answer is
+		// not something to put a dialog up about in the middle of a game.
+		function sceneButtonsRead()
+		{
+			fetch('api/get/stream.php?op=settings&event_id=' + _sceneEvent + '&table_num=' + _sceneTable).
+				then(function(response) { return response.ok ? response.json() : Promise.reject(response.status); }).
+				then(function(answer)
+				{
+					if (!answer || !answer.stream || !answer.stream.scene)
+						return;
+					let scene = answer.stream.scene;
+					let names = scene.names ? scene.names : [];
+					let switching = !!scene.switching;
+					let auto = scene.auto ? scene.auto : '';
+					if (auto != _sceneAuto)
+					{
+						_sceneAuto = auto;
+						_sceneOverride = ''; // the game has moved on, so a hand switch is over
+					}
+
+					// What OBS is showing, as far as the site can tell: what somebody asked for
+					// over the top of the game, or else the game's own scene, or else - where
+					// the game is not switching at all - the last thing anybody asked for.
+					// Somebody clicking about inside OBS is not seen from here, and that is the
+					// one way this can be wrong.
+					let current = _sceneOverride ? _sceneOverride :
+						(switching ? auto : (scene.manual ? scene.manual : ''));
+					if (switching == _sceneSwitching && current == _sceneCurrent &&
+						JSON.stringify(names) == JSON.stringify(_sceneNames))
+					{
+						return; // nothing new to draw
+					}
+					_sceneNames = names;
+					_sceneSwitching = switching;
+					_sceneCurrent = current;
+					sceneButtonsShow();
+				}).
+				catch(function(error) {});
+		}
+
+		// Offered whether or not the game is switching by itself - a scene put up by hand in a
+		// pause is useful, and the game takes it back at the next phase anyway. Which of the two
+		// is going on is said beside them rather than by taking them away, and the word sits in
+		// a box of its own width with another to match on the other side, so that the buttons
+		// stand in the same place either way. Nothing at all where the OBS at this table has
+		// not said what scenes it has.
+		function sceneButtonsShow()
+		{
+			let html = '';
+			if (_sceneNames.length > 0)
+			{
+				html = '<span class="scene-mode">' + (_sceneSwitching ? <?php echo json_encode(get_label('Auto')); ?> : '') + '</span>';
+				for (let i = 0; i < _sceneNames.length; ++i)
+				{
+					let current = (_sceneNames[i] == _sceneCurrent) ? ' current' : '';
+					html += '<button class="scene-btn' + current + '" onclick="sceneButtonClick(' + i + ')">' +
+						_sceneNames[i].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</button>';
+				}
+				html += '<span class="scene-mode"></span>';
+			}
+			$('#scene-btns').html(html);
+		}
+
+		// Said out loud if it does not get through: this one somebody did ask for.
+		function sceneButtonClick(i)
+		{
+			// Marked at once rather than when the next answer comes back: the scene is on its
+			// way, and ten seconds of the button looking unpressed would be ten seconds of
+			// wondering whether it worked.
+			_sceneOverride = _sceneCurrent = _sceneNames[i];
+			sceneButtonsShow();
+			json.post('api/ops/stream.php',
+				{ op: 'scene', event_id: _sceneEvent, table_num: _sceneTable, scene: _sceneNames[i] });
+		}
+<?php
+	}
+
 	protected function js_on_load()
 	{
 		if ($this->event_id > 0 && $this->table_num > 0 && $this->game_num > 0)
 		{
 			echo 'uiStart(' . $this->event_id . ', ' . $this->table_num . ', ' . $this->game_num . ');';
+
+			// The buttons are offered only to somebody who may actually switch, which is the
+			// same question the switching itself will ask. A round of a tournament is set up
+			// through its tournament, so that is the one asked about.
+			$may_switch = $this->tournament_id > 0
+				? is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->tournament_id)
+				: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $this->club_id, $this->event_id);
+			if ($may_switch)
+			{
+				echo 'sceneButtonsStart(' . $this->event_id . ', ' . $this->table_num . ');';
+			}
 		}
 		else if ($this->demo)
 		{

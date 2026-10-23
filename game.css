@@ -97,7 +97,12 @@ button.best:active { border: 1px inset #dddddd; padding: 0px;  }
 button.leave { border: 1px outset #dddddd; height: 40px; width: 280px; margin: 0px; padding: 1px; color: #303030; background-color: #d0dddd; font-family: inherit; font-size: inherit; }
 button.leave:active { border: 1px inset #dddddd; padding: 0px;  }
 
-#info { font-weight:bold; }
+/*  The hint cell, split in two: which day or night it is on top, the hint under it. The box
+    fills the cell and the top half is a fixed height, so the day and the night stay where they
+    are however many lines the hint runs to. */
+#status-box { height: 84px; } /* what .header-row leaves inside a cell */
+#status-title { height: 26px; font-size: 1.3em; vertical-align: top; text-align: center; }
+#status { vertical-align: middle; text-align: center; }
 #clock { text-align:right; padding:0px; margin:0px; }
 #demo { text-align:center; vertical-align: center; top:200px; position: absolute; left:0; width:100%; margin:0; border-style: none; font-size: 15em; font-weight:bold; opacity: 0.3; display:none; pointer-events:none; }
 #saving { padding:8px; font-weight:bold; }
@@ -108,3 +113,15 @@ img.role-icon { opacity: 0.5; }
 .player-row { height:38px; }
 .footer-row { height:38px; }
 .btn-panel { margin-top: 6px; }
+/*  The scenes of this table, between Back and Next, for a game whose scenes are changed by
+    hand. They are as wide as their names, since a scene is called whatever OBS calls it. */
+.scene-btns { margin-top: 6px; }
+/*  The padding stays as it is throughout: these are as wide as their names rather than a
+    fixed size, so changing it would move them about under the mouse. */
+button.scene-btn { height: 24px; margin: 0px 3px; padding: 1px 12px; border: 1px outset #cccccc; color: #303030; background-color: transparent; font-family: inherit; font-size: inherit; }
+button.scene-btn:hover { border-color: #808080; }
+button.scene-btn:active { border-style: inset; }
+button.scene-btn.current { border-style: inset; font-weight: bold; background-color: rgba(0, 0, 0, 0.08); }
+/*  Says whether the game is switching the scenes by itself. One of these stands on each side
+    of the buttons, so that saying it does not move them. */
+.scene-mode { display: inline-block; width: 56px; text-align: center; font-weight: normal; color: #606060; }

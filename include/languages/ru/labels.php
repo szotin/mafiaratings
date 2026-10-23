@@ -2072,6 +2072,7 @@ $labelMenu = array (
 'Break' => 'Перерыв', // streams.php
 'There is nothing among the scenes of this table that looks like [0]. Set it by hand, or rename the scenes in OBS Studio and try again.' => 'Среди сцен этого стола нет ничего похожего на: [0]. Задайте вручную или переименуйте сцены в OBS Studio и попробуйте снова.', // streams.php
 'Every scene that could be recognised is set up already.' => 'Всё, что удалось распознать, уже назначено.', // streams.php
+'Turn on' => 'Включить', // streams.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'The event hasn\'t started yet. Current ratings:' => 'Игровой день еще не начался. Текущие рейтинги:', // event_screen.php
@@ -2089,7 +2090,7 @@ $labelMenu = array (
 'I would like to receive emails when someone makes changes in the competitions or organizations that I\'m managing.' => 'Я хочу получать административные уведомления. Это когда кто-то делает измнения в организациях/соревнованиях, которыми я управляю.', // form/account_edit.php
 'We have found a similar but not exactly the same seating arrangement. It is pretty good but we can do better.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'Мы нашли похожую, но не совсем такую рассадку. Она вполне хороша, но мы можем сделать лучше.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // include/seating.php
 'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас нет готовой рассадки для данной конфигурации. Мы сгенерировали для вас самую базовую начальную рассадку и сейчас её улучшаем и оптимизируем.<p>Вы можете подождать несколько часов для улучшенной версии. Или вы можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">нажать здесь</a> и оптимизировать прямо сейчас.</p>', // include/seating.php
-'Turn off' => 'Выключить', // streams.php
+'Auto' => 'Авто', // game.php
 );
 
 return $labelMenu;
