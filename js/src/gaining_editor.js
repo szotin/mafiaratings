@@ -572,7 +572,7 @@ function refreshGainingEditor(isDirty)
 	html += '<tr><td><textarea id="gaining-points" rows="3" style="width: 95%; vertical-align: middle;"' +
 		' oninput="gePointsChange(\'points\')" onchange="refreshGainingPreview()">' + geEscape(g.points) + '</textarea>' +
 		geHelpButton() + '</td></tr>';
-	html += '<tr><td><input type="checkbox" id="gaining-has-series-points" onclick="geSeriesPointsToggle()"' +
+	html += '<tr><td><input type="checkbox" class="toggle" id="gaining-has-series-points" onclick="geSeriesPointsToggle()"' +
 		(typeof g.seriesPoints == "undefined" ? '' : ' checked') + '> ' + _data.strings.seriesPointsUse + '</td></tr>';
 	if (typeof g.seriesPoints != "undefined")
 	{
@@ -588,7 +588,7 @@ function refreshGainingEditor(isDirty)
 	var limited = typeof g.maxTournaments != "undefined";
 	html += geSectionStart();
 	html += '<tr class="darker"><td><b>' + _data.strings.maxTournaments + '</b></td></tr>';
-	html += '<tr><td><input type="checkbox" id="gaining-limit-tournaments" onclick="geMaxTournamentsToggle()"' +
+	html += '<tr><td><input type="checkbox" class="toggle" id="gaining-limit-tournaments" onclick="geMaxTournamentsToggle()"' +
 		(limited ? ' checked' : '') + '> ';
 	if (limited)
 	{

@@ -329,14 +329,14 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 				$options_flags = $options->flags;
 			}
 		
-			echo $options_separator . '<input type="checkbox" id="' . $name . '-night1" onclick="optionChanged()"';
+			echo $options_separator . '<input type="checkbox" class="toggle" id="' . $name . '-night1" onclick="optionChanged()"';
 			if (($options_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 			{
 				echo ' checked';
 			}
 			echo '> ' . get_label('use first night kill rate factor');
 			
-			echo $options_separator . '<input type="checkbox" id="' . $name . '-difficulty" onclick="optionChanged()"';
+			echo $options_separator . '<input type="checkbox" class="toggle" id="' . $name . '-difficulty" onclick="optionChanged()"';
 			if (($options_flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0)
 			{
 				echo ' checked';

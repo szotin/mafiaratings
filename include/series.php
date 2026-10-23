@@ -527,7 +527,7 @@ function show_series_type_filter($types, $on_change = NULL)
 	foreach (get_series_type_filter_names() as $t => $name)
 	{
 		$bit = series_type_filter_bit($t);
-		echo ' <input type="checkbox" id="stf' . $bit . '" onclick="stf()"' . (($types & $bit) ? ' checked' : '') . '> ' . $name;
+		echo ' <input type="checkbox" class="toggle" id="stf' . $bit . '" onclick="stf()"' . (($types & $bit) ? ' checked' : '') . '> ' . $name;
 	}
 ?>
 	<script>

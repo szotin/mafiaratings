@@ -81,7 +81,7 @@ class Page extends PageBase
 		echo get_label('Filter').':&nbsp;<input name="filter" value="' . $filter . '" onChange="document.filterForm.submit()">';
 		if ($event_id != NULL)
 		{
-			echo '&nbsp;<input type="checkbox" name="event_only" onClick="document.filterForm.submit()"' . ($event_only ? ' checked' : '') . '>';
+			echo '&nbsp;<input type="checkbox" class="toggle" name="event_only" onClick="document.filterForm.submit()"' . ($event_only ? ' checked' : '') . '>';
 			echo ' '.get_label('show only the users registered for the event');
 		}
 		echo '</form>';

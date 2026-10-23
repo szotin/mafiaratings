@@ -92,7 +92,7 @@ class Page extends PageBase
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td width="25%"><input type="number" style="width: 45px;" step="1" min="1" max="10" id="form-stars" value="2" onchange="refreshGainingPreview()"> ' . get_label('stars') . '</td>';
 		echo '<td width="25%"><input type="number" style="width: 45px;" step="1" min="2" id="form-players" value="30" onchange="refreshGainingPreview()"> ' . get_label('players') . '</td>';
-		echo '<td align="right"><input type="checkbox" id="form-series" onclick="refreshGainingPreview()"> ' . get_label('for series of tournaments') . '</td></tr>';
+		echo '<td align="right"><input type="checkbox" class="toggle" id="form-series" onclick="refreshGainingPreview()"> ' . get_label('for series of tournaments') . '</td></tr>';
 		echo '</table></p>';
 		echo '<p><i id="form-score-note" style="display: none;">' . get_label('The points depend on the result each player brought from the competition, so the table below counts it as zero.') . '</i></p>';
 		echo '<div id="form-gaining"></div>';

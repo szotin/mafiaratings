@@ -215,7 +215,7 @@ class Page extends StreamsPageBase
 			$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
 			echo '<table class="bordered light" width="100%">';
 			$this->show_setting(get_label('Turn on'),
-				'<input type="checkbox" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
+				'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
 			echo '</table>';
 			echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
 		}
@@ -282,7 +282,7 @@ class Page extends StreamsPageBase
 			$checked = in_array($name, $shown) ? ' checked' : '';
 			$html .= '<span class="stream-screen" data-screen="' . $name . '">';
 			$html .= '<button class="icon" title="' . get_label('Move left') . '" onclick="moveScreen(this, -1)">&#9664;</button>';
-			$html .= '<label><input type="checkbox"' . $checked . ' onchange="streamChanged(\'screens\')"> ' . stream_screen_label($name) . '</label>';
+			$html .= '<label><input type="checkbox" class="toggle"' . $checked . ' onchange="streamChanged(\'screens\')"> ' . stream_screen_label($name) . '</label>';
 			$html .= '<button class="icon" title="' . get_label('Move right') . '" onclick="moveScreen(this, 1)">&#9654;</button>';
 			$html .= '</span>';
 		}

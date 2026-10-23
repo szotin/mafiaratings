@@ -256,3 +256,88 @@ span.stream-url button img { display: block; width: 16px; height: 16px; }
    given room to stand apart, and the first one is lifted a little off the tabs above it. */
 h3.stream-section { margin: 20px 0 6px; }
 h3.stream-section:first-child { margin-top: 10px; }
+
+/*  A switch rather than a box, for a setting that takes effect the moment it is touched
+    rather than when a form is sent. Underneath it is the ordinary checkbox it always was -
+    the browser is told not to draw its own box, and the track and the knob are drawn in its
+    place - so nothing about how it is read or written changes. */
+input[type="checkbox"].toggle {
+	appearance: none;
+	-webkit-appearance: none;
+	position: relative;
+	width: 34px;
+	height: 16px;
+	margin: 0px 2px;
+	vertical-align: middle;
+	border: 1px solid #909090;
+	border-radius: 8px;
+	background-color: #aaaaaa;
+	cursor: pointer;
+	transition: background-color 0.12s;
+}
+
+/*  The knob. It slides across rather than appearing on the other side, so that it is plain
+    which way the thing was just turned. */
+input[type="checkbox"].toggle::after {
+	content: '';
+	position: absolute;
+	top: 1px;
+	left: 1px;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background-color: #ffffff;
+	transition: left 0.12s;
+}
+
+input[type="checkbox"].toggle:checked { background-color: #5a9e3a; border-color: #3f7a26; }
+input[type="checkbox"].toggle:checked::after { left: 19px; }
+input[type="checkbox"].toggle:disabled { opacity: 0.4; cursor: default; }
+
+/*  A switch stands close to the words that say what it is for and well away from the next
+    switch along, so that it is plain which words belong to which. The first one on a line
+    has nothing before it to stand away from. */
+input[type="checkbox"].toggle:not(:first-child) { margin-left: 16px; }
+
+/*  A filter with three answers - it does not matter, only those that are, only those that are
+    not - so the knob has three places and the middle one is the one that lets everything
+    through. The colour says which way it is set without having to work out where the knob is:
+    grey for everything, green for yes, red for no. */
+span.tri-filter {
+	display: inline-block;
+	position: relative;
+	width: 34px;
+	height: 16px;
+	margin: 0px 2px;
+	vertical-align: middle;
+	border: 1px solid #909090;
+	border-radius: 8px;
+	background-color: #cccccc;
+	cursor: pointer;
+	transition: background-color 0.12s;
+}
+
+span.tri-filter i {
+	position: absolute;
+	top: 1px;
+	left: 10px;
+	width: 12px;
+	height: 12px;
+	box-sizing: border-box;
+	border: 1px solid #909090;
+	border-radius: 50%;
+	background-color: #ffffff;
+	transition: left 0.12s;
+}
+
+span.tri-filter.yes { background-color: #5a9e3a; border-color: #3f7a26; }
+span.tri-filter.yes i { left: 19px; }
+span.tri-filter.no { background-color: #b05050; border-color: #8a3a3a; }
+span.tri-filter.no i { left: 1px; }
+
+/*  A switch and what it is for, kept together: they do not come apart across a line, and the
+    gap to the next one is wider than the gap between a switch and its own words, so it is
+    plain which words belong to which. */
+div.switch-row { margin-top: 10px; }
+span.switch-item { display: inline-block; white-space: nowrap; margin-right: 18px; }
+span.switch-item > span.switch-text { cursor: pointer; padding-left: 4px; }

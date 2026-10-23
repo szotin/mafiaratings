@@ -87,7 +87,7 @@ class Page extends LeaguePageBase
 			++$clubs_count;
 		}
 		
-		echo '<table class="transp"><tr><td><input type="checkbox" id="closed" onclick="filter()"';
+		echo '<table class="transp"><tr><td><input type="checkbox" class="toggle" id="closed" onclick="filter()"';
 		if ($this->view_flags & FLAG_SHOW_CLOSED)
 		{
 			echo ' checked';

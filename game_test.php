@@ -16,13 +16,13 @@ class Page extends GeneralPageBase
 		
 		echo '<table class="transp">';
 		echo '<tr>';
-		echo '<td width="200"><input type="checkbox" id="show-game" onclick="refresh()" checked> ' . get_label('show game json') . '</td>';
-		echo '<td width="200"><input type="checkbox" id="show-voting" onclick="refresh()"> ' . get_label('show voting json') . '</td>';
+		echo '<td width="200"><input type="checkbox" class="toggle" id="show-game" onclick="refresh()" checked> ' . get_label('show game json') . '</td>';
+		echo '<td width="200"><input type="checkbox" class="toggle" id="show-voting" onclick="refresh()"> ' . get_label('show voting json') . '</td>';
 		echo '</tr><tr>';
-		echo '<td width="200"><input type="checkbox" id="show-original" onclick="refresh()"> ' . get_label('show original game record') . '</td>';
-		echo '<td width="200"><input type="checkbox" id="show-fixed" onclick="refresh()"> ' . get_label('show fixed game version') . '</td>';
+		echo '<td width="200"><input type="checkbox" class="toggle" id="show-original" onclick="refresh()"> ' . get_label('show original game record') . '</td>';
+		echo '<td width="200"><input type="checkbox" class="toggle" id="show-fixed" onclick="refresh()"> ' . get_label('show fixed game version') . '</td>';
 		echo '</tr><tr>';
-		echo '<td width="200"><input type="checkbox" id="show-actions" onclick="refresh()"> ' . get_label('show game actions') . '</td>';
+		echo '<td width="200"><input type="checkbox" class="toggle" id="show-actions" onclick="refresh()"> ' . get_label('show game actions') . '</td>';
 		echo '<td width="200"></td>';
 		echo '</tr>';
 		echo '</table></td>';

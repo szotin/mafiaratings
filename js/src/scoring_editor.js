@@ -188,22 +188,22 @@ function rolesHtml(sectionName, policyNum)
         policy.message = _data.strings.roleErr;
     }
     
-    var html = '<input id="' + sectionName + '-' + policyNum + '-role-1" onclick="rolesChange(1, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox"';
+    var html = '<input id="' + sectionName + '-' + policyNum + '-role-1" onclick="rolesChange(1, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox" class="toggle"';
     if (roles & 1)
     {
         html += ' checked';
     }
-    html += '> ' + _data.strings.civ + '<br><input id="' + sectionName + '-' + policyNum + '-role-2" onclick="rolesChange(2, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox"';
+    html += '> ' + _data.strings.civ + '<br><input id="' + sectionName + '-' + policyNum + '-role-2" onclick="rolesChange(2, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox" class="toggle"';
     if (roles & 2)
     {
         html += ' checked';
     }
-    html += '> ' + _data.strings.sheriff + '<br><input id="' + sectionName + '-' + policyNum + '-role-4" onclick="rolesChange(4, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox"';
+    html += '> ' + _data.strings.sheriff + '<br><input id="' + sectionName + '-' + policyNum + '-role-4" onclick="rolesChange(4, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox" class="toggle"';
     if (roles & 4)
     {
         html += ' checked';
     }
-    html += '> ' + _data.strings.maf + '<br><input id="' + sectionName + '-' + policyNum + '-role-8" onclick="rolesChange(8, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox"';
+    html += '> ' + _data.strings.maf + '<br><input id="' + sectionName + '-' + policyNum + '-role-8" onclick="rolesChange(8, \'' + sectionName + '\', ' + policyNum + ')" type="checkbox" class="toggle"';
     if (roles & 8)
     {
         html += ' checked';
@@ -366,7 +366,7 @@ function sectionHtml(sectionName)
 				{
 					html += '<tr><td><p>' + _data.strings.mvpPoints + ':</p></td><td><p><input id="' + mvpId + '" style="width: 350px;" oninput="mvpPointsChange(\'' + mvpId + '\')"><button class="small_icon" onclick="mr.functionHelp()"><img src="images/function.png" width="12"></button></p></td></tr>';
 				}
-				html += '<tr><td colspan="2"><input id="' + base + '-noweight" type="checkbox"' + (isSet(policy.noWeight) && policy.noWeight ? ' checked' : '') + ' onclick="noWeightChange(\'' + base + '-noweight\')"> ' + _data.strings.noWeight + '</td></tr>';
+				html += '<tr><td colspan="2"><input id="' + base + '-noweight" type="checkbox" class="toggle"' + (isSet(policy.noWeight) && policy.noWeight ? ' checked' : '') + ' onclick="noWeightChange(\'' + base + '-noweight\')"> ' + _data.strings.noWeight + '</td></tr>';
 				html += '</table>';
 			}
 			html += '</td></tr>';

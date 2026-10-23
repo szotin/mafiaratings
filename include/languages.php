@@ -455,7 +455,7 @@ function langs_checkboxes($langs, $filter = LANG_ALL, $form_name = NULL, $separa
 	
 	if ($on_click != NULL)
 	{
-		$input_beg = '<input type="checkbox" onClick="' . $on_click . '" ';
+		$input_beg = '<input type="checkbox" class="toggle" onClick="' . $on_click . '" ';
 	}
 	else
 	{

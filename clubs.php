@@ -25,14 +25,14 @@ class Page extends GeneralPageBase
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
-		echo '<input type="checkbox" id="closed" onclick="filter()"';
+		echo '<input type="checkbox" class="toggle" id="closed" onclick="filter()"';
 		if (isset($_REQUEST['closed']))
 		{
 			echo ' checked';
 		}
 		echo '> ' . get_label('Show closed clubs');
 		
-		echo ' <input type="checkbox" id="root" onclick="filter()"';
+		echo ' <input type="checkbox" class="toggle" id="root" onclick="filter()"';
 		if (isset($_REQUEST['root']))
 		{
 			echo ' checked';

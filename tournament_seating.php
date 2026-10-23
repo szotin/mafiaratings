@@ -355,15 +355,15 @@ class Page extends TournamentPageBase
 
 	private function showSeatingTop()
 	{
-		echo '<p><input type="checkbox" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
-		echo ' <input type="checkbox" id="show_icons"'.(($this->options & SHOW_ICONS) ? ' checked' : '').' onclick="showIcons()"> '.get_label('show user pictures');
+		echo '<p><input type="checkbox" class="toggle" id="hide_played"'.(($this->options & HIDE_PLAYED) ? ' checked' : '').' onclick="hidePlayed()"> '.get_label('show only non-played games');
+		echo ' <input type="checkbox" class="toggle" id="show_icons"'.(($this->options & SHOW_ICONS) ? ' checked' : '').' onclick="showIcons()"> '.get_label('show user pictures');
 		if ($this->user_id > 0)
 		{
-			echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_MY) ? ' checked' : '').' onclick="onlyMy()"> '.get_label('show only my games');
+			echo ' <input type="checkbox" class="toggle" id="my_only"'.(($this->options & ONLY_MY) ? ' checked' : '').' onclick="onlyMy()"> '.get_label('show only my games');
 		}
 		if ($this->highlight_id > 0 && $this->highlight_id != $this->user_id)
 		{
-			echo ' <input type="checkbox" id="my_only"'.(($this->options & ONLY_HIGHLIGHTED) ? ' checked' : '').' onclick="onlyHighlighted()"> '.get_label('show only the games with the higlighted player');
+			echo ' <input type="checkbox" class="toggle" id="my_only"'.(($this->options & ONLY_HIGHLIGHTED) ? ' checked' : '').' onclick="onlyHighlighted()"> '.get_label('show only the games with the higlighted player');
 		}
 		echo '</p>';
 	}

@@ -304,8 +304,8 @@ function getCondHtml(policyNum, min, max)
 		post = str.winPercPost;
 	}
 	
-	html += '<p><input type="checkbox" id="policy-cond-min-def-' + policyNum + '" onclick="onMinClick(' + policyNum + ')"' + (minChecked ? ' checked' : '') + '><label for="policy-cond-min-def-' + policyNum + '"> ' + str.condMin + '</label><br>';
-	html += '<input type="checkbox" id="policy-cond-max-def-' + policyNum + '" onclick="onMaxClick(' + policyNum + ')"' + (maxChecked ? ' checked' : '') + '><label for="policy-cond-max-def-' + policyNum + '"> ' + str.condMax + '</label></p>';
+	html += '<p><input type="checkbox" class="toggle" id="policy-cond-min-def-' + policyNum + '" onclick="onMinClick(' + policyNum + ')"' + (minChecked ? ' checked' : '') + '><label for="policy-cond-min-def-' + policyNum + '"> ' + str.condMin + '</label><br>';
+	html += '<input type="checkbox" class="toggle" id="policy-cond-max-def-' + policyNum + '" onclick="onMaxClick(' + policyNum + ')"' + (maxChecked ? ' checked' : '') + '><label for="policy-cond-max-def-' + policyNum + '"> ' + str.condMax + '</label></p>';
 	
 	html += '<p><table class="transp">';
 	if (minChecked)
@@ -502,7 +502,7 @@ function getRuleHtml(policyNum)
 			}
 		}
 		
-		html += '<p><input type="checkbox" id="policy-multiply-interp-' + policyNum + '" onclick="onMultiplyInterpClicked(' + policyNum + ')';
+		html += '<p><input type="checkbox" class="toggle" id="policy-multiply-interp-' + policyNum + '" onclick="onMultiplyInterpClicked(' + policyNum + ')';
 		if (max >= 0)
 		{
 			html += '" checked> '  + str.multiplyInterp + '</p>';

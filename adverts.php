@@ -23,7 +23,7 @@ class Page extends GeneralPageBase
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('adverts')));
-		echo '<input type="checkbox" id="expired" onclick="filterExpired()"';
+		echo '<input type="checkbox" class="toggle" id="expired" onclick="filterExpired()"';
 		if ($expired)
 		{
 			echo ' checked';
