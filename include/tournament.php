@@ -154,7 +154,8 @@ class TournamentPageBase extends PageBase
 		// A tournament that is on can be followed in words at every table, whether or not it
 		// is being streamed - see text_broadcast.php. That is what opens the broadcasts page
 		// for a tournament that has no video of itself at all.
-		$this->text_broadcasts = stream_is_live(stream_tournament($this->id), $this->start_time, $this->duration);
+		$this->text_broadcasts = stream_is_live($this->start_time,
+			($this->flags & TOURNAMENT_FLAG_FINISHED) != 0, ($this->flags & TOURNAMENT_FLAG_CANCELED) != 0);
 			
 		$this->series = array();
 		$query = new DbQuery(
@@ -213,9 +214,11 @@ class TournamentPageBase extends PageBase
 				// new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
+		// What there is to watch belongs with the rest of what there is to watch: between the
+		// seating and the games, rather than away under Resources where it was.
 		if ($this->broadcasts > 0 || $this->text_broadcasts)
 		{
-			$menu[6]->submenu[] = new MenuItem('tournament_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Tournament broadcasts.'));
+			array_splice($menu, 4, 0, array(new MenuItem('tournament_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Tournament broadcasts.'))));
 		}
 		if ($this->is_manager)
 		{
@@ -346,10 +349,6 @@ class TournamentPageBase extends PageBase
 		echo '</td></tr>';
 		
 		echo '<tr><td style="padding: 0px 0px 0px 20px;">';
-		if ($this->broadcasts > 0 || $this->text_broadcasts)
-		{
-			echo '<a href="tournament_broadcasts.php?id=' . $this->id . '&bck=1" title="' . get_label('[0] broadcasts', $this->name) . '"><img src="images/broadcast.png" width="48"></a>';
-		}
 		echo '</td><td align="right" valign="bottom"><table><tr><td align="center">';
 		
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);

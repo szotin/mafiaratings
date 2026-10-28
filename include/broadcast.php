@@ -962,4 +962,185 @@ function broadcast_bind_event($event_id, $refresh = true)
 	return $result;
 }
 
+// How many squares go in a row, the same number the lists on the front page are laid out in.
+define('BROADCAST_COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
+define('BROADCAST_ICON_WIDTH', 48);
+
+// One square: which table of which round it is on top, the picture to click in the middle, and
+// what kind of broadcast it is underneath. The table is what somebody is looking for, so it is
+// the heading; the kind is how they will be watching it, which the picture has already said.
+function show_broadcast_tile($tile)
+{
+	echo '<table class="transp" width="100%">';
+	echo '<tr class="dark" style="height: 40px;"><td align="center"><b>' . $tile->caption . '</b></td></tr>';
+	echo '<tr style="height: 70px;"><td align="center">';
+	echo '<a href="' . htmlspecialchars($tile->url) . '" target="_blank" title="' .
+		htmlspecialchars(str_replace('<br>', ' ', $tile->caption)) . '">';
+	echo '<img src="' . $tile->icon . '" width="' . BROADCAST_ICON_WIDTH . '"></a>';
+	echo '</td></tr>';
+	echo '<tr class="dark" style="height: 30px;"><td align="center">' . $tile->kind . '</td></tr>';
+	echo '</table>';
+}
+
+// A heading and the squares under it, left to right and then down. Nothing is drawn for a
+// heading with nothing under it.
+function show_broadcast_group($title, $tiles)
+{
+	if (empty($tiles))
+	{
+		return;
+	}
+
+	echo '<p><table class="bordered light" width="100%">';
+	echo '<tr class="darker"><td colspan="' . BROADCAST_COLUMN_COUNT . '"><b>' . $title . '</b></td></tr>';
+	$column = 0;
+	foreach ($tiles as $tile)
+	{
+		if ($column == 0)
+		{
+			echo '<tr>';
+		}
+		echo '<td width="' . floor(100 / BROADCAST_COLUMN_COUNT) . '%" valign="top">';
+		show_broadcast_tile($tile);
+		echo '</td>';
+		if (++$column >= BROADCAST_COLUMN_COUNT)
+		{
+			echo '</tr>';
+			$column = 0;
+		}
+	}
+	if ($column > 0)
+	{
+		echo '<td colspan="' . (BROADCAST_COLUMN_COUNT - $column) . '"></td></tr>';
+	}
+	echo '</table></p>';
+}
+
+// Everything there is to follow at a tournament or at one round of one, as a wall of squares
+// in three groups: what is running now, what is over, and what has not begun. A round shows
+// its own broadcasts, a tournament shows every round's, and the tables that can be read in
+// words are offered the same way in both - so both pages call this and neither draws anything
+// of its own.
+//
+// $owner is what the tables belong to, since a tournament keeps its tables from round to round
+// and a text broadcast of one follows it that way. $text says whether there is anything to
+// read right now - see stream_is_live().
+function show_broadcasts($owner, $tournament_id, $event_id, $text)
+{
+	$now = time();
+	$live = array();
+	$past = array();
+	$future = array();
+
+	// Which round a broadcast is of is worth saying only where there is more than one of them
+	// to tell apart, and only on the tournament's own page: the page of a round is the name.
+	$rounds = 0;
+	if ($tournament_id > 0)
+	{
+		list ($rounds) = Db::record(get_label('tournament'), 'SELECT COUNT(*) FROM events WHERE tournament_id = ?', $tournament_id);
+	}
+
+	$fields = 'b.event_id, e.name, e.start_time, e.duration, e.flags, b.day_num, b.table_num, b.part_num, b.url, b.stream_start, b.stream_end';
+	$query = ($tournament_id > 0)
+		? new DbQuery('SELECT ' . $fields . ' FROM event_broadcasts b JOIN events e ON e.id = b.event_id' .
+			' WHERE e.tournament_id = ? ORDER BY e.start_time, e.id, b.day_num, b.table_num, b.part_num', $tournament_id)
+		: new DbQuery('SELECT ' . $fields . ' FROM event_broadcasts b JOIN events e ON e.id = b.event_id' .
+			' WHERE b.event_id = ? ORDER BY b.day_num, b.table_num, b.part_num', $event_id);
+
+	// Read whole first, because a square cannot be written until it is known whether there are
+	// others beside it: a part number means nothing where there is one part, and the same goes
+	// for the day.
+	$broadcasts = array();
+	$parts = array();
+	$days = array();
+	while ($row = $query->next())
+	{
+		$b = new stdClass();
+		list ($b->event_id, $b->event_name, $b->event_start, $b->event_duration, $b->event_flags,
+			$b->day, $b->table, $b->part, $b->url, $b->start, $b->end) = $row;
+		$broadcasts[] = $b;
+
+		$key = $b->event_id . '-' . $b->day . '-' . $b->table;
+		$parts[$key] = isset($parts[$key]) ? $parts[$key] + 1 : 1;
+		$days[$b->event_id][$b->day] = true;
+	}
+
+	foreach ($broadcasts as $b)
+	{
+		// Tables are counted from zero in this one table and from one everywhere else.
+		$tile = new stdClass();
+		$tile->kind = get_label('YouTube');
+		$tile->icon = 'images/video.png';
+		$tile->url = $b->url;
+		// The table on one line and everything that narrows it down on the next, so that the
+		// tables line up across the squares and the eye runs down them.
+		$tile->caption = get_label('Table [0]', (int)$b->table + 1);
+		$which = ($rounds > 1) ? $b->event_name : '';
+		if (count($days[$b->event_id]) > 1)
+		{
+			$which .= ($which == '' ? '' : ' ') . get_label('Day [0]', (int)$b->day);
+		}
+		if ($parts[$b->event_id . '-' . $b->day . '-' . $b->table] > 1)
+		{
+			// In brackets after what it is a part of, or on its own where there is nothing
+			// for it to be in brackets after.
+			$part = get_label('Part [0]', (int)$b->part);
+			$which .= ($which == '') ? $part : (' (' . $part . ')');
+		}
+		if ($which != '')
+		{
+			$tile->caption .= '<br>' . $which;
+		}
+
+		// Where it stands. What the broadcast says of itself comes first, because that is the
+		// stream rather than the plan - but it is only ever read by the machines that stream
+		// and by the preparation page, so for one nobody has read, which is every broadcast
+		// entered before any of this was written, the day it was played on answers instead.
+		if (!is_null($b->end) || $b->event_start + $b->event_duration < $now ||
+			((int)$b->event_flags & EVENT_FLAG_FINISHED) != 0)
+		{
+			$past[] = $tile;
+		}
+		else if (!is_null($b->start) || $b->event_start <= $now)
+		{
+			$live[] = $tile;
+		}
+		else
+		{
+			$future[] = $tile;
+		}
+	}
+
+	// And the tables that can be read in words. They are of the thing itself rather than of
+	// one of its broadcasts, there is one for each table being played at, and they are running
+	// by definition: nothing is offered here unless there is something to read right now.
+	if ($text)
+	{
+		$scope = ($tournament_id > 0) ? ('tournament_id=' . $tournament_id) : ('event_id=' . $event_id);
+		foreach (stream_text_tables($owner) as $table_num)
+		{
+			// The language the table is set to show, so that the game comes out in the same
+			// words here as on the stream of it.
+			$settings = stream_settings($owner, $table_num);
+
+			$tile = new stdClass();
+			$tile->kind = get_label('Textual');
+			$tile->icon = 'images/text.png';
+			$tile->url = 'text_broadcast.php?' . $scope . '&table_num=' . $table_num .
+				'&locale=' . get_lang_code($settings->lang_resolved);
+			$tile->caption = get_label('Table [0]', $table_num);
+			$live[] = $tile;
+		}
+	}
+
+	show_broadcast_group(get_label('Live now'), $live);
+	show_broadcast_group(get_label('Past'), $past);
+	show_broadcast_group(get_label('Future'), $future);
+
+	if (empty($live) && empty($past) && empty($future))
+	{
+		echo '<p>' . get_label('No broadcasts yet.') . '</p>';
+	}
+}
+
 ?>

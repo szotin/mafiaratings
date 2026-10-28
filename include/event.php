@@ -497,9 +497,9 @@ class EventPageBase extends PageBase
 		list ($this->broadcasts) = Db::record(get_label('event'), 'SELECT count(*) FROM event_broadcasts WHERE event_id = ?', $this->id);
 
 		// And it can be followed in words whether or not anybody is streaming it - see
-		// text_broadcast.php. The settings of a round belong to its tournament, which is what
-		// stream_owner() is for.
-		$this->text_broadcasts = stream_is_live(stream_owner($this->tournament_id, $this->id), $this->start_time, $this->duration);
+		// text_broadcast.php.
+		$this->text_broadcasts = stream_is_live($this->start_time,
+			($this->flags & EVENT_FLAG_FINISHED) != 0, ($this->flags & EVENT_FLAG_CANCELED) != 0);
 		
 		date_default_timezone_set($this->timezone);
 		$this->day = date('j', $this->start_time);
@@ -549,9 +549,11 @@ class EventPageBase extends PageBase
 				// new MenuItem('event_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
+		// What there is to watch belongs with the rest of what there is to watch: between the
+		// standings and the games, rather than away under Resources where it was.
 		if ($this->broadcasts > 0 || $this->text_broadcasts)
 		{
-			$menu[count($menu)-1]->submenu[] = new MenuItem('event_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Event broadcasts.'));
+			array_splice($menu, 2, 0, array(new MenuItem('event_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Event broadcasts.'))));
 		}
 		if ($this->is_manager || $this->is_referee)
 		{

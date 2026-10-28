@@ -22,44 +22,112 @@ define('STREAM_DEFAULT_DELAY', 10); // seconds a screen stays up
 define('STREAM_MIN_DELAY', 1);
 define('STREAM_MAX_DELAY', 600);
 
-// Whether there is anything to follow at this thing right now: its days are running, or a game
-// is being played at one of its tables. A text broadcast is only worth offering then - of a
-// tournament that is over it would show the standings and nothing else, which the tournament's
-// own pages say better.
-function stream_is_live($owner, $start_time, $duration)
+// Whether this thing can be followed in words right now: it has begun, and nobody has marked
+// it over or called it off. A text broadcast of a tournament that is finished would show the
+// standings and nothing else, which the tournament's own pages say better, and one of a
+// tournament that has not begun would show an empty table.
+//
+// The two answers are asked of the caller rather than read here, because a tournament and an
+// event keep them under different bits.
+function stream_is_live($start_time, $finished, $canceled)
 {
-	$now = time();
-	if ($start_time <= $now && $now < $start_time + $duration)
-	{
-		return true;
-	}
-
-	list ($playing) = Db::record(get_label('game'), $owner->is_tournament
-		? 'SELECT COUNT(*) FROM current_games g JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?'
-		: 'SELECT COUNT(*) FROM current_games WHERE event_id = ?', $owner->id);
-	return (int)$playing > 0;
+	return $start_time <= time() && !$finished && !$canceled;
 }
 
-// The tables of this thing, each as a link to its text broadcast - what somebody following the
-// tournament from home opens. $scope is how the broadcast is to be addressed, which is the
-// round when a round is being looked at and the tournament when it is the tournament: a text
-// broadcast follows whatever it is pointed at.
+// The tables a text broadcast is offered for, by number.
 //
-// The language is the one the table is set to show, so that the words of the game come out the
-// same here as on the stream of it.
-function show_text_broadcast_links($owner, $scope)
+// The seating says both how many tables there are and how many games each of them plays, so
+// where there is one it settles the question twice over: a table that has played all the games
+// it was laid out for is left out, because there is nothing more to read there. Tables do not
+// finish together - the numbers rarely divide evenly, and one table always runs late - so this
+// is a table at a time rather than the whole thing at once.
+//
+// Where there is no seating nothing says how many games a table has coming, so what has been
+// played is all there is to go by: a table somebody has played at is a table, and the first
+// table is offered whatever happens, since a tournament that has begun is being played
+// somewhere.
+//
+// This is not stream_table_count(). That one counts the tables a stream can be set up for,
+// which takes in tables nobody has reached yet, because the setting up is done beforehand.
+// Reading is done while it happens, so here only what is being played at counts.
+function stream_text_tables($owner)
 {
-	echo '<p><h2>' . get_label('Text broadcast') . '</h2></p>';
-	echo '<p><table class="bordered light" width="100%">';
-	$count = stream_table_count($owner);
+	// How many games the seating lays out at each table. It is kept game by game -
+	// rounds[game][table][seat] - so a table is in it once for every game it plays.
+	$seated = array();
+	$query = $owner->is_tournament
+		? new DbQuery('SELECT misc FROM events WHERE tournament_id = ?', $owner->id)
+		: new DbQuery('SELECT misc FROM events WHERE id = ?', $owner->id);
+	while ($row = $query->next())
+	{
+		list ($misc) = $row;
+		$misc = is_null($misc) ? NULL : json_decode($misc);
+		if (is_null($misc) || !isset($misc->seating->rounds) || !is_array($misc->seating->rounds))
+		{
+			continue;
+		}
+		foreach ($misc->seating->rounds as $round)
+		{
+			if (!is_array($round))
+			{
+				continue;
+			}
+			for ($table_num = 1; $table_num <= count($round); ++$table_num)
+			{
+				$seated[$table_num] = isset($seated[$table_num]) ? $seated[$table_num] + 1 : 1;
+			}
+		}
+	}
+
+	$where = $owner->is_tournament ? 'tournament_id' : 'event_id';
+	$played = array();
+	$query = new DbQuery('SELECT table_num, COUNT(*) FROM games WHERE ' . $where . ' = ? GROUP BY table_num', $owner->id);
+	while ($row = $query->next())
+	{
+		list ($table_num, $count) = $row;
+		$played[(int)$table_num] = (int)$count;
+	}
+
+	// A game being played right now is not in games yet, and it is the very game somebody
+	// would be reading - so a table playing one is offered whatever the counting says.
+	$playing = array();
+	$query = $owner->is_tournament
+		? new DbQuery('SELECT DISTINCT g.table_num FROM current_games g JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?', $owner->id)
+		: new DbQuery('SELECT DISTINCT table_num FROM current_games WHERE event_id = ?', $owner->id);
+	while ($row = $query->next())
+	{
+		$playing[(int)$row[0]] = true;
+	}
+
+	$tables = array();
+	if (!empty($seated))
+	{
+		ksort($seated);
+		foreach ($seated as $table_num => $games)
+		{
+			$done = isset($played[$table_num]) ? $played[$table_num] : 0;
+			if (isset($playing[$table_num]) || $done < $games)
+			{
+				$tables[] = $table_num;
+			}
+		}
+		return $tables;
+	}
+
+	$count = 1;
+	foreach (array_keys($played) as $table_num)
+	{
+		$count = max($count, $table_num);
+	}
+	foreach (array_keys($playing) as $table_num)
+	{
+		$count = max($count, $table_num);
+	}
 	for ($table_num = 1; $table_num <= $count; ++$table_num)
 	{
-		$settings = stream_settings($owner, $table_num);
-		$url = 'text_broadcast.php?' . $scope . '&table_num=' . $table_num .
-			'&locale=' . get_lang_code($settings->lang_resolved);
-		echo '<tr><td><a href="' . $url . '" target="_blank">' . get_label('Table [0]', $table_num) . '</a></td></tr>';
+		$tables[] = $table_num;
 	}
-	echo '</table></p>';
+	return $tables;
 }
 
 // Which of the two a table hangs under. A round of a tournament is the tournament's: pass the
