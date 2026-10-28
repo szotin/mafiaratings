@@ -8,6 +8,7 @@ require_once __DIR__ . '/image.php';
 require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/address.php';
 require_once __DIR__ . '/club.php';
+require_once __DIR__ . '/stream.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
@@ -494,6 +495,11 @@ class EventPageBase extends PageBase
 					$user_id, $this->id);
 					
 		list ($this->broadcasts) = Db::record(get_label('event'), 'SELECT count(*) FROM event_broadcasts WHERE event_id = ?', $this->id);
+
+		// And it can be followed in words whether or not anybody is streaming it - see
+		// text_broadcast.php. The settings of a round belong to its tournament, which is what
+		// stream_owner() is for.
+		$this->text_broadcasts = stream_is_live(stream_owner($this->tournament_id, $this->id), $this->start_time, $this->duration);
 		
 		date_default_timezone_set($this->timezone);
 		$this->day = date('j', $this->start_time);
@@ -543,7 +549,7 @@ class EventPageBase extends PageBase
 				// new MenuItem('event_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-		if ($this->broadcasts > 0)
+		if ($this->broadcasts > 0 || $this->text_broadcasts)
 		{
 			$menu[count($menu)-1]->submenu[] = new MenuItem('event_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Event broadcasts.'));
 		}
@@ -630,7 +636,7 @@ class EventPageBase extends PageBase
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td style="padding: 0px 0px 0px 20px;">';
-		if ($this->broadcasts > 0)
+		if ($this->broadcasts > 0 || $this->text_broadcasts)
 		{
 			echo '<a href="event_broadcasts.php?id=' . $this->id . '&bck=1" title="' . get_label('[0] broadcasts', $this->name) . '"><img src="images/broadcast.png" width="48"></a>';
 		}

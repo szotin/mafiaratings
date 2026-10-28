@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/game.php';
+require_once '../../include/game_log.php';
 require_once '../../include/datetime.php';
 
 define('CURRENT_VERSION', 0);
@@ -460,6 +461,43 @@ class ApiPage extends GetApiPageBase
 			
 			$game->votingCanceled = $this->game->is_voting_canceled($g->time->round);
 		}
+
+		// The game told in words, for a text broadcast - the same words view_game.php shows
+		// under a game that has been played, so that the two cannot tell it differently. Asked
+		// for rather than always sent: the overlays read this answer every second and have no
+		// use for it, and it is the longest thing here by far.
+		//
+		// A table played with the roles hidden has them hidden here too. The lines then leave
+		// out what gives the roles away - who arranged with whom, the checks, which of the
+		// mafia fired - while what the table itself sees stays. See include/game_log.php.
+		if ((int)get_optional_param('log', 0) != 0)
+		{
+			// Whether there is a game to tell at all. A screen that has been opened and
+			// nothing done on it is not one yet - it carries no time of its own - and a game on
+			// its last screen, where the referee is entering the bonuses, is one no longer.
+			// Between those two a text broadcast shows the table, the roles being handed out
+			// included: that is where the game begins, and it is the moment the links into a
+			// recording are counted from as well - see include/game.php.
+			$game->live = (isset($g->time) && $g->time->time != GAMETIME_END);
+
+			$options = new stdClass();
+			$options->hide_roles = !$show_roles;
+			$game->log = array();
+			foreach (game_log_sections($this->game, $options) as $section)
+			{
+				// A night that was all the mafia's business comes out empty when the roles are
+				// hidden, and an empty heading says nothing worth the room it takes.
+				if (empty($section->lines))
+				{
+					continue;
+				}
+				$part = new stdClass();
+				$part->night = $section->is_night;
+				$part->round = $section->round;
+				$part->lines = $section->lines;
+				$game->log[] = $part;
+			}
+		}
 		return $game;
 	}
 	
@@ -571,6 +609,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('event_id', 'Return the game being played in this event. Together with table_num it names one table.', 'tournament_id or user_id must be set');
 		$help->request_param('tournament_id', 'Return the game being played in this tournament, in whichever of its rounds is under way. Together with table_num it names one table and follows it from round to round.', 'event_id or user_id must be set');
 		$help->request_param('table_num', 'Table number in the event, starting from 1.', 'any table of the event or tournament, whichever game is under way.');
+		$help->request_param('log', 'Set to 1 to receive the game told in words as well - what a text broadcast shows. Left out otherwise: it is long, and the overlays have no use for it.', 'the game is not told in words.');
 		$help->request_param('game_num', 'Game number at the table, starting from 1.', 'whichever game of the table is under way.');
 		$help->request_param('user_id', 'Return the game being moderated by this user account.', 'event_id or tournament_id must be set');
 		$param = $help->response_param('game', 'Game state.');

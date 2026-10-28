@@ -330,6 +330,24 @@ class Page extends StreamsPageBase
 			$this->toggle('transparent', $settings->transparent), 'between-detail');
 
 		echo '</table>';
+
+		// A table that is not being streamed at all can still be followed in words, and one
+		// that is gives somebody who would rather read somewhere to go. It is the same cards
+		// and the same between-games screens as the stream of this table, so everything set up
+		// above is what it shows - see text_broadcast.php.
+		echo '<h3 class="stream-section">' . get_label('Text broadcast') . '</h3>';
+		$this->open_settings_table();
+		if ($table == VIEW_ALL_TABLES)
+		{
+			$this->show_setting('', get_label('Open the tab of a table to get the address of its text broadcast.'));
+		}
+		else
+		{
+			$text_url = $site . '/text_broadcast.php?' . $scope . $locale;
+			$this->show_url(get_label('URL'), 'url-text', $text_url,
+				'<a href="' . htmlspecialchars($text_url) . '" target="_blank">' . get_label('Open') . '</a>');
+		}
+		echo '</table>';
 		echo '<p id="stream-saved" style="visibility: hidden"><b>' . get_label('Saved.') . '</b></p>';
 		echo '</div>';
 	}

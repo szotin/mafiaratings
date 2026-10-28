@@ -40,7 +40,11 @@ class ApiPage extends GetApiPageBase
 			// same moment plus however long the stream is delayed - see include/broadcast.php.
 			broadcast_note_stream_start($owner, $table_num, get_optional_param('started', ''));
 		}
-		else
+		// Somebody watching is not asked to keep anything fresh. The text broadcast shows
+		// these very pages, and reading a broadcast must not send the site out to YouTube or
+		// write anything down about the timing of it: what a table needs kept fresh is kept
+		// fresh by the table itself - see text_broadcast.php.
+		else if ((int)get_optional_param('viewer', 0) == 0)
 		{
 			// Asked from somewhere other than the streaming machine - above all the
 			// moderator's own screen, which polls this every few seconds all through a round.
@@ -113,6 +117,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('tournament_id', 'Tournament id.', 'event_id is used.');
 		$help->request_param('event_id', 'Event id. When it is a round of a tournament, the settings of the tournament are returned; when it is an event of its own, its own.', 'tournament_id is used.');
 		$help->request_param('table_num', 'Table number.', '1 is used.');
+		$help->request_param('viewer', 'Set to 1 by a page somebody is watching rather than one standing beside the table - the text broadcast, which shows these very pages. The answer is the same, but nothing is read from YouTube and nothing about the timing of the broadcasts is written down.', 'the request is taken as coming from the table, and what is known about its broadcasts is kept fresh.');
 		$help->request_param('obs', 'Set to 1 by a browser source running inside the OBS that is streaming this table. It is what tells the site the machine is on the air.', 'the request is not counted as word from the streaming machine.');
 		$help->request_param('started', 'How long ago, in seconds, OBS went on the air at this table. Sent together with obs=1, and only for a start the overlay watched happen: it is what the delay of the stream is measured from.', 'nothing is said about when the stream began.');
 		$help->request_param('seen', 'What OBS has been saying about its stream, as a comma separated list of &lt;started&gt;-&lt;ended&gt;:&lt;on the air&gt;, where the first two are ages in seconds and the last is 1 or 0. Sent together with obs=1, and carrying whatever could not be delivered earlier.', 'nothing is known beyond the request itself.');

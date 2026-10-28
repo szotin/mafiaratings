@@ -2,6 +2,7 @@
 
 require_once 'include/page_base.php';
 require_once 'include/game.php';
+require_once 'include/game_log.php';
 require_once 'include/series.php';
 
 define('VIEW_GENERAL', 0);
@@ -903,311 +904,42 @@ class Page extends PageBase
 		echo '</td></tr></table>';
 	}
 	
+	// What happened in the game, in the words include/game_log.php puts it in - the same words
+	// a text broadcast shows while it is still being played. Only the table around the lines is
+	// this page's own, with the heading of each day and night leading to it.
 	function show_log()
 	{
-		$alive = array(true, true, true, true, true, true, true, true, true, true);
-		$maf_alive = 3;
-		$civ_alive = 7;
-		$warnings = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-		$techFouls = array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-		$round = -1;
-		$is_night = true;
-		$actions = $this->game->get_actions();
-		//print_json($actions);
-		$players = $this->game->data->players;
-		foreach ($actions as $action)
+		$options = new stdClass();
+		$options->player = function ($num) { return get_player_number_html($this->game, $num); };
+
+		$first = true;
+		foreach (game_log_sections($this->game, $options) as $section)
 		{
-			$night = Game::is_night($action);
-			if (isset($action->round))
+			if ($first)
 			{
-				$action_round = $action->round;
-			}
-			else if ($round >= 0)
-			{
-				$action_round = $round;
+				echo '<table class="bordered light" width="100%">';
+				$first = false;
 			}
 			else
 			{
-				$action_round = 0;
+				echo '</ul></td></tr>';
 			}
-			if ($action_round != $round || $is_night != $night)
+
+			if ($section->is_night)
 			{
-				if ($round >= 0)
-				{
-					echo '</ul></td></tr>';
-				}
-				else
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				if ($night)
-				{
-					echo '<tr class="dark"><td><a href="javascript:viewNight(' . $action_round . ')"><b>' . get_label('Night [0]', $action_round) . '</b></a><ul>';
-				}
-				else
-				{
-					echo '<tr><td valign="top"><a href="javascript:viewDay(' . $action_round . ')"><b>' . get_label('Day [0]', $action_round) . '</b></a><ul>';
-				}
-				$round = $action_round;
-				$is_night = $night;
+				echo '<tr class="dark"><td><a href="javascript:viewNight(' . $section->round . ')"><b>' . get_label('Night [0]', $section->round) . '</b></a><ul>';
 			}
-			echo '<li>';
-			switch ($action->action)
+			else
 			{
-				case GAME_ACTION_ARRANGEMENT:
-					$arrangement = '';
-					for ($i = 0; $i < count($action->players); ++$i)
-					{
-						if ($i > 0)
-						{
-							$arrangement .= get_label(', then ');
-						}
-						$arrangement .= get_player_number_html($this->game, $action->players[$i]);
-					}
-					echo get_label('Mafia arranges to kill [0].', $arrangement);
-					break;
-				case GAME_ACTION_LEAVING:
-					$alive[$action->player-1] = false;
-					$player = $players[$action->player-1];
-					$is_maf = false;
-					if (isset($player->role) && ($player->role == 'maf' || $player->role == 'don'))
-					{
-						$is_maf = true;
-						--$maf_alive;
-					}
-					else
-					{
-						--$civ_alive;
-					}
-					$info = '';
-					if ($maf_alive <= 0)
-					{
-						$info = get_label('Town wins.');
-					}
-					else if ($maf_alive >= $civ_alive)
-					{
-						$info = get_label('Mafia wins.');
-					}
-					else
-					{
-						for ($i = 0; $i < 10; ++$i)
-						{
-							if (!$alive[$i])
-							{
-								continue;
-							}
-							if (!empty($info))
-							{
-								$info .= ', ';
-							}
-							$info .= get_player_number_html($this->game, $i + 1);
-						}
-						$info = get_label('[0] are still playing.', $info);
-					}
-					if (isset($player->death) && isset($player->death->type))
-					{
-						switch ($player->death->type)
-						{
-							case DEATH_TYPE_GIVE_UP:
-								echo get_label('[0] gives up and leaves the game [2]. [1]', get_player_number_html($this->game, $action->player), $info, $this->game->get_gametime_text($action));
-								break;
-							case DEATH_TYPE_WARNINGS:
-								echo get_label('[0] gets fourth warning and leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
-								break;
-							case DEATH_TYPE_TECH_FOULS:
-								echo get_label('[0] gets the second technical foul and leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
-								break;
-							case DEATH_TYPE_KICK_OUT:
-								echo get_label('[0] is kicked out from the game [2]. [1]', get_player_number_html($this->game, $action->player), $info, $this->game->get_gametime_text($action));
-								break;
-							case DEATH_TYPE_TEAM_KICK_OUT:
-								echo get_label('[0] is kicked out from the game with team defeat [2]. [1]', get_player_number_html($this->game, $action->player), $is_maf ? get_label('Town wins.') : get_label('Mafia wins.'), $this->game->get_gametime_text($action));
-								break;
-							case DEATH_TYPE_NIGHT:
-								echo get_label('[0] is shot and leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
-								break;
-							case DEATH_TYPE_DAY:
-								echo get_label('[0] is voted out and leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
-								break;
-							default:
-								echo get_label('[0] leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
-								break;
-						}
-					}
-					else
-					{
-						echo get_label('[0] leaves the game. [1]', get_player_number_html($this->game, $action->player), $info);
-					}
-					break;
-				case GAME_ACTION_WARNING:
-					switch (++$warnings[$action->player-1])
-					{
-						case 2:
-							echo get_label('[0] gets second warning [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
-							break;
-						case 3:
-							echo get_label('[0] gets third warning [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
-							break;
-						case 4:
-							echo get_label('[0] gets fourth warning [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
-							break;
-						default:
-							echo get_label('[0] gets a warning [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
-							break;
-					}
-					break;
-				case GAME_ACTION_TECH_FOUL:
-					switch (++$techFouls[$action->player-1])
-					{
-						case 2:
-							echo get_label('[0] gets the second technical foul [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
-							break;
-						default:
-							echo get_label('[0] gets a technical foul [1].', get_player_number_html($this->game, $action->player), $this->game->get_gametime_text($action));
-							break;
-					}
-					break;
-				case GAME_ACTION_ON_RECORD:
-					$r = '';
-					foreach ($action->record as $rec)
-					{
-						if (!empty($r))
-						{
-							$r .= ', ';
-						}
-						if ($rec < 0)
-						{
-							$r .= get_label('[0] black', get_player_number_html($this->game, -$rec));
-						}
-						else
-						{
-							$r .= get_label('[0] red', get_player_number_html($this->game, $rec));
-						}
-					}
-					echo get_label('[0] leaves on record: [1]', get_player_number_html($this->game, $action->speaker), $r);
-					break;
-				case GAME_ACTION_KILL_ALL:
-					$v = '';
-					foreach ($action->votes as $vote)
-					{
-						if (!empty($v))
-						{
-							$v .= ', ';
-						}
-						$v .= get_player_number_html($this->game, $vote);
-					}
-					if (empty($v))
-					{
-						echo get_label('Nobody voted to kill all');
-					}
-					else
-					{
-						echo get_label('Voted to kill all: [0].', $v);
-					}
-					break;
-				case GAME_ACTION_DON:
-					echo get_label('Don checks [0].', get_player_number_html($this->game, $action->player));
-					break;
-				case GAME_ACTION_SHERIFF:
-					echo get_label('Sheriff checks [0].', get_player_number_html($this->game, $action->player));
-					break;
-				case GAME_ACTION_LEGACY:
-					if (is_array($action->legacy))
-					{
-						$legacy = '';
-						foreach ($action->legacy as $leg)
-						{
-							if (!empty($legacy))
-							{
-								$legacy .= ', ';
-							}
-							$legacy .= get_player_number_html($this->game, $leg);
-						}
-						echo get_label('[0]\'s legacy is [1].', get_player_number_html($this->game, $action->player), $legacy);
-					}
-					else
-					{
-						$action_text = get_label('[0] leaves [1] mafs in the legacy.', get_player_number_html($this->game, $action->player), (int)$action->legacy);
-					}
-					break;
-				case GAME_ACTION_NOMINATING:
-					echo get_label('[0] nominates [1].', get_player_number_html($this->game, $action->speaker), get_player_number_html($this->game, $action->nominee));
-					break;
-				case GAME_ACTION_VOTING:
-					switch (count($action->votes))
-					{
-						case 0:
-							echo get_label('No one votes for [0].', get_player_number_html($this->game, $action->nominee));
-							break;
-						case 1:
-							echo get_label('[0] votes for [1].', get_player_number_html($this->game, $action->votes[0]), get_player_number_html($this->game, $action->nominee));
-							break;
-						default:
-							$voters = '';
-							foreach ($action->votes as $vote)
-							{
-								if (!empty($voters))
-								{
-									$voters .= ', ';
-								}
-								$voters .= get_player_number_html($this->game, $vote);
-							}
-							echo get_label('[0] vote for [1].', $voters, get_player_number_html($this->game, $action->nominee));
-					}
-					break;
-				case GAME_ACTION_SHOOTING:
-					if (!is_array($action->shooting))
-					{
-						echo get_label('Mafia shoots [0].', $action->shooting);
-					}
-					else if (count($action->shooting) == 1)
-					{
-						$shooting = key($action->shooting);
-						if (empty($shooting))
-						{
-							echo get_label('Mafia does not shoot.');
-						}
-						else
-						{
-							echo get_label('Mafia shoots [0].', get_player_number_html($this->game, $shooting));
-						}
-					}
-					else
-					{
-						$miss_details = '';
-						foreach ($action->shooting as $victim => $shot)
-						{
-							if (!empty($miss_details))
-							{
-								$miss_details .= '; ';
-							}
-							if (empty($victim))
-							{
-								if (count($shot) == 1)
-								{
-									$miss_details .= get_label('[0] does not shoot', get_player_number_html($this->game, $shot[0]));
-								}
-								else
-								{
-									$miss_details .= get_label('[0] and [1] do not shoot', get_player_number_html($this->game, $shot[0]), get_player_number_html($this->game, $shot[1]));
-								}
-							}
-							else if (count($shot) == 1)
-							{
-								$miss_details .= get_label('[0] shoots [1]', get_player_number_html($this->game, $shot[0]), get_player_number_html($this->game, $victim));
-							}
-							else
-							{
-								$miss_details .= get_label('[0] and [1] shoot [2]', get_player_number_html($this->game, $shot[0]), get_player_number_html($this->game, $shot[1]), get_player_number_html($this->game, $victim));
-							}
-						}
-						echo get_label('Mafia misses. [0].', $miss_details);
-					}
-					break;
+				echo '<tr><td valign="top"><a href="javascript:viewDay(' . $section->round . ')"><b>' . get_label('Day [0]', $section->round) . '</b></a><ul>';
 			}
-			echo '</li>';
+
+			foreach ($section->lines as $line)
+			{
+				echo '<li>' . $line . '</li>';
+			}
 		}
-		if ($round >= 0)
+		if (!$first)
 		{
 			echo '</ul></td></tr></table>';
 		}

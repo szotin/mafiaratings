@@ -41,7 +41,7 @@ function show_obs_page($view)
 	// the overlays were addressed by before and still works, so sources set up back then keep
 	// playing without being retyped.
 	$options->params = array();
-	foreach (array('event_id', 'tournament_id', 'table_num', 'game_num', 'user_id') as $param)
+	foreach (array('event_id', 'tournament_id', 'table_num', 'game_num', 'user_id', 'viewer') as $param)
 	{
 		if (isset($_REQUEST[$param]))
 		{

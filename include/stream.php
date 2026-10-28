@@ -22,6 +22,46 @@ define('STREAM_DEFAULT_DELAY', 10); // seconds a screen stays up
 define('STREAM_MIN_DELAY', 1);
 define('STREAM_MAX_DELAY', 600);
 
+// Whether there is anything to follow at this thing right now: its days are running, or a game
+// is being played at one of its tables. A text broadcast is only worth offering then - of a
+// tournament that is over it would show the standings and nothing else, which the tournament's
+// own pages say better.
+function stream_is_live($owner, $start_time, $duration)
+{
+	$now = time();
+	if ($start_time <= $now && $now < $start_time + $duration)
+	{
+		return true;
+	}
+
+	list ($playing) = Db::record(get_label('game'), $owner->is_tournament
+		? 'SELECT COUNT(*) FROM current_games g JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?'
+		: 'SELECT COUNT(*) FROM current_games WHERE event_id = ?', $owner->id);
+	return (int)$playing > 0;
+}
+
+// The tables of this thing, each as a link to its text broadcast - what somebody following the
+// tournament from home opens. $scope is how the broadcast is to be addressed, which is the
+// round when a round is being looked at and the tournament when it is the tournament: a text
+// broadcast follows whatever it is pointed at.
+//
+// The language is the one the table is set to show, so that the words of the game come out the
+// same here as on the stream of it.
+function show_text_broadcast_links($owner, $scope)
+{
+	echo '<p><h2>' . get_label('Text broadcast') . '</h2></p>';
+	echo '<p><table class="bordered light" width="100%">';
+	$count = stream_table_count($owner);
+	for ($table_num = 1; $table_num <= $count; ++$table_num)
+	{
+		$settings = stream_settings($owner, $table_num);
+		$url = 'text_broadcast.php?' . $scope . '&table_num=' . $table_num .
+			'&locale=' . get_lang_code($settings->lang_resolved);
+		echo '<tr><td><a href="' . $url . '" target="_blank">' . get_label('Table [0]', $table_num) . '</a></td></tr>';
+	}
+	echo '</table></p>';
+}
+
 // Which of the two a table hangs under. A round of a tournament is the tournament's: pass the
 // tournament, not the round.
 function stream_tournament($tournament_id)

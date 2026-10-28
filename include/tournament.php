@@ -9,6 +9,7 @@ require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/address.php';
 require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/series.php';
+require_once __DIR__ . '/stream.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
@@ -149,6 +150,11 @@ class TournamentPageBase extends PageBase
 			$this->id);
 			
 		list ($this->broadcasts) = Db::record(get_label('tournament'), 'SELECT count(*) FROM event_broadcasts es JOIN events e ON e.id = es.event_id WHERE e.tournament_id = ?', $this->id);
+
+		// A tournament that is on can be followed in words at every table, whether or not it
+		// is being streamed - see text_broadcast.php. That is what opens the broadcasts page
+		// for a tournament that has no video of itself at all.
+		$this->text_broadcasts = stream_is_live(stream_tournament($this->id), $this->start_time, $this->duration);
 			
 		$this->series = array();
 		$query = new DbQuery(
@@ -207,7 +213,7 @@ class TournamentPageBase extends PageBase
 				// new MenuItem('tournament_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.')),
 			)),
 		);
-		if ($this->broadcasts > 0)
+		if ($this->broadcasts > 0 || $this->text_broadcasts)
 		{
 			$menu[6]->submenu[] = new MenuItem('tournament_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('Tournament broadcasts.'));
 		}
@@ -340,7 +346,7 @@ class TournamentPageBase extends PageBase
 		echo '</td></tr>';
 		
 		echo '<tr><td style="padding: 0px 0px 0px 20px;">';
-		if ($this->broadcasts > 0)
+		if ($this->broadcasts > 0 || $this->text_broadcasts)
 		{
 			echo '<a href="tournament_broadcasts.php?id=' . $this->id . '&bck=1" title="' . get_label('[0] broadcasts', $this->name) . '"><img src="images/broadcast.png" width="48"></a>';
 		}

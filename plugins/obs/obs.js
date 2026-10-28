@@ -207,8 +207,7 @@ var obs = new function()
 		'<div class="player-bg"></div>' +
 		'<div class="player-photo">' +
 			'<div class="player-role"></div>' +
-			'<div class="player-mark"><span></span></div>' +
-			'<div class="player-fouls"></div>' +
+			'<div class="player-marks"><div class="player-fouls"></div><div class="player-mark"><span></span></div></div>' +
 			'<div class="player-name-bar"><div class="player-number"></div><div class="player-name"></div></div>' +
 		'</div>';
 
@@ -320,9 +319,10 @@ var obs = new function()
 		mark.getElementsByTagName('span')[0].textContent = text;
 	}
 
-	// The technical fouls, in the corner across from the warnings. They are counted apart from
-	// the warnings and cost a player the game at two, so they are shown apart from them as well -
-	// and they stay up after the player is gone, whichever way they went.
+	// The technical fouls, beside the warnings rather than across the card from them: the other
+	// corner is where the role is. They are counted apart from the warnings and cost a player
+	// the game at two, so they are a mark of their own - and they stay up after the player is
+	// gone, whichever way they went.
 	function showPlayerFouls(fouls, player)
 	{
 		var count = player.techFouls ? player.techFouls : 0;

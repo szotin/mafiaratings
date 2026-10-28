@@ -59,6 +59,11 @@ class Page extends EventPageBase
 		
 		if (count($days) == 0)
 		{
+			// Nobody is streaming it, which is exactly when reading it matters most.
+			if ($this->text_broadcasts)
+			{
+				show_text_broadcast_links(stream_owner($this->tournament_id, $this->id), 'event_id=' . $this->id);
+			}
 			return;
 		}
 		
@@ -113,6 +118,12 @@ class Page extends EventPageBase
 			echo '<tr><td><a href="' . $days[0]->tables[0]->parts[0]->url . '" target="_blank">' . get_label('Broadcast') . '</a></td><td width="80">' . broadcast_status_str($days[0]->tables[0]->parts[0]->status) . '</td></tr>';
 		}
 		echo '</table>';
+
+		// And the same tables in words, for somebody who would rather read.
+		if ($this->text_broadcasts)
+		{
+			show_text_broadcast_links(stream_owner($this->tournament_id, $this->id), 'event_id=' . $this->id);
+		}
 	}
 }
 

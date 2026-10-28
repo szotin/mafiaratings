@@ -392,11 +392,21 @@ body {
 .card-face.role-don .player-role { background-image: url(images/don.png); }
 .card-face.role-maf .player-role { background-image: url(images/pistol.png); }
 
-/* the warnings or the way the player died in the top right corner */
-.player-mark {
+/*  The top right corner of the card: the warnings or the way the player died, and the
+    technical fouls beside them. One row, because the other corner belongs to the role and a
+    mark put there would stand on top of it. The fouls come first, so the warnings keep the
+    corner itself. */
+.player-marks {
 	position: absolute;
 	top: 0;
 	right: 0;
+	display: flex;
+	align-items: flex-start;
+	gap: 0.3125rem;
+}
+
+/* the warnings or the way the player died */
+.player-mark {
 	min-width: 1.875rem;
 	max-width: 3.125rem;
 	height: 2.1875rem;
@@ -416,12 +426,9 @@ body {
 	letter-spacing: 0.2rem;
 }
 
-/* The technical fouls, across the card from the warnings. Amber rather than red: two of them
-   cost a player the game, so they are a step above a warning without being the removal itself. */
+/* The technical fouls, next to the warnings and in the same red that three of those wear: two
+   of them take the player out of the game, so the mark says so from across the room. */
 .player-fouls {
-	position: absolute;
-	top: 0;
-	left: 0;
 	min-width: 1.875rem;
 	height: 2.1875rem;
 	padding: 0.25rem 0.375rem 0;
@@ -429,8 +436,8 @@ body {
 	color: #fff;
 	font-size: 1.1rem;
 	font-weight: 800;
-	background-color: rgba(190, 120, 0, 0.75);
-	border-top-left-radius: 0.625rem;
+	background-color: rgba(255, 0, 0, 0.603);
+	border-bottom-left-radius: 0.625rem;
 	border-bottom-right-radius: 0.625rem;
 }
 
@@ -443,8 +450,7 @@ body {
 
 .player-card.death-voting .player-mark,
 .player-card.death-shooting .player-mark {
-	top: 0.3125rem;
-	right: 0.3125rem;
+	margin: 0.3125rem 0.3125rem 0 0;
 	width: 2.5rem;
 	height: 2.5rem;
 	background-color: transparent;

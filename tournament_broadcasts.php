@@ -70,11 +70,6 @@ class Page extends TournamentPageBase
 			$current_table->parts[] = $current_part;
 		}
 		
-		if (count($events) == 0)
-		{
-			return;
-		}
-		
 		foreach ($events as $event)
 		{
 			echo '<p><h2>' . $event->name . '</h2></p>';
@@ -129,6 +124,13 @@ class Page extends TournamentPageBase
 				echo '<tr><td><a href="' . $event->days[0]->tables[0]->parts[0]->url . '" target="_blank">' . get_label('Broadcast') . '</a></td><td width="80">' . broadcast_status_str($event->days[0]->tables[0]->parts[0]->status) . '</td></tr>';
 			}
 			echo '</table></p>';
+		}
+
+		// And the same tables in words, for somebody who would rather read - or for a
+		// tournament nobody is streaming at all. Only while it is on: see stream_is_live().
+		if ($this->text_broadcasts)
+		{
+			show_text_broadcast_links(stream_tournament($this->id), 'tournament_id=' . $this->id);
 		}
 	}
 }

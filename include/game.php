@@ -1402,7 +1402,7 @@ class Game
 		return $array;
 	}
 
-	private static function gametime_to_int($gametime)
+	static function gametime_to_int($gametime)
 	{
 		switch ($gametime)
 		{

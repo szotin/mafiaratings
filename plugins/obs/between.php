@@ -24,7 +24,7 @@ obs_screen_start();
 // it fetches. A screen is reached by its own address and knows nothing of this page, so the
 // table has to be named again each time.
 $params = array();
-foreach (array('event_id', 'tournament_id', 'table_num') as $param)
+foreach (array('event_id', 'tournament_id', 'table_num', 'viewer') as $param)
 {
 	if (isset($_REQUEST[$param]))
 	{
