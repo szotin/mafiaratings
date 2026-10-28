@@ -330,13 +330,6 @@ body {
 	background-image: url(images/aml_masters.png); /* the back of the card, for a seat with nobody on it */
 }
 
-/* The default icon of a player with no photo of their own is small and flat, so it is shown
-   whole in the free part of the card rather than blown up to fill it. */
-.card-face.no-photo .player-photo {
-	background-size: 6rem auto;
-	background-position: center 36%;
-}
-
 .player-card.dead .player-photo { filter: grayscale(80%) opacity(80%); }
 .player-card.speaking .player-photo { box-shadow: inset 0 0 1.25rem #fff; }
 

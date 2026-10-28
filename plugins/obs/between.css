@@ -329,13 +329,6 @@ body.between.bg-light.bg-clear {
 	background-image: url(images/aml_masters.png); /* a seat we have no face for */
 }
 
-/* The default icon of a player who never uploaded a photo is small and flat, so it is shown
-   whole in the middle of the card instead of being cropped and blown up to fill it. */
-.card.no-photo .card-photo {
-	background-size: 58%;
-	background-color: rgba(0, 0, 0, 0.28);
-}
-
 .card-club {
 	display: flex;
 	align-items: center;

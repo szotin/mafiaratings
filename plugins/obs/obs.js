@@ -237,8 +237,9 @@ var obs = new function()
 
 	function showPlayer(card, player)
 	{
-		// A player who never uploaded a photo still has a face: the site gives them its default
-		// icon. So a seat stays face down only while there is nobody on it.
+		// A card is face down only while there is nobody on the seat. A player who never
+		// uploaded a photo is on it all the same: their card comes up with nothing in the
+		// middle of it, which is honest, rather than wearing the site's stand-in figure.
 		var known = (player.id > 0);
 		var role = !hideRoles && player.role ? player.role : '';
 
@@ -260,10 +261,13 @@ var obs = new function()
 		// old look until it is gone, and the one coming around is already right.
 		var face = card.getElementsByClassName('card-face')[card.obsTurns % 2];
 		face.className = 'card-face' + (card.obsTurns % 2 ? ' turned-away' : '') +
-			(role != '' ? ' role-' + role : '') + (known && !player.hasPhoto ? ' no-photo' : '');
+			(role != '' ? ' role-' + role : '');
 		face.getElementsByClassName('player-name')[0].textContent = player.name ? player.name : '';
+		// none rather than nothing at all: nothing would leave the back of the card showing
+		// through, which is what an empty seat looks like. none takes the picture away and
+		// leaves the card's own ground - see .player-photo in obs.css.
 		face.getElementsByClassName('player-photo')[0].style.backgroundImage =
-			known ? 'url(' + (player.hasPhoto ? player.photoUrl : player.iconUrl) + ')' : '';
+			known ? (player.hasPhoto ? 'url(' + player.photoUrl + ')' : 'none') : '';
 		showPlayerMark(face.getElementsByClassName('player-mark')[0], player);
 		showPlayerFouls(face.getElementsByClassName('player-fouls')[0], player);
 

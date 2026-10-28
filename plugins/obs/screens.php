@@ -365,12 +365,10 @@ function obs_players($user_ids, $event_id, $tournament_id, $club_id)
 			set($p->id, $p->name, (int)$tournament_flags, 't' . $tournament_id)->
 			set($p->id, $p->name, (int)$club_flags, 'c' . $club_id)->
 			set($p->id, $p->name, (int)$user_flags);
-		// A player with a photo of their own gets it whole, to be cropped square by the card. One
-		// without gets the site's default icon instead of the default thumbnail: the thumbnail is
-		// a wide picture with the figure lost in the middle of it, which comes out tiny once the
-		// card has cropped it. The card knows to lay the icon out differently - see .card.no-photo.
-		$p->has_photo = $pic->has_image();
-		$p->photo = $pic->url($p->has_photo ? SOURCE_DIR : ICONS_DIR);
+		// A player with a photo of their own gets it whole, to be cropped square by the card.
+		// One without gets nothing: the stand-in figure the site puts in its place says no more
+		// than the empty card does, and ten of them in a row say it ten times over.
+		$p->photo = $pic->has_image() ? $pic->url(SOURCE_DIR) : '';
 		$p->club = is_null($p->club_name) ? get_label('Independent Player') : $p->club_name;
 		$players[$p->id] = $p;
 	}
@@ -391,10 +389,6 @@ function obs_card_row($count, $extra_class = '')
 // no text.
 function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NULL)
 {
-	if (!is_null($player) && isset($player->has_photo) && !$player->has_photo)
-	{
-		$extra_class .= ' no-photo';
-	}
 	echo '<div class="card ' . $extra_class . '">';
 	echo '<div class="card-no">' . $number . '</div>';
 	echo '<div class="card-name">' . (is_null($player) ? '' : htmlspecialchars($player->name)) . '</div>';
@@ -407,7 +401,17 @@ function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NUL
 		echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
 	}
 
-	echo '<div class="card-photo"' . (is_null($player) ? '' : ' style="background-image: url(' . $player->photo . ')"') . '></div>';
+	// A seat with nobody on it keeps the back of the card; a player with no photo gets the card's
+	// own ground instead, which none uncovers - see .card-photo in between.css.
+	if (is_null($player))
+	{
+		echo '<div class="card-photo"></div>';
+	}
+	else
+	{
+		echo '<div class="card-photo" style="background-image: ' .
+			($player->photo == '' ? 'none' : 'url(' . $player->photo . ')') . '"></div>';
+	}
 	// The club along the bottom, with the flag of the country in the corner beside it - a flag is
 	// read at a glance and leaves the whole line to the club, which a second line of text did not.
 	echo '<div class="card-club">';

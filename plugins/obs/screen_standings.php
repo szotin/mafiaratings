@@ -153,7 +153,10 @@ for ($col = 0; $col < $columns && $shown < count($players); ++$col)
 
 		echo '<div class="standings-row">';
 		echo '<div class="standings-place">' . $player->place . '</div>';
-		echo '<div class="standings-photo" style="background-image: url(' . $pic->url(ICONS_DIR) . ')"></div>';
+		// Nothing for a player with no picture of their own: an empty square keeps the rows
+		// lined up and says as much as the site's stand-in figure would.
+		echo '<div class="standings-photo"' .
+			($pic->has_image() ? ' style="background-image: url(' . $pic->url(ICONS_DIR) . ')"' : '') . '></div>';
 		echo '<div class="standings-name">' . htmlspecialchars($player->name) . '</div>';
 		echo '<div class="standings-points">' . format_score($player->points) . '</div>';
 		echo '</div>';
