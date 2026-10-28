@@ -672,6 +672,7 @@ class Page extends PageBase
 					}
 					else
 					{
+						echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Change game [0] video', $this->id) . '"><img src="images/film.png" border="0"></button>';
 						echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
 					}
 				}

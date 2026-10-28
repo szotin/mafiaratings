@@ -253,6 +253,15 @@ define('STREAM_FLAG_DARK', 0x1);
 define('STREAM_FLAG_TRANSPARENT', 0x2);
 define('STREAM_FLAG_NO_AUTO_SCENE', 0x4);
 
+// Nothing at all shown at this table, by the browser sources that carry the cards over the
+// game and by the one that fills the time between games. They are set apart because they are
+// separate sources standing in separate scenes: a stream may want the table bare and the
+// break screens still running, or the other way about. The source keeps asking after the game
+// while it shows nothing, so turning it back on puts up what is happening now.
+define('STREAM_FLAG_HIDE_GLYPHS', 0x8);
+define('STREAM_FLAG_HIDE_BETWEEN', 0x10);
+
+
 // event flags
 //  1  - 0x0001 -      1 - event should not be shown in the event list before the end of the event
 //  2  - 0x0002 -      2 - event should not be shown in the event list after the end of the event
@@ -283,8 +292,8 @@ define('EVENT_FLAG_AWARD_NO_DON_IN_BLACK', 0x20000);
 // Keep the roles off the OBS overlays of this event's games. A tournament is usually played in a
 // room of its own where the players have no phones, so there the roles can be shown; at an
 // ordinary club event the players are sitting with their phones and could simply look them up.
-// Each new game of the event starts with this, and the moderator can still turn it either way
-// for the game they are running - see Game::hideRoles.
+// It is the answer for the whole event, and it can be turned over from the stream settings
+// while the games are being played - see api/ops/stream.php.
 define('EVENT_FLAG_HIDE_ROLES', 0x40000);
 define('EVENT_MASK_HIDDEN', 0x3); // EVENT_FLAG_HIDDEN_BEFORE | EVENT_FLAG_HIDDEN_AFTER
 define('EVENT_ADMIN_EDITABLE_MASK', 0x200); // EVENT_FLAG_PINNED
@@ -517,6 +526,11 @@ define('VIDEO_TYPE_PARTY', 3);
 define('VIDEO_TYPE_CUSTOM', 4);
 define('VIDEO_TYPE_MIN', 0);
 define('VIDEO_TYPE_MAX', 4);
+
+// Where in the recording the video starts was worked out by the site rather than typed in by a
+// person - see include/broadcast.php. Such a time may be moved when a person corrects another
+// game of the same recording; a time somebody set themselves never is.
+define('VIDEO_FLAG_AUTO_TIME', 0x0001);
 
 define('TOURNAMENT_INVITATION_STATUS_NO_RESPONCE', 0);
 define('TOURNAMENT_INVITATION_STATUS_ACCEPTED', 1);

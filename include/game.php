@@ -4303,7 +4303,38 @@ class Game
 			$data->id = (int)$data->id;
 
 			$rebuild_ratings = $this->update();
-			
+
+			// Where this game begins in the broadcast of its table, tied to it now rather than
+			// afterwards: everything needed is known by now, since an interruption of the
+			// stream after the game does not move the game and the ones before it have already
+			// been measured. The moment used is the one this site stamped when the roles began to
+			// be handed out, not the one the referee's browser stamped - a laptop with the wrong
+			// clock would move the game in the recording by exactly as much as the clock is out.
+			$query = new DbQuery('SELECT start_time FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?',
+				$data->eventId, $table_num, $game_num);
+			$moment = 0;
+			if ($row = $query->next())
+			{
+				list ($moment) = $row;
+				$moment = (int)$moment;
+			}
+			// And nothing about it may stand between the referee and a game that saves. A game
+			// that cannot be placed - no broadcast, none covering that moment, nothing known
+			// about its timing yet - is simply left unplaced for the broadcasts page to pick
+			// up later.
+			if ($moment > 0 && !is_null($table_num))
+			{
+				require_once __DIR__ . '/broadcast.php';
+				try
+				{
+					broadcast_bind_game($data->id, $data->eventId, $tournament_id, $table_num, $moment,
+						get_lang_by_code($data->language), $data->clubId);
+				}
+				catch (Exception $e)
+				{
+				}
+			}
+
 			Db::exec(get_label('game'), 'DELETE FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?', $data->eventId, $table_num, $game_num);
 			
 			$query = new DbQuery('SELECT feature_flags FROM game_settings WHERE user_id = ?', $_profile->user_id);

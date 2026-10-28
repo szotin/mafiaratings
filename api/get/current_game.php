@@ -17,8 +17,10 @@ class ApiPage extends GetApiPageBase
 		
 		// A game played with the roles hidden sends none of them, nor the checks. Saying so out
 		// loud as well lets an overlay leave out the places they would have gone, instead of
-		// showing empty ones for the whole game.
-		$show_roles = !isset($g->hideRoles) || !$g->hideRoles;
+		// showing empty ones for the whole game. The answer is the event's rather than the
+		// game's: it is turned over from the stream settings while the games are being played,
+		// and every table of the event follows it at once - see api/ops/stream.php.
+		$show_roles = (($this->event_flags & EVENT_FLAG_HIDE_ROLES) == 0);
 		$game->hideRoles = !$show_roles;
 
 		// The roles are handed out in the "start" time of round 0, and the game cannot leave it
@@ -611,15 +613,15 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('iconUrl', 'URL of the user logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$players->sub_param('hasPhoto', 'True - if a player has custom photo. False - when player did not upload photo, or when id<=0, which means there is no player.');
 				$players->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
-				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don". It is set only when the flag hideRoles is not set in the game. It is also not set while the roles are still being handed out - a player gets their role here as soon as the moderator gives it to them, and the ones left without a role are not known to be civilians yet.');
+				$players->sub_param('role', 'One of: "town", "sheriff", "maf", or "don". It is set only when hideRoles is not set. It is also not set while the roles are still being handed out - a player gets their role here as soon as the moderator gives it to them, and the ones left without a role are not known to be civilians yet.');
 				$players->sub_param('warnings', 'Number of warnings.');
 				$players->sub_param('techFouls', 'Number of technical fouls.');
 				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');
 				$players->sub_param('state', 'Player state - "dead" or "alive".');
 				$players->sub_param('deathRound', 'If player state is "dead" it is set to the round number when they died.');
 				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "techFouls", "giveUp", or "kickOut".');
-				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when the flag hideRoles is not set in the game.');
-				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened. It is set only when the flag hideRoles is not set in the game.');
+				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when hideRoles is not set.');
+				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened. It is set only when hideRoles is not set.');
 			$moderator = $param->sub_param('moderator', 'Moderator.');
 				$moderator->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
 				$moderator->sub_param('name', 'Moderator nickname.');
@@ -637,7 +639,7 @@ class ApiPage extends GetApiPageBase
 				$moderator->sub_param('iconUrl', 'URL of the moderator logo icon. If user is missing - a link to a transparent image. (70x70 px).');
 				$moderator->sub_param('hasPhoto', 'True - if a moderator has custom photo. False - when moderator did not upload photo, or when id<=0, which means there is no moderator yet.');
 				$moderator->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
-			$param->sub_param('hideRoles', 'True when this game is played with the roles kept off the overlays. The players then have no role, and nobody has a checkedByDon or a checkedBySheriff. A game starts the way its event says and the moderator can turn it either way while the game is on.');
+			$param->sub_param('hideRoles', 'True when the roles are kept off the overlays. The players then have no role, and nobody has a checkedByDon or a checkedBySheriff. It is the event\'s answer: a club manager turns it over from the stream settings, and every table of the event follows at once.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
  			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');

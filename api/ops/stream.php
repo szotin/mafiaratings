@@ -26,68 +26,17 @@ class ApiPage extends OpsApiPageBase
 		}
 	}
 
-	// A game already being played carries its own answer about the roles - it was given one
-	// when it was created - and the overlays read it from there, so turning the setting over
-	// has to reach it or nothing changes on the stream until the next game. The moderator's
-	// screen sends the whole game every second from its own copy, but it no longer carries
-	// this field over: api/ops/game.php keeps what is stored unless the moderator says
-	// otherwise. So writing it here holds.
-	private function set_played_roles($owner, $table_num, $hide)
-	{
-		$where = $owner->is_tournament ? 'e.tournament_id = ?' : 'e.id = ?';
-		$query = new DbQuery(
-			'SELECT g.event_id, g.table_num, g.game_num, g.game FROM current_games g'.
-			' JOIN events e ON e.id = g.event_id WHERE ' . $where, $owner->id);
-		$games = array();
-		while ($row = $query->next())
-		{
-			$games[] = $row;
-		}
-
-		foreach ($games as $row)
-		{
-			list ($event_id, $table, $game_num, $game) = $row;
-			if ($table_num > 0 && (int)$table != $table_num)
-			{
-				continue; // another table, which this is not about
-			}
-
-			$data = json_decode($game);
-			if (is_null($data) || !is_object($data))
-			{
-				continue;
-			}
-			if ($hide == (isset($data->hideRoles) && $data->hideRoles))
-			{
-				continue; // already saying so
-			}
-
-			if ($hide)
-			{
-				$data->hideRoles = true;
-			}
-			else
-			{
-				unset($data->hideRoles);
-			}
-			Db::exec(get_label('game'), 'UPDATE current_games SET game = ? WHERE event_id = ? AND table_num = ? AND game_num = ?',
-				json_encode($data), $event_id, $table, $game_num);
-		}
-	}
-
 	// Whether the roles are shown is decided for the whole thing rather than at a table, so it
 	// is done once. A tournament hands it down to every round of it, the same as
 	// api/ops/tournament.php does when the tournament itself is edited; an event of its own
 	// has only itself to set.
-	private function set_roles($owner, $table_num)
+	private function set_roles($owner)
 	{
 		if (!isset($_REQUEST['hide_roles']))
 		{
 			return;
 		}
 		$hide = ((int)$_REQUEST['hide_roles'] != 0);
-		$this->set_played_roles($owner, $table_num, $hide);
-
 		if (!$owner->is_tournament)
 		{
 			$set = $hide ? ('flags | ' . EVENT_FLAG_HIDE_ROLES) : ('flags & ~' . EVENT_FLAG_HIDE_ROLES);
@@ -263,7 +212,7 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		$this->check_owner_permissions($owner);
-		$this->set_roles($owner, $table_num);
+		$this->set_roles($owner);
 
 		// Table 0 is every table there is.
 		$tables = array();
@@ -316,6 +265,14 @@ class ApiPage extends OpsApiPageBase
 			{
 				$flags = ((int)$_REQUEST['transparent'] != 0) ? ($flags | STREAM_FLAG_TRANSPARENT) : ($flags & ~STREAM_FLAG_TRANSPARENT);
 			}
+			if (isset($_REQUEST['hide_glyphs']))
+			{
+				$flags = ((int)$_REQUEST['hide_glyphs'] != 0) ? ($flags | STREAM_FLAG_HIDE_GLYPHS) : ($flags & ~STREAM_FLAG_HIDE_GLYPHS);
+			}
+			if (isset($_REQUEST['hide_between']))
+			{
+				$flags = ((int)$_REQUEST['hide_between'] != 0) ? ($flags | STREAM_FLAG_HIDE_BETWEEN) : ($flags & ~STREAM_FLAG_HIDE_BETWEEN);
+			}
 			// Asked for the right way round and stored the other, so that a table nobody has
 			// said anything about switches by itself, which is what it did before there was
 			// anything to say. What is set up against the phases is left untouched either way:
@@ -344,6 +301,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('screens', 'Which screens to show and in what order, by their short names, separated by commas: results, upcoming, standings, stats.', 'left as it is.');
 		$help->request_param('dark', '1 draws the screens on the dark wall instead of the pale ground they get by default.', 'left as it is.');
 		$help->request_param('transparent', '1 paints no ground at all, so the scene behind the browser source shows through.', 'left as it is.');
+		$help->request_param('hide_glyphs', '1 shows nothing at all on the sources that carry the cards over the game. They go on following the game behind it, so 0 puts up what is happening then rather than what was happening when they were switched off.', 'left as it is.');
+		$help->request_param('hide_between', '1 shows nothing at all on the source that fills the time between games.', 'left as it is.');
 		$help->request_param('auto_scenes', '1 switches the OBS scenes at this table by the phase of the game being played, 0 leaves them to be switched by hand. What is set up against the phases is kept either way.', 'left as it is.');
 		$help->request_param('hide_roles', '1 keeps the roles off the overlays. It belongs to the tournament rather than to one table, so it is set for the whole of it and every round follows.', 'left as it is.');
 		return $help;

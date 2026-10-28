@@ -99,10 +99,12 @@ button.leave:active { border: 1px inset #dddddd; padding: 0px;  }
 
 /*  The hint cell, split in two: which day or night it is on top, the hint under it. The box
     fills the cell and the top half is a fixed height, so the day and the night stay where they
-    are however many lines the hint runs to. */
+    are however many lines the hint runs to. The hint hangs from the top of its half rather
+    than sitting in the middle of it, so that it stays close under the heading and a second
+    line grows downwards into the room below instead of pushing the first line up. */
 #status-box { height: 84px; } /* what .header-row leaves inside a cell */
-#status-title { height: 26px; font-size: 1.3em; vertical-align: top; text-align: center; }
-#status { vertical-align: middle; text-align: center; }
+#status-title { height: 26px; padding-top: 10px; font-size: 1.3em; vertical-align: top; text-align: center; }
+#status { vertical-align: top; text-align: center; }
 #clock { text-align:right; padding:0px; margin:0px; }
 #demo { text-align:center; vertical-align: center; top:200px; position: absolute; left:0; width:100%; margin:0; border-style: none; font-size: 15em; font-weight:bold; opacity: 0.3; display:none; pointer-events:none; }
 #saving { padding:8px; font-weight:bold; }

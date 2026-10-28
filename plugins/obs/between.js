@@ -44,6 +44,11 @@ var obs = new function()
 	{
 		stream = settings;
 
+		// Shown at all, or not. What is behind it goes on as before - the screens are still
+		// fetched in their turn - so bringing it back puts up a screen that is current rather
+		// than the one that was up when it went away.
+		document.body.classList.toggle('hidden-source', settings.hideBetween ? true : false);
+
 		var light = (settings.background == 'light');
 		var clear = (settings.transparent ? true : false);
 		var body = document.body;

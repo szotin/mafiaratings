@@ -8,6 +8,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `tournament_scores_cache`;
 DROP TABLE IF EXISTS `tournament_streams`;
+DROP TABLE IF EXISTS `stream_outages`;
 DROP TABLE IF EXISTS `event_streams`;
 DROP TABLE IF EXISTS `event_scores_cache`;
 DROP TABLE IF EXISTS `club_separations`;

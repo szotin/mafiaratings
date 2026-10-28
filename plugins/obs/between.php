@@ -34,10 +34,10 @@ foreach (array('event_id', 'tournament_id', 'table_num') as $param)
 
 $options = new stdClass();
 $options->params = $params;
-// Where the settings come from, and how often they are asked for again. Ten seconds is about
-// as long as a screen stays up, so a change on the site shows within a screen or two.
+// Where the settings come from, and how often they are asked for again. It is about as long
+// as a screen stays up, so a change on the site shows within a screen or two.
 $options->settingsUrl = '../../api/get/stream.php?op=settings';
-$options->settingsInterval = 10000;
+$options->settingsInterval = OBS_SETTINGS_DELAY;
 
 echo '<!DOCTYPE HTML>';
 echo '<html><head>';

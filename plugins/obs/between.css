@@ -120,6 +120,19 @@ body.between.bg-clear::before {
 	display: none;
 }
 
+/* Nothing at all, when the table is set to show nothing - see STREAM_FLAG_HIDE_BETWEEN. Unlike
+   the glyphs this page paints a ground of its own, swells and all, so that has to go as well
+   as what stands on it. It comes after both sets of colours so that it takes the ground away
+   whichever of them is on. */
+body.between.hidden-source {
+	background: transparent;
+}
+
+body.between.hidden-source::before,
+body.between.hidden-source > * {
+	display: none;
+}
+
 /* With a ground behind it, the light pane is a wash of ink that sets the table into the page.
    With nothing behind it there is no page to be set into, and dark lettering has to be read
    over whatever the scene happens to be showing - so the pane turns back into a pane, pale

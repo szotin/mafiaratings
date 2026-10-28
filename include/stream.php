@@ -171,15 +171,33 @@ function stream_seated_tables($owner)
 }
 
 // How many tables are played at, which is what the settings page has a tab for each of.
-// Nothing says so outright, so it is taken from the three places that know: the seating, the
-// highest table a game has been written down at, and the highest table somebody has already
-// set up. At least one, so that something nobody has played yet can still be set up.
+//
+// The scheme is what says so, where it has been filled in: that is somebody stating how many
+// tables there are. A table that is actually seated, or that a game has been written down at,
+// counts whatever the scheme says - there is real work behind it and hiding it would hide the
+// work - but a table nobody has settled on is not conjured up out of a row of settings.
+//
+// That last part is why the scheme is asked at all. Settings outlive the scheme that prompted
+// them: cut a tournament from three tables to two and the third one's settings stay behind,
+// and counting them would keep the third table on the page for ever. They are still counted
+// while there is no scheme to go by, so that a table can be set up before anybody has said
+// how many there will be. At least one in every case.
 function stream_table_count($owner)
 {
 	$where = $owner->is_tournament ? 'tournament_id' : 'event_id';
 	list ($played) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM games WHERE ' . $where . ' = ?', $owner->id);
+	$count = max(1, stream_seated_tables($owner), (int)$played);
+
+	list ($scheme) = Db::record(get_label('event'), $owner->is_tournament
+		? 'SELECT MAX(tables) FROM events WHERE tournament_id = ?'
+		: 'SELECT MAX(tables) FROM events WHERE id = ?', $owner->id);
+	if ((int)$scheme > 0)
+	{
+		return max($count, (int)$scheme);
+	}
+
 	list ($set_up) = Db::record(get_label('event'), 'SELECT MAX(table_num) FROM ' . $owner->table . ' WHERE ' . $owner->column . ' = ?', $owner->id);
-	return max(1, stream_seated_tables($owner), (int)$played, (int)$set_up);
+	return max($count, (int)$set_up);
 }
 
 // What the screens at this table are to do. Returns an object whatever the table is, so that

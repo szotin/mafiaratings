@@ -159,7 +159,8 @@ CREATE TABLE `current_games` (
   `game_num` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `game` text NOT NULL,
-  `log` mediumtext
+  `log` mediumtext,
+  `start_time` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `dons`;
@@ -212,7 +213,12 @@ CREATE TABLE `event_broadcasts` (
   `table_num` int(11) NOT NULL,
   `part_num` int(11) NOT NULL,
   `url` varchar(1024) NOT NULL,
-  `status` int(11) NOT NULL
+  `status` int(11) NOT NULL,
+  `stream_start` int(11) DEFAULT NULL,
+  `stream_end` int(11) DEFAULT NULL,
+  `video_length` int(11) DEFAULT NULL,
+  `checked_time` int(11) DEFAULT NULL,
+  `time_shift` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `event_comments`;
@@ -913,7 +919,19 @@ CREATE TABLE `event_streams` (
   `scene_time` int(11) NOT NULL DEFAULT '0',
   `scenes` text,
   `scene_events` text,
-  `control_level` int(11) NOT NULL DEFAULT '-1'
+  `control_level` int(11) NOT NULL DEFAULT '-1',
+  `seen_time` int(11) NOT NULL DEFAULT '0',
+  `obs_start_time` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS `stream_outages`;
+CREATE TABLE `stream_outages` (
+  `id` int(11) NOT NULL,
+  `tournament_id` int(11) DEFAULT NULL,
+  `event_id` int(11) DEFAULT NULL,
+  `table_num` int(11) NOT NULL,
+  `start_time` int(11) NOT NULL,
+  `end_time` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `tournament_streams`;
@@ -928,7 +946,9 @@ CREATE TABLE `tournament_streams` (
   `scene_time` int(11) NOT NULL DEFAULT '0',
   `scenes` text,
   `scene_events` text,
-  `control_level` int(11) NOT NULL DEFAULT '-1'
+  `control_level` int(11) NOT NULL DEFAULT '-1',
+  `seen_time` int(11) NOT NULL DEFAULT '0',
+  `obs_start_time` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `tournament_teams`;
@@ -994,7 +1014,8 @@ CREATE TABLE `videos` (
   `user_id` int(11) NOT NULL,
   `video_time` int(11) NOT NULL,
   `vtime` varchar(64) DEFAULT NULL,
-  `tournament_id` int(11) DEFAULT NULL
+  `tournament_id` int(11) DEFAULT NULL,
+  `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `video_comments`;

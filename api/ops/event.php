@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/event.php';
+require_once '../../include/broadcast.php';
 require_once '../../include/tournament.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
@@ -777,9 +778,13 @@ class ApiPage extends OpsApiPageBase
 		if ($event_id > 0)
 		{
 			check_permissions(PERMISSION_USER);
-			if ($user_id != $_profile->user_id)
+			list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+			// Put down by somebody else, and only a referee or a manager may do that. Put down
+			// by themselves, and the tournament hears about it as an application rather than
+			// as a registration - see register_event_user_in_tournament().
+			$by_hand = ($user_id != $_profile->user_id);
+			if ($by_hand)
 			{
-				list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
 				check_permissions(PERMISSION_REFEREE, $club_id, $event_id, $tournament_id);
 			}
 			
@@ -797,6 +802,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('registration'), 
 				'INSERT INTO event_regs (event_id, user_id, coming_odds, people_with_me, late, nickname) VALUES (?, ?, ?, ?, ?, ?)',
 				$event_id, $user_id, $odds, $friends, $late, $nickname);
+			register_event_user_in_tournament($tournament_id, $user_id, $club_id, 0, $by_hand);
 			Db::commit();
 			
 			$this->response['regs'] = get_event_reg_array($event_id);
@@ -886,6 +892,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('registration'), 
 				'INSERT INTO event_regs (event_id, user_id, nickname) VALUES (?, ?, ?)',
 				$event_id, $user_id, $name);
+			register_event_user_in_tournament($tournament_id, $user_id, $club_id, 0, true);
 			Db::commit();
 				
 			$this->response['user_id'] = $user_id;
@@ -1192,6 +1199,7 @@ class ApiPage extends OpsApiPageBase
 				}
 				
 				Db::exec(get_label('registration'), 'INSERT INTO event_regs (event_id, user_id, nickname) VALUES (?, ?, ?)', $event_id, $new_user_id, $nickname);
+				register_event_user_in_tournament($tournament_id, $new_user_id, $club_id, 0, true);
 				$changed = $changed || Db::affected_rows() > 0;
 				
 				Db::exec(get_label('registration'), 'DELETE FROM event_incomers WHERE id = ?', $incomer_id);
@@ -1844,6 +1852,7 @@ class ApiPage extends OpsApiPageBase
 		if ($count == 0)
 		{
 			Db::exec(get_label('registration'), 'INSERT INTO event_regs (user_id, event_id, flags) values (?, ?, ?)', $user_id, $event_id, $flags);
+			register_event_user_in_tournament($tournament_id, $user_id, $club_id, $flags, true);
 			$log_details = new stdClass();
 			$log_details->event_id = $event_id;
 			db_log(LOG_OBJECT_USER, 'joined event', $log_details, $user_id, $club_id);
@@ -2073,6 +2082,90 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('table', 'Table number starting from 0.'); 
 		$help->request_param('day', 'Day number of the broadcast.'); 
 		$help->request_param('part', 'Broadcast number in the day for a table.'); 
+		return $help;
+	}
+	
+	//-------------------------------------------------------------------------------------------------------
+	// set_scheme
+	//-------------------------------------------------------------------------------------------------------
+	function set_scheme_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		$players = (int)get_optional_param('players', 0);
+		$tables = (int)get_optional_param('tables', 0);
+		$games = (int)get_optional_param('games', 0);
+		
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE, $club_id, $event_id, $tournament_id);
+		
+		// A round of a tournament is not set up from here. Its tournament sets the scheme for
+		// every round at once, and the team size with it, and letting a second operation write
+		// the same rows is how the two come to disagree. See api/ops/tournament.php.
+		if (!is_null($tournament_id))
+		{
+			throw new Exc(get_label('A round of a tournament is set up through the tournament.'));
+		}
+		
+		Db::begin();
+		$old = Db::record(get_label('event'), 'SELECT players, tables, games FROM events WHERE id = ?', $event_id);
+		
+		$players = $players > 0 ? $players : NULL;
+		$tables = $tables > 0 ? $tables : NULL;
+		$games = $games > 0 ? $games : NULL;
+		Db::exec(get_label('event'), 'UPDATE events SET players = ?, tables = ?, games = ? WHERE id = ?',
+			$players, $tables, $games, $event_id);
+		
+		// The seating that is stored was made for the scheme that was stored. Keeping it would
+		// seat people by a scheme nobody is running any more.
+		$cleared = clear_event_seating_on_scheme_change($event_id,
+			array($old[0], $old[1], $old[2]), array($players, $tables, $games)) ? 1 : 0;
+		
+		Db::commit();
+		
+		$this->response['seatings_cleared'] = $cleared;
+	}
+	
+	function set_scheme_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE, 'Set how many play at an event, at how many tables, and how many games each of them plays. Only for an event of its own: a round of a tournament is set up through its tournament, which keeps the scheme of every round together.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('players', 'How many play. 0 for not settled yet.', 'not settled.');
+		$help->request_param('tables', 'How many tables they play at. 0 for not settled yet.', 'not settled.');
+		$help->request_param('games', 'How many games each of them plays. 0 for not settled yet.', 'not settled.');
+		$help->response_param('seatings_cleared', '1 when the seating was thrown away because the scheme it was made for is gone, 0 otherwise.');
+		return $help;
+	}
+	//-------------------------------------------------------------------------------------------------------
+	// bind_broadcast_games
+	//-------------------------------------------------------------------------------------------------------
+	function bind_broadcast_games_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		
+		list($club_id, $tournament_id) = Db::record(get_label('event'), 'SELECT club_id, tournament_id FROM events WHERE id = ?', $event_id);
+		check_permissions(PERMISSION_REFEREE, $club_id, $event_id, $tournament_id);
+		
+		// A game played now is tied to its broadcast as it is written down, so this is for the
+		// rounds played before any of that existed, and for the ones whose addresses went in
+		// after the games did. Nothing that already has a video is touched.
+		$result = broadcast_bind_event($event_id);
+		
+		$this->response['bound'] = $result->bound;
+		$this->response['had'] = $result->had;
+		$this->response['unplaced'] = $result->unplaced;
+		$this->response['untimed'] = $result->untimed;
+		$this->response['untabled'] = $result->untabled;
+	}
+	
+	function bind_broadcast_games_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_OWNER | PERMISSION_REFEREE, 'Tie the games of an event that have no video to the broadcasts of their table, by the moment each game began. Games that already have a video are left alone.');
+		$help->request_param('event_id', 'Event id.');
+		$help->response_param('bound', 'How many games were tied to a broadcast by this call.');
+		$help->response_param('had', 'How many games had a video already.');
+		$help->response_param('unplaced', 'How many games are still without one - no broadcast of their table was on the air when they began.');
+		$help->response_param('untimed', 'How many games carry no start time to go on.');
+		$help->response_param('untabled', 'How many games do not say which table they were played at. Games stopped leaving that out in the middle of 2025; before that the table can only be told where the round was broadcast from one.');
 		return $help;
 	}
 	
@@ -3146,6 +3239,14 @@ class ApiPage extends OpsApiPageBase
 		$event_tables  = (int)$event_tables;
 		$event_games   = (int)$event_games;
 		$event_round   = (int)$event_round;
+
+		// Nothing can be seated until somebody has said what there is to seat. Asked here
+		// rather than left to the generator: it would fail too, but on its own terms - the
+		// person pressing the button wants to be told to fill the scheme in.
+		if ($event_players < 10 || $event_tables < 1 || $event_games < 1)
+		{
+			throw new Exc(get_label('Fill in the scheme first: how many play, at how many tables, and how many games each of them plays.'));
+		}
 
 		// Reject configurations that cannot exist (more table-seats per round than players).
 		if ($event_tables * 10 > $event_players)

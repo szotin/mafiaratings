@@ -1185,19 +1185,15 @@ class SeatingDef
 	{
 		if ($this->players < 10)
 		{
-			throw new Exception(
-				"Not enough players ($this->players). Need at least 10 players."
-			);
+			throw new Exception(get_label('Not enough players ([0]). At least 10 are needed.', $this->players));
 		}
 
 		$total_slots = $this->players * $this->games;
 		if ($total_slots % 10 !== 0)
 		{
-			throw new Exception(
-				"Cannot create an equal schedule: $this->players players x $this->games games = $total_slots total slots, " .
-				"which is not divisible by 10 (seats per game). " .
-				"Each player cannot play the same number of games under these parameters."
-			);
+			throw new Exception(get_label(
+				'These numbers do not work out: [0] players playing [1] games each is [2] seats, which is not a whole number of tables of ten. Everybody cannot play the same number of games.',
+				$this->players, $this->games, $total_slots));
 		}
 
 		$total_games = $total_slots / 10;

@@ -155,6 +155,7 @@ class Page extends AddressPageBase
 				}
 				else
 				{
+					echo '<button class="icon" onclick="mr.setGameVideo(' . $game_id . ')" title="' . get_label('Change game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
 					echo '<button class="icon" onclick="mr.deleteVideo(' . $video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $game_id) . '\')" title="' . get_label('Remove game [0] video', $game_id) . '"><img src="images/film-delete.png" border="0"></button>';
 				}
 				echo '</td>';

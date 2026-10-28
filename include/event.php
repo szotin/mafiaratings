@@ -383,6 +383,61 @@ function register_tournament_referees($event_id, $tournament_id)
 	return $referees;
 }
 
+// The other way about: somebody has been put down for a round of a tournament, so the
+// tournament is told about them too. A name that appears on one round and nowhere else is a
+// name the tournament never agreed to, and it would be missing from the one list anybody
+// looks at.
+//
+// On what terms depends on who did it. Entered by a referee or a manager, they are entered on
+// the tournament the same way, with the same roles - those people are already trusted to say
+// who plays. Entered by themselves, they are entered as an application instead: it grants
+// nothing at all, it only puts them in front of the tournament's management with the button
+// to accept them, so that somebody who put their name down is not quietly lost.
+//
+// Somebody the tournament already knows is left exactly as they are, accepted or not: this is
+// not the place to overrule terms that were settled elsewhere. And taking a name off a round
+// never takes it off the tournament - a player sitting out one round is still in it.
+function register_event_user_in_tournament($tournament_id, $user_id, $club_id, $flags, $accepted)
+{
+	$tournament_id = (int)$tournament_id;
+	$user_id = (int)$user_id;
+	if ($tournament_id <= 0 || $user_id <= 0)
+	{
+		return false;
+	}
+
+	list ($count) = Db::record(get_label('registration'),
+		'SELECT count(*) FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $tournament_id, $user_id);
+	if ((int)$count > 0)
+	{
+		return false;
+	}
+
+	$flags = (int)$flags & USER_PERM_MASK;
+	if ($flags == 0)
+	{
+		$flags = USER_PERM_PLAYER;
+	}
+	if (!$accepted)
+	{
+		$flags |= USER_TOURNAMENT_FLAG_NOT_ACCEPTED;
+	}
+
+	list ($city_id, $rating) = Db::record(get_label('user'), 'SELECT city_id, rating FROM users WHERE id = ?', $user_id);
+	list ($reg_order) = Db::record(get_label('registration'),
+		'SELECT COALESCE(MAX(reg_order), 0) FROM tournament_regs WHERE tournament_id = ?', $tournament_id);
+	Db::exec(get_label('registration'),
+		'INSERT INTO tournament_regs (tournament_id, user_id, flags, city_id, rating, reg_order) VALUES (?, ?, ?, ?, ?, ?)',
+		$tournament_id, $user_id, $flags, $city_id, $rating, (int)$reg_order + 1);
+
+	$log_details = new stdClass();
+	$log_details->tournament_id = $tournament_id;
+	$log_details->through_round = true;
+	$log_details->accepted = $accepted ? 1 : 0;
+	db_log(LOG_OBJECT_USER, 'joined tournament', $log_details, $user_id, $club_id);
+	return true;
+}
+
 class EventPageBase extends PageBase
 {
 	protected $event;
@@ -496,11 +551,7 @@ class EventPageBase extends PageBase
 		{
 			$manager_menu = array();
 			
-			$manager_menu[] = new MenuItem('event_regs.php?id=' . $this->id, get_label('Registrations'), get_label('Manage registrations for [0]', $this->name));
-			if ($this->is_manager)
-			{
-				$manager_menu[] = new MenuItem('event_mailings.php?id=' . $this->id, get_label('Mailing'), get_label('Manage sending emails for [0]', $this->name));
-			}
+			$manager_menu[] = new MenuItem('event_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Getting [0] ready: how many play, who is coming, where it is streamed from and who sits where.', $this->name));
 			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name));
 			// A round of a tournament is set up through its tournament, where one set of
 			// settings covers the table for every round of it - so the question asked here is
@@ -510,12 +561,12 @@ class EventPageBase extends PageBase
 				? is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $this->club_id, $this->id)
 				: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->tournament_id))
 			{
+				$manager_menu[] = new MenuItem(null, null, null);
 				$manager_menu[] = new MenuItem(
 					is_null($this->tournament_id) ? ('streams.php?event_id=' . $this->id) : ('streams.php?tournament_id=' . $this->tournament_id),
 					get_label('Stream settings'),
 					get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.'));
 			}
-			$manager_menu[] = new MenuItem('event_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts'));
 			
 			if ($this->is_manager && is_null($this->tournament_id))
 			{

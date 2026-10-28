@@ -218,14 +218,12 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Tournament preparation.')),
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
-				new MenuItem('tournament_seating.php?view=0&id=' . $this->id, get_label('Seating'), get_label('Edit tournament seating.')),
 				new MenuItem(null, null, null),
 				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('[0] integration', 'MWT'), get_label('Synchronize tournament with [0] site. Receive seating, send games, etc..', 'MWT')),
 				new MenuItem('tournament_imafia.php?id=' . $this->id, get_label('[0] integration', 'iMafia'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'iMafia')),
 				new MenuItem('tournament_emo.php?id=' . $this->id, get_label('[0] integration', 'Emotion.games'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'emotion.games')),
 				new MenuItem(null, null, null),
 				new MenuItem('streams.php?tournament_id=' . $this->id, get_label('Stream settings'), get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.')),
-				new MenuItem('tournament_broadcasts_edit.php?id=' . $this->id, get_label('Broadcasts'), get_label('Add/remove youtube/twitch broadcasts')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}

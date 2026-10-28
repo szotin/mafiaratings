@@ -83,6 +83,8 @@ class Page extends StreamsPageBase
 		$form->screens = $settings->screens;
 		$form->dark = ($settings->flags & STREAM_FLAG_DARK) ? 1 : 0;
 		$form->transparent = ($settings->flags & STREAM_FLAG_TRANSPARENT) ? 1 : 0;
+		$form->hide_glyphs = ($settings->flags & STREAM_FLAG_HIDE_GLYPHS) ? 1 : 0;
+		$form->hide_between = ($settings->flags & STREAM_FLAG_HIDE_BETWEEN) ? 1 : 0;
 		return $form;
 	}
 
@@ -104,7 +106,7 @@ class Page extends StreamsPageBase
 
 			// NULL is "the tables do not agree", which the form shows as nothing chosen rather
 			// than as some table's answer standing in for the rest.
-			foreach (array('lang', 'delay', 'screens', 'dark', 'transparent') as $name)
+			foreach (array('lang', 'delay', 'screens', 'dark', 'transparent', 'hide_glyphs', 'hide_between') as $name)
 			{
 				if (!is_null($all->$name) && $all->$name !== $form->$name)
 				{
@@ -115,9 +117,38 @@ class Page extends StreamsPageBase
 		return $all;
 	}
 
-	private function show_setting($name, $content)
+	// A section of settings. The columns are nailed down rather than worked out from what is
+	// in them, because rows are put away and brought back while the page stands there - see
+	// toggle() - and a column that measured itself against the rows would shift the whole
+	// section every time one of them went. It also lines the sections up with each other.
+	private function open_settings_table()
 	{
-		echo '<tr><td class="dark" width="220" align="right">' . $name . ':</td><td>' . $content . '</td></tr>';
+		echo '<table class="bordered light stream-settings" width="100%">';
+		echo '<colgroup><col class="stream-label"><col></colgroup>';
+	}
+
+	// $group names a set of rows that stand or fall together - see toggle(), which can put
+	// one away when there is no longer anything for it to say.
+	private function show_setting($name, $content, $group = NULL)
+	{
+		echo '<tr' . (is_null($group) ? '' : ' class="' . $group . '"') . '>' .
+			'<td class="dark" align="right">' . $name . ':</td><td>' . $content . '</td></tr>';
+	}
+
+	// A yes or no that takes effect the moment it is touched. On the tab of all the tables it
+	// may be neither, because they do not agree; the browser has a state for exactly that and
+	// is put into it on load, and the first touch settles the question for every table.
+	//
+	// $hides names a group of rows that this switch puts away when it is on. It is for the
+	// switch that turns a source off altogether: what is left of the section is how that
+	// source would look, and there is nothing to be gained by setting it while there is
+	// nothing to look at. What was set stays set and comes back with the rows.
+	private function toggle($name, $value, $hides = NULL)
+	{
+		return '<input type="checkbox" class="toggle" id="' . $name . '"' .
+			($value === 1 ? ' checked' : '') . (is_null($value) ? ' data-mixed="1"' : '') .
+			(is_null($hides) ? '' : ' data-hides="' . $hides . '"') .
+			' onchange="streamToggled(\'' . $name . '\')">';
 	}
 
 	// One of two answers, or neither of them when the tables do not agree about it.
@@ -185,7 +216,7 @@ class Page extends StreamsPageBase
 		if (!is_null($stored) && !empty($stored->scenes))
 		{
 			echo '<h3 class="stream-section">' . get_label('Scene') . '</h3>';
-			echo '<table class="bordered light" width="100%">';
+			$this->open_settings_table();
 
 			$html = '<select id="scene" onchange="sceneChanged()">';
 			foreach ($stored->scenes as $name)
@@ -213,7 +244,7 @@ class Page extends StreamsPageBase
 			// It is stored the other way round, as "do not switch", so that a table nobody has
 			// said anything about goes on switching as it always did.
 			$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
-			echo '<table class="bordered light" width="100%">';
+			$this->open_settings_table();
 			$this->show_setting(get_label('Turn on'),
 				'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
 			echo '</table>';
@@ -223,7 +254,7 @@ class Page extends StreamsPageBase
 		// The cards over the game itself. They are three sources rather than one so that a
 		// stream can put the players and the info bar wherever it likes.
 		echo '<h3 class="stream-section">' . get_label('Glyphs') . '</h3>';
-		echo '<table class="bordered light" width="100%">';
+		$this->open_settings_table();
 		if ($table != VIEW_ALL_TABLES)
 		{
 			$this->show_url(get_label('Glyphs and info full screen'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope . $locale, '1920 x 1080');
@@ -231,26 +262,30 @@ class Page extends StreamsPageBase
 			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope . $locale, '1920 x 100');
 		}
 
+		$this->show_setting(get_label('Show nothing'),
+			$this->toggle('hide_glyphs', $settings->hide_glyphs, 'glyphs-detail'));
+
 		// Whether the roles are shown is decided for the tournament as a whole and handed down
 		// to every round, so it reads the same on every tab and changing it anywhere changes it
 		// everywhere. See TOURNAMENT_FLAG_HIDE_ROLES.
 		$hide_roles = STREAMS_UNDER_EVENT ? EVENT_FLAG_HIDE_ROLES : TOURNAMENT_FLAG_HIDE_ROLES;
-		$show_roles = (($this->flags & $hide_roles) == 0) ? 1 : 0;
-		$html = '<select id="roles" onchange="rolesChanged()">';
-		$html .= '<option value="1"' . ($show_roles ? ' selected' : '') . '>' . get_label('Yes') . '</option>';
-		$html .= '<option value="0"' . ($show_roles ? '' : ' selected') . '>' . get_label('No') . '</option>';
-		$html .= '</select>';
-		$this->show_setting(get_label('Show roles'), $html);
+		$show_roles = (($this->flags & $hide_roles) == 0);
+		$this->show_setting(get_label('Show roles'),
+			'<input type="checkbox" class="toggle" id="roles"' . ($show_roles ? ' checked' : '') .
+			' onchange="rolesChanged()">', 'glyphs-detail');
 		echo '</table>';
 
 		// One source for everything shown between games: the game just played, who sits down
 		// next, the tournament table and how it has been going.
 		echo '<h3 class="stream-section">' . get_label('Between games') . '</h3>';
-		echo '<table class="bordered light" width="100%">';
+		$this->open_settings_table();
 		if ($table != VIEW_ALL_TABLES)
 		{
 			$this->show_url(get_label('URL'), 'url-between', $site . '/plugins/obs/between.php?' . $scope, '1920 x 1080');
 		}
+
+		$this->show_setting(get_label('Show nothing'),
+			$this->toggle('hide_between', $settings->hide_between, 'between-detail'));
 
 		// A table that has never been given a language of its own is shown with the one the
 		// tournament is played in, which is what its screens come up in anyway. There is no
@@ -265,12 +300,12 @@ class Page extends StreamsPageBase
 			$html .= '<option value="' . $lang . '"' . ($settings->lang === $lang ? ' selected' : '') . '>' . $lang_name . '</option>';
 		}
 		$html .= '</select>';
-		$this->show_setting(get_label('Language'), $html);
+		$this->show_setting(get_label('Language'), $html, 'between-detail');
 
 		$html = '<input id="delay" type="number" min="' . STREAM_MIN_DELAY . '" max="' . STREAM_MAX_DELAY . '"' .
 			(is_null($settings->delay) ? '' : ' value="' . $settings->delay . '"') .
 			' style="width: 70px" onchange="streamChanged(\'delay\')"> ' . get_label('sec');
-		$this->show_setting(get_label('Delay'), $html);
+		$this->show_setting(get_label('Delay'), $html, 'between-detail');
 
 		// In the order they are shown, since that is what the arrows are for. The ones switched
 		// off keep a place in the list too - they have to stand somewhere, and where they stand
@@ -287,12 +322,12 @@ class Page extends StreamsPageBase
 			$html .= '</span>';
 		}
 		$html .= '</div>';
-		$this->show_setting(get_label('Screens'), $html);
+		$this->show_setting(get_label('Screens'), $html, 'between-detail');
 
-		$this->show_setting(get_label('Background'),
-			$this->choice('dark', $settings->dark, get_label('Light'), get_label('Dark')));
-		$this->show_setting(get_label('Transparent'),
-			$this->choice('transparent', $settings->transparent, get_label('No'), get_label('Yes')));
+		$this->show_setting(get_label('Theme'),
+			$this->choice('dark', $settings->dark, get_label('Light'), get_label('Dark')), 'between-detail');
+		$this->show_setting(get_label('Transparent background'),
+			$this->toggle('transparent', $settings->transparent), 'between-detail');
 
 		echo '</table>';
 		echo '<p id="stream-saved" style="visibility: hidden"><b>' . get_label('Saved.') . '</b></p>';
@@ -577,7 +612,7 @@ class Page extends StreamsPageBase
 			Object.assign({
 				op: "set"
 				, table_num: tableNum
-				, hide_roles: ($('#roles').val() == '1') ? 0 : 1
+				, hide_roles: document.getElementById('roles').checked ? 0 : 1
 			}, owner),
 			saved);
 		}
@@ -629,6 +664,35 @@ class Page extends StreamsPageBase
 
 			json.post("api/ops/stream.php", params, saved);
 		}
+
+		// A switch says yes or no and nothing else, so what it sends is what it stands at. On
+		// the tab of all the tables one of these can start off neither - that is what the
+		// browser's third state is for - and touching it is what settles it; from then on it
+		// is an ordinary switch.
+		function streamToggled(setting)
+		{
+			let box = document.getElementById(setting);
+			box.indeterminate = false;
+			showDetail(box);
+			json.post("api/ops/stream.php",
+				Object.assign({ op: "set", table_num: tableNum, [setting]: box.checked ? 1 : 0 }, owner),
+				saved);
+		}
+
+		// A source that shows nothing has no look to set, so the rest of its section is put
+		// away rather than left standing there to no purpose. Nothing is forgotten by it: the
+		// rows come back with whatever was in them.
+		function showDetail(box)
+		{
+			if (box.dataset.hides)
+				$('.' + box.dataset.hides).toggle(!box.checked);
+		}
+
+		$(function()
+		{
+			$('input[data-mixed]').prop('indeterminate', true);
+			$('input[data-hides]').each(function() { showDetail(this); });
+		});
 
 		function saved()
 		{

@@ -257,6 +257,16 @@ span.stream-url button img { display: block; width: 16px; height: 16px; }
 h3.stream-section { margin: 20px 0 6px; }
 h3.stream-section:first-child { margin-top: 10px; }
 
+/* The sections themselves - streams.php. Rows are put away and brought back while the page
+   stands there, so the columns are nailed down instead of being measured against whatever
+   rows happen to be showing; otherwise the whole section shifts every time one goes. */
+table.stream-settings { table-layout: fixed; }
+table.stream-settings col.stream-label { width: 220px; }
+
+/* How far the breaks we measured and the recording disagree, when that is further than the
+   links into the recording can be trusted - tournament_preparation.php. */
+b.stream-out-by { color: #a03030; }
+
 /*  A switch rather than a box, for a setting that takes effect the moment it is touched
     rather than when a form is sent. Underneath it is the ordinary checkbox it always was -
     the browser is told not to draw its own box, and the track and the knob are drawn in its
@@ -290,7 +300,7 @@ input[type="checkbox"].toggle::after {
 	transition: left 0.12s;
 }
 
-input[type="checkbox"].toggle:checked { background-color: #5a9e3a; border-color: #3f7a26; }
+input[type="checkbox"].toggle:checked { background-color: #86ab74; border-color: #6e8f5e; }
 input[type="checkbox"].toggle:checked::after { left: 19px; }
 input[type="checkbox"].toggle:disabled { opacity: 0.4; cursor: default; }
 
@@ -330,9 +340,9 @@ span.tri-filter i {
 	transition: left 0.12s;
 }
 
-span.tri-filter.yes { background-color: #5a9e3a; border-color: #3f7a26; }
+span.tri-filter.yes { background-color: #86ab74; border-color: #6e8f5e; }
 span.tri-filter.yes i { left: 19px; }
-span.tri-filter.no { background-color: #b05050; border-color: #8a3a3a; }
+span.tri-filter.no { background-color: #bd8c8c; border-color: #9e7272; }
 span.tri-filter.no i { left: 1px; }
 
 /*  A switch and what it is for, kept together: they do not come apart across a line, and the

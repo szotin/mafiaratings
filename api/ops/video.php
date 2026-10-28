@@ -3,6 +3,7 @@
 require_once '../../include/api.php';
 require_once '../../include/video.php';
 require_once '../../include/message.php';
+require_once '../../include/broadcast.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -292,36 +293,71 @@ class ApiPage extends OpsApiPageBase
 		
 		$game_id = (int)get_required_param('game_id');
 		get_youtube_id(get_required_param('video'), $video, $vtime);
-		$info = get_youtube_info($video);
-		if (isset($info['title']))
-		{
-			$title = $info['title'];
-		}
-		else
-		{
-			$title = 'Video';
-		}
 		
 		$post_time = time();
 		
 		Db::begin();
-		list($club_id, $user_id, $event_id, $tournament_id, $video_time, $lang, $old_video) = Db::record(get_label('game'), 'SELECT g.club_id, g.user_id, g.event_id, g.tournament_id, g.start_time, g.language, v.video FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
+		list($club_id, $user_id, $event_id, $tournament_id, $video_time, $lang, $old_id, $old_video, $old_vtime, $old_flags, $old_title) = Db::record(get_label('game'), 'SELECT g.club_id, g.user_id, g.event_id, g.tournament_id, g.start_time, g.language, g.video_id, v.video, v.vtime, v.flags, v.name FROM games g LEFT OUTER JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $event_id, $tournament_id);
 		
-		if ($old_video != NULL)
+		// The same recording with a different time in it is a correction rather than a new
+		// video: what the game is tied to has not changed, only where in it the game begins.
+		// Keeping the row is what makes the correction worth something - it is held against
+		// the time that was there before, and that difference is how far out the recording was
+		// placed for every game after this one. See include/broadcast.php.
+		$same_video = ($old_id != NULL && $old_video == $video);
+		if ($same_video)
 		{
-			throw new Exc(get_label('Please remove old video first'));
+			$title = $old_title;
+		}
+		else
+		{
+			$info = get_youtube_info($video);
+			$title = isset($info['title']) ? $info['title'] : 'Video';
 		}
 		
-		Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime, tournament_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $title, $video, VIDEO_TYPE_GAME, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime, $tournament_id);
-		list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
-		Db::exec(get_label('game'), 'UPDATE games SET video_id = ? WHERE id = ?', $video_id, $game_id);
-		
-		$log_details = new stdClass();
-		$log_details->video = $video;
-		$log_details->game_id = $game_id;
-		$log_details->title = $title;
-		db_log(LOG_OBJECT_VIDEO, 'created', $log_details, $video_id, $club_id);
+		if ($old_id == NULL)
+		{
+			Db::exec(get_label('video'), 'INSERT INTO videos (name, video, type, club_id, event_id, lang, post_time, video_time, user_id, vtime, tournament_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', $title, $video, VIDEO_TYPE_GAME, $club_id, $event_id, $lang, $post_time, $video_time, $_profile->user_id, $vtime, $tournament_id);
+			list ($video_id) = Db::record(get_label('video'), 'SELECT LAST_INSERT_ID()');
+			Db::exec(get_label('game'), 'UPDATE games SET video_id = ? WHERE id = ?', $video_id, $game_id);
+			
+			$log_details = new stdClass();
+			$log_details->video = $video;
+			$log_details->game_id = $game_id;
+			$log_details->title = $title;
+			db_log(LOG_OBJECT_VIDEO, 'created', $log_details, $video_id, $club_id);
+		}
+		else
+		{
+			$video_id = (int)$old_id;
+			
+			// A time the site worked out is only as good as its guess at how long the stream
+			// was off the air; a person moving it says that guess was wrong, and every game
+			// after it in the same recording was placed with the same wrong figure. Those
+			// follow it. Once moved by hand the time is nobody's guess any more, so the mark
+			// comes off and a later correction leaves this one where it was put.
+			$moved = 0;
+			if ($same_video && ((int)$old_flags & VIDEO_FLAG_AUTO_TIME) != 0)
+			{
+				$moved = broadcast_shift_following($video_id,
+					broadcast_vtime_seconds($vtime) - broadcast_vtime_seconds($old_vtime));
+			}
+			
+			Db::exec(get_label('video'), 'UPDATE videos SET name = ?, video = ?, vtime = ?, flags = flags & ~? WHERE id = ?',
+				$title, $video, $vtime, VIDEO_FLAG_AUTO_TIME, $video_id);
+			
+			$log_details = new stdClass();
+			$log_details->video = $video;
+			$log_details->game_id = $game_id;
+			$log_details->title = $title;
+			$log_details->vtime = $vtime;
+			$log_details->old_vtime = $old_vtime;
+			$log_details->moved_with_it = $moved;
+			db_log(LOG_OBJECT_VIDEO, 'changed', $log_details, $video_id, $club_id);
+			
+			$this->response['moved_with_it'] = $moved;
+		}
 		
 		Db::commit();
 		
@@ -330,10 +366,11 @@ class ApiPage extends OpsApiPageBase
 	
 	function game_video_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, 'Create and assign new video to the existing game in ' . PRODUCT_NAME . '.');
+		$help = new ApiHelp(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, 'Assign a video to an existing game in ' . PRODUCT_NAME . ', or change the one it has.');
 		$help->request_param('game_id', 'Game id.');
-		$help->request_param('video', 'Youtube URL of the video, or youtube id of the video. Youtube id can be found in the youtube URL - this is "v" parameter. For example: the id for this video <a href="https://www.youtube.com/watch?v=PtS2YqyKAwI" target="_blank">https://www.youtube.com/watch?v=PtS2YqyKAwI</a> is <q>PtS2YqyKAwI</q>.');
-		$help->response_param('video_id', 'Id of the newly created video.');
+		$help->request_param('video', 'Youtube URL of the video, or youtube id of the video. Youtube id can be found in the youtube URL - this is "v" parameter. For example: the id for this video <a href="https://www.youtube.com/watch?v=PtS2YqyKAwI" target="_blank">https://www.youtube.com/watch?v=PtS2YqyKAwI</a> is <q>PtS2YqyKAwI</q>. The "t" parameter, where in the recording the game begins, is taken from it too.');
+		$help->response_param('video_id', 'Id of the video.');
+		$help->response_param('moved_with_it', 'How many other games of the same recording were moved by the same amount because the time of this one was corrected. Only games the site placed itself are moved.', 'the game had no video before.');
 		return $help;
 	}
 	

@@ -8,6 +8,10 @@ require_once '../../include/session.php';
 define('OBS_RETRY_DELAY', 1000);
 // How often (in milliseconds) a source asks which OBS scene the table should be showing.
 define('OBS_SCENE_DELAY', 2000);
+// How often (in milliseconds) a source asks how the table is set up - the language, the
+// ground, whether it is to show anything at all. None of it has to follow the game, so it is
+// asked for about as often as a between-games screen stays up.
+define('OBS_SETTINGS_DELAY', 10000);
 define('OBS_NO_LOGO', 'images/aml_logo.png'); // the picture shown instead of a logo that we do not have
 
 // Shows a browser source page for OBS Studio. $view is one of:
@@ -44,6 +48,11 @@ function show_obs_page($view)
 			$options->params[$param] = $_REQUEST[$param];
 		}
 	}
+
+	// Where to ask how this table is set up. It is kept on the site rather than in the address
+	// of the source, so a change made there reaches a source that is already running.
+	$options->settingsUrl = '../../api/get/stream.php?op=settings';
+	$options->settingsInterval = OBS_SETTINGS_DELAY;
 
 	$options->hideWarnings = isset($_REQUEST['hide_warnings']) && $_REQUEST['hide_warnings'] !== 'false';
 	$options->retryDelay = OBS_RETRY_DELAY;

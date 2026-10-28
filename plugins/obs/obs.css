@@ -24,6 +24,12 @@ html.view-gamestats { font-size: min(100vw / 120, 100vh / 6.3125); }  /* 1920 x 
 	box-sizing: border-box;
 }
 
+/*  Nothing at all, when the table is set to show nothing - see STREAM_FLAG_HIDE_GLYPHS. The
+    ground here is see-through to begin with, so taking away what stands on it is enough. */
+body.hidden-source > * {
+	display: none;
+}
+
 body {
 	background-color: transparent;
 	color: #fff;

@@ -17,7 +17,30 @@ var obs = new function()
 		options = pageOptions;
 		game = null;
 		offline = false;
+		settings();
+		setInterval(settings, options.settingsInterval);
 		refresh();
+	}
+
+	// Whether this table is to show anything at all. It is set on the site, not in the address
+	// of the source, so it is asked for again every few seconds and a stream can clear the
+	// table and bring it back without anybody going to the machine OBS is running on.
+	//
+	// Nothing else stops while the page is bare: the game is still followed and the cards are
+	// still turned over underneath, so switching it back on puts up what is happening then
+	// rather than what was happening when it went away.
+	function settings()
+	{
+		fetch(options.settingsUrl + '&' + new URLSearchParams(options.params)).
+			then(function(response) { return response.ok ? response.json() : Promise.reject(response.status); }).
+			then(function(answer)
+			{
+				if (answer && answer.stream)
+				{
+					document.body.classList.toggle('hidden-source', answer.stream.hideGlyphs ? true : false);
+				}
+			}).
+			catch(function(error) { /* the site is not answering: leave the page as it stands */ });
 	}
 
 	function refresh()

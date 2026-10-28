@@ -1451,13 +1451,6 @@ function uiConfig(txt, onClose)
 		}
 		html += '> ' + l('Rating') + '<br>'
 		
-		html += '<input type="checkbox" id="dlg-show-roles"';
-		if (!gameAreRolesHidden())
-		{
-			html += ' checked';
-		}
-		html += '> ' + l('ShowRoles') + '<br>'
-		
 		html += '</td></tr>';
 
 		html += '<tr><td colspan="2"><p>' + l('Accurate') + '</p>';
@@ -1482,7 +1475,6 @@ function uiConfig(txt, onClose)
 	{
 		_renderCallback = null;
 		gameSetIsRating($('#dlg-rating').attr('checked') ? 1 : 0);
-		gameHideRoles($('#dlg-show-roles').attr('checked') ? 0 : 1);
 		if (langs.length > 1)
 		{
 			gameSetLang($('#dlg-lang').val());
