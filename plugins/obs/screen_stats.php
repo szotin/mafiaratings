@@ -214,6 +214,11 @@ echo '</div>'; // stats-main
 // say outright: a team kick out counts for the side it was handed to, because a win is a win
 // when the question is who has been winning. Ties stand apart and are named only where there
 // have been any.
+//
+// The line reads the way the circle above it is laid out rather than the way the legend
+// beside it is: the black team holds the left of the circle, the town the right, and the tie
+// sits on the line between them at the bottom. Naming them in any other order sets the eye
+// looking for the red on the left.
 // These three are lettering rather than picture, and lettering has to answer to the ground it
 // is written on - a grey that reads as the black team on a dark page disappears on a pale one.
 // So the side is named in a class and the stylesheet picks the colour for the page in hand.
@@ -230,9 +235,9 @@ function obs_stats_total($side, $name, $count, $total)
 }
 
 echo '<div class="stats-totals">';
-obs_stats_total('town', get_label('Town'), $town + $ppk_town, $total);
 obs_stats_total('mafia', get_label('Mafia'), $ppk_maf + array_sum($maf), $total);
 obs_stats_total('tie', get_label('Ties'), $tie, $total);
+obs_stats_total('town', get_label('Town'), $town + $ppk_town, $total);
 echo '</div>';
 
 echo '</div>';
