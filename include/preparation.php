@@ -407,7 +407,7 @@ trait PreparationTabs
 					// begins. Everything placed on it from then on is moved by the same amount, so
 					// it is worth seeing that it is there.
 					$shift = isset($b->shift) ? (int)$b->shift : 0;
-					$shift_title = get_label('Every link into this recording is moved by this much: it is how long the stream is delayed, measured as the gap between OBS going on the air and the broadcast beginning on YouTube. Moving a game to where it really begins corrects it.');
+					$shift_title = get_label('Every link into this recording is moved by this much: it is how long the stream was delayed, since the time YouTube stamps on a broadcast is the moment the viewers saw the picture rather than the moment it was made. It is measured off the finished recording, some hours after the broadcast ends; until then the recording borrows what this table was delayed by last time. Moving a game to where it really begins overrules both.');
 					echo '<td title="' . $shift_title . '">' . ($shift == 0 ? '&mdash;' :
 						(($shift > 0 ? '+' : '&minus;') . format_lost_time(abs($shift)))) . '</td></tr>';
 				}

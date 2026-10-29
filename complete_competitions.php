@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/updater.php';
+require_once 'include/broadcast.php';
 require_once 'include/security.php';
 require_once 'include/scoring.php';
 require_once 'include/gaining.php';
@@ -134,6 +135,80 @@ class CompleteCompetitions extends Updater
 		parent::__construct(__FILE__);
 	}
 	
+	//-------------------------------------------------------------------------------------------------------
+	// CompleteCompetitions.broadcasts
+	//-------------------------------------------------------------------------------------------------------
+	// Asking the broadcasts of the last week what they have to say for themselves.
+	//
+	// Everything else asks them in passing: a game being written down asks after the recording
+	// it belongs to, and the preparation page asks after all of them while somebody is looking
+	// at it. That is enough while a tournament is being played and nothing at all afterwards -
+	// and afterwards is when the two things worth waiting for arrive. A broadcast that was
+	// stopped says so, which closes the recording and keeps the games of the next one out of
+	// it; and the finished recording says how long the stream was delayed, which cannot be
+	// read until YouTube has processed it, hours after everybody has gone home. Both of them
+	// move games that are already written down to where they really belong, which is this
+	// script's business - see broadcast_measure_delay().
+	//
+	// One table of one round is an item. What is worth asking and how often is decided inside
+	// broadcast_list(), which is what everything else goes through as well: a recording that
+	// has not ended is asked after every couple of minutes, a finished one about once an hour,
+	// and one that has told us all it can is not asked at all.
+	function broadcasts_task($items_count)
+	{
+		if (!isset($this->vars->broadcast_event_id))
+		{
+			$this->vars->broadcast_event_id = 0;
+			$this->vars->broadcast_table_num = -1;
+		}
+
+		// Of rounds that were played within the window, and no others: an old recording is not
+		// going to change its mind, and a video that was never a live broadcast at all has
+		// nothing to say however often it is asked.
+		$query = new DbQuery(
+			'SELECT DISTINCT b.event_id, b.table_num FROM event_broadcasts b' .
+			' JOIN events e ON e.id = b.event_id' .
+			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() - ' . BROADCAST_MEASURE_SECONDS .
+			' AND (b.event_id > ? OR (b.event_id = ? AND b.table_num > ?))' .
+			' ORDER BY b.event_id, b.table_num LIMIT ' . $items_count,
+			$this->vars->broadcast_event_id, $this->vars->broadcast_event_id, $this->vars->broadcast_table_num);
+		$tables = array();
+		while ($row = $query->next())
+		{
+			list ($this->vars->broadcast_event_id, $this->vars->broadcast_table_num) = $row;
+			$tables[] = array((int)$this->vars->broadcast_event_id, (int)$this->vars->broadcast_table_num);
+		}
+
+		$count = 0;
+		foreach ($tables as $table)
+		{
+			list ($event_id, $table_num) = $table;
+			try
+			{
+				// Counted from one here, as the games count them; the table they came out of
+				// counts them from zero.
+				broadcast_list($event_id, $table_num + 1);
+			}
+			catch (Exception $e)
+			{
+				$this->error('Broadcasts of event ' . $event_id . ' table ' . ($table_num + 1) . ': ' . $e->getMessage());
+			}
+			++$count;
+			if (!$this->canDoOneMoreItem())
+			{
+				break;
+			}
+		}
+
+		if ($count == 0)
+		{
+			// Round again from the beginning next time this task comes up.
+			$this->vars->broadcast_event_id = 0;
+			$this->vars->broadcast_table_num = -1;
+		}
+		return $count;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// CompleteCompetitions.events
 	//-------------------------------------------------------------------------------------------------------

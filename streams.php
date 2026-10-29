@@ -251,6 +251,22 @@ class Page extends StreamsPageBase
 			echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
 		}
 
+		// How long this table's stream is delayed, which every link into a recording of it is
+		// moved by. Nobody types it in and nobody measures it: the site reads it off the
+		// finished recording - see include/broadcast.php. It is here so that it can be seen
+		// rather than silently moving things.
+		if ($table != VIEW_ALL_TABLES)
+		{
+			echo '<h3 class="stream-section">' . get_label('Stream delay') . '</h3>';
+			$this->open_settings_table();
+			$shift = is_null($stored) ? 0 : (int)$stored->time_shift;
+			$this->show_setting(get_label('Delay'), $shift > 0
+				? get_label('[0] sec', $shift)
+				: get_label('Not known yet.'));
+			$this->show_setting('', get_label('A game is placed in the recording by the clock, and the time YouTube stamps on a broadcast is the moment the viewers saw the picture rather than the moment it was made - so without this every game would land early by the delay of the stream. It is measured off the recording itself once YouTube has finished it, which is some hours after the broadcast ends: the games of that recording are moved to where they really begin, and the next stream of this table starts out with the same figure. Nothing has to be set, and moving a game by hand still overrules it.'));
+			echo '</table>';
+		}
+
 		// The cards over the game itself. They are three sources rather than one so that a
 		// stream can put the players and the info bar wherever it likes.
 		echo '<h3 class="stream-section">' . get_label('Glyphs') . '</h3>';

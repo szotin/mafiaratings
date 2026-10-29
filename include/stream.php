@@ -330,18 +330,20 @@ function stream_settings($owner, $table_num)
 	$settings->scenes = array();    // what the source reported about the OBS it runs in
 	$settings->control_level = -1;  // and how much it is allowed to do there
 	$settings->scene_events = array(); // the scene the game asks for in each of its phases
+	$settings->time_shift = 0;      // how long the stream of this table is delayed, once known
 
-	$query = new DbQuery('SELECT lang, delay, screens, flags, scene, scene_time, scenes, scene_events, control_level FROM ' . $owner->table .
+	$query = new DbQuery('SELECT lang, delay, screens, flags, scene, scene_time, scenes, scene_events, control_level, time_shift FROM ' . $owner->table .
 		' WHERE ' . $owner->column . ' = ? AND table_num = ?', $owner->id, $table_num);
 	if ($row = $query->next())
 	{
-		list ($lang, $delay, $screens, $flags, $scene, $scene_time, $scene_names, $scene_events, $control_level) = $row;
+		list ($lang, $delay, $screens, $flags, $scene, $scene_time, $scene_names, $scene_events, $control_level, $time_shift) = $row;
 		$settings->lang = (int)$lang;
 		$settings->delay = (int)$delay;
 		$settings->flags = (int)$flags;
 		$settings->scene = $scene;
 		$settings->scene_time = (int)$scene_time;
 		$settings->control_level = (int)$control_level;
+		$settings->time_shift = (int)$time_shift;
 
 		$scene_names = is_null($scene_names) ? NULL : json_decode($scene_names);
 		if (is_array($scene_names))

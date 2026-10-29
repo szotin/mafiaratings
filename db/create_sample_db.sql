@@ -921,7 +921,8 @@ CREATE TABLE `event_streams` (
   `scene_events` text,
   `control_level` int(11) NOT NULL DEFAULT '-1',
   `seen_time` int(11) NOT NULL DEFAULT '0',
-  `obs_start_time` int(11) NOT NULL DEFAULT '0'
+  `obs_start_time` int(11) NOT NULL DEFAULT '0',
+  `time_shift` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `stream_outages`;
@@ -948,7 +949,8 @@ CREATE TABLE `tournament_streams` (
   `scene_events` text,
   `control_level` int(11) NOT NULL DEFAULT '-1',
   `seen_time` int(11) NOT NULL DEFAULT '0',
-  `obs_start_time` int(11) NOT NULL DEFAULT '0'
+  `obs_start_time` int(11) NOT NULL DEFAULT '0',
+  `time_shift` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `tournament_teams`;
