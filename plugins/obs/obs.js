@@ -278,11 +278,11 @@ var obs = new function()
 		face.className = 'card-face' + (card.obsTurns % 2 ? ' turned-away' : '') +
 			(role != '' ? ' role-' + role : '');
 		face.getElementsByClassName('player-name')[0].textContent = player.name ? player.name : '';
-		// Nothing at all leaves the back showing, which the stylesheet puts there and is what
-		// a player we have no picture of wears. The empty seat says none instead, which takes
-		// the back away and leaves the card's own ground - see .player-photo in obs.css.
+		// Nothing at all leaves the figure of nobody in particular showing, which the
+		// stylesheet puts there and is what a player we have no picture of wears. A seat with
+		// nobody on it wears the back of a card - see .player-photo in obs.css.
 		face.getElementsByClassName('player-photo')[0].style.backgroundImage =
-			known ? (player.hasPhoto ? 'url(' + player.photoUrl + ')' : '') : 'none';
+			known ? (player.hasPhoto ? 'url(' + player.photoUrl + ')' : '') : 'url(images/aml_masters.png)';
 		showPlayerMark(face.getElementsByClassName('player-mark')[0], player);
 		showPlayerFouls(face.getElementsByClassName('player-fouls')[0], player);
 

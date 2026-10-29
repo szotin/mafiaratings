@@ -398,11 +398,12 @@ function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NUL
 		echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
 	}
 
-	// A player we have no picture of wears the back of a card, which the stylesheet puts there;
-	// a seat with nobody on it is left plain, which none uncovers - see between.css.
+	// A player we have no picture of wears the figure of nobody in particular, which the
+	// stylesheet puts there; a seat with nobody on it wears the back of a card - see
+	// between.css.
 	if (is_null($player))
 	{
-		echo '<div class="card-photo" style="background-image: none"></div>';
+		echo '<div class="card-photo" style="background-image: url(images/aml_masters.png)"></div>';
 	}
 	else if ($player->photo != '')
 	{
