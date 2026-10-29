@@ -1,59 +1,62 @@
 /*  The text broadcast of one table: the same cards a stream of it would carry, with the game
     told in words where the picture would be.
 
-    The stage is the shape of a stream, 16 by 9, and everything inside it is placed as a share
-    of that rather than in pixels, so the page is one drawing at whatever size the window gives
-    it - exactly as plugins/obs/obs.css does for the cards themselves. The two pages then agree
-    without either measuring the other. */
+    The page is the window, whatever shape the window is, exactly as a browser source in OBS is
+    whatever size it was given. Every length is in rem and the rem is a share of the window, so
+    this is one drawing scaled to it rather than a layout that rearranges itself - the same rem
+    as plugins/obs/obs.css, worked out the same way, so the words land between the info bar and
+    the row of players without either page measuring the other. */
+
+html {
+	/*  120 by 67.5 is the drawing both pages are made in: 1920 by 1080 at the 16px they were
+	    drawn at. The smaller of the two shares is the biggest rem it still fits the window at,
+	    which is what the cards do with the same line in obs.css. */
+	font-size: min(100vw / 120, 100vh / 67.5);
+}
 
 html, body {
 	margin: 0;
 	padding: 0;
 	height: 100%;
+	overflow: hidden;
 	background-color: #2c313a;
 	font-family: 'Roboto Slab', serif;
 }
 
 .tb-stage {
 	position: relative;
-	width: 100%;
-	max-width: 1920px;
-	margin: 0 auto;
-	/*  16 by 9, the shape a stream is. aspect-ratio keeps it so at any width; the padding
-	    underneath it is the same thing said the old way, for a browser that has not heard of
-	    aspect-ratio and would otherwise give the stage no height at all. */
-	aspect-ratio: 16 / 9;
+	width: 100vw;
+	height: 100vh;
 	overflow: hidden;
 	background-color: #4d545f;
 }
 
-@supports not (aspect-ratio: 16 / 9) {
-	.tb-stage {
-		height: 0;
-		padding-bottom: 56.25%;
-	}
-}
+/*  Where the picture would be: between the info bar at the top, which is 6.25rem tall, and the
+    row of players at the bottom, which with the gap above it comes to 16.875rem. Both are read
+    off obs.css, and both hold whatever the window is doing because the rem does.
 
-/*  Where the picture would be: between the info bar at the top and the row of players at the
-    bottom. Those are 6.25 and 16.875 of the drawing's 67.5 units tall, which comes to this
-    much of the stage whatever size it is given. */
+    As wide as the drawing and no wider: on a window wider than the drawing the cards stand in
+    the middle of it rather than stretching, and the words keep them company. */
 .tb-text {
 	position: absolute;
-	left: 4%;
-	right: 4%;
-	top: 9.26%;
-	bottom: 25%;
+	left: 0;
+	right: 0;
+	top: 6.25rem;
+	bottom: 16.875rem;
+	width: 120rem;
+	max-width: 100%;
+	margin: 0 auto;
 	overflow-y: auto;
-	padding: 1.2% 1.5%;
+	padding: 1.25rem 4.8rem;
 	color: #e8e8e8;
-	font-size: clamp(11px, 1.35vw, 26px);
+	font-size: 1.6rem;
 	line-height: 1.45;
 	scrollbar-width: thin;
 	scrollbar-color: #555 transparent;
 }
 
-.tb-text::-webkit-scrollbar { width: 8px; }
-.tb-text::-webkit-scrollbar-thumb { background-color: #555; border-radius: 4px; }
+.tb-text::-webkit-scrollbar { width: 0.5rem; }
+.tb-text::-webkit-scrollbar-thumb { background-color: #555; border-radius: 0.25rem; }
 
 /*  A day or a night, and under it what happened in it. The heading repeats as the game goes
     on, which is how a reader coming in halfway knows where the table is. */
