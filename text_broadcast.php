@@ -1,6 +1,7 @@
 <?php
 
 require_once 'include/session.php';
+require_once 'include/stream.php'; // the language this table is set to show
 
 // The text broadcast of one table: what a stream of that table would carry, for a tournament
 // that is not streaming it - or for somebody who would rather read than watch.
@@ -13,21 +14,16 @@ require_once 'include/session.php';
 // include/game_log.php.
 //
 // The address names a table and nothing else:
-//   tournament_id or event_id, together with table_num, and optionally locale.
+//   tournament_id or event_id, together with table_num.
 // Everything else - which cards are shown, which screens stand between games, whether the roles
 // are given away - is set on the site under Management / Stream settings, the same settings the
 // stream of that table uses, and reaches this page without anybody retyping a link.
 
 define('TB_DELAY', 2000); // how often (in milliseconds) the page asks what is happening
 
-if (isset($_REQUEST['locale']))
-{
-	initiate_session(correct_lang($_REQUEST['locale']));
-}
-else
-{
-	initiate_session();
-}
+// In the language the table is set to show, the same as the stream of it - see
+// stream_request_lang(). Nothing about this page is in its address but the table.
+initiate_session(stream_request_lang_code());
 
 $tournament_id = isset($_REQUEST['tournament_id']) ? (int)$_REQUEST['tournament_id'] : 0;
 $event_id = isset($_REQUEST['event_id']) ? (int)$_REQUEST['event_id'] : 0;
@@ -61,7 +57,7 @@ $title .= ' - ' . get_label('Table [0]', $table_num);
 // know nothing of this one, so the table has to be named again in each of them.
 $scope = ($event_id > 0 ? 'event_id=' . $event_id : 'tournament_id=' . $tournament_id) .
 	'&table_num=' . $table_num;
-$locale = isset($_REQUEST['locale']) ? correct_lang($_REQUEST['locale']) : get_lang_code($_lang);
+$locale = get_lang_code($_lang);
 
 $options = new stdClass();
 $options->gameUrl = 'api/get/current_game.php?' . $scope . '&log=1&lang=' . $locale;
@@ -85,8 +81,8 @@ echo '<div class="tb-text" id="tb-text"></div>';
 // viewer=1 says that these are being watched rather than run. They are the same pages a stream
 // puts over its picture, but nothing here is standing beside the table, so nothing they ask for
 // is to be taken as word from it - see api/get/stream.php.
-echo '<iframe class="tb-overlay" id="tb-overlay" scrolling="no" src="plugins/obs/overlay.php?' . $scope . '&locale=' . $locale . '&viewer=1"></iframe>';
-echo '<iframe class="tb-between" id="tb-between" scrolling="no" src="plugins/obs/between.php?' . $scope . '&locale=' . $locale . '&viewer=1"></iframe>';
+echo '<iframe class="tb-overlay" id="tb-overlay" scrolling="no" src="plugins/obs/overlay.php?' . $scope . '&viewer=1"></iframe>';
+echo '<iframe class="tb-between" id="tb-between" scrolling="no" src="plugins/obs/between.php?' . $scope . '&viewer=1"></iframe>';
 echo '</div>';
 
 ?>

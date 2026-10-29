@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../include/session.php';
+require_once '../../include/stream.php';
 
 // How often (in milliseconds) the page asks the site for the game state. The game screen itself
 // saves what the moderator does once a second, so this is the other half of the delay between a
@@ -19,20 +20,18 @@ define('OBS_NO_LOGO', 'images/aml_logo.png'); // the picture shown instead of a 
 //   'gamestats' - the info bar only;
 //   'players'   - the players only.
 // The pages take the same request params as api/get/current_game.php plus:
-//   locale        - the language of the page;
 //   (whether the roles are shown is decided by the game itself, see EVENT_FLAG_HIDE_ROLES)
 //   hide_warnings - do not show warnings and the way the players died;
 //   retry_delay   - how often (in milliseconds) the page asks the site for the game state.
+//
+// The language is not among them. It is what the table is set to show, under Management /
+// Stream settings, like everything else about the table - see stream_request_lang(). A locale
+// in the address is looked at only where the address names no table at all.
 function show_obs_page($view)
 {
-	if (isset($_REQUEST['locale']))
-	{
-		initiate_session(correct_lang($_REQUEST['locale']));
-	}
-	else
-	{
-		initiate_session();
-	}
+	global $_lang; // the language initiate_session() settled on, for the script to watch
+
+	initiate_session(stream_request_lang_code());
 
 	$options = new stdClass();
 
@@ -53,6 +52,12 @@ function show_obs_page($view)
 	// of the source, so a change made there reaches a source that is already running.
 	$options->settingsUrl = '../../api/get/stream.php?op=settings';
 	$options->settingsInterval = OBS_SETTINGS_DELAY;
+
+	// The language this page was drawn in. Its words - the referee, the round, OFFLINE - are
+	// written into it here and cannot be changed after the fact, so the script watches the
+	// settings for a different language and loads the page again when it finds one. That is
+	// what makes a language changed on the site reach a source that is already running.
+	$options->locale = get_lang_code($_lang);
 
 	$options->hideWarnings = isset($_REQUEST['hide_warnings']) && $_REQUEST['hide_warnings'] !== 'false';
 	$options->retryDelay = OBS_RETRY_DELAY;

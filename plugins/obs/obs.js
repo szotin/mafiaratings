@@ -22,22 +22,33 @@ var obs = new function()
 		refresh();
 	}
 
-	// Whether this table is to show anything at all. It is set on the site, not in the address
-	// of the source, so it is asked for again every few seconds and a stream can clear the
-	// table and bring it back without anybody going to the machine OBS is running on.
+	// Whether this table is to show anything at all, and in what language. Both are set on the
+	// site rather than in the address of the source, so they are asked for again every few
+	// seconds: a stream can clear the table and bring it back, or say the words are to be
+	// Russian now, without anybody going to the machine OBS is running on.
 	//
 	// Nothing else stops while the page is bare: the game is still followed and the cards are
 	// still turned over underneath, so switching it back on puts up what is happening then
 	// rather than what was happening when it went away.
+	//
+	// The language is the one thing that cannot be changed where it stands. The words of this
+	// page were written into it by the server, so the page is loaded again - which takes a
+	// moment and happens only when somebody has actually changed the language.
 	function settings()
 	{
 		fetch(options.settingsUrl + '&' + new URLSearchParams(options.params)).
 			then(function(response) { return response.ok ? response.json() : Promise.reject(response.status); }).
 			then(function(answer)
 			{
-				if (answer && answer.stream)
+				if (!answer || !answer.stream)
 				{
-					document.body.classList.toggle('hidden-source', answer.stream.hideGlyphs ? true : false);
+					return;
+				}
+				document.body.classList.toggle('hidden-source', answer.stream.hideGlyphs ? true : false);
+				if (answer.stream.locale && options.locale && answer.stream.locale != options.locale)
+				{
+					options.locale = answer.stream.locale; // so that one change asks for one reload
+					window.location.reload();
 				}
 			}).
 			catch(function(error) { /* the site is not answering: leave the page as it stands */ });

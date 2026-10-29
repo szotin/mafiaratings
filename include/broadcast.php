@@ -1255,15 +1255,13 @@ function show_broadcasts($owner, $tournament_id, $event_id, $text)
 		$scope = ($tournament_id > 0) ? ('tournament_id=' . $tournament_id) : ('event_id=' . $event_id);
 		foreach (stream_text_tables($owner) as $table_num)
 		{
-			// The language the table is set to show, so that the game comes out in the same
-			// words here as on the stream of it.
-			$settings = stream_settings($owner, $table_num);
-
+			// Nothing but the table in the address: the words come out in the language the
+			// table is set to show, which the page reads for itself - see
+			// stream_request_lang().
 			$tile = new stdClass();
 			$tile->kind = get_label('Textual');
 			$tile->icon = 'images/text.png';
-			$tile->url = 'text_broadcast.php?' . $scope . '&table_num=' . $table_num .
-				'&locale=' . get_lang_code($settings->lang_resolved);
+			$tile->url = 'text_broadcast.php?' . $scope . '&table_num=' . $table_num;
 			$tile->caption = get_label('Table [0]', $table_num);
 			$live[] = $tile;
 		}

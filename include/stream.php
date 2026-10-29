@@ -133,6 +133,44 @@ function stream_text_tables($owner)
 	return $tables;
 }
 
+// The language a page standing at a table is to be shown in, worked out from the address it
+// was opened by: the address names the table, and what the table is set to show is on the
+// site - see stream_settings(). That is the whole point of it being there. A source set up in
+// OBS months ago follows a language changed on the site this morning, and nobody has to go
+// round the hall retyping addresses.
+//
+// Where the address names no table there is nothing to read, and the locale it carries is
+// used instead; failing that, whatever the visitor's browser asks for.
+//
+// Called before the session is started, which is safe: nothing here wants a language of its
+// own, and get_label answers in English until one is chosen.
+function stream_request_lang()
+{
+	$tournament_id = isset($_REQUEST['tournament_id']) ? (int)$_REQUEST['tournament_id'] : 0;
+	$event_id = isset($_REQUEST['event_id']) ? (int)$_REQUEST['event_id'] : 0;
+	$owner = stream_owner($tournament_id, $event_id);
+	if (is_null($owner))
+	{
+		return 0;
+	}
+
+	$table_num = isset($_REQUEST['table_num']) ? max((int)$_REQUEST['table_num'], 1) : 1;
+	$settings = stream_settings($owner, $table_num);
+	return (int)$settings->lang_resolved;
+}
+
+// The same, as the code a session is started with, or NULL where the address settles it
+// instead - see stream_request_lang().
+function stream_request_lang_code()
+{
+	$lang = stream_request_lang();
+	if ($lang > 0)
+	{
+		return get_lang_code($lang);
+	}
+	return isset($_REQUEST['locale']) ? correct_lang($_REQUEST['locale']) : NULL;
+}
+
 // Which of the two a table hangs under. A round of a tournament is the tournament's: pass the
 // tournament, not the round.
 function stream_tournament($tournament_id)

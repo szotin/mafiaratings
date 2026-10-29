@@ -197,7 +197,6 @@ class Page extends StreamsPageBase
 			: $this->form_settings(stream_settings($this->owner, $table));
 		$langs = array(LANG_ENGLISH => 'English', LANG_RUSSIAN => 'Русский', LANG_UKRAINIAN => 'Українська');
 		$site = get_server_url();
-		$locale = is_null($settings->lang) ? '' : '&locale=' . get_lang_code($settings->lang);
 		$scope = (STREAMS_UNDER_EVENT ? 'event_id=' : 'tournament_id=') . $this->id . '&table_num=' . $table;
 
 		echo '<div class="tabcontent">';
@@ -215,7 +214,7 @@ class Page extends StreamsPageBase
 		$stored = ($table == VIEW_ALL_TABLES) ? NULL : stream_settings($this->owner, $table);
 		if (!is_null($stored) && !empty($stored->scenes))
 		{
-			echo '<h3 class="stream-section">' . get_label('Scene') . '</h3>';
+			echo '<h3 class="stream-section">' . get_label('Current scene in OBS Studio') . '</h3>';
 			$this->open_settings_table();
 
 			$html = '<select id="scene" onchange="sceneChanged()">';
@@ -232,40 +231,32 @@ class Page extends StreamsPageBase
 				$this->show_setting('', '<b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b>');
 			}
 			echo '</table>';
-
-			// Switching by itself, which is what happens the rest of the time: the site reads
-			// the phase the game at this table is in and answers with the scene set against it,
-			// and the browser sources follow. The rows are drawn by the script, since they are
-			// added and taken away as they are set up.
-			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';
-
-			// Turned off at a table that is switched by hand. The rows stay where they are -
-			// they are just not acted on - so turning it back on brings back what was set up.
-			// It is stored the other way round, as "do not switch", so that a table nobody has
-			// said anything about goes on switching as it always did.
-			$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
-			$this->open_settings_table();
-			$this->show_setting(get_label('Turn on'),
-				'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
-			echo '</table>';
-			echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
 		}
 
-		// How long this table's stream is delayed, which every link into a recording of it is
-		// moved by. Nobody types it in and nobody measures it: the site reads it off the
-		// finished recording - see include/broadcast.php. It is here so that it can be seen
-		// rather than silently moving things.
-		if ($table != VIEW_ALL_TABLES)
+		// The language everything standing at this table is shown in: the cards, the screens
+		// between games and the text broadcast alike, since none of them carries a language in
+		// its address any more - see stream_request_lang(). It stands before the sections
+		// because it belongs to all of them, and because among the between-games settings it
+		// went away altogether when somebody turned the between-games screens off.
+		//
+		// A table that has never been given a language of its own is shown with the one the
+		// tournament is played in, which is what its screens come up in anyway. There is no
+		// entry for "whichever the tournament is" - it is already the one standing there.
+		echo '<h3 class="stream-section">' . get_label('Broadcast') . '</h3>';
+		$this->open_settings_table();
+		$html = '<select id="lang" onchange="streamChanged(\'lang\')">';
+		if (is_null($settings->lang))
 		{
-			echo '<h3 class="stream-section">' . get_label('Stream delay') . '</h3>';
-			$this->open_settings_table();
-			$shift = is_null($stored) ? 0 : (int)$stored->time_shift;
-			$this->show_setting(get_label('Delay'), $shift > 0
-				? get_label('[0] sec', $shift)
-				: get_label('Not known yet.'));
-			$this->show_setting('', get_label('A game is placed in the recording by the clock, and the time YouTube stamps on a broadcast is the moment the viewers saw the picture rather than the moment it was made - so without this every game would land early by the delay of the stream. It is measured off the recording itself once YouTube has finished it, which is some hours after the broadcast ends: the games of that recording are moved to where they really begin, and the next stream of this table starts out with the same figure. Nothing has to be set, and moving a game by hand still overrules it.'));
-			echo '</table>';
+			$html .= '<option value="" selected>&mdash;</option>';
 		}
+		foreach ($langs as $lang => $lang_name)
+		{
+			$html .= '<option value="' . $lang . '"' . ($settings->lang === $lang ? ' selected' : '') . '>' . $lang_name . '</option>';
+		}
+		$html .= '</select>';
+		$this->show_setting(get_label('Language'), $html);
+		echo '</table>';
+
 
 		// The cards over the game itself. They are three sources rather than one so that a
 		// stream can put the players and the info bar wherever it likes.
@@ -273,9 +264,9 @@ class Page extends StreamsPageBase
 		$this->open_settings_table();
 		if ($table != VIEW_ALL_TABLES)
 		{
-			$this->show_url(get_label('Glyphs and info full screen'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope . $locale, '1920 x 1080');
-			$this->show_url(get_label('Glyphs only'), 'url-players', $site . '/plugins/obs/players.php?' . $scope . $locale, '1920 x 260');
-			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope . $locale, '1920 x 100');
+			$this->show_url(get_label('Glyphs and info full screen'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope, '1920 x 1080');
+			$this->show_url(get_label('Glyphs only'), 'url-players', $site . '/plugins/obs/players.php?' . $scope, '1920 x 260');
+			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope, '1920 x 100');
 		}
 
 		$this->show_setting(get_label('Show nothing'),
@@ -302,21 +293,6 @@ class Page extends StreamsPageBase
 
 		$this->show_setting(get_label('Show nothing'),
 			$this->toggle('hide_between', $settings->hide_between, 'between-detail'));
-
-		// A table that has never been given a language of its own is shown with the one the
-		// tournament is played in, which is what its screens come up in anyway. There is no
-		// entry for "whichever the tournament is" - it is already the one standing there.
-		$html = '<select id="lang" onchange="streamChanged(\'lang\')">';
-		if (is_null($settings->lang))
-		{
-			$html .= '<option value="" selected>&mdash;</option>';
-		}
-		foreach ($langs as $lang => $lang_name)
-		{
-			$html .= '<option value="' . $lang . '"' . ($settings->lang === $lang ? ' selected' : '') . '>' . $lang_name . '</option>';
-		}
-		$html .= '</select>';
-		$this->show_setting(get_label('Language'), $html, 'between-detail');
 
 		$html = '<input id="delay" type="number" min="' . STREAM_MIN_DELAY . '" max="' . STREAM_MAX_DELAY . '"' .
 			(is_null($settings->delay) ? '' : ' value="' . $settings->delay . '"') .
@@ -347,23 +323,31 @@ class Page extends StreamsPageBase
 
 		echo '</table>';
 
-		// A table that is not being streamed at all can still be followed in words, and one
-		// that is gives somebody who would rather read somewhere to go. It is the same cards
-		// and the same between-games screens as the stream of this table, so everything set up
-		// above is what it shows - see text_broadcast.php.
-		echo '<h3 class="stream-section">' . get_label('Text broadcast') . '</h3>';
-		$this->open_settings_table();
-		if ($table == VIEW_ALL_TABLES)
+		// Switching by itself, which is what happens the rest of the time: the site reads the
+		// phase the game at this table is in and answers with the scene set against it, and
+		// the browser sources follow. The rows are drawn by the script, since they are added
+		// and taken away as they are set up.
+		//
+		// Last on the tab, and the longest thing on it: it is set up once for a tournament and
+		// then left alone, while everything above it is looked at again every time somebody
+		// opens this page. The same two questions as the scene showing now - one table, and
+		// an OBS that has said what scenes it has - so it is there on the same tabs.
+		if (!is_null($stored) && !empty($stored->scenes))
 		{
-			$this->show_setting('', get_label('Open the tab of a table to get the address of its text broadcast.'));
+			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';
+
+			// Turned off at a table that is switched by hand. The rows stay where they are -
+			// they are just not acted on - so turning it back on brings back what was set up.
+			// It is stored the other way round, as "do not switch", so that a table nobody has
+			// said anything about goes on switching as it always did.
+			$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
+			$this->open_settings_table();
+			$this->show_setting(get_label('Turn on'),
+				'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
+			echo '</table>';
+			echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
 		}
-		else
-		{
-			$text_url = $site . '/text_broadcast.php?' . $scope . $locale;
-			$this->show_url(get_label('URL'), 'url-text', $text_url,
-				'<a href="' . htmlspecialchars($text_url) . '" target="_blank">' . get_label('Open') . '</a>');
-		}
-		echo '</table>';
+
 		echo '<p id="stream-saved" style="visibility: hidden"><b>' . get_label('Saved.') . '</b></p>';
 		echo '</div>';
 	}

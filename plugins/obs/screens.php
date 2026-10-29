@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../include/session.php';
+require_once '../../include/stream.php';
 require_once '../../include/picture.php';
 require_once '../../include/game.php';    // GAMETIME_END
 require_once '../../include/country.php'; // country_flag_url()
@@ -20,14 +21,10 @@ define('OBS_SCREEN_DELAY', 10); // seconds a screen stays up before the next one
 // browser source shows what the club wants rather than what some session once decided.
 function obs_screen_start()
 {
-	if (isset($_REQUEST['locale']))
-	{
-		initiate_session(correct_lang($_REQUEST['locale']));
-	}
-	else
-	{
-		initiate_session();
-	}
+	// The language the table is set to show, which is where everything else about the table
+	// comes from as well - see stream_request_lang(). Only a page that names no table falls
+	// back to the locale in the address.
+	initiate_session(stream_request_lang_code());
 }
 
 // What is on the table right now, as the moderator's screen has it. ->playing is the game under
