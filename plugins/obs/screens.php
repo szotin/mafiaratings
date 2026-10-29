@@ -401,16 +401,19 @@ function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NUL
 		echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
 	}
 
-	// A seat with nobody on it keeps the back of the card; a player with no photo gets the card's
-	// own ground instead, which none uncovers - see .card-photo in between.css.
+	// A player we have no picture of wears the back of a card, which the stylesheet puts there;
+	// a seat with nobody on it is left plain, which none uncovers - see between.css.
 	if (is_null($player))
 	{
-		echo '<div class="card-photo"></div>';
+		echo '<div class="card-photo" style="background-image: none"></div>';
+	}
+	else if ($player->photo != '')
+	{
+		echo '<div class="card-photo" style="background-image: url(' . $player->photo . ')"></div>';
 	}
 	else
 	{
-		echo '<div class="card-photo" style="background-image: ' .
-			($player->photo == '' ? 'none' : 'url(' . $player->photo . ')') . '"></div>';
+		echo '<div class="card-photo"></div>';
 	}
 	// The club along the bottom, with the flag of the country in the corner beside it - a flag is
 	// read at a glance and leaves the whole line to the club, which a second line of text did not.

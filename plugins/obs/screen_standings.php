@@ -153,8 +153,8 @@ for ($col = 0; $col < $columns && $shown < count($players); ++$col)
 
 		echo '<div class="standings-row">';
 		echo '<div class="standings-place">' . $player->place . '</div>';
-		// Nothing for a player with no picture of their own: an empty square keeps the rows
-		// lined up and says as much as the site's stand-in figure would.
+		// A player with no picture of their own gets the back of a card, the same as on the
+		// cards - see .standings-photo in between.css.
 		echo '<div class="standings-photo"' .
 			($pic->has_image() ? ' style="background-image: url(' . $pic->url(ICONS_DIR) . ')"' : '') . '></div>';
 		echo '<div class="standings-name">' . htmlspecialchars($player->name) . '</div>';

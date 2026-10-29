@@ -327,7 +327,9 @@ body {
 	position: relative;
 	box-shadow: 0 0 3.125rem rgba(0, 0, 0, 0.315);
 	transition: transform 0.5s;
-	background-image: url(images/aml_masters.png); /* the back of the card, for a seat with nobody on it */
+	/* The back of a card, which is what a player we have no picture of wears. A seat with
+	   nobody on it is left plain instead - see obs.js. */
+	background-image: url(images/aml_masters.png);
 }
 
 .player-card.dead .player-photo { filter: grayscale(80%) opacity(80%); }

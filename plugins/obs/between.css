@@ -326,7 +326,9 @@ body.between.bg-light.bg-clear {
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
-	background-image: url(images/aml_masters.png); /* a seat we have no face for */
+	/* The back of a card, which is what a player we have no picture of wears. A seat with
+	   nobody on it is left plain instead - see obs_card() in screens.php. */
+	background-image: url(images/aml_masters.png);
 }
 
 .card-club {
@@ -588,6 +590,8 @@ body.between.bg-light.bg-clear {
 	background-size: cover;
 	background-position: center;
 	background-color: var(--row);
+	/* And the same back for a player we have no picture of. */
+	background-image: url(images/aml_masters.png);
 }
 
 .standings-name {
