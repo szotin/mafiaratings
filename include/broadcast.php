@@ -457,11 +457,12 @@ function broadcast_parse_timing($page)
 // end is the very thing we are waiting for: while it is unknown the recording looks open and
 // swallows games played after it was stopped.
 //
-// One that has ended is asked after about once an hour for the next week, and then never
-// again. What we are waiting for by then is the length of the finished recording, which is
-// what the delay of the stream is read from and which YouTube does not settle until hours
-// after the broadcast is over - see broadcast_measure_delay(). Every answer up to that one
-// repeats the window and teaches us nothing, and costs one page read an hour.
+// One that has ended is asked after about once an hour until it says how long its stream was
+// delayed, and then never again. That answer is the length of the finished recording, which
+// YouTube does not settle until hours after the broadcast is over and which does not change
+// once it has - see broadcast_measure_delay(). Every answer up to that one repeats the window
+// and teaches us nothing, and costs one page read an hour. A recording that has still not
+// said it a week later is given up on.
 //
 // $force asks anyway, whatever any of that says. It is what happens when a game cannot be
 // placed in any of the recordings we know: a page read between two sessions of the same
@@ -508,9 +509,14 @@ function broadcast_list($event_id, $table_num, $refresh = true, $force = false)
 		{
 			break; // the rest keep until somebody asks again
 		}
-		if (!$force && !is_null($b->end) && $now - $b->end > BROADCAST_MEASURE_SECONDS)
+		// A recording that has ended and whose delay we have read off it has nothing left to
+		// say: what we were waiting for has arrived and it will not arrive differently. One
+		// that has still not said it a week later never will - that is a stream that was off
+		// the air for time nobody accounted for, not a recording YouTube is slow with.
+		if (!$force && !is_null($b->end) &&
+			(broadcast_measure_delay($owner, $b) > 0 || $now - $b->end > BROADCAST_MEASURE_SECONDS))
 		{
-			continue; // long over, and whatever it was going to tell us it has told us
+			continue;
 		}
 		// Until it has ended it is still moving, and the end is what the games after it turn
 		// on; after that we are only waiting for YouTube to finish the recording.
