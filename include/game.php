@@ -2903,16 +2903,24 @@ class Game
 				$p = $this->data->players[$i];
 				if (isset($p->voting) && $round < count($p->voting) && !is_null($p->voting[$round]))
 				{
+					// A hand that was not put up for anybody in that count is not a vote for
+					// anybody. Without this it is counted against seat zero, which is nobody's
+					// seat and falls outside the tally.
+					$vote = NULL;
 					if (is_array($p->voting[$round]))
 					{
 						if ($voting_round <= count($p->voting[$round]))
 						{
-							++$votes[$p->voting[$round][$voting_round - 1] - 1];
+							$vote = $p->voting[$round][$voting_round - 1];
 						}
 					}
 					else if ($voting_round == 1)
 					{
-						++$votes[$p->voting[$round] - 1];
+						$vote = $p->voting[$round];
+					}
+					if (is_numeric($vote) && $vote >= 1 && $vote <= 10)
+					{
+						++$votes[$vote - 1];
 					}
 				}
 			}

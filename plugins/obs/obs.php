@@ -81,6 +81,7 @@ function show_obs_page($view)
 	echo '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gagalin">';
 	echo '<link rel="stylesheet" href="' . obs_file('obs.css') . '">';
 	echo '<script src="' . obs_file('obs.js') . '"></script>';
+	echo '<script src="' . obs_file('voting.js') . '"></script>';
 	// Changes the OBS scene from inside the source, which is why there is no
 	// obs-websocket here. Outside OBS it does nothing at all.
 	echo '<script src="' . obs_file('scenes.js') . '"></script>';
@@ -102,6 +103,14 @@ function show_obs_page($view)
 	if ($view != 'gamestats')
 	{
 		echo '<div class="players" id="players"></div>';
+	}
+
+	// The sheet the voting is drawn on - the hands put up over the players. It lies over the
+	// whole source and takes no room of its own. Only here: the hands fly from the players to
+	// the info bar, and the overlay is the one source that has both of them. See voting.js.
+	if ($view == 'overlay')
+	{
+		echo '<div class="voting" id="voting"></div>';
 	}
 
 	echo '<script>obs.start(' . json_encode($options) . ');</script>';

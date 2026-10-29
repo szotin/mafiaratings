@@ -17,6 +17,7 @@ var obs = new function()
 		options = pageOptions;
 		game = null;
 		offline = false;
+		obsVoting.start();
 		settings();
 		setInterval(settings, options.settingsInterval);
 		refresh();
@@ -76,6 +77,9 @@ var obs = new function()
 		showReferee(g.moderator);
 		showRound(g);
 		showPlayers(g);
+		// Last, because the voting is drawn over all of it and is placed by where the cards and
+		// the nominees have just been put.
+		obsVoting.show(g, hideRoles);
 	}
 
 	//--------------------------------------------------------------------------------------

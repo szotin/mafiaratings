@@ -25,62 +25,7 @@ function game_log_sections($game, $options = NULL)
 		: function ($num) { return (is_numeric($num) && $num >= 1 && $num <= 10) ? $num : get_label('no one'); };
 	$hide_roles = (is_object($options) && isset($options->hide_roles) && $options->hide_roles);
 
-	// The step the game is standing in, where it is still being played. What happens on a step
-	// is written down as the moderator works through it and can be changed until they leave
-	// it: the shot can be moved while the night screen is open, a check re-entered, a
-	// nomination corrected while the player is still speaking. The worst of them is the
-	// counting of hands, where the last nominee is given everybody who has not been counted
-	// for somebody else - that is how a table is counted - so halfway through it reads as the
-	// whole table voting against one person.
-	//
-	// So a step is told once the game has left it. A game that is over has no step standing
-	// open, and is told whole - which is what view_game.php shows.
-	$now = NULL;
-	if (isset($game->data->time) && isset($game->data->time->time) && $game->data->time->time != GAMETIME_END)
-	{
-		$now = $game->data->time;
-		$now_round = isset($now->round) ? (int)$now->round : 0;
-		// Before the first hands are counted the screen already holds a vote for everybody,
-		// so that step is the counting of the day's first vote by another name.
-		$now_time = ($now->time == GAMETIME_VOTING_START) ? GAMETIME_VOTING : $now->time;
-		$now_step = Game::gametime_to_int($now_time);
-		$now_voting = ($now->time == GAMETIME_VOTING && isset($now->votingRound)) ? (int)$now->votingRound : 0;
-		$now_nominee = ($now->time == GAMETIME_VOTING && isset($now->nominee)) ? (int)$now->nominee : 0;
-	}
-
-	// The hands are not counted at one go: the moderator counts them for one name, presses on,
-	// counts them for the next. So each name is a step of its own - the names counted already
-	// stand, while the one being counted is held back, and with it the names after it, which
-	// are holding everybody nobody has counted yet.
-	//
-	// Which name is which is the order the moderator calls them in, round the table from the
-	// first speaker, and get_nominees() is where that order is kept - including the rule by
-	// which it is reversed on every other re-vote. A name that is not in it at all, and the
-	// moment before the first name is called, come to the same thing: nothing counted yet.
-	$counted_before = -1; // how far down that order the counting has got
-	if (!is_null($now) && ($now->time == GAMETIME_VOTING || $now->time == GAMETIME_VOTING_START))
-	{
-		$order = array();
-		foreach ($game->get_nominees($now_round, $now_voting) as $place => $nominee)
-		{
-			$order[(int)$nominee] = $place;
-		}
-		$counted_before = ($now_nominee > 0 && isset($order[$now_nominee])) ? $order[$now_nominee] : 0;
-		$voting_order = $order;
-	}
-
-	// Except for what is told as it happens and is not gone back over. A nomination is called
-	// during a speech, a warning is given during one, and a player leaving names their best
-	// move and what they leave on record in theirs: held until the speech is over, the news of
-	// a speech would always arrive a speech late. The leaving itself goes with them, so that
-	// the best move does not turn up before anybody has heard that its owner is out. The checks
-	// go in as the don and the sheriff point, which is the whole of what happens in a night
-	// besides the shot - and a table played with the roles hidden is not telling any of it
-	// anyway, early or late.
-	$told_at_once = array(GAME_ACTION_NOMINATING, GAME_ACTION_LEGACY,
-		GAME_ACTION_ON_RECORD, GAME_ACTION_LEAVING,
-		GAME_ACTION_WARNING, GAME_ACTION_TECH_FOUL,
-		GAME_ACTION_DON, GAME_ACTION_SHERIFF);
+	$told = game_log_told_filter($game);
 
 	$sections = array();
 	$section = NULL;
@@ -120,43 +65,9 @@ function game_log_sections($game, $options = NULL)
 			$is_night = $night;
 		}
 
-		// Where this line stands against the game. A line belongs to a step, and a step that
-		// the game has already left is told whatever it says.
-		$skip = false;
-		if (!is_null($now) && isset($action->time) && isset($action->round))
-		{
-			$when = ((int)$action->round == $now_round)
-				? Game::gametime_to_int($action->time) - $now_step
-				: ((int)$action->round - $now_round);
-
-			if ($when > 0)
-			{
-				// It has not happened yet. A player shot in the night is written down the
-				// moment the shot is set, and the line that says they are leaving belongs to
-				// the morning - so without this the table would be told who died while the
-				// night was still being played.
-				$skip = true;
-			}
-			else if ($when == 0 && !in_array($action->action, $told_at_once))
-			{
-				$skip = true;
-				if ($action->action == GAME_ACTION_VOTING)
-				{
-					// A day voted more than once keeps the counts it has already taken whole;
-					// inside the count being taken, it is name by name - see $counting above.
-					if (isset($action->votingRound) && $action->votingRound < $now_voting)
-					{
-						$skip = false;
-					}
-					else
-					{
-						$place = (isset($action->nominee) && isset($voting_order[$action->nominee]))
-							? $voting_order[$action->nominee] : $counted_before;
-						$skip = ($place >= $counted_before);
-					}
-				}
-			}
-		}
+		// Where this line stands against the game: what the game has already left behind is
+		// told whatever it says, and the step it is standing in is held back.
+		$skip = !call_user_func($told, $action);
 
 		// Nothing about the roles leaves the table when the table is played with them hidden.
 		if ($hide_roles && ($action->action == GAME_ACTION_ARRANGEMENT ||
@@ -436,4 +347,202 @@ function game_log_sections($game, $options = NULL)
 		}
 	}
 	return $sections;
+}
+
+// Whether what an action says may be told yet, as a callable taking an action.
+//
+// The step the game is standing in, where it is still being played. What happens on a step is
+// written down as the moderator works through it and can be changed until they leave it: the
+// shot can be moved while the night screen is open, a check re-entered, a nomination corrected
+// while the player is still speaking. The worst of them is the counting of hands, where the
+// last nominee is given everybody who has not been counted for somebody else - that is how a
+// table is counted - so halfway through it reads as the whole table voting against one person.
+//
+// So a step is told once the game has left it, which on the moderator's screen is the moment
+// they press Next. A game that is over has no step standing open and is told whole - which is
+// what view_game.php shows.
+function game_log_told_filter($game)
+{
+	$now = NULL;
+	$now_round = 0;
+	$now_step = 0;
+	$now_voting = 0;
+	$now_nominee = 0;
+	if (isset($game->data->time) && isset($game->data->time->time) && $game->data->time->time != GAMETIME_END)
+	{
+		$now = $game->data->time;
+		$now_round = isset($now->round) ? (int)$now->round : 0;
+		// Before the first hands are counted the screen already holds a vote for everybody,
+		// so that step is the counting of the day's first vote by another name.
+		$now_time = ($now->time == GAMETIME_VOTING_START) ? GAMETIME_VOTING : $now->time;
+		$now_step = Game::gametime_to_int($now_time);
+		$now_voting = ($now->time == GAMETIME_VOTING && isset($now->votingRound)) ? (int)$now->votingRound : 0;
+		$now_nominee = ($now->time == GAMETIME_VOTING && isset($now->nominee)) ? (int)$now->nominee : 0;
+	}
+
+	// The hands are not counted at one go: the moderator counts them for one name, presses on,
+	// counts them for the next. So each name is a step of its own - the names counted already
+	// stand, while the one being counted is held back, and with it the names after it, which
+	// are holding everybody nobody has counted yet.
+	//
+	// The last name is the exception, and it is told while the moderator is still standing on
+	// it. What it holds is everybody who was not counted for anybody else, so by the time the
+	// counting has reached it there is nothing left that could be taken away from it: pressing
+	// on from the name before it settled the last name too.
+	//
+	// Which name is which is the order the moderator calls them in, round the table from the
+	// first speaker, and get_nominees() is where that order is kept - including the rule by
+	// which it is reversed on every other re-vote. A name that is not in it at all, and the
+	// moment before the first name is called, come to the same thing: nothing counted yet.
+	$voting_order = array();
+	$counted_before = -1; // how far down that order the counting has got
+	$counting_last = false; // and whether what it has got to is the last name of all
+	if (!is_null($now) && ($now->time == GAMETIME_VOTING || $now->time == GAMETIME_VOTING_START))
+	{
+		foreach ($game->get_nominees($now_round, $now_voting) as $place => $nominee)
+		{
+			$voting_order[(int)$nominee] = $place;
+		}
+		$counted_before = ($now_nominee > 0 && isset($voting_order[$now_nominee])) ? $voting_order[$now_nominee] : 0;
+		$counting_last = ($now_nominee > 0 && isset($voting_order[$now_nominee]) &&
+			$voting_order[$now_nominee] == count($voting_order) - 1);
+	}
+
+	// Except for what is told as it happens and is not gone back over. A nomination is called
+	// during a speech, a warning is given during one, and a player leaving names their best
+	// move and what they leave on record in theirs: held until the speech is over, the news of
+	// a speech would always arrive a speech late. The leaving itself goes with them, so that
+	// the best move does not turn up before anybody has heard that its owner is out. The checks
+	// go in as the don and the sheriff point, which is the whole of what happens in a night
+	// besides the shot - and a table played with the roles hidden is not telling any of it
+	// anyway, early or late.
+	$told_at_once = array(GAME_ACTION_NOMINATING, GAME_ACTION_LEGACY,
+		GAME_ACTION_ON_RECORD, GAME_ACTION_LEAVING,
+		GAME_ACTION_WARNING, GAME_ACTION_TECH_FOUL,
+		GAME_ACTION_DON, GAME_ACTION_SHERIFF);
+
+	return function ($action) use ($now, $now_round, $now_step, $now_voting, $voting_order, $counted_before, $counting_last, $told_at_once)
+	{
+		if (is_null($now) || !isset($action->time) || !isset($action->round))
+		{
+			return true;
+		}
+
+		$when = ((int)$action->round == $now_round)
+			? Game::gametime_to_int($action->time) - $now_step
+			: ((int)$action->round - $now_round);
+
+		if ($when > 0)
+		{
+			// It has not happened yet. A player shot in the night is written down the moment
+			// the shot is set, and the line that says they are leaving belongs to the morning -
+			// so without this the table would be told who died while the night was still being
+			// played.
+			return false;
+		}
+		if ($when < 0 || in_array($action->action, $told_at_once))
+		{
+			return true;
+		}
+		if ($action->action != GAME_ACTION_VOTING)
+		{
+			return false;
+		}
+
+		// A day voted more than once keeps the counts it has already taken whole; inside the
+		// count being taken, it is name by name - see $counted_before above.
+		if (isset($action->votingRound) && $action->votingRound < $now_voting)
+		{
+			return true;
+		}
+		$place = (isset($action->nominee) && isset($voting_order[$action->nominee]))
+			? $voting_order[$action->nominee] : $counted_before;
+		return ($place < $counted_before || ($counting_last && $place == $counted_before));
+	};
+}
+
+// Which count of a day is in play. A day can be voted more than once: when the hands come out
+// even the table splits, everybody's hand comes down, the tied players speak again and the
+// whole table votes again. While the game is standing in a count that is the count; once the
+// day has gone past its voting it is the last count the day took.
+//
+// $actions is the game's actions where the caller already has them.
+function game_log_voting_round($game, $round, $actions = NULL)
+{
+	$now = isset($game->data->time) ? $game->data->time : NULL;
+	if (!is_null($now) && isset($now->time) && isset($now->round) && (int)$now->round == $round &&
+		($now->time == GAMETIME_VOTING || $now->time == GAMETIME_VOTING_START))
+	{
+		return isset($now->votingRound) ? (int)$now->votingRound : 0;
+	}
+
+	$last = 0;
+	if (is_null($actions))
+	{
+		$actions = $game->get_actions();
+	}
+	foreach ($actions as $action)
+	{
+		if ($action->action == GAME_ACTION_VOTING && isset($action->round) && (int)$action->round == $round &&
+			isset($action->votingRound))
+		{
+			$last = max($last, (int)$action->votingRound);
+		}
+	}
+	return $last;
+}
+
+// The hands counted in the round being played now - who has put theirs up, and for whom. It is
+// for a broadcast to show the voting as it is taken, so it says only what the moderator has
+// already moved on from, by the same rule the telling goes by: see game_log_told_filter().
+//
+// Only the count in play - see game_log_voting_round(). A table that has split has put every
+// hand down, so the hands counted in the count before it are no longer up: at the moment the
+// split is called this comes back empty, and fills again as the new count is taken. By the end
+// of the day it is where the whole table stood when the day was decided.
+//
+// Returns an array of {nominee, voters[]}, the voters in the order they sit. A day nobody has
+// been counted for yet comes back empty.
+function game_log_votes($game)
+{
+	$told = game_log_told_filter($game);
+	$round = (isset($game->data->time) && isset($game->data->time->round)) ? (int)$game->data->time->round : 0;
+	$actions = $game->get_actions();
+	$voting_round = game_log_voting_round($game, $round, $actions);
+
+	$voted_for = array(); // voter number => the nominee they are counted for
+	foreach ($actions as $action)
+	{
+		if ($action->action != GAME_ACTION_VOTING || !isset($action->round) || (int)$action->round != $round ||
+			(isset($action->votingRound) ? (int)$action->votingRound : 0) != $voting_round ||
+			!isset($action->nominee) || !is_array($action->votes) || !call_user_func($told, $action))
+		{
+			continue;
+		}
+		foreach ($action->votes as $vote)
+		{
+			$voted_for[(int)$vote] = (int)$action->nominee;
+		}
+	}
+
+	ksort($voted_for); // a column of hands stands in the order of the seats
+	$by_nominee = array();
+	foreach ($voted_for as $voter => $nominee)
+	{
+		if (!isset($by_nominee[$nominee]))
+		{
+			$by_nominee[$nominee] = array();
+		}
+		$by_nominee[$nominee][] = $voter;
+	}
+
+	$votes = array();
+	foreach ($by_nominee as $nominee => $voters)
+	{
+		$vote = new stdClass();
+		$vote->nominee = $nominee;
+		$vote->voters = $voters;
+		$votes[] = $vote;
+	}
+	return $votes;
 }

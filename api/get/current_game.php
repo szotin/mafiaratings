@@ -438,28 +438,28 @@ class ApiPage extends GetApiPageBase
 		{
 			$game->nominees = array();
 
-			// Round the table from whoever speaks first. When there is nobody to speak first -
-			// which is what an empty table would come to - there is nothing to go round either:
-			// starting from a seat that is not a seat, we would never arrive back at it.
+			// The names called in the count that is being taken, in the order the moderator
+			// calls them: round the table from whoever speaks first, and on a re-vote only the
+			// players who tied - see game_log_voting_round().
+			//
+			// When there is nobody to speak first - which is what an empty table would come to
+			// - there is nothing to go round either: starting from a seat that is not a seat,
+			// get_nominees() would never arrive back at it.
 			$first = $this->game->who_speaks_first($g->time->round);
 			if ($first >= 1 && $first <= 10)
 			{
-				$i = $first;
-				do
-				{
-					$p = $g->players[$i - 1];
-					if (isset($p->nominating) && $g->time->round < count($p->nominating))
-					{
-						$game->nominees[] = $p->nominating[$g->time->round];
-					}
-					if (++$i > 10)
-					{
-						$i = 1;
-					}
-				} while ($i != $first);
+				$game->nominees = $this->game->get_nominees($g->time->round,
+					game_log_voting_round($this->game, (int)$g->time->round));
 			}
 			
 			$game->votingCanceled = $this->game->is_voting_canceled($g->time->round);
+
+			// The hands counted so far in this round, for an overlay to show them going up as
+			// they are counted. Only what the moderator has moved on from - halfway through a
+			// count the last name holds everybody nobody has been counted for yet, so the
+			// table would read as voting against one person - and only the count in play, so
+			// that a table that has split puts its hands down. See game_log_votes().
+			$game->votes = game_log_votes($this->game);
 		}
 
 		// The game told in words, for a text broadcast - the same words view_game.php shows
@@ -682,8 +682,9 @@ class ApiPage extends GetApiPageBase
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
  			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');
- 			$param->sub_param('nominees', 'Array of players currently nominated. It is set only in the day phase.');
+ 			$param->sub_param('nominees', 'Array of players currently nominated, in the order the moderator calls them. When the table has split, only the players who tied are here. It is set only in the day phase.');
  			$param->sub_param('votingCanceled', 'Boolean which is true when votings were canceled (most likely because someone was mod-killed). It is set only in the day phase.');
+ 			$param->sub_param('votes', 'Array of the hands counted in the current round, each {nominee, voters}, where voters is an array of player numbers in the order they sit. Only the count being taken: when a table splits every hand comes down, so this is empty again until the new count begins. A count the moderator is still taking is not here at all - it shows up when they move on from it. The last name of a count is the exception: it holds everybody who was not counted for anybody else, so it is here as soon as the counting reaches it. It is set only in the day phase.');
 				
 		return $help;
 	}
