@@ -4,6 +4,9 @@ require_once 'db.php';
 require_once 'constants.php';
 require_once 'languages.php';
 require_once 'localization.php'; // get_label
+// By full path on purpose: a bare 'game.php' is resolved against the working directory first,
+// and the working directory is the site root, where game.php is the page the game is played on.
+require_once __DIR__ . '/game.php'; // the phases of a game and the order they come in
 
 // How the between-games screens are set up at one table. The browser source in OBS is pointed
 // at a table and nothing else; everything else is read from here, which is what lets a club
@@ -393,34 +396,43 @@ function stream_played_scene($owner, $table_num, $settings)
 	$query = new DbQuery(
 		'SELECT g.game FROM current_games g JOIN events e ON e.id = g.event_id'.
 		' WHERE ' . $where . ' AND g.table_num = ?', $owner->id, $table_num);
+	$data = NULL;
 	while ($row = $query->next())
 	{
 		list ($game) = $row;
-		$data = json_decode($game);
-		if (!is_object($data))
+		$game = json_decode($game);
+		if (is_object($game) && isset($game->time) && isset($game->time->time))
 		{
-			continue;
-		}
-
-		$scene = stream_game_scene($scene_events, $data);
-		if ($scene != '')
-		{
-			return $scene;
+			$data = $game;
+			break;
 		}
 	}
-	return '';
+	// And NULL where there is no game at that table, which is a thing the scenes have an
+	// answer for rather than a reason to leave the scene where it is - see below.
+	return stream_game_scene($scene_events, $data);
 }
 
-// Which of the scenes a game in this state is asking for. A seat that is speaking comes first,
-// then the phase by its own name, and failing both the plain day or night the phase belongs to
-// - so a table that names nothing but a day scene and a night scene still follows the game.
+// Which of the scenes a table should be showing. $game is the game being played at it, or NULL
+// between games.
+//
+// A scene stands against a phase, and it is shown from that phase until the next phase that
+// has a scene of its own. It used to be shown during that phase and no longer, which left
+// every phase nobody had named showing whatever happened to be up - and worse, left the end of
+// a game showing the game. The moderator can be through the last screen and the game saved
+// inside the two seconds between one ask and the next, and then the end was never seen at all
+// and the break scene never came on. That is what this is.
+//
+// The phases are put in the order the game runs through them - Game::gametime_to_int(), the
+// same order the game itself is kept in - and the scene of the latest one the game has reached
+// is the scene to show. The last of them covers both ends of the round: the phases before the
+// first scene was asked for, and everything after the last, which is also where a table with
+// no game at all sits. So a scene against the end of a game is the scene between games, which
+// is what anybody setting one there means by it.
+//
+// A seat that is speaking still comes first. That is not a point on the timeline but something
+// shown while it lasts, and the timeline takes over again when the speech is over.
 function stream_game_scene($scene_events, $game)
 {
-	if (!isset($game->time) || !isset($game->time->time))
-	{
-		return '';
-	}
-
 	// A seat with no scene of its own carries on with the scene of the seat before it, round
 	// the table, so that one scene can cover a run of seats without being named against each.
 	$seats = array_fill(0, 10, '');
@@ -432,9 +444,13 @@ function stream_game_scene($scene_events, $game)
 		{
 			$seats[$seat - 1] = $pair->scene;
 		}
-		else if ($pair->event != '')
+		else
 		{
-			$phases[$pair->event] = $pair->scene; // one row to a phase - see stream_parse_scene_events
+			$order = stream_event_order($pair->event);
+			if ($order >= 0)
+			{
+				$phases[$order] = $pair->scene; // one row to a phase - see stream_parse_scene_events
+			}
 		}
 	}
 
@@ -455,46 +471,77 @@ function stream_game_scene($scene_events, $game)
 		$seats[$i] = $carry; // the seats before the first one named carry on round from the last
 	}
 
-	$speaker = isset($game->time->speaker) ? (int)$game->time->speaker : 0;
-	if ($speaker >= 1 && $speaker <= 10 && $seats[$speaker - 1] != '')
+	if (!is_null($game))
 	{
-		return $seats[$speaker - 1];
+		$speaker = isset($game->time->speaker) ? (int)$game->time->speaker : 0;
+		if ($speaker >= 1 && $speaker <= 10 && $seats[$speaker - 1] != '')
+		{
+			return $seats[$speaker - 1];
+		}
 	}
 
-	// The two ways a vote is reached are the same thing to watch.
-	$phase = $game->time->time;
-	if ($phase == 'voting start' || $phase == 'voting kill all')
+	if (empty($phases))
 	{
-		$phase = 'voting';
-	}
-	if (isset($phases[$phase]))
-	{
-		return $phases[$phase];
+		return ''; // nothing but seats is set up, and nobody is speaking
 	}
 
-	$phase = stream_game_is_night($game) ? 'night' : 'day';
-	return isset($phases[$phase]) ? $phases[$phase] : '';
+	ksort($phases);
+	$scene = end($phases); // the one that covers the far end of the round, and so both ends
+	if (is_null($game))
+	{
+		return $scene;
+	}
+
+	$now = Game::gametime_to_int($game->time->time);
+	foreach ($phases as $order => $named)
+	{
+		if ($order > $now)
+		{
+			break;
+		}
+		$scene = $named;
+	}
+	return $scene;
 }
 
-// Whether the phase a game is in belongs to the night. The same answer as gameIsNight() in
-// js/src/game.js, which is where the phases are given their names.
-function stream_game_is_night($game)
+// Where a phase a scene can be set against stands in the order the game runs through them, or
+// -1 for the ones that are not a point on that timeline at all - a seat, or a row nobody has
+// chosen a phase for yet.
+//
+// The two of them that are not phases of the game itself are the plain day and night, and they
+// stand where the day and the night begin. The roles being dealt and what goes with it come
+// before the first night of all, so they belong to whatever covers the turn of the game -
+// unless a scene is set against them by name, which is what that row is for.
+//
+// Voting stands at the moment the table is sent to the vote rather than at the counting of
+// hands, so that the screen the moderator is looking at while the hands go up is already the
+// one the viewers are.
+function stream_event_order($event)
 {
-	switch ($game->time->time)
+	switch ($event)
 	{
-	case 'start':
-	case 'arrangement':
-	case 'relaxed sitting':
-	case 'night start':
-	case 'shooting':
-	case 'don':
-	case 'sheriff':
-	case 'night end':
-		return true;
-	case 'end':
-		return isset($game->winner) && $game->winner == 'maf';
+		case 'start':
+			return Game::gametime_to_int(GAMETIME_START);
+		case 'arrangement':
+			return Game::gametime_to_int(GAMETIME_ARRANGEMENT);
+		case 'relaxed sitting':
+			return Game::gametime_to_int(GAMETIME_RELAXED_SITTING);
+		case 'night':
+			return Game::gametime_to_int(GAMETIME_NIGHT_START);
+		case 'shooting':
+			return Game::gametime_to_int(GAMETIME_SHOOTING);
+		case 'don':
+			return Game::gametime_to_int(GAMETIME_DON);
+		case 'sheriff':
+			return Game::gametime_to_int(GAMETIME_SHERIFF);
+		case 'day':
+			return Game::gametime_to_int(GAMETIME_DAY_START);
+		case 'voting':
+			return Game::gametime_to_int(GAMETIME_VOTING_START);
+		case 'end':
+			return Game::gametime_to_int(GAMETIME_END);
 	}
-	return false;
+	return -1;
 }
 
 // The phases of a game a scene can be asked for in, in the order they are offered, as the keys
