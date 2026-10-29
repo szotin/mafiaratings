@@ -201,6 +201,23 @@ class Page extends StreamsPageBase
 
 		echo '<div class="tabcontent">';
 
+		// What belongs to the broadcast of this table as a whole rather than to one of the
+		// sources standing on it, in the order a stream reaches for it: the roles, which are
+		// turned on the moment a game is over and the cards may be shown; the scene, switched
+		// by hand when nobody is switching it by itself; and the language, set once and then
+		// left alone.
+		echo '<h3 class="stream-section">' . get_label('Broadcast') . '</h3>';
+		$this->open_settings_table();
+
+		// Whether the roles are shown is decided for the tournament as a whole and handed down
+		// to every round, so it reads the same on every tab and changing it anywhere changes it
+		// everywhere. See TOURNAMENT_FLAG_HIDE_ROLES.
+		$hide_roles = STREAMS_UNDER_EVENT ? EVENT_FLAG_HIDE_ROLES : TOURNAMENT_FLAG_HIDE_ROLES;
+		$show_roles = (($this->flags & $hide_roles) == 0);
+		$this->show_setting(get_label('Show roles'),
+			'<input type="checkbox" class="toggle" id="roles"' . ($show_roles ? ' checked' : '') .
+			' onchange="rolesChanged()">');
+
 		// Switching the scene by hand. The moderator's own screen does it by the phase of the
 		// game, so this is for when nobody is - the moderator is not using that, or forgot -
 		// and somebody at the commentary desk or watching the tournament switches instead. It
@@ -209,14 +226,11 @@ class Page extends StreamsPageBase
 		// Only on the tab of one table: a scene belongs to the OBS standing beside it, and
 		// there is no sense in asking every table to show the same one. And only once that
 		// OBS has said what scenes it has, which a browser source of ours does as soon as it
-		// is opened - until then there is nothing to choose from and nothing worth saying, so
-		// neither of these sections is there at all.
+		// is opened - until then there is nothing to choose from, so the row is not there at
+		// all, and neither is the automatic switching at the bottom of the tab.
 		$stored = ($table == VIEW_ALL_TABLES) ? NULL : stream_settings($this->owner, $table);
 		if (!is_null($stored) && !empty($stored->scenes))
 		{
-			echo '<h3 class="stream-section">' . get_label('Current scene in OBS Studio') . '</h3>';
-			$this->open_settings_table();
-
 			$html = '<select id="scene" onchange="sceneChanged()">';
 			foreach ($stored->scenes as $name)
 			{
@@ -224,26 +238,21 @@ class Page extends StreamsPageBase
 					($stored->scene === $name ? ' selected' : '') . '>' . htmlspecialchars($name) . '</option>';
 			}
 			$html .= '</select>';
-			$this->show_setting(get_label('Scene'), $html);
+			$this->show_setting(get_label('Current scene in OBS Studio'), $html);
 
 			if ($stored->control_level >= 0 && $stored->control_level < STREAM_CONTROL_ADVANCED)
 			{
 				$this->show_setting('', '<b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b>');
 			}
-			echo '</table>';
 		}
 
 		// The language everything standing at this table is shown in: the cards, the screens
 		// between games and the text broadcast alike, since none of them carries a language in
-		// its address any more - see stream_request_lang(). It stands before the sections
-		// because it belongs to all of them, and because among the between-games settings it
-		// went away altogether when somebody turned the between-games screens off.
+		// its address any more - see stream_request_lang().
 		//
 		// A table that has never been given a language of its own is shown with the one the
 		// tournament is played in, which is what its screens come up in anyway. There is no
 		// entry for "whichever the tournament is" - it is already the one standing there.
-		echo '<h3 class="stream-section">' . get_label('Broadcast') . '</h3>';
-		$this->open_settings_table();
 		$html = '<select id="lang" onchange="streamChanged(\'lang\')">';
 		if (is_null($settings->lang))
 		{
@@ -257,7 +266,6 @@ class Page extends StreamsPageBase
 		$this->show_setting(get_label('Language'), $html);
 		echo '</table>';
 
-
 		// The cards over the game itself. They are three sources rather than one so that a
 		// stream can put the players and the info bar wherever it likes.
 		echo '<h3 class="stream-section">' . get_label('Glyphs') . '</h3>';
@@ -269,17 +277,12 @@ class Page extends StreamsPageBase
 			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope, '1920 x 100');
 		}
 
+		// Nothing stands in glyphs-detail at the moment - the roles, which used to, belong to
+		// the broadcast rather than to this source - but the group stays named here, because
+		// the settings of the glyphs themselves are to go into it, and they are the rows that
+		// have nothing to say while the glyphs are off.
 		$this->show_setting(get_label('Show nothing'),
 			$this->toggle('hide_glyphs', $settings->hide_glyphs, 'glyphs-detail'));
-
-		// Whether the roles are shown is decided for the tournament as a whole and handed down
-		// to every round, so it reads the same on every tab and changing it anywhere changes it
-		// everywhere. See TOURNAMENT_FLAG_HIDE_ROLES.
-		$hide_roles = STREAMS_UNDER_EVENT ? EVENT_FLAG_HIDE_ROLES : TOURNAMENT_FLAG_HIDE_ROLES;
-		$show_roles = (($this->flags & $hide_roles) == 0);
-		$this->show_setting(get_label('Show roles'),
-			'<input type="checkbox" class="toggle" id="roles"' . ($show_roles ? ' checked' : '') .
-			' onchange="rolesChanged()">', 'glyphs-detail');
 		echo '</table>';
 
 		// One source for everything shown between games: the game just played, who sits down
