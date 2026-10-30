@@ -127,22 +127,78 @@ function obs_standings_note($c)
 
 $note = obs_standings_note($c);
 
-obs_screen_head(
-	htmlspecialchars($c->tournament_name),
-	'<div class="head-title">' . get_label('Standings') . '</div>',
-	'');
+// Who is at a table right now. Their points are the points of the games already written down,
+// so a line that is about to move is marked rather than left to look settled - see the note
+// along the bottom.
+function obs_standings_live($c)
+{
+	$live = array();
+	$events = array();
+	if ($c->is_tournament)
+	{
+		foreach ($c->rounds as $r)
+		{
+			$events[] = (int)$r->id;
+		}
+	}
+	else
+	{
+		$events[] = (int)$c->event_id;
+	}
+	if (empty($events))
+	{
+		return $live;
+	}
+
+	$query = new DbQuery('SELECT game FROM current_games WHERE event_id IN (' . implode(',', $events) . ')');
+	while ($row = $query->next())
+	{
+		list ($json) = $row;
+		$log = json_decode($json);
+		// A game on its last screen is played out: its points are already counted and the
+		// players are up from the table.
+		if (is_null($log) || !isset($log->time) || $log->time->time == GAMETIME_END || !isset($log->players))
+		{
+			continue;
+		}
+		foreach ($log->players as $p)
+		{
+			if (isset($p->id) && (int)$p->id > 0)
+			{
+				$live[(int)$p->id] = true;
+			}
+		}
+	}
+	return $live;
+}
+
+$live = obs_standings_live($c);
+$shown_count = min(count($players), $rows * $columns);
+
+obs_frame_start('f2');
+obs_head($c->tournament_name, get_label('Standings'),
+	get_label('all tables') . ' &middot; ' . get_label('finished games'),
+	'<span class="mu">' . get_label('Places [0]-[1]', 1, $shown_count) . '</span>');
 
 $pic = new Picture(USER_TOURNAMENT_PICTURE, new Picture(USER_CLUB_PICTURE, new Picture(USER_PICTURE)));
 
-// The number of rows a column holds is handed to the stylesheet so that every row is the same
-// height whether its column is full or not - otherwise the last column, holding the tail of the
-// table, would stretch its few rows into bars twice the size of the ones beside them.
-echo '<div class="screen-body standings" style="--rows: ' . $rows . '">';
-echo '<div class="standings-columns">';
+// The head of a column, which every column carries: the table is sorted by points, so that
+// one is bright and the rest are not.
+function obs_standings_head()
+{
+	echo '<div class="sth"><div></div><div></div><div></div>';
+	echo '<div class="on">' . get_label('Points') . ' &#9662;</div>';
+	echo '<div>' . get_label('Games') . '</div>';
+	echo '<div>' . get_label('Wins') . '</div>';
+	echo '<div>' . get_label('Avg.') . '</div></div>';
+}
+
+echo '<div class="st">';
 $shown = 0;
 for ($col = 0; $col < $columns && $shown < count($players); ++$col)
 {
-	echo '<div class="standings-column">';
+	echo '<div class="col">';
+	obs_standings_head();
 	for ($i = 0; $i < $rows && $shown < count($players); ++$i)
 	{
 		$player = $players[$shown++];
@@ -151,23 +207,40 @@ for ($col = 0; $col < $columns && $shown < count($players); ++$col)
 			set($player->id, $player->name, $player->club_reg_flags, 'c' . $c->club_id)->
 			set($player->id, $player->name, $player->flags);
 
-		echo '<div class="standings-row">';
-		echo '<div class="standings-place">' . $player->place . '</div>';
-		// A player with no picture of their own gets the figure of nobody in particular, the
-		// same as on the cards - see .standings-photo in between.css.
-		echo '<div class="standings-photo"' .
-			($pic->has_image() ? ' style="background-image: url(' . $pic->url(ICONS_DIR) . ')"' : '') . '></div>';
-		echo '<div class="standings-name">' . htmlspecialchars($player->name) . '</div>';
-		echo '<div class="standings-points">' . format_score($player->points) . '</div>';
+		$games = (int)$player->games_count;
+		echo '<div class="str glass">';
+		// The first three places are gold, silver and bronze; the rest are told by their number.
+		echo '<div class="rk' . ($player->place <= 3 ? ' p' . $player->place : '') . '">' . $player->place . '</div>';
+		// One ground for every face, so that twenty photographs read as one list.
+		echo '<div class="av' . ($pic->has_image() ? '' : ' none') . '">' .
+			($pic->has_image() ? '<img src="' . $pic->url(TNAILS_DIR) . '" alt="">' : '') . '</div>';
+		echo '<div class="nm"><b>' . htmlspecialchars($player->name) . '</b>' .
+			(isset($live[$player->id]) ? '<i class="live"></i>' : '') . '</div>';
+		echo '<div class="pts">' . format_score($player->points) . '</div>';
+		echo '<div class="n">' . $games . '</div>';
+		echo '<div class="n">' . (int)$player->wins . '</div>';
+		echo '<div class="avg">' . ($games > 0 ? number_format($player->points / $games, 2) : '&mdash;') . '</div>';
 		echo '</div>';
 	}
 	echo '</div>';
 }
 echo '</div>';
+
+// Along the bottom: that somebody is still playing, and whatever the tournament is holding
+// back until it ends.
+$notes = array();
+if (!empty($live))
+{
+	$notes[] = '<i class="live"></i>' . get_label('The game is still on - the points will change when it ends');
+}
 if ($note != '')
 {
-	echo '<div class="standings-note">' . $note . '</div>';
+	$notes[] = $note;
 }
-echo '</div>';
+if (!empty($notes))
+{
+	echo '<div class="note">' . implode(' &middot; ', $notes) . '</div>';
+}
+obs_frame_end();
 
 ?>

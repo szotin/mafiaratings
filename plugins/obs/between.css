@@ -1,10 +1,54 @@
-/*  Styles of the between-games screens. Same family as obs.css - the Gagalin headings, the red
-    and black player grounds, the rounded cards - but laid out full screen rather than as a strip
-    over a video.
+/*  Styles of the between-games screens: the four frames a table's stream loops through while
+    the players are on a break - the result of the game just played, the standings, who sits
+    down next, and how the tournament has gone.
 
-    Every length here is in rem, and the rem itself is a share of the screen, so the whole thing
-    is one drawing scaled to whatever size the browser source is given in OBS rather than a
-    layout that rearranges itself. Font sizes stay in em, which follows along. */
+    This is the design handed over by the designer (Mafia_Frames_Handoff), followed to the
+    value: a near-black base under large blurred red and violet glows, frosted glass panels,
+    and players cut out onto cards in the colour of their team. Everything the designer gave
+    in pixels at 1920 x 1080 is written here in rem, because the rem is a share of the screen -
+    1rem is the designer's 16px, and the whole drawing is then scaled to whatever size the
+    browser source is given in OBS rather than being a layout that rearranges itself.
+
+    Two themes. The dark one is the default; body.bg-light turns every token over, and the
+    cards stay red in both - only the page behind them changes. Frame 1 tints its background
+    toward the side that won, which is what .tw and .mw do. */
+
+/*  The two fonts, served from here rather than from Google: a browser source in OBS is often
+    opened before the machine has any network, and a frame that came up in Times New Roman
+    would go out on the stream that way. Both are variable fonts, so one file carries every
+    weight the frames ask for; the Cyrillic and the Latin are separate files, so a frame in
+    English never fetches the Cyrillic one. */
+@font-face {
+	font-family: 'Onest';
+	font-weight: 400 800;
+	font-display: block;
+	src: url(fonts/onest-cyrillic.woff2) format('woff2');
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+	font-family: 'Onest';
+	font-weight: 400 800;
+	font-display: block;
+	src: url(fonts/onest-latin.woff2) format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: 'Unbounded';
+	font-weight: 200 900;
+	font-display: block;
+	src: url(fonts/unbounded-cyrillic.woff2) format('woff2');
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+	font-family: 'Unbounded';
+	font-weight: 200 900;
+	font-display: block;
+	src: url(fonts/unbounded-latin.woff2) format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 html {
 	/* 16px at 1920 x 1080, and the same drawing at any other size. The smaller of the two keeps
@@ -19,801 +63,1013 @@ html {
 	box-sizing: border-box;
 }
 
+/*--------------------------------------------------------------------------------------
+    the tokens, which is the whole of the difference between the two themes
+  --------------------------------------------------------------------------------------*/
 body.between {
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
-	color: var(--ink);
-	font-family: 'Roboto Slab', serif;
-	line-height: 1.4;
-	background: #1e2227 url(images/black_player_bg.jpg) center / cover;
-
-	/* What the page is made of, which the background param picks - see between.php. These are
-	   the dark ones, and they are also what the see-through page uses, since it stands over
-	   whatever the scene behind the browser source is showing and has to carry its own
-	   contrast. The cards are not in here: they have photographs of their own under them and
-	   look the same whatever the page does. */
-	--ink: #fff;                      /* lettering standing on the page itself */
-	--panel: rgba(0, 0, 0, 0.55);     /* something laid on the page - a pane, a table row */
-	--panel-line: rgba(255, 255, 255, 0.08);
-	--row: rgba(255, 255, 255, 0.07); /* a line inside a pane, lifted off it */
-	--chip-line: rgba(255, 255, 255, 0.3);
-	--slice-line: rgba(255, 255, 255, 0.25); /* between two slices of the pie */
-	--slice-opacity: 0.75;            /* how much of the ground the pie lets through */
-
-	--pad: 1.75rem;     /* what the screen keeps clear round its edge */
-	--gap: 1.25rem;     /* between two cards */
-	--row-gap: 1.75rem; /* between the two rows of cards */
-	/* The heading is the title over the subtitle - 2.6em * 1.1 and 1.3em * 1.4 - and its margin. */
-	--head: 6.2rem;
-	/* What the two rows of cards have between them, and the height one of them may take.
-	   Together with the width a card is allowed this is what settles its size, see .card. */
-	--body-h: calc(100vh - 2 * var(--pad) - var(--head));
-	--row-h: calc((var(--body-h) - var(--row-gap)) / 2);
-	--strip: 6.5rem; /* the strip of checks under the results, where there is one */
-	/* The shape of a card, kept whatever the screen. */
-	--card-w: 3;
-	--card-h: 4;
-}
-
-/* Light. The lettering turns over with the ground, and so does the way a pane is told from
-   the page it lies on: on the dark wall a pane is a darker patch of it, and here it is one
-   too - a wash of ink over a pale ground rather than a pane of white, which would have the
-   table and the pie standing out of the page instead of being set into it. The pie is given
-   back most of its opacity: colours that let a dark ground through only deepen, but over a
-   light one they wash out. */
-body.between.bg-light {
-	--ink: #15181c;
-	--panel: rgba(23, 29, 40, 0.26);
-	--panel-line: rgba(0, 0, 0, 0.1);
-	--row: rgba(23, 29, 40, 0.07);
-	--chip-line: rgba(0, 0, 0, 0.22);
-	--slice-line: rgba(255, 255, 255, 0.6);
-	--slice-opacity: 0.92;
-	background-color: #e7e9ee;
-	background-image: radial-gradient(circle at 50% 30%, #f5f6f9 0%, #d8dbe2 100%);
-}
-
-/* Swells running across the page, so that what is laid over them is seen to be laid over
-   something: the pane and the pie both let a little of the ground through, and against a flat
-   colour there is nothing to see through them.
-
-   Sheets rather than lines, because what is wanted is depth. Each one is a wavy edge with
-   everything below it filled, and the fill is bright where the edge is, falls away as the
-   surface turns from the light, and darkens again at the far side where the sheet runs under
-   the next one. Above its edge it drops a soft shadow onto the sheet behind. Nothing is
-   outlined anywhere: all of it is light and the lack of light, which is what makes it read as
-   something lying over something else rather than as a drawing of a wave.
-
-   The four in the tile are of four different lengths and depths and lie at uneven distances
-   apart, so that what repeats is a stretch of water rather than a wave. Every length divides
-   the width of the tile, which is what lets it join itself; each sheet is drawn well past
-   both edges so its shadow has something to fall on there and no seam shows; and the top of
-   the tile and the bottom both come back to nothing, which joins it the other way. The tile
-   is drawn here rather than kept as a file: it is a kilobyte and one less thing to deploy.
-
-   It gets a layer of its own because a page cannot turn its own background: this one is
-   bigger than the screen, laid on the slant, and sent behind the content. */
-body.between.bg-light::before {
-	content: '';
-	position: fixed;
-	left: -30%;
-	top: -30%;
-	width: 160%;
-	height: 160%;
-	z-index: -1;
-	transform: rotate(18deg);
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cdefs%3E%3ClinearGradient id='a' gradientUnits='userSpaceOnUse' x1='0' y1='60' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.95'/%3E%3Cstop offset='.4' stop-color='%23ffffff' stop-opacity='.12'/%3E%3Cstop offset='1' stop-color='%23c3cad8' stop-opacity='.35'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' gradientUnits='userSpaceOnUse' x1='0' y1='160' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.95'/%3E%3Cstop offset='.4' stop-color='%23ffffff' stop-opacity='.12'/%3E%3Cstop offset='1' stop-color='%23c3cad8' stop-opacity='.35'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' gradientUnits='userSpaceOnUse' x1='0' y1='250' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.95'/%3E%3Cstop offset='.4' stop-color='%23ffffff' stop-opacity='.12'/%3E%3Cstop offset='1' stop-color='%23c3cad8' stop-opacity='.3'/%3E%3C/linearGradient%3E%3ClinearGradient id='d' gradientUnits='userSpaceOnUse' x1='0' y1='330' x2='0' y2='400'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.9'/%3E%3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dx='0' dy='-6' stdDeviation='10' flood-color='%238693a8' flood-opacity='.38'/%3E%3C/filter%3E%3C/defs%3E%3Cpath filter='url(%23s)' fill='url(%23a)' d='M-300 60 q150 -52 300 0 t300 0 t300 0 t300 0 L900 400 L-300 400 Z'/%3E%3Cpath filter='url(%23s)' fill='url(%23b)' d='M-300 160 q75 -40 150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 L900 400 L-300 400 Z'/%3E%3Cpath filter='url(%23s)' fill='url(%23c)' d='M-300 250 q50 -28 100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 t100 0 L900 400 L-300 400 Z'/%3E%3Cpath filter='url(%23s)' fill='url(%23d)' d='M-300 330 q75 -32 150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 t150 0 L900 400 L-300 400 Z'/%3E%3C/svg%3E");
-	background-size: 135rem 90rem;
-	background-repeat: repeat;
-}
-
-/* See-through, for laying the screens straight over the picture from the table. Nothing is
-   painted behind them, swells and all; the panes and the cards bring their own ground. It
-   goes with either set of colours, so it comes after both of them and only takes the ground
-   away. */
-body.between.bg-clear {
-	background: transparent;
-}
-
-body.between.bg-clear::before {
-	display: none;
-}
-
-/* Nothing at all, when the table is set to show nothing - see STREAM_FLAG_HIDE_BETWEEN. Unlike
-   the glyphs this page paints a ground of its own, swells and all, so that has to go as well
-   as what stands on it. It comes after both sets of colours so that it takes the ground away
-   whichever of them is on. */
-body.between.hidden-source {
-	background: transparent;
-}
-
-body.between.hidden-source::before,
-body.between.hidden-source > * {
-	display: none;
-}
-
-/* With a ground behind it, the light pane is a wash of ink that sets the table into the page.
-   With nothing behind it there is no page to be set into, and dark lettering has to be read
-   over whatever the scene happens to be showing - so the pane turns back into a pane, pale
-   and solid enough to carry it. */
-body.between.bg-light.bg-clear {
-	--panel: rgba(255, 255, 255, 0.82);
-	--row: rgba(23, 29, 40, 0.07);
-}
-
-.screen {
 	display: flex;
-	flex-direction: column;
-	width: 100%;
-	height: 100%;
-	padding: var(--pad) 2.25rem;
+	align-items: center;
+	justify-content: center;
+	font-family: 'Onest', system-ui, sans-serif;
+	line-height: 1.4;
+	color: var(--ink);
+	background: var(--bg);
+
+	--bg: #0A0608;
+	--ink: #FFFFFF;
+	--ink2: rgba(255, 255, 255, 0.72);
+	--ink3: rgba(255, 255, 255, 0.55);
+	--ttl: #FFEDEF;
+	--ttl-glow: 0 0 2.75rem rgba(255, 59, 78, 0.6);
+
+	/* The four blurred circles and the vignette over them. */
+	--g1: rgba(214, 31, 52, 0.62);
+	--g2: rgba(160, 14, 42, 0.70);
+	--g3: rgba(255, 98, 58, 0.26);
+	--g4: rgba(72, 62, 170, 0.38);
+	--vig: rgba(0, 0, 0, 0.5);
+
+	/* Glass: an edge, a gradient of its own, and the shadow it throws on the page. */
+	--gl-edge: rgba(255, 255, 255, 0.22);
+	--gl-top: rgba(255, 255, 255, 0.17);
+	--gl-bot: rgba(255, 255, 255, 0.05);
+	--gl-hi: rgba(255, 255, 255, 0.45);
+	--gl-sh: 0 1.625rem 3.125rem rgba(0, 0, 0, 0.42);
+
+	--line: rgba(255, 255, 255, 0.12);
+	--dot: rgba(255, 255, 255, 0.28);
+	--red: #FF4D5E;
+	--red-hi: #FF5B6B;
+	--red-lo: #D81F37;
+	--gold: #F5C451;
+	--mint: #5CF2A0;
+
+	/* The cards, which are the same in both themes. */
+	--town-card: radial-gradient(120% 70% at 50% 18%, #E5394A 0%, rgba(229, 57, 74, 0) 70%), linear-gradient(180deg, #C21E30 0%, #8E0F1E 60%, #4A0610 100%);
+	--town-fade: #4A0610;
+	--town-line: rgba(255, 150, 160, 0.30);
+	--neu-line: rgba(255, 255, 255, 0.10);
+
+	--pts-bg: rgba(255, 64, 86, 0.30);
+	--pts-edge: rgba(255, 150, 160, 0.55);
+	--pts-ink: #fff;
+	--t-k: #FF7A88;  /* the word ГОРОД on frame 4, and the same for МАФИЯ below */
+	--t-pc: #FFEDEF;
+	--m-k: #C9D0E0;
+	--m-pc: #F2F4FA;
+	--av-bg: radial-gradient(circle at 50% 30%, #D02A3B 0%, #7A0C1A 62%, #3A060D 100%);
+}
+
+body.between.bg-light {
+	--bg: #F5F1F2;
+	--ink: #1A0E12;
+	--ink2: rgba(26, 14, 18, 0.70);
+	--ink3: rgba(26, 14, 18, 0.52);
+	--ttl: #1A0E12;
+	--ttl-glow: 0 0 2.5rem rgba(226, 52, 71, 0.18);
+
+	--g1: rgba(226, 52, 71, 0.20);
+	--g2: rgba(200, 30, 60, 0.16);
+	--g3: rgba(255, 140, 110, 0.16);
+	--g4: rgba(90, 90, 200, 0.12);
+	--vig: rgba(0, 0, 0, 0);
+
+	--gl-edge: rgba(26, 14, 18, 0.10);
+	--gl-top: rgba(255, 255, 255, 0.92);
+	--gl-bot: rgba(255, 255, 255, 0.70);
+	--gl-hi: rgba(255, 255, 255, 0.9);
+	--gl-sh: 0 1.125rem 2.5rem rgba(60, 20, 30, 0.12);
+
+	--line: rgba(26, 14, 18, 0.10);
+	--dot: rgba(26, 14, 18, 0.20);
+
+	--pts-bg: rgba(226, 52, 71, 0.10);
+	--pts-edge: rgba(226, 52, 71, 0.45);
+	--pts-ink: #B3132A;
+	--t-k: #E23447;
+	--t-pc: #D81F37;
+	--m-k: #4A4F60;
+	--m-pc: #1A0E12;
+	--av-bg: radial-gradient(circle at 50% 30%, #FFFFFF 0%, #FFE1E6 70%, #F9CCD4 100%);
+}
+
+/*  The frame that won: frame 1 tints the page toward the side it belongs to. A mafia win in
+    the dark theme keeps the base palette - it is dark enough already. */
+body.between .fr.tw {
+	--g1: rgba(232, 36, 56, 0.82);
+	--g2: rgba(196, 16, 44, 0.86);
+	--g3: rgba(255, 72, 60, 0.36);
+	--g4: rgba(170, 24, 60, 0.40);
+	--vig: rgba(30, 0, 6, 0.45);
+}
+
+body.between.bg-light .fr.tw {
+	--bg: #FFF3F4;
+	--vig: rgba(255, 40, 60, 0.10);
+	--g1: rgba(255, 58, 78, 0.46);
+	--g2: rgba(244, 36, 64, 0.40);
+	--g3: rgba(255, 120, 130, 0.34);
+	--g4: rgba(255, 86, 104, 0.26);
+	--gl-sh: 0 1.125rem 2.5rem rgba(190, 20, 45, 0.16);
+}
+
+body.between.bg-light .fr.mw {
+	--bg: #EEEFF2;
+	--g1: rgba(14, 15, 20, 0.34);
+	--g2: rgba(14, 15, 20, 0.40);
+	--g3: rgba(255, 255, 255, 0.55);
+	--g4: rgba(30, 32, 40, 0.22);
+	--vig: rgba(14, 15, 20, 0.10);
+	--gl-sh: 0 1.125rem 2.5rem rgba(10, 10, 16, 0.18);
+}
+
+/*  Nothing at all, when the table is set to show nothing between games - see
+    STREAM_FLAG_HIDE_BETWEEN. */
+body.hidden-source > * {
+	display: none;
+}
+
+/*  The see-through source: the page keeps its panels and its lettering and gives up its
+    ground, so that whatever the scene behind the browser source is showing stands where the
+    glows would be. */
+body.between.bg-clear,
+body.between.bg-clear .fr {
+	background: transparent;
+}
+
+body.between.bg-clear .glow {
+	display: none;
 }
 
 /*--------------------------------------------------------------------------------------
-    the heading every screen shares
+    the frame: the page every screen is drawn on
   --------------------------------------------------------------------------------------*/
-.screen-head {
-	display: flex;
-	align-items: center;
-	flex: 0 0 auto;
-	gap: 1.5rem;
-	margin-bottom: 1.5rem;
+.screen,
+.fr {
+	position: relative;
+	width: 120rem;
+	height: 67.5rem;
+	overflow: hidden;
 }
 
-.head-left,
-.head-right {
-	flex: 1 1 0;
-	font-size: 1.6em;
+.fr {
+	background: var(--bg);
+}
+
+/* A crossfade between one screen and the next, which between.js turns on by taking the class
+   off once the new frame is in place. */
+.screen.fading {
+	opacity: 0;
+	transition: opacity 0.3s;
+}
+
+.screen:not(.fading) {
+	opacity: 1;
+	transition: opacity 0.6s;
+}
+
+.glow {
+	position: absolute;
+	border-radius: 50%;
+	pointer-events: none;
+}
+
+.glow.g1 { left: -23.75rem; top: -29.375rem; width: 81.25rem; height: 81.25rem; background: radial-gradient(circle, var(--g1) 0%, transparent 62%); }
+.glow.g2 { right: -26.875rem; bottom: -33.75rem; width: 93.75rem; height: 93.75rem; background: radial-gradient(circle, var(--g2) 0%, transparent 62%); }
+.glow.g3 { left: 60rem; top: 13.75rem; width: 47.5rem; height: 47.5rem; background: radial-gradient(circle, var(--g3) 0%, transparent 64%); }
+.glow.g4 { left: -15rem; bottom: -21.25rem; width: 61.25rem; height: 61.25rem; background: radial-gradient(circle, var(--g4) 0%, transparent 64%); }
+
+.glow.vig {
+	left: 0;
+	top: 0;
+	width: 120rem;
+	height: 67.5rem;
+	border-radius: 0;
+	background: radial-gradient(ellipse at center, transparent 55%, var(--vig) 100%);
+}
+
+/*  Frosted glass, which every panel on every frame is made of. */
+.glass {
+	border: 1px solid var(--gl-edge);
+	background: linear-gradient(165deg, var(--gl-top), var(--gl-bot));
+	backdrop-filter: blur(1.875rem) saturate(165%);
+	box-shadow: inset 0 1px 0 var(--gl-hi), var(--gl-sh);
+}
+
+/*--------------------------------------------------------------------------------------
+    the header, the same on all four frames
+  --------------------------------------------------------------------------------------*/
+.hd {
+	position: absolute;
+	left: 4.5rem;
+	right: 4.5rem;
+	top: 2.5rem;
+	height: 6.875rem;
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: center;
+}
+
+/* The tournament, with the red dot that says this is a live broadcast. */
+.tn {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	min-width: 0;
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--ink2);
+}
+
+.tn span {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
-.head-right {
-	text-align: right;
-	opacity: 0.85;
+.tn i {
+	flex: none;
+	width: 0.75rem;
+	height: 0.75rem;
+	border-radius: 50%;
+	background: var(--red);
+	box-shadow: 0 0 1.125rem 0.25rem rgba(255, 77, 94, 0.55);
 }
 
-.head-middle {
-	flex: 0 0 auto;
+.ttl {
 	text-align: center;
 }
 
-.head-title {
-	font-family: 'Gagalin', sans-serif;
-	letter-spacing: 0.1875rem;
-	font-size: 2.6em;
+.ttl h1 {
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 3.375rem;
 	line-height: 1.1;
+	letter-spacing: 0.01em;
+	text-transform: uppercase;
+	color: var(--ttl);
+	text-shadow: var(--ttl-glow);
+	white-space: nowrap;
 }
 
-/* Who won, in the colour of their team. The screen stands on a dark ground, so the red is a
-   bright one and carries a shadow to lift it off the photograph behind it. Black on near-black
-   would not be read at all, so the black team's is as dark as it can be said and still be a
-   word: a light rim round the letters and a glow behind them, which is what the eye picks up
-   rather than the fill. */
-.head-title.won-red {
-	color: #f03a3e;
-	text-shadow: 0 0 1.2rem rgba(0, 0, 0, 0.9), 0 0.15rem 0.4rem rgba(0, 0, 0, 0.8);
+.ttl .sub {
+	margin-top: 0.5rem;
+	font-size: 1.375rem;
+	font-weight: 600;
+	color: var(--ink3);
+	white-space: nowrap;
 }
 
-.head-title.won-black {
-	color: #0b0d10;
-	text-shadow: 0 0 0.45rem rgba(255, 255, 255, 0.95), 0 0 1.1rem rgba(255, 255, 255, 0.7),
-		0 0 2.4rem rgba(255, 255, 255, 0.4);
+/* The pill in the right corner. What it holds is the frame's business - the judge, the table,
+   how many games have been played. */
+.pill {
+	justify-self: end;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	height: 3.25rem;
+	padding: 0 1.5rem;
+	max-width: 32.5rem;
+	border-radius: 1.625rem;
+	border: 1px solid var(--gl-edge);
+	background: linear-gradient(180deg, var(--gl-top), var(--gl-bot));
+	backdrop-filter: blur(1.5rem) saturate(160%);
+	box-shadow: inset 0 1px 0 var(--gl-hi), 0 0.75rem 1.875rem rgba(0, 0, 0, 0.18);
+	font-size: 1.375rem;
+	font-weight: 700;
 }
 
-.head-sub {
-	font-size: 1.3em;
-	opacity: 0.8;
+.pill .mu { color: var(--ink3); }
+.pill svg { width: 1.375rem; height: 1.375rem; flex: none; color: var(--ink3); }
+.pill .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill .dv { width: 1px; height: 1.5rem; background: var(--line); flex: none; }
+
+/*  Which of the frames is up, at the bottom of the page. The dots are the shell's rather than
+    any one frame's - between.js knows the whole round of screens and which of them this is,
+    and a frame knows only itself. */
+.dots {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 2.75rem;
+	display: flex;
+	justify-content: center;
+	gap: 0.625rem;
+	z-index: 4;
+}
+
+.dots i {
+	width: 0.625rem;
+	height: 0.625rem;
+	border-radius: 0.3125rem;
+	background: var(--dot);
+	transition: width 0.4s, background-color 0.4s;
+}
+
+.dots i.on {
+	width: 2.25rem;
+	background: var(--red);
+	box-shadow: 0 0 0.875rem rgba(255, 77, 94, 0.6);
 }
 
 /*--------------------------------------------------------------------------------------
-    the body, and the rows of cards the results and the upcoming seating are made of
+    the player card, which frames 1 and 3 are made of
   --------------------------------------------------------------------------------------*/
-/* Spread rather than centred: the cards keep their shape, so a row of seven cannot be as tall as
-   the screen would allow, and what it leaves over is better shared out above, between and below
-   the rows than banked at the two ends. */
-.screen-body {
-	display: flex;
-	flex: 1 1 auto;
-	flex-direction: column;
-	justify-content: space-evenly;
-	gap: var(--row-gap);
-	min-height: 0;
-}
-
-/* A row is as tall as the cards in it rather than a half of the screen, so that whatever the
-   cards cannot use is left around them as space instead of stretching them out of shape. */
-.card-row {
-	display: flex;
-	flex: 0 0 auto;
-	justify-content: center;
-	align-items: flex-start;
-	width: 100%;
-	gap: var(--gap);
-}
-
-/* The strip of checks stands below the cards and takes its room out of theirs. --row-h has to
-   be worked out again rather than inherited: a custom property is resolved where it is written,
-   so changing what it is made of lower down would not reach it. */
-.results.with-info .card-row {
-	--row-h: calc((var(--body-h) - var(--row-gap) - var(--strip)) / 2);
-}
-
-/* A card is the largest of its shape that fits both ways: the width its row can spare for one of
-   however many are in it - --cards, set by the screen printing the row - and the height the row
-   has. What is left over becomes the space around and between them. The cap stops a row of three
-   from turning into three enormous cards. */
 .card {
-	flex: 0 0 auto;
-	aspect-ratio: var(--card-w) / var(--card-h);
-	width: min(
-		calc((100% - (var(--cards, 5) - 1) * var(--gap)) / var(--cards, 5)),
-		calc(var(--row-h) * var(--card-w) / var(--card-h)));
-	max-width: 21.25rem;
+	position: relative;
+	border-radius: 1.625rem;
+	overflow: hidden;
+	/* Without these the gradient repeats into the border and leaves a thin red line along the
+	   bottom edge of every card. */
+	background-origin: border-box;
+	background-repeat: no-repeat;
+	--c-ink: #fff;
+	--c-ink2: rgba(255, 255, 255, 0.72);
+	--c-dim: rgba(255, 255, 255, 0.16);
+	--c-dim-edge: rgba(255, 255, 255, 0.28);
 }
 
-/* The black team sits above the town on the results screen, kept a little smaller - it is the
-   shorter row, and letting it reach the cap would make it the biggest thing on the screen. */
-.results .black-row .card {
-	max-width: 16.25rem;
+.card.town,
+.card.neutral {
+	background: var(--town-card);
+	--fade: var(--town-fade);
 }
 
-/* A card brings its own ground with it - a photograph of a red, black or green wall - so its
-   lettering is white whatever the page around it is doing. The same goes for the strip of
-   checks under the results: every number on it sits on a chip of its own. */
-.card,
-.info {
+.card.town {
+	border: 1px solid var(--town-line);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), var(--gl-sh);
+}
+
+/* Frame 3: the roles are not known before the game, so every card is the same and its edge is
+   nearly invisible. */
+.card.neutral {
+	border: 1px solid var(--neu-line);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), var(--gl-sh);
+}
+
+.card.maf {
+	border: 1px solid rgba(0, 0, 0, 0.55);
+	background: radial-gradient(120% 70% at 50% 18%, #4A4347 0%, rgba(74, 67, 71, 0) 70%), linear-gradient(180deg, #2E282B 0%, #171214 60%, #090607 100%);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), var(--gl-sh);
+	--fade: #090607;
+}
+
+.card.sher {
+	border: 2px solid var(--gold);
+	box-shadow: 0 0 1.625rem rgba(245, 196, 81, 0.30), var(--gl-sh);
+}
+
+/* The gold edge of the dark theme all but disappears on a pale page, so it is drawn heavier. */
+body.between.bg-light .card.sher {
+	border: 3px solid #E0A812;
+	box-shadow: 0 0 0 2px rgba(224, 168, 18, 0.35), 0 0 1.5rem rgba(224, 168, 18, 0.45), var(--gl-sh);
+}
+
+.card.don {
+	border: 2px solid #2B2C31;
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07), var(--gl-sh);
+}
+
+/*  The photograph, which stands on the card's own colour rather than in a box of its own. A
+    picture with its background taken out (class cut) is drawn whole and stood on the bottom
+    edge; an ordinary one is cropped to fill, a little above centre so that the face is not
+    cut. Either way the gradient below fades it into the card. */
+.ph {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0.5rem;
+	bottom: 1.875rem;
+	z-index: 1;
+}
+
+.ph img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: 50% 14%;
+	display: block;
+}
+
+.ph img.cut {
+	object-fit: contain;
+	object-position: 50% 100%;
+}
+
+/* A seat nobody is sitting on, and a player we have no picture of: the card's own ground, with
+   the figure of nobody in particular standing on it, filled in the way a photograph is so that
+   it is the size of everybody else. */
+.ph.none {
+	background: center / cover no-repeat url(images/user_null.png);
+}
+
+.card::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 42%;
+	z-index: 2;
+	background: linear-gradient(180deg, transparent 0%, var(--fade) 78%);
+	pointer-events: none;
+}
+
+/* The role, top left. Only on frame 1 - before a game nobody knows them. */
+.role {
+	position: absolute;
+	z-index: 3;
+	left: 1.125rem;
+	top: 1.125rem;
+	width: 2.875rem;
+	height: 2.875rem;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	background: rgba(10, 6, 8, 0.78);
+	border: 1px solid rgba(255, 255, 255, 0.38);
+	backdrop-filter: blur(0.875rem);
+	box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.35);
 	color: #fff;
 }
 
-.card {
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	min-width: 0;
-	border-radius: 0.875rem;
-	overflow: hidden;
-	background-size: cover;
-	background-position: center;
-	/* Red is where a card sits unless its role says otherwise, the same as on the overlays. */
-	background-image: url(images/red_player_bg.jpg);
-	box-shadow: 0 0.375rem 1.5rem rgba(0, 0, 0, 0.45);
+.role svg { width: 1.875rem; height: 1.875rem; }
+
+.role.sher {
+	background: var(--gold);
+	border-color: rgba(255, 255, 255, 0.7);
+	color: #2A1A00;
 }
 
-.card.role-maf,
-.card.role-don { background-image: url(images/black_player_bg.jpg); }
-.card.role-sheriff { background-image: url(images/green_player_bg.jpg); }
-
-.card.best {
-	outline: 0.1875rem solid rgba(255, 206, 0, 0.9);
-	outline-offset: -0.1875rem;
-}
-
-.card-no {
+/* How the player left the game, top right: the mark and the number of the night or the vote,
+   and no words. */
+.elim {
 	position: absolute;
-	top: 0;
-	left: 0;
-	min-width: 2.125rem;
-	padding: 0.125rem 0.5rem;
-	text-align: center;
-	font-size: 1.35em;
-	font-weight: 700;
-	background-color: rgba(0, 0, 0, 0.75);
-	border-bottom-right-radius: 0.75rem;
-	z-index: 2;
-}
-
-.card-name {
-	flex: 0 0 auto;
-	padding: 0.25rem 0.625rem 0.25rem 2.875rem;
-	font-size: 1.35em;
-	font-weight: 700;
-	text-align: center;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	background-color: rgba(0, 0, 0, 0.55);
-}
-
-/* Takes whatever the card has left after the name and the club. The card is of a fixed shape and
-   the two of them are of a fixed height, so this is of a fixed shape as well. */
-.card-photo {
-	flex: 1 1 auto;
-	width: 100%;
-	min-height: 0;
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	/* The figure of nobody in particular, which is what a player we have no picture of wears.
-	   A seat with nobody on it wears the back of a card instead - see obs_card() in
-	   screens.php. */
-	background-image: url(images/user_null.png);
-}
-
-.card-club {
+	z-index: 3;
+	right: 1.125rem;
+	top: 1.125rem;
+	height: 2.5rem;
+	padding: 0 0.8125rem 0 0.5625rem;
+	border-radius: 1.25rem;
 	display: flex;
 	align-items: center;
-	flex: 0 0 auto;
-	gap: 0.5rem;
-	padding: 0.375rem 0.625rem;
-	background-color: rgba(0, 0, 0, 0.55);
-	font-size: 1.1em;
+	gap: 0.4375rem;
+	background: rgba(10, 6, 8, 0.74);
+	border: 1px solid rgba(255, 255, 255, 0.30);
+	backdrop-filter: blur(0.875rem);
+	box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.35);
+	color: #fff;
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 1.125rem;
+	line-height: 1;
 }
 
-.card-club-name {
-	flex: 1 1 auto;
-	min-width: 0;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+.elim svg { width: 1.375rem; height: 1.375rem; }
+.elim.night svg { color: var(--red); }
+.elim.vote svg { color: #fff; transform: rotate(-14deg); }
 
-/* The flag of the country in the corner of the line the club is on. */
-.card-flag {
-	flex: 0 0 auto;
-	width: 3.2rem;
-	height: 2.4rem;
-	/* Taller than the line it stands on, so it leans up over the photo instead of pushing the
-	   club down into a bar of its own. It grows upwards only: the club is the last thing on the
-	   card, and anything below it is cut off by the rounded corner. */
-	align-self: flex-end;
-	margin-top: -0.9rem;
-	/* The box is the shape of the flags themselves - they all come 4 by 3 - so nothing is cut
-	   off and nothing is left over around the edges. */
-	background-size: contain;
-	background-position: center;
-	background-repeat: no-repeat;
-	border-radius: 0.2rem;
-}
-
-/* The glyph of the role in the corner, the same three the overlays use. The best player of the
-   game is marked by the gold edge of .card.best rather than another badge, so that the sheriff's
-   star keeps meaning the sheriff. */
-.card-corner {
+/* The seat, the name and the club along the bottom. */
+.meta {
 	position: absolute;
-	top: 1.875rem;
-	right: 0.375rem;
-	width: 2.625rem;
-	height: 2.625rem;
-	background-size: contain;
-	background-position: center;
-	background-repeat: no-repeat;
-	filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.6));
-	z-index: 2;
+	z-index: 3;
+	left: 1rem;
+	right: 1rem;
+	bottom: 0.875rem;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	grid-template-areas: "seat nick" "club club";
+	column-gap: 0.625rem;
+	row-gap: 0.375rem;
+	align-items: center;
+	color: var(--c-ink);
 }
 
-.card.role-don .card-corner { background-image: url(images/don.png); }
-.card.role-maf .card-corner { background-image: url(images/pistol.png); }
-.card.role-sheriff .card-corner { background-image: url(images/sheriff.png); }
+.meta .seat { grid-area: seat; }
+.meta .nick { grid-area: nick; }
+.meta .l2 { grid-area: club; }
 
-/* Under the number: the way the player left the game, in the same marks and on the same grounds
-   as .player-mark in obs.css. Warnings and technical fouls are left off these cards - see
-   obs_results_mark() in screen_results.php. */
-.card-mark {
-	position: absolute;
-	top: 1.875rem;
-	left: 0.375rem;
-	min-width: 1.875rem;
-	height: 2.1875rem;
-	padding: 0 0.3125rem;
-	text-align: center;
-	font-size: 1.2em;
+.seat {
+	flex: none;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	background: var(--c-dim);
+	color: var(--c-ink2);
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.nick {
 	font-weight: 800;
-	letter-spacing: 0.125rem;
-	border-radius: 0.5rem;
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	z-index: 2;
-}
-
-.card-mark.death-kickOut { background-color: rgba(255, 0, 0, 0.6); }
-
-/* A death of its own picture carries no text, so the box is square and has no ground. */
-.card-mark.death-voting,
-.card-mark.death-shooting {
-	min-width: 0;
-	width: 2.625rem;
-	height: 2.625rem;
-	padding: 0;
-	filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.6));
-}
-
-.card-mark.death-voting { background-image: url(images/voted_white.png); }
-
-/* Shot in the night. Which night it was is painted on the picture. */
-.card-mark.death-shooting { background-image: url(images/shooting_white.png); }
-.card-mark.death-shooting.round-0 { background-image: url(images/killed_1.png); }
-.card-mark.death-shooting.round-1 { background-image: url(images/killed_2.png); }
-.card-mark.death-shooting.round-2 { background-image: url(images/killed_3.png); }
-.card-mark.death-shooting.round-3 { background-image: url(images/killed_4.png); }
-.card-mark.death-shooting.round-4 { background-image: url(images/killed_5.png); }
-.card-mark.death-shooting.round-5 { background-image: url(images/killed_6.png); }
-.card-mark.death-shooting.round-6 { background-image: url(images/killed_7.png); }
-.card-mark.death-shooting.round-7 { background-image: url(images/killed_8.png); }
-.card-mark.death-shooting.round-8 { background-image: url(images/killed_9.png); }
-
-/*--------------------------------------------------------------------------------------
-    the strip under the results: the best move and the two sets of checks
-  --------------------------------------------------------------------------------------*/
-.info {
-	display: flex;
-	flex: 0 0 auto;
-	justify-content: center;
-	align-items: center;
-	gap: 3rem;
-	height: var(--strip);
-}
-
-.info-section {
-	display: flex;
-	align-items: stretch;
-	font-size: 1.8em;
-}
-
-/* The icon says what the numbers beside it are, the same three the info bar used. */
-.info-label {
-	width: 3.25rem;
-	background-color: rgba(0, 0, 0, 0.75);
-	background-size: 2.5rem;
-	background-position: center;
-	background-repeat: no-repeat;
-	border-top-left-radius: 0.75rem;
-	border-bottom-left-radius: 0.75rem;
-}
-
-.info-section.legacy .info-label { background-image: url(images/killed_1.png); }
-.info-section.sheriff-check .info-label { background-image: url(images/sheriff.png); }
-.info-section.don-check .info-label { background-image: url(images/don.png); }
-
-.info-items {
-	display: flex;
-}
-
-.info-item {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 2.75rem;
-	padding: 0.25rem 0.5rem;
-	font-weight: 700;
-	background-color: rgba(90, 90, 90, 0.8);
-	background-size: cover;
-	background-position: center;
-}
-
-.info-item:last-child {
-	border-top-right-radius: 0.75rem;
-	border-bottom-right-radius: 0.75rem;
-}
-
-.info-item.role-town { background-image: url(images/red_player_bg.jpg); }
-.info-item.role-maf,
-.info-item.role-don { background-image: url(images/black_player_bg.jpg); }
-.info-item.role-sheriff { background-image: url(images/green_player_bg.jpg); }
-
-/*--------------------------------------------------------------------------------------
-    the title, put up when no other screen has anything to say
-  --------------------------------------------------------------------------------------*/
-.title {
-	align-items: center;
-	justify-content: center;
-	gap: 0.875rem;
-	text-align: center;
-}
-
-.title-tournament {
-	font-family: 'Gagalin', sans-serif;
-	letter-spacing: 0.25rem;
-	font-size: 4.2em;
-	line-height: 1.1;
-}
-
-.title-round {
-	font-size: 2.2em;
-	opacity: 0.85;
-}
-
-.title-table {
-	font-size: 1.6em;
-	opacity: 0.6;
-}
-
-/*--------------------------------------------------------------------------------------
-    the tournament table
-  --------------------------------------------------------------------------------------*/
-.standings {
-	gap: 1.25rem;
-}
-
-.standings-columns {
-	display: flex;
-	flex: 1 1 auto;
-	align-items: stretch;
-	gap: 2.25rem;
-	min-height: 0;
-}
-
-/* What the table is not showing, in the site's own words. It stands under the table and takes
-   its room from it, so a table that fills the screen simply gets a little shorter. */
-.standings-note {
-	flex: 0 0 auto;
-	text-align: center;
-	font-size: 1.3em;
-	line-height: 1.3;
-	opacity: 0.75;
-}
-
-.standings-column {
-	display: flex;
-	flex: 1 1 0;
-	flex-direction: column;
-	/* Stacked from the top, so that the last column - the one holding whatever is left of the
-	   table - starts level with the full columns beside it rather than floating half way down. */
-	justify-content: flex-start;
-	gap: 0.75rem;
+	line-height: 1.15;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	min-width: 0;
 }
 
-/* A row takes its share of a full column rather than of the column it happens to be in, so that
-   the last column - which holds whatever is left of the table - keeps the same row height as the
-   full ones beside it. --rows is the number of rows a column holds, set by screen_standings.php.
-   The cap keeps a table asked for in three lines from turning into three huge bars. */
-.standings-row {
+.l2 {
 	display: flex;
-	flex: 0 0 auto;
 	align-items: center;
-	height: calc((100% - (var(--rows, 10) - 1) * 0.75rem) / var(--rows, 10));
-	max-height: 7rem;
-	min-height: 0;
-	gap: 1.125rem;
-	padding: 0.375rem 1.25rem;
-	border-radius: 0.75rem;
-	background-color: var(--panel);
-	font-size: 1.9em;
-}
-
-.standings-place {
-	flex: 0 0 auto;
-	min-width: 3.5rem;
-	text-align: center;
-	font-weight: 700;
-	opacity: 0.85;
-}
-
-.standings-photo {
-	flex: 0 0 auto;
-	width: 4rem;
-	height: 4rem;
-	border-radius: 0.5rem;
-	background-size: cover;
-	background-position: center;
-	background-color: var(--row);
-	/* And the same figure for a player we have no picture of. */
-	background-image: url(images/user_null.png);
-}
-
-.standings-name {
-	flex: 1 1 auto;
+	gap: 0.625rem;
 	min-width: 0;
+}
+
+.club {
+	flex: 1;
+	min-width: 0;
+	font-weight: 600;
+	color: var(--c-ink2);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
-.standings-points {
-	flex: 0 0 auto;
-	font-weight: 700;
-	min-width: 4.375rem;
-	text-align: right;
+.flag {
+	flex: none;
+	border-radius: 0.25rem;
+	box-shadow: 0 0 0 1px rgba(127, 127, 127, 0.35);
+	display: block;
+	object-fit: cover;
 }
 
 /*--------------------------------------------------------------------------------------
-    how the tournament has been going: the pie, and the legend beside it
+    frame 1: the result of the game just played
   --------------------------------------------------------------------------------------*/
-/* The pie and its legend stand side by side and share the room equally. The pie is square and
-   takes whichever of its two sides is the shorter, so it keeps its shape on any screen. */
-/* The pie and its legend take the room, and the standing of the two sides is a strip under
-   them that takes only what it needs.
-
-   The whole lot sits on a dark pane. The screen stands on a photograph of a concrete wall, and
-   the pale end of the greys and the lettering of the legend were both reading against whatever
-   happened to be behind them; the pane gives them one even ground, and takes the glare off the
-   wall without hiding it. */
-.stats {
-	gap: 1.5rem;
-	padding: 1.75rem 2.25rem;
-	border-radius: 1.5rem;
-	background-color: var(--panel);
-	border: 0.0625rem solid var(--panel-line);
-	/* Drawn round the pie and the legend rather than round the screen: the pane is only as wide
-	   as what stands in it, and the wall shows either side of it. */
-	align-self: center;
-	max-width: 100%;
-
-	--pane-pad: 1.75rem;  /* what the pane keeps clear inside its own edge, top and bottom */
-	--totals-h: 5.2rem;   /* the strip of standings under the pie, with a little to spare */
-	/* How big the pie is drawn. A definite size, not a share of the room: the pane is measured
-	   from the pie, so asking the pie for a share of the pane would be asking it to measure
-	   itself. What is left of the body once the pane's own padding, the strip and the gap
-	   above it are taken off. */
-	--pie-h: calc(var(--body-h) - 2 * var(--pane-pad) - var(--totals-h) - 1.5rem);
-}
-
-.stats-main {
+.f1rows {
+	position: absolute;
+	left: 4.5rem;
+	top: 13.5rem;
+	width: 111rem;
 	display: flex;
-	flex: 1 1 auto;
-	flex-direction: row;
-	align-items: center;
-	justify-content: center;
-	gap: 4rem;
-	min-height: 0;
-}
-
-.stats-pie {
-	flex: 0 0 auto;
-	width: var(--pie-h);
-	height: var(--pie-h);
-}
-
-/* The slices let the wall through the same way the pane does, so the pie sits in the picture
-   rather than on top of it. The lettering on them is left solid - it has to be read. */
-.stats-pie path,
-.stats-pie circle {
-	fill-opacity: var(--slice-opacity);
-}
-
-.stats-pie svg {
-	width: 100%;
-	height: 100%;
-	/* The slices are told apart by the line between them rather than by their colours alone,
-	   which matters where two greys meet. */
-	stroke: var(--slice-line);
-	stroke-width: 0.5;
-}
-
-/* Painted on the slice, so it is given a dark rim: the share on the pale grey of a 3 on 3 has
-   to read as well as the one on the red. The rim goes under the letters rather than over them,
-   which is what paint-order is for. */
-.stats-share {
-	fill: #fff;
-	font-family: 'Roboto Slab', serif;
-	font-weight: 700;
-	font-size: 6.5px;
-	text-anchor: middle;
-	dominant-baseline: central;
-	stroke: rgba(0, 0, 0, 0.6);
-	stroke-width: 1.1;
-	paint-order: stroke fill;
-}
-
-.stats-legend {
-	display: flex;
-	flex: 0 1 auto;
 	flex-direction: column;
-	justify-content: center;
-	gap: 1.1rem;
-	min-width: 0;
+	gap: 1.625rem;
 }
 
-/* Lifted off the pane rather than sunk into it - a second layer of black on black would only
-   go muddy. */
-.stats-row {
-	display: flex;
-	align-items: center;
-	gap: 1.25rem;
-	font-size: 1.7em;
-	background-color: var(--row);
-	border-radius: 0.5rem;
-	padding: 0.5rem 1.25rem;
-}
-
-.stats-chip {
-	flex: 0 0 auto;
-	width: 2.2rem;
-	height: 2.2rem;
-	border-radius: 0.35rem;
-	border: 0.1rem solid var(--chip-line);
-}
-
-.stats-name {
-	flex: 1 1 auto;
-	min-width: 0;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.stats-count {
-	flex: 0 0 auto;
-	font-weight: 700;
-	min-width: 3.5rem;
-	text-align: right;
-}
-
-.stats-share-num {
-	flex: 0 0 auto;
-	min-width: 5rem;
-	text-align: right;
-	opacity: 0.7;
-}
-
-/* Who has been winning, in two numbers - the thing the slices add up to but none of them says.
-   Bigger than the legend, because at ten feet from the screen this is the line people read. */
-.stats-totals {
-	display: flex;
-	flex: 0 0 auto;
-	justify-content: center;
-	align-items: baseline;
-	gap: 4.5rem;
-}
-
-.stats-total {
-	display: flex;
-	align-items: baseline;
+/* Both rows share one grid of seven, so that the panel beside the three black cards ends
+   exactly where the fourth card of the other row does. */
+.r7,
+.r3 {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
 	gap: 1rem;
 }
 
-.stats-total-name {
-	font-size: 2.1em;
-	opacity: 0.8;
+.r3 .three { display: contents; }
+.r3 .moves { grid-column: span 4; }
+
+.f1 .card { height: 20.875rem; }
+.f1 .seat { width: 1.875rem; height: 1.875rem; font-size: 0.875rem; }
+.f1 .nick { font-size: 1.5625rem; }
+.f1 .club { font-size: 0.9375rem; }
+.f1 .flag { width: 1.875rem; height: 1.25rem; }
+
+/* The moves and the checks, in the room the three black cards leave. */
+.moves {
+	min-width: 0;
+	border-radius: 1.625rem;
+	display: flex;
+	padding: 1.5rem 0.5rem;
+	background: rgba(22, 12, 15, 0.55);
+	backdrop-filter: blur(5rem) saturate(110%);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--gl-sh);
 }
 
-.stats-total-share {
-	font-family: 'Gagalin', sans-serif;
-	font-size: 3.2em;
-	letter-spacing: 0.0625rem;
-	text-shadow: 0 0 0.9rem rgba(0, 0, 0, 0.85);
+/* A see-through panel showed the red glow behind it as a hard two-tone split, so the dark one
+   is nearly solid; on a pale page the same panel has to be frosted glass instead of a white
+   block. */
+body.between.bg-light .moves {
+	background: rgba(255, 255, 255, 0.34);
+	backdrop-filter: blur(2.5rem) saturate(140%);
+	border-color: rgba(255, 255, 255, 0.55);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), var(--gl-sh);
+}
+
+.mvl {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	width: 100%;
+	height: 100%;
+}
+
+.mv {
+	position: relative;
+	display: grid;
+	grid-template-rows: 1.375rem 1.875rem 3.25rem 1rem;
+	row-gap: 0.875rem;
+	justify-items: center;
+	align-content: center;
+	padding: 0 1rem;
+	min-width: 0;
+}
+
+.mv + .mv::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 22%;
+	bottom: 22%;
+	width: 1px;
+	background: var(--line);
+}
+
+.mv > * { display: flex; align-items: center; justify-content: center; }
+.mv .tx { display: contents; }
+
+.mv .lb {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.875rem;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--ink3);
+	white-space: nowrap;
+}
+
+.mv .lb svg { width: 1.25rem; height: 1.25rem; flex: none; }
+.mv .lb.t svg { color: var(--red); }
+.mv .lb.s svg { color: var(--gold); }
+.mv .lb.d svg { color: var(--ink); }
+
+.mv .who {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	font-weight: 800;
+	font-size: 1.5rem;
+	line-height: 1.2;
+	white-space: nowrap;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.mv .who b { overflow: hidden; text-overflow: ellipsis; }
+
+.mv .who .seat {
+	width: 1.75rem;
+	height: 1.75rem;
+	font-size: 0.8125rem;
+	background: var(--line);
+	color: var(--ink2);
+}
+
+.mv .chips { display: contents; }
+.mv .chips .cr { display: flex; gap: 0.625rem; }
+
+/* A chip wears the colour of the seat it names, so that a check or a pick can be read as
+   right or wrong without going to the cards for it. */
+.chip {
+	width: 3.25rem;
+	height: 3.25rem;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 1.25rem;
+	color: #fff;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0.5rem 1.125rem rgba(0, 0, 0, 0.25);
+}
+
+.chip.b { background: #0B0608; border: 2.5px solid #000; }
+.chip.r { background: linear-gradient(160deg, var(--red-hi), var(--red-lo)); border: 2.5px solid #A30F24; }
+.chip.g { background: var(--gold); color: #2A1A00; border: 2.5px solid #B88A1E; }
+
+.perfect {
+	grid-row: 4;
+	font-weight: 800;
+	font-size: 0.8125rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--gold);
+	white-space: nowrap;
+}
+
+body.between.bg-light .perfect { color: #B07A00; }
+
+/*--------------------------------------------------------------------------------------
+    frame 2: the standings
+  --------------------------------------------------------------------------------------*/
+.st {
+	position: absolute;
+	left: 4.5rem;
+	top: 11.375rem;
+	width: 111rem;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 2rem;
+}
+
+.col { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.sth,
+.str {
+	display: grid;
+	grid-template-columns: 2.75rem 3.25rem 1fr 7rem 5.25rem 6rem 6.5rem;
+	column-gap: 0.875rem;
+	align-items: center;
+}
+
+.sth {
+	height: 2rem;
+	padding: 0 1rem;
+	align-items: end;
+	font-size: 1rem;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--ink3);
+}
+
+.sth div { text-align: center; }
+.sth .on { color: var(--ink); }
+
+.str {
+	height: 4rem;
+	padding: 0 0.875rem 0 1rem;
+	border-radius: 1.3125rem;
+}
+
+.str .rk {
+	text-align: center;
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 1.375rem;
+	color: var(--ink2);
+}
+
+/* The first three places are gold, silver and bronze. */
+.str .rk.p1 { color: #F5C451; }
+.str .rk.p2 { color: #C9CFDB; }
+.str .rk.p3 { color: #E39A63; }
+
+/* One ground for every face in the frame, so that a row of them reads as a list rather than
+   as twenty different photographs. */
+.av {
+	width: 3.25rem;
+	height: 3.25rem;
+	position: relative;
+	border-radius: 50%;
+	overflow: hidden;
+	background: var(--av-bg) center / 70% no-repeat;
+	box-shadow: inset 0 0 0 1px var(--gl-edge);
+}
+
+.av.none { background: url(images/user_null.png) center / cover no-repeat, var(--av-bg); }
+
+.av img {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: 50% 15%;
+	display: block;
+}
+
+.av img.cut {
+	object-position: 50% 0%;
+	transform: scale(1.25);
+	transform-origin: 50% 0%;
+	top: 0.3125rem;
+	bottom: auto;
+}
+
+.str .nm {
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	font-weight: 700;
+	font-size: 1.6875rem;
+}
+
+.str .nm b {
+	font-weight: 700;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Still at the table: their points will move when the game they are in is written down. */
+.live {
+	flex: none;
+	width: 0.6875rem;
+	height: 0.6875rem;
+	border-radius: 50%;
+	background: var(--mint);
+	box-shadow: 0 0 0.75rem 0.1875rem rgba(92, 242, 160, 0.55);
+}
+
+.str .pts {
+	height: 2.625rem;
+	border-radius: 1.3125rem;
+	display: grid;
+	place-items: center;
+	font-weight: 800;
+	font-size: 1.75rem;
+	background: var(--pts-bg);
+	border: 1px solid var(--pts-edge);
+	color: var(--pts-ink);
+	font-variant-numeric: tabular-nums;
+}
+
+.str .n {
+	text-align: center;
+	font-weight: 700;
+	font-size: 1.625rem;
+	color: var(--ink2);
+	font-variant-numeric: tabular-nums;
+}
+
+.str .avg {
+	text-align: center;
+	font-weight: 800;
+	font-size: 1.75rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.note {
+	position: absolute;
+	left: 4.5rem;
+	bottom: 2.375rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: var(--ink2);
 }
 
 /*--------------------------------------------------------------------------------------
-    what the light page does differently
+    frame 3: who sits down next
   --------------------------------------------------------------------------------------*/
-/* Everything above is written in the tokens, so this is only the handful of places where a
-   colour is doing a job rather than being one. All of them are shadows: on a dark wall a word
-   is lifted off the ground by darkening round it or by a halo of light, and neither of those
-   says anything on a pale one. */
-body.between.bg-light .head-title.won-red {
-	color: #c3272c;
-	text-shadow: none;
+.lineup {
+	position: absolute;
+	left: 4.5rem;
+	top: 12.75rem;
+	width: 111rem;
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 1.5rem 1.25rem;
 }
 
-body.between.bg-light .head-title.won-black {
-	color: #15181c;
-	text-shadow: none;
+.f3 .card { height: 22.5rem; border-radius: 1.75rem; }
+.f3 .seat { width: 2.125rem; height: 2.125rem; font-size: 1rem; }
+.f3 .nick { font-size: 1.8125rem; }
+.f3 .club { font-size: 1rem; }
+.f3 .flag { width: 2.0625rem; height: 1.375rem; }
+
+/*--------------------------------------------------------------------------------------
+    frame 4: who has been winning
+  --------------------------------------------------------------------------------------*/
+.f4main {
+	position: absolute;
+	left: 4.5rem;
+	top: 11.5rem;
+	width: 111rem;
+	height: 31.25rem;
+	padding: 2.5rem 3.5rem 2.75rem;
+	border-radius: 2.25rem;
+	display: flex;
+	flex-direction: column;
 }
 
-body.between.bg-light .stats-total-share {
-	text-shadow: none;
+.sides {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	align-items: end;
+}
+
+.side .k { font-size: 1.75rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+
+.side .pc {
+	margin-top: 0.375rem;
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 10.5rem;
+	line-height: 0.95;
+	font-variant-numeric: tabular-nums;
+}
+
+.side .ct { margin-top: 0.75rem; font-size: 1.875rem; font-weight: 700; color: var(--ink2); }
+.side.t .k { color: var(--t-k); }
+.side.t .pc { color: var(--t-pc); }
+body.between:not(.bg-light) .side.t .pc { text-shadow: 0 0 3.125rem rgba(255, 59, 78, 0.55); }
+.side.m { text-align: right; }
+.side.m .k { color: var(--m-k); }
+.side.m .pc { color: var(--m-pc); }
+
+/* The one bar the two sides share, cut into the kinds of win. */
+.split {
+	margin-top: auto;
+	display: flex;
+	gap: 0.375rem;
+	height: 1.375rem;
+}
+
+.split i { display: block; border-radius: 0.6875rem; min-width: 0; }
+
+.lg {
+	margin-top: 1.25rem;
+	display: flex;
+	justify-content: space-between;
+	font-size: 1.375rem;
+	font-weight: 700;
+	color: var(--ink2);
+}
+
+.lg div { display: flex; align-items: center; gap: 0.625rem; }
+.lg b { font-family: 'Unbounded', sans-serif; font-size: 1.5rem; color: var(--ink); margin-left: 0.25rem; }
+.lg .sw { width: 1.125rem; height: 1.125rem; border-radius: 0.375rem; }
+.lg .mg { display: flex; gap: 2.125rem; }
+
+/* The mafia's wins get darker the closer the game was. */
+.c-t { background: linear-gradient(160deg, var(--red-hi), var(--red-lo)); }
+.c-1 { background: #7A7F8C; }
+.c-2 { background: #4D515C; }
+.c-3 { background: #2A2C33; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+body.between.bg-light .c-1 { background: #80848F; }
+body.between.bg-light .c-2 { background: #4A4E58; }
+body.between.bg-light .c-3 { background: #1E2026; box-shadow: none; }
+
+/* The things worth saying about the tournament as a whole. A card nobody has earned yet is
+   left out altogether, and the rest share the row between them. */
+.facts {
+	position: absolute;
+	left: 4.5rem;
+	top: 44.5rem;
+	width: 111rem;
+	display: grid;
+	gap: 1.5rem;
+}
+
+.fact {
+	height: 12.875rem;
+	border-radius: 1.875rem;
+	padding: 1.875rem 2.125rem;
+	display: flex;
+	flex-direction: column;
+}
+
+.fact .k {
+	font-size: 0.9375rem;
+	font-weight: 800;
+	letter-spacing: 0.14em;
+	color: var(--ink3);
+	text-transform: uppercase;
+}
+
+.fact .v {
+	margin-top: auto;
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 4rem;
+	line-height: 1;
+}
+
+.fact .v small { font-size: 1.75rem; color: var(--ink3); margin-left: 0.5rem; }
+
+.fact .s {
+	margin-top: 0.625rem;
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--ink2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /*--------------------------------------------------------------------------------------
-    the colours of the standings line under the pie
+    the title, which is put up when no other screen has anything to say
   --------------------------------------------------------------------------------------*/
-/* Named by side rather than written into the page, because these are words and have to answer
-   to what they are written on: the grey that reads as the black team against a dark wall is
-   gone on a pale one, and the gold that carries there is too light here. */
-.stats-total-share.town { color: #e03a3e; }
-.stats-total-share.mafia { color: #b4bdc6; }
-.stats-total-share.tie { color: #c9a227; }
-
-body.between.bg-light .stats-total-share.town { color: #c3272c; }
-body.between.bg-light .stats-total-share.mafia { color: #3a434d; }
-body.between.bg-light .stats-total-share.tie { color: #96780f; }
-
-/* The see-through page has no say in what ends up behind it, and the heading is the one piece
-   of lettering with nothing of its own underneath it. A shadow carries it over a bright scene
-   as well as a dark one; the cards and the panes look after their own. */
-body.between.bg-clear .screen-head,
-body.between.bg-clear .standings-note {
-	text-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.9), 0 0 1.4rem rgba(0, 0, 0, 0.75);
+.title {
+	position: absolute;
+	left: 4.5rem;
+	right: 4.5rem;
+	top: 50%;
+	transform: translateY(-50%);
+	text-align: center;
 }
 
-/* The light one writes its heading in dark letters, and darkening round a dark letter does
-   nothing for it. A halo of light is what carries it over a dark scene. */
-body.between.bg-light.bg-clear .screen-head,
-body.between.bg-light.bg-clear .standings-note {
-	text-shadow: 0 0 0.5rem rgba(255, 255, 255, 0.95), 0 0 1.4rem rgba(255, 255, 255, 0.8);
+.title .tt {
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 5rem;
+	line-height: 1.1;
+	text-transform: uppercase;
+	color: var(--ttl);
+	text-shadow: var(--ttl-glow);
 }
+
+.title .rn { margin-top: 1.5rem; font-size: 2.25rem; font-weight: 600; color: var(--ink2); }
+.title .tb { margin-top: 0.75rem; font-size: 1.75rem; font-weight: 600; color: var(--ink3); }

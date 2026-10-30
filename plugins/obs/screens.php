@@ -153,6 +153,7 @@ function obs_event_context($event_id, $table_num)
 	$state = obs_table_state($event_id, $table_num);
 	$c->next_game_num = obs_next_game_num($event_id, $table_num, $state);
 	$c->done = $state->done;
+	$c->playing = $state->playing; // the game under way, whose referee the frames name
 	if (!is_null($c->done))
 	{
 		$c->done->event_id = $event_id;
@@ -211,12 +212,17 @@ function obs_context()
 	$c->event_id = 0;
 	$c->event_name = '';
 	$c->next_game_num = 0;
-	$c->done = NULL; // the game played out at this table but not yet written down, if there is one
-	$settled = -1;   // how far down the rounds we got
+	$c->done = NULL;    // the game played out at this table but not yet written down, if there is one
+	$c->playing = NULL; // the game under way, whose referee the frames name
+	$settled = -1;      // how far down the rounds we got
 	foreach ($c->rounds as $index => $r)
 	{
 		$state = obs_table_state($r->id, $table_num);
 		$next = obs_next_game_num($r->id, $table_num, $state);
+		if (!is_null($state->playing))
+		{
+			$c->playing = $state->playing;
+		}
 
 		// A game that has only just been played out is the news of this table whichever round we
 		// end up in, so it is picked up here and carried along - the round it was played in can
@@ -372,84 +378,162 @@ function obs_players($user_ids, $event_id, $tournament_id, $club_id)
 	return $players;
 }
 
-// Opens a row of cards, and is closed by the caller with a plain </div>. How many cards are
-// coming is handed to the stylesheet, which cannot count them and needs the number to work out
-// how wide one of them may be - see .card in between.css.
-function obs_card_row($count, $extra_class = '')
+// The glyphs the frames are drawn with, as the designer drew them. Inline, because they are
+// coloured by whatever they stand in - currentColor is what makes one star gold on a badge and
+// grey in a label - and because six small shapes are not worth six requests.
+function obs_icon($name)
 {
-	echo '<div class="card-row ' . $extra_class . '" style="--cards: ' . max((int)$count, 1) . '">';
+	switch ($name)
+	{
+	case 'star': // the sheriff: six points with ball tips, which is the badge everybody draws
+		return '<svg viewBox="-1 -1 26 26"><g fill="currentColor">' .
+			'<path d="M12.00 2.00 L15.05 6.72 L20.66 7.00 L18.10 12.00 L20.66 17.00 L15.05 17.28 L12.00 22.00 L8.95 17.28 L3.34 17.00 L5.90 12.00 L3.34 7.00 L8.95 6.72Z"/>' .
+			'<circle cx="12.00" cy="1.60" r="1.7"/><circle cx="21.01" cy="6.80" r="1.7"/><circle cx="21.01" cy="17.20" r="1.7"/>' .
+			'<circle cx="12.00" cy="22.40" r="1.7"/><circle cx="2.99" cy="17.20" r="1.7"/><circle cx="2.99" cy="6.80" r="1.7"/></g></svg>';
+	case 'pistol': // the mafia
+		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.5 7.2h15.2l.9-1.2h2.9v3.6h-1.8l-.5 1H13l-.8 3a1.4 1.4 0 0 1-1.35 1.05H9.2L8 19H4.1l1.9-6.5-3.5-1.7z"/></svg>';
+	case 'hat': // the don
+		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2 16.6c0-1.1 3.7-2.2 10-2.2s10 1.1 10 2.2-3.7 2.4-10 2.4S2 17.7 2 16.6z"/>' .
+			'<path fill="currentColor" d="M6.6 14.6l.7-5.6C7.5 7.2 9.1 5.8 12 5.8s4.5 1.4 4.7 3.2l.7 5.6c-1.7-.5-3.4-.7-5.4-.7s-3.7.2-5.4.7z"/></svg>';
+	case 'target': // shot in the night, and the best move that follows from it
+		return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">' .
+			'<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>' .
+			'<path d="M12 1.8v4.4M12 17.8v4.4M1.8 12h4.4M17.8 12h4.4"/></svg>';
+	case 'thumb': // voted out - a hand put up, tilted
+		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2 10.5h3.6V21H2zM7.3 21V10.3l4.6-6.9c.6-.9 2-.7 2.3.4.2.6.2 1.2 0 1.8l-1.1 3.6h6.1c1.5 0 2.6 1.4 2.2 2.9l-1.8 6.9c-.4 1.2-1.4 2-2.7 2z"/></svg>';
+	case 'gavel': // the referee
+		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.2 2.6l6.2 6.2-2.1 2.1-6.2-6.2zM8.3 7.5l6.2 6.2-2.1 2.1-6.2-6.2zM11.3 5.9l4.8 4.8-1.8 1.8-4.8-4.8zM10.4 13l1.4 1.4-7.3 7.3L3 20.3zM13 20h9v2h-9z"/></svg>';
+	}
+	return '';
 }
 
-// One card. $player may be NULL - a seat whose player we do not know still keeps its number.
-// $mark, when there is one, is the badge under the number saying how the player left the game:
-// ->class is what it is and ->text what is written on it, if anything - the picture ones carry
-// no text.
-function obs_card($number, $player, $extra_class = '', $corner = '', $mark = NULL)
+// The page a screen is drawn on: the glows that make the ground, under everything the screen
+// puts on top of them. $class names the frame (f1 ... f4) and, on the first, which side won -
+// tw or mw, which tints the glows toward them.
+function obs_frame_start($class)
 {
-	echo '<div class="card ' . $extra_class . '">';
-	echo '<div class="card-no">' . $number . '</div>';
-	echo '<div class="card-name">' . (is_null($player) ? '' : htmlspecialchars($player->name)) . '</div>';
-	if ($corner != '')
+	echo '<div class="fr ' . $class . '">';
+	echo '<div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>' .
+		'<div class="glow g4"></div><div class="glow vig"></div>';
+}
+
+function obs_frame_end()
+{
+	echo '</div>';
+}
+
+// The line across the top of every frame: the tournament on the left, the title and what it is
+// about in the middle, and on the right a pill with whatever that frame has to say there -
+// usually the referee. $title and $sub are plain text; $pill is ready-made html.
+function obs_head($tournament, $title, $sub, $pill = '')
+{
+	echo '<div class="hd">';
+	echo '<div class="tn"><i></i><span>' . htmlspecialchars($tournament) . '</span></div>';
+	echo '<div class="ttl"><h1>' . htmlspecialchars($title) . '</h1>' .
+		($sub == '' ? '' : '<div class="sub">' . $sub . '</div>') . '</div>';
+	echo ($pill == '' ? '<div></div>' : '<div class="pill">' . $pill . '</div>');
+	echo '</div>';
+}
+
+// The line under the title: which round, which table, which game, in the order they are said
+// out loud. An event standing on its own has no round to name - the frame is already headed
+// with its name.
+function obs_head_sub($round_name, $table_num, $game_num, $extra = '')
+{
+	$parts = array();
+	if ($round_name != '')
 	{
-		echo '<div class="card-corner">' . $corner . '</div>';
+		$parts[] = htmlspecialchars($round_name);
 	}
-	if (!is_null($mark) && $mark->class != '')
+	$parts[] = get_label('Table [0]', $table_num);
+	$parts[] = get_label('Game [0]', $game_num);
+	if ($extra != '')
 	{
-		echo '<div class="card-mark ' . $mark->class . '">' . htmlspecialchars($mark->text) . '</div>';
+		$parts[] = $extra;
+	}
+	return implode(' &middot; ', $parts);
+}
+
+// The referee in a pill: the gavel and the name, with no word before it. Their nicknames run
+// long and the name is the only part anybody reads.
+function obs_head_judge($name)
+{
+	return obs_icon('gavel') . '<span class="nm">' . htmlspecialchars($name) . '</span>';
+}
+
+// One player card. $player is what obs_players() returned, or NULL for a seat we know nothing
+// about. $o may carry:
+//   role  - 'sheriff', 'don', 'maf' or '' - the ground the card stands on and the badge in its
+//           corner. Left out before a game, when nobody knows them, and the card is neutral.
+//   elim  - how the player left the game: ->night or ->vote, and ->number.
+//   badge - false to leave the role badge off while still colouring the card by it.
+function obs_card($seat, $player, $o = NULL)
+{
+	$role = (is_object($o) && isset($o->role)) ? $o->role : '';
+	$neutral = (is_object($o) && isset($o->neutral) && $o->neutral);
+	$badge = !(is_object($o) && isset($o->badge) && !$o->badge);
+	$elim = (is_object($o) && isset($o->elim)) ? $o->elim : NULL;
+
+	$class = 'card ' . ($neutral ? 'neutral' : (($role == 'maf' || $role == 'don') ? 'maf' : 'town'));
+	if (!$neutral && $role == 'sheriff')
+	{
+		$class .= ' sher';
+	}
+	if (!$neutral && $role == 'don')
+	{
+		$class .= ' don';
 	}
 
-	// A player we have no picture of wears the figure of nobody in particular, which the
-	// stylesheet puts there; a seat with nobody on it wears the back of a card - see
-	// between.css.
-	if (is_null($player))
+	echo '<div class="' . $class . '">';
+
+	// The photograph stands on the card's own colour, with the gradient below fading it into
+	// the card. A seat with nobody on it, and a player we have no picture of, get the figure of
+	// nobody in particular instead - see .ph.none in between.css.
+	if (!is_null($player) && $player->photo != '')
 	{
-		echo '<div class="card-photo" style="background-image: url(images/aml_masters.png)"></div>';
-	}
-	else if ($player->photo != '')
-	{
-		echo '<div class="card-photo" style="background-image: url(' . $player->photo . ')"></div>';
+		echo '<div class="ph"><img src="' . $player->photo . '" alt=""></div>';
 	}
 	else
 	{
-		echo '<div class="card-photo"></div>';
+		echo '<div class="ph none"></div>';
 	}
-	// The club along the bottom, with the flag of the country in the corner beside it - a flag is
-	// read at a glance and leaves the whole line to the club, which a second line of text did not.
-	echo '<div class="card-club">';
-	if (!is_null($player))
+
+	if ($badge && !$neutral)
 	{
-		echo '<div class="card-club-name">' . htmlspecialchars($player->club) . '</div>';
-		if (isset($player->flag) && $player->flag != '')
+		if ($role == 'sheriff')
 		{
-			echo '<div class="card-flag" style="background-image: url(' . $player->flag . ')" title="' .
-				htmlspecialchars($player->country) . '"></div>';
+			echo '<div class="role sher">' . obs_icon('star') . '</div>';
+		}
+		else if ($role == 'don')
+		{
+			echo '<div class="role">' . obs_icon('hat') . '</div>';
+		}
+		else if ($role == 'maf')
+		{
+			echo '<div class="role">' . obs_icon('pistol') . '</div>';
 		}
 	}
-	echo '</div>';
-	echo '</div>';
-}
 
-// A screen prints its heading through this so that they all look alike.
-// The line under the title of a screen: which round, which table, which game. An event of its
-// own has no round to name - the screen is already headed with its name - so it says only
-// where it is.
-function obs_screen_sub($round_name, $table_num, $game_num)
-{
-	$where = get_label('Table [0], Game [1]', $table_num, $game_num);
-	if ($round_name == '')
+	if (!is_null($elim))
 	{
-		return '<div class="head-sub">' . $where . '</div>';
+		$night = isset($elim->night) && $elim->night;
+		echo '<div class="elim ' . ($night ? 'night' : 'vote') . '">' .
+			obs_icon($night ? 'target' : 'thumb') . (isset($elim->number) ? (int)$elim->number : '') . '</div>';
 	}
-	return '<div class="head-sub">' . htmlspecialchars($round_name) . ' &middot; ' . $where . '</div>';
-}
 
-function obs_screen_head($left, $middle, $right)
-{
-	echo '<div class="screen-head">';
-	echo '<div class="head-left">' . $left . '</div>';
-	echo '<div class="head-middle">' . $middle . '</div>';
-	echo '<div class="head-right">' . $right . '</div>';
-	echo '</div>';
+	echo '<div class="meta">';
+	echo '<span class="seat">' . $seat . '</span>';
+	echo '<span class="nick">' . (is_null($player) ? '' : htmlspecialchars($player->name)) . '</span>';
+	echo '<div class="l2">';
+	if (!is_null($player))
+	{
+		echo '<span class="club">' . htmlspecialchars($player->club) . '</span>';
+		if (isset($player->flag) && $player->flag != '')
+		{
+			echo '<img class="flag" src="' . $player->flag . '" alt="' . htmlspecialchars($player->country) . '">';
+		}
+	}
+	echo '</div></div></div>';
 }
 
 ?>

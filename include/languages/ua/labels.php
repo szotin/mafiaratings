@@ -2112,6 +2112,19 @@ $labelMenu = array (
 'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас немає готової рассадки для цієї конфігурації. Ми згенерували для вас найпростішу початкову рассадку і зараз її покращуємо та оптимізуємо.<p>Ви можете зачекати кілька годин для покращеної версії. Або ви можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">натиснути тут</a> і оптимізувати прямо зараз.</p>', // include/seating.php, include/seating.php
 'Broadcast' => 'Трансляція', // streams.php
 'Current scene in OBS Studio' => 'Поточна сцена в OBS Studio', // streams.php
+'Sheriff checks' => 'Перевірки шерифа', // plugins/obs/screens
+'Don checks' => 'Перевірки дона', // plugins/obs/screens
+'Perfect best guess' => 'Повний найкращий хід', // plugins/obs/screens
+'Best guess' => 'Найкращий хід', // plugins/obs/screens
+'Avg.' => 'Сер.', // plugins/obs/screens
+'Places [0]-[1]' => 'Місця [0]-[1]', // plugins/obs/screens
+'all tables' => 'усі столи', // plugins/obs/screens
+'finished games' => 'завершені ігри', // plugins/obs/screens
+'The game is still on - the points will change when it ends' => 'гра ще триває — очки оновляться після її завершення', // plugins/obs/screens
+'Games [0]' => 'Ігор [0]', // plugins/obs/screens
+'wins: [0]' => 'перемог: [0]', // plugins/obs/screens
+'out of [0]' => 'з [0]', // plugins/obs/screens
+'[0]% of games' => '[0]% ігор', // plugins/obs/screens
 );
 
 return $labelMenu;

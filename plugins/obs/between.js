@@ -122,9 +122,64 @@ var obs = new function()
 		load(stream.fallback).then(put);
 	}
 
+	// One screen gives way to the next: the old one fades out, the new one is put in its place
+	// and fades in. Half a second in all, which is slow enough to be seen on a stream and
+	// quick enough not to be waited for.
 	function put(html)
 	{
-		document.getElementById('screen').innerHTML = html;
-		setTimeout(next, stream.delay);
+		var screen = document.getElementById('screen');
+		screen.classList.add('fading');
+		setTimeout(function()
+		{
+			screen.innerHTML = html;
+			dots(screen);
+			shrink(screen);
+			screen.classList.remove('fading');
+			setTimeout(next, stream.delay);
+		}, 300);
+	}
+
+	// A name too long for its card is made smaller, a step at a time, and only cut off when
+	// even the smallest size will not hold it. A nickname is what a player is known by on the
+	// stream, and half of one says nothing.
+	function shrink(screen)
+	{
+		var names = screen.getElementsByClassName('nick');
+		for (var i = 0; i < names.length; ++i)
+		{
+			var el = names[i];
+			el.style.fontSize = '';
+			var size = parseFloat(getComputedStyle(el).fontSize);
+			var least = 17 * (size / 25); // the designer's 25px down to 17px, in this frame's scale
+			while (el.scrollWidth > el.clientWidth && size > least)
+			{
+				size -= 0.5;
+				el.style.fontSize = size + 'px';
+			}
+		}
+	}
+
+	// Which screen of the round this is, at the foot of the frame. It belongs to the shell
+	// rather than to any one screen: the rotation is what the site was asked for, and a screen
+	// knows only itself. A round of one screen has nothing to say about where it is, so the
+	// dots stay away.
+	function dots(screen)
+	{
+		var frame = screen.getElementsByClassName('fr')[0];
+		var count = (stream && stream.screens) ? stream.screens.length : 0;
+		if (!frame || count < 2)
+		{
+			return;
+		}
+
+		var html = '';
+		for (var i = 0; i < count; ++i)
+		{
+			html += '<i class="' + (i == at ? 'on' : '') + '"></i>';
+		}
+		var el = document.createElement('div');
+		el.className = 'dots';
+		el.innerHTML = html;
+		frame.appendChild(el);
 	}
 }

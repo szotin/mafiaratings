@@ -145,47 +145,92 @@ foreach ($g->seats as $seat)
 }
 $players = obs_players($ids, $g->event_id, $c->tournament_id, $c->club_id);
 
-// Said in the colour of the team that won it, so that the result is read before the words are.
-//
-// A win for the mafia is said with the score it came at - the 1 on 1, 2 on 2 or 3 on 3 everyone
-// at the table will be talking about anyway. A game given away by a team kick out is named for
-// that instead, whichever side it handed the win to: it stopped mid-play, so the mafia never
-// drew level and the numbers left on the table would say a score that was never played.
+// The title says who won, and the line under it how close it was: a win for the mafia is said
+// with the score it came at - the 1 on 1, 2 on 2 or 3 on 3 everyone at the table will be
+// talking about anyway. A game given away by a team kick out is named for that instead,
+// whichever side it handed the win to: it stopped mid-play, so the mafia never drew level and
+// the numbers left on the table would say a score that was never played.
+$extra = '';
 switch ($g->result)
 {
 case GAME_RESULT_MAFIA:
-	$winner = ($g->maf_alive > 0 && !$g->team_kick_out)
-		? get_label('Mafia win [0] on [1]', $g->maf_alive, $g->civ_alive)
-		: get_label('Mafia win');
-	$winner_class = ' won-black';
+	$title = get_label('Mafia win');
+	$tint = 'mw';
+	if ($g->maf_alive > 0 && !$g->team_kick_out)
+	{
+		$extra = get_label('Mafia [0] on [1]', $g->maf_alive, $g->civ_alive);
+	}
 	break;
 case GAME_RESULT_TOWN:
-	$winner = get_label('Town win');
-	$winner_class = ' won-red';
+	$title = get_label('Town win');
+	$tint = 'tw';
 	break;
 default:
-	$winner = get_label('Tie');
-	$winner_class = '';
+	$title = get_label('Tie');
+	$tint = '';
 	break;
 }
 if ($g->team_kick_out)
 {
-	$winner .= ' &middot; ' . get_label('Mod team kills');
+	$extra = get_label('Mod team kills');
 }
 
 $moderator = isset($players[$g->moderator_id]) ? $players[$g->moderator_id]->name : '';
-obs_screen_head(
-	htmlspecialchars($c->tournament_name),
-	'<div class="head-title' . $winner_class . '">' . $winner . '</div>' .
-		obs_screen_sub($g->event_name, $c->table_num, $g->game_num),
-	$moderator == '' ? '' : get_label('Referee') . ': ' . htmlspecialchars($moderator));
 
-// A team to a row, the winners on top. The black team reads above the town by default, which is
-// how the result of a game is written out, and a game the town won turns the two round.
+// What each seat has to say for itself: the role it played, and how it left the game.
+//
+// A night belongs to the round it is written down in, a day to the round after it - the game
+// counts its rounds from zero and the table counts its nights and its days from one, which is
+// also what the overlays showed while the game was being played.
+function obs_results_elim($p)
+{
+	if (is_null($p) || !isset($p->death))
+	{
+		return NULL;
+	}
+	$death = $p->death;
+	$type = is_string($death) ? $death : (isset($death->type) ? $death->type : '');
+	$round = (is_object($death) && isset($death->round)) ? (int)$death->round : 0;
+
+	$elim = new stdClass();
+	if ($type == DEATH_TYPE_NIGHT)
+	{
+		$elim->night = true;
+		$elim->number = max($round, 1);
+		return $elim;
+	}
+	if ($type == DEATH_TYPE_DAY)
+	{
+		$elim->night = false;
+		$elim->number = $round + 1;
+		return $elim;
+	}
+	return NULL; // sent away by the referee, or gave up: the cards say nothing about it
+}
+
+// The role as the cards and the chips spell it.
+function obs_results_role($role)
+{
+	switch ($role)
+	{
+	case ROLE_DON:
+		return 'don';
+	case ROLE_MAFIA:
+		return 'maf';
+	case ROLE_SHERIFF:
+		return 'sheriff';
+	}
+	return '';
+}
+
+// A team to a row. The winners go on top, which is the one thing that says who won besides the
+// title and the colour of the page.
 $black = array();
 $red = array();
+$roles = array();
 foreach ($g->seats as $p)
 {
+	$roles[(int)$p->number] = obs_results_role($p->role);
 	if ($p->role == ROLE_MAFIA || $p->role == ROLE_DON)
 	{
 		$black[] = $p;
@@ -196,126 +241,19 @@ foreach ($g->seats as $p)
 	}
 }
 
-// The role as the stylesheet spells it - the ground a card sits on and the ground a number in
-// the strip sits on are the same three.
-function obs_results_role($role)
-{
-	switch ((int)$role)
-	{
-	case ROLE_DON:
-		return 'don';
-	case ROLE_MAFIA:
-		return 'maf';
-	case ROLE_SHERIFF:
-		return 'sheriff';
-	}
-	return 'town';
-}
-
-// The badge in the corner of this player's card: the way they left the game. What they
-// collected along the way - the warnings, the technical fouls - is not on these cards at all.
-// Ten of them side by side is a lot to read in the ten seconds a screen is up, and how a game
-// ended is the part worth carrying; the game pages have the rest.
-function obs_results_mark($p)
-{
-	if (is_null($p))
-	{
-		return NULL;
-	}
-
-	$death = isset($p->death) ? $p->death : NULL;
-	$type = (is_null($death) || !isset($death->type)) ? '' : $death->type;
-
-	$mark = new stdClass();
-	$mark->class = '';
-	$mark->text = '';
-
-	if ($type == DEATH_TYPE_KICK_OUT || $type == DEATH_TYPE_WARNINGS || $type == DEATH_TYPE_TECH_FOULS)
-	{
-		$mark->class = 'death-kickOut';
-		$mark->text = 'X';
-	}
-	else if ($type == DEATH_TYPE_TEAM_KICK_OUT)
-	{
-		// Removed, and the other team won by it. Two crosses rather than one.
-		$mark->class = 'death-kickOut';
-		$mark->text = 'XX';
-	}
-	else if ($type == DEATH_TYPE_DAY)
-	{
-		$mark->class = 'death-voting';
-	}
-	else if ($type == DEATH_TYPE_NIGHT)
-	{
-		// Which night it was is painted on the picture itself, and a night belongs to the round
-		// before the one the death is written down in - the same reckoning current_game.php does.
-		$mark->class = 'death-shooting round-' . max((int)$death->round - 1, 0);
-	}
-
-	return $mark->class == '' ? NULL : $mark;
-}
-
-function obs_results_row($seats, $players, $log, $row_class)
-{
-	if (empty($seats))
-	{
-		return;
-	}
-	obs_card_row(count($seats), $row_class);
-	foreach ($seats as $p)
-	{
-		$role = obs_results_role($p->role);
-		$player = isset($players[$p->user_id]) ? $players[$p->user_id] : NULL;
-		if (is_null($player) && $p->nick_name != '')
-		{
-			// A player the users table has nothing for still has the name the game recorded.
-			$player = new stdClass();
-			$player->name = $p->nick_name;
-			$player->photo = '';
-			$player->club = '';
-			$player->country = '';
-		}
-		// The corner carries the glyph of the role; the best player of the game gets the gold edge.
-		$seat = isset($log[$p->number - 1]) ? $log[$p->number - 1] : NULL;
-		obs_card($p->number, $player, 'role-' . $role . ($p->best ? ' best' : ''),
-			$role == 'town' ? '' : ' ', obs_results_mark($seat));
-	}
-	echo '</div>';
-}
-
-// One part of the strip: the numbers of the players it is about, each on the ground of its role,
-// the way the info bar showed them. Nothing at all when there is nobody to name.
-function obs_results_section($class, $numbers, $roles)
-{
-	if (empty($numbers))
-	{
-		return;
-	}
-	echo '<div class="info-section ' . $class . '"><div class="info-label"></div><div class="info-items">';
-	foreach ($numbers as $number)
-	{
-		$role = isset($roles[$number]) ? $roles[$number] : 'town';
-		echo '<div class="info-item role-' . $role . '">' . (int)$number . '</div>';
-	}
-	echo '</div></div>';
-}
-
-// The three things the info bar carried through the game: the best move of the player shot in
-// the first night, and the two sets of checks, each in the order they were made.
-$roles = array();
-foreach ($g->seats as $p)
-{
-	$roles[(int)$p->number] = obs_results_role($p->role);
-}
-
-$legacy = array();
+// The three things the info bar carried through the game, which are the three things the table
+// argues about afterwards: the best move of the player shot in the first night, and the checks
+// of the sheriff and of the don, each in the order they were made.
+$best_by = 0;
+$best = array();
 $sheriff = array();
 $don = array();
 foreach ($g->log as $i => $p)
 {
-	if (isset($p->legacy) && is_array($p->legacy))
+	if (isset($p->legacy) && is_array($p->legacy) && !empty($p->legacy))
 	{
-		$legacy = $p->legacy;
+		$best_by = $i + 1;
+		$best = $p->legacy;
 	}
 	if (isset($p->sheriff))
 	{
@@ -329,27 +267,147 @@ foreach ($g->log as $i => $p)
 asort($sheriff);
 asort($don);
 
-$info = !empty($legacy) || !empty($sheriff) || !empty($don);
+$sheriff_seat = 0;
+$don_seat = 0;
+foreach ($roles as $number => $role)
+{
+	if ($role == 'sheriff')
+	{
+		$sheriff_seat = $number;
+	}
+	else if ($role == 'don')
+	{
+		$don_seat = $number;
+	}
+}
 
-echo '<div class="screen-body results' . ($info ? ' with-info' : '') . '">';
-if ($g->result == GAME_RESULT_TOWN)
+// One chip: the number of a seat on the ground of its real role, so that a pick or a check can
+// be read as right or wrong without going back to the cards for it. A don who found the
+// sheriff gets gold - that is the hit the whole table remembers.
+function obs_results_chip($number, $roles, $gold_sheriff = false)
 {
-	obs_results_row($red, $players, $g->log, 'red-row');
-	obs_results_row($black, $players, $g->log, 'black-row');
+	$role = isset($roles[$number]) ? $roles[$number] : '';
+	$black = ($role == 'maf' || $role == 'don');
+	$class = $black ? 'b' : 'r';
+	if ($gold_sheriff && $role == 'sheriff')
+	{
+		$class = 'g';
+	}
+	echo '<div class="chip ' . $class . '">' . $number . '</div>';
 }
-else
+
+// One column of the panel: what it is, who it belongs to, and the seats they named.
+function obs_results_moves_column($icon, $class, $label, $seat, $players_by_seat, $roles, $numbers, $gold_sheriff, $perfect)
 {
-	obs_results_row($black, $players, $g->log, 'black-row');
-	obs_results_row($red, $players, $g->log, 'red-row');
+	echo '<div class="mv">';
+	echo '<div class="tx">';
+	echo '<div class="lb ' . $class . '">' . obs_icon($icon) . $label . '</div>';
+	echo '<div class="who">';
+	if ($seat > 0)
+	{
+		echo '<span class="seat">' . $seat . '</span><b>' .
+			(isset($players_by_seat[$seat]) ? htmlspecialchars($players_by_seat[$seat]) : '') . '</b>';
+	}
+	echo '</div>';
+	echo '</div>';
+	echo '<div class="chips"><div class="cr">';
+	foreach ($numbers as $number)
+	{
+		obs_results_chip((int)$number, $roles, $gold_sheriff);
+	}
+	echo '</div>';
+	if ($perfect)
+	{
+		echo '<div class="perfect">' . get_label('Perfect best guess') . '</div>';
+	}
+	echo '</div>';
+	echo '</div>';
 }
-if ($info)
+
+// Who sits where, by seat, for the panel - which names people by their seat rather than by
+// their id.
+$by_seat = array();
+foreach ($g->seats as $p)
 {
-	echo '<div class="info">';
-	obs_results_section('legacy', $legacy, $roles);
-	obs_results_section('sheriff-check', array_keys($sheriff), $roles);
-	obs_results_section('don-check', array_keys($don), $roles);
+	$by_seat[(int)$p->number] = isset($players[$p->user_id]) ? $players[$p->user_id]->name : $p->nick_name;
+}
+
+// Three of three: the whole mafia named by a player shot in the first night. Gold letters and
+// nothing else - a ring around the chips was tried and taken off again.
+$perfect = !empty($best);
+foreach ($best as $number)
+{
+	$role = isset($roles[(int)$number]) ? $roles[(int)$number] : '';
+	if ($role != 'maf' && $role != 'don')
+	{
+		$perfect = false;
+	}
+}
+
+// Who sat in this seat. Usually somebody the site knows, and then the card carries their
+// photograph, their club and their flag. A seat the referee never picked a player for is
+// written down with a name and nothing else - the game was played by somebody, and a card
+// with a bare number on it says less than their name does.
+function obs_results_player($p, $players)
+{
+	if (isset($players[$p->user_id]))
+	{
+		return $players[$p->user_id];
+	}
+	if ($p->nick_name == '')
+	{
+		return NULL;
+	}
+
+	$stub = new stdClass();
+	$stub->name = $p->nick_name;
+	$stub->club = '';
+	$stub->photo = '';
+	$stub->flag = '';
+	$stub->country = '';
+	return $stub;
+}
+
+// A row of cards, and the row that carries the panel beside the three black ones.
+function obs_results_cards($seats, $players, $log, $roles)
+{
+	foreach ($seats as $p)
+	{
+		$o = new stdClass();
+		$o->role = isset($roles[(int)$p->number]) ? $roles[(int)$p->number] : '';
+		$o->elim = obs_results_elim(isset($log[$p->number - 1]) ? $log[$p->number - 1] : NULL);
+		obs_card($p->number, obs_results_player($p, $players), $o);
+	}
+}
+
+obs_frame_start('f1 ' . $tint);
+obs_head($c->tournament_name, $title, obs_head_sub($g->event_name, $c->table_num, $g->game_num, $extra),
+	$moderator == '' ? '' : obs_head_judge($moderator));
+
+echo '<div class="f1rows">';
+for ($row = 0; $row < 2; ++$row)
+{
+	// The winners first, and with them the row of seven; the three and the panel come after.
+	$town_row = (($g->result == GAME_RESULT_TOWN) == ($row == 0));
+	if ($town_row)
+	{
+		echo '<div class="r7">';
+		obs_results_cards($red, $players, $g->log, $roles);
+		echo '</div>';
+		continue;
+	}
+
+	echo '<div class="r3"><div class="three">';
+	obs_results_cards($black, $players, $g->log, $roles);
+	echo '</div>';
+	echo '<div class="moves"><div class="mvl">';
+	obs_results_moves_column('target', 't', get_label('Best guess'), $best_by, $by_seat, $roles, $best, false, $perfect);
+	obs_results_moves_column('star', 's', get_label('Sheriff checks'), $sheriff_seat, $by_seat, $roles, array_keys($sheriff), false, false);
+	obs_results_moves_column('hat', 'd', get_label('Don checks'), $don_seat, $by_seat, $roles, array_keys($don), true, false);
+	echo '</div></div>';
 	echo '</div>';
 }
 echo '</div>';
+obs_frame_end();
 
 ?>
