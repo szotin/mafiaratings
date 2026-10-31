@@ -219,16 +219,68 @@ body.between.bg-clear .glow {
 	background: var(--bg);
 }
 
-/* A crossfade between one screen and the next, which between.js turns on by taking the class
-   off once the new frame is in place. */
-.screen.fading {
-	opacity: 0;
-	transition: opacity 0.3s;
+/* One screen gives way to the next. Every frame is a sheet of its own, laid in the same place
+   as the one before it, and a new one always goes under what is already up: the page that
+   leaves uncovers it, and the page that turns over shows it coming up out of the same turn.
+   So nothing is ever taken off the screen before something stands in its place, and the
+   ground is never seen between two frames.
+
+   There are two ways through and between.js picks one at random, with the axis or the
+   direction of it, so that an evening of this does not play the same trick every ten seconds.
+   The old frame is taken away once the way through is done - see put() there. */
+.screen > .fr {
+	position: absolute;
+	left: 0;
+	top: 0;
+	/*  Each frame keeps its own layers to itself. Inside a card the photograph, the shade over
+	    it and the role badge stand one above another, and without this they are counted from
+	    the page instead of from the frame they are on: during a change-over the cards of the
+	    frame underneath came out over the page that was still leaving, which is the one place
+	    it shows. Naming a layer here is enough to make the frame the ground they stand on, and
+	    between two frames the later one in the page is still the one on top. */
+	z-index: 0;
 }
 
-.screen:not(.fading) {
-	opacity: 1;
-	transition: opacity 0.6s;
+/*  The first frame of all has nothing to leave: it simply arrives. */
+@keyframes fr-first {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+.screen > .fr.first {
+	animation: fr-first 0.8s ease both;
+}
+
+/*  The page turning over. --ax and --ay are the axis the script picked - upright or lying
+    down, either way round - and the half that brings the new frame up begins where the half
+    that took the old one away ended, so the two read as one movement. The first half gathers
+    speed and the second half loses it, as a sheet of paper does. */
+@keyframes fr-turn-out {
+	from { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, 0deg); }
+	to   { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, 90deg); }
+}
+
+@keyframes fr-turn-in {
+	from { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, -90deg); }
+	to   { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, 0deg); }
+}
+
+.screen > .fr.turn-out {
+	animation: fr-turn-out 0.6s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.screen > .fr.turn-in {
+	animation: fr-turn-in 0.6s cubic-bezier(0, 0, 0.2, 1) 0.6s both;
+}
+
+/*  The page leaving, in the direction the script picked, with the next one standing under it.
+    It gathers speed as it goes rather than drifting off at an even pace. */
+@keyframes fr-slide-out {
+	to { transform: translate(var(--tx), var(--ty)); }
+}
+
+.screen > .fr.slide-out {
+	animation: fr-slide-out 0.9s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 .glow {
