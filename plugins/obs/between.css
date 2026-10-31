@@ -436,12 +436,21 @@ body.between.bg-light .card.sher {
 /*  The photograph, which stands on the card's own colour rather than in a box of its own. A
     picture with its background taken out (class cut) is drawn whole and stood on the bottom
     edge; an ordinary one is cropped to fill, a little above centre so that the face is not
-    cut. Either way the gradient below fades it into the card. */
+    cut. Either way the gradient below fades it into the card.
+
+    It reaches the top edge of the card. The handoff holds it half a rem below, which is right
+    for a picture with nothing behind it - it is the air above a figure's head - but an
+    ordinary photograph fills its box, and then that half rem reads as a strip of the card
+    showing above the picture. A cut-out does not need it kept here: it is drawn whole inside
+    whatever it is given, so the room above its head comes out of the picture itself.
+
+    The box is four by five, so a photograph of that shape is used as it is and anything else
+    is cropped to it - never fitted inside it with the card showing through. */
 .ph {
 	position: absolute;
 	left: 0;
 	right: 0;
-	top: 0.5rem;
+	top: 0;
 	bottom: 1.875rem;
 	z-index: 1;
 }
@@ -661,7 +670,9 @@ body.between.bg-light .moves {
 .mv {
 	position: relative;
 	display: grid;
-	grid-template-rows: 1.375rem 1.875rem 3.25rem 1rem;
+	/* The person on top, what they are below them, then the chips - and the last row for the
+	   one thing that is only ever said of a best guess. */
+	grid-template-rows: 1.875rem 1.375rem 3.25rem 1rem;
 	row-gap: 0.875rem;
 	justify-items: center;
 	align-content: center;
@@ -694,11 +705,6 @@ body.between.bg-light .moves {
 	white-space: nowrap;
 }
 
-.mv .lb svg { width: 1.25rem; height: 1.25rem; flex: none; }
-.mv .lb.t svg { color: var(--red); }
-.mv .lb.s svg { color: var(--gold); }
-.mv .lb.d svg { color: var(--ink); }
-
 .mv .who {
 	display: flex;
 	align-items: center;
@@ -713,13 +719,18 @@ body.between.bg-light .moves {
 
 .mv .who b { overflow: hidden; text-overflow: ellipsis; }
 
-.mv .who .seat {
-	width: 1.75rem;
-	height: 1.75rem;
-	font-size: 0.8125rem;
-	background: var(--line);
-	color: var(--ink2);
+/* The sign of the part they played, in front of their name: the shot, the star, the hat. It
+   says in one mark what a word would have taken the room of the name itself to say. */
+.mv .who .ic {
+	display: flex;
+	align-items: center;
+	flex: none;
 }
+
+.mv .who .ic svg { width: 1.625rem; height: 1.625rem; }
+.mv .who .ic.t svg { color: var(--red); }
+.mv .who .ic.s svg { color: var(--gold); }
+.mv .who .ic.d svg { color: var(--ink); }
 
 .mv .chips { display: contents; }
 .mv .chips .cr { display: flex; gap: 0.625rem; }

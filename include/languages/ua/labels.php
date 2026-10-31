@@ -2112,8 +2112,6 @@ $labelMenu = array (
 'We do not have a seating arrangement for this configuration. We have generated a very basic initial seating for you. Now we are improving and optimizing it.<p>You can wait a few hours for an improved version. Or you can <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">click here</a> and optimize it right now.</p>' => 'У нас немає готової рассадки для цієї конфігурації. Ми згенерували для вас найпростішу початкову рассадку і зараз її покращуємо та оптимізуємо.<p>Ви можете зачекати кілька годин для покращеної версії. Або ви можете <a href="#" onclick="mr.optimizeSeating(null, \'[0]\');">натиснути тут</a> і оптимізувати прямо зараз.</p>', // include/seating.php, include/seating.php
 'Broadcast' => 'Трансляція', // streams.php
 'Current scene in OBS Studio' => 'Поточна сцена в OBS Studio', // streams.php
-'Sheriff checks' => 'Перевірки шерифа', // plugins/obs/screens
-'Don checks' => 'Перевірки дона', // plugins/obs/screens
 'Perfect best guess' => 'Повний найкращий хід', // plugins/obs/screens
 'Best guess' => 'Найкращий хід', // plugins/obs/screens
 'Avg.' => 'Сер.', // plugins/obs/screens

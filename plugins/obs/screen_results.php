@@ -296,19 +296,24 @@ function obs_results_chip($number, $roles, $gold_sheriff = false)
 	echo '<div class="chip ' . $class . '">' . $number . '</div>';
 }
 
-// One column of the panel: what it is, who it belongs to, and the seats they named.
+// One column of the panel: who it belongs to, and under them what the seats below are.
+//
+// The person comes first, with the sign of the part they played in front of them - the shot
+// that took them out in the first night, the sheriff's star, the don's hat. The line under
+// them says what the chips are. A game can end without any of the three, and then the sign
+// stands on its own with nothing to follow it.
 function obs_results_moves_column($icon, $class, $label, $seat, $players_by_seat, $roles, $numbers, $gold_sheriff, $perfect)
 {
 	echo '<div class="mv">';
 	echo '<div class="tx">';
-	echo '<div class="lb ' . $class . '">' . obs_icon($icon) . $label . '</div>';
 	echo '<div class="who">';
+	echo '<span class="ic ' . $class . '">' . obs_icon($icon) . '</span>';
 	if ($seat > 0)
 	{
-		echo '<span class="seat">' . $seat . '</span><b>' .
-			(isset($players_by_seat[$seat]) ? htmlspecialchars($players_by_seat[$seat]) : '') . '</b>';
+		echo '<b>' . (isset($players_by_seat[$seat]) ? htmlspecialchars($players_by_seat[$seat]) : '') . '</b>';
 	}
 	echo '</div>';
+	echo '<div class="lb">' . $label . '</div>';
 	echo '</div>';
 	echo '<div class="chips"><div class="cr">';
 	foreach ($numbers as $number)
@@ -402,8 +407,8 @@ for ($row = 0; $row < 2; ++$row)
 	echo '</div>';
 	echo '<div class="moves"><div class="mvl">';
 	obs_results_moves_column('target', 't', get_label('Best guess'), $best_by, $by_seat, $roles, $best, false, $perfect);
-	obs_results_moves_column('star', 's', get_label('Sheriff checks'), $sheriff_seat, $by_seat, $roles, array_keys($sheriff), false, false);
-	obs_results_moves_column('hat', 'd', get_label('Don checks'), $don_seat, $by_seat, $roles, array_keys($don), true, false);
+	obs_results_moves_column('star', 's', get_label('Checks'), $sheriff_seat, $by_seat, $roles, array_keys($sheriff), false, false);
+	obs_results_moves_column('hat', 'd', get_label('Checks'), $don_seat, $by_seat, $roles, array_keys($don), true, false);
 	echo '</div></div>';
 	echo '</div>';
 }
