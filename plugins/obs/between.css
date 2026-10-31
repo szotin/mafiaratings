@@ -1077,11 +1077,13 @@ body.between.bg-light .c-3 { background: #1E2026; box-shadow: none; }
 }
 
 .fact {
-	height: 12.875rem;
+	/* Deep enough for the number and two lines of names under it. */
+	height: 13.25rem;
 	border-radius: 1.875rem;
 	padding: 1.875rem 2.125rem;
 	display: flex;
 	flex-direction: column;
+	overflow: hidden; /* nothing of a long list ever stands outside the card */
 }
 
 .fact .k {
@@ -1102,14 +1104,19 @@ body.between.bg-light .c-3 { background: #1E2026; box-shadow: none; }
 
 .fact .v small { font-size: 1.75rem; color: var(--ink3); margin-left: 0.5rem; }
 
+/*  What the number is made of: a share of the games, or everyone who did the thing, named one
+    after another. Two lines is what the card has room for under the number, and a list longer
+    than that is cut off at the end rather than pushed out of the card. */
 .fact .s {
-	margin-top: 0.625rem;
+	margin-top: 0.5rem;
 	font-size: 1.25rem;
 	font-weight: 600;
+	line-height: 1.4;
 	color: var(--ink2);
-	white-space: nowrap;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
 	overflow: hidden;
-	text-overflow: ellipsis;
 }
 
 /*--------------------------------------------------------------------------------------

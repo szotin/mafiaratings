@@ -21,7 +21,7 @@ require_once __DIR__ . '/game.php'; // the phases of a game and the order they c
 // A table with no row of its own runs on the defaults. That is the usual case rather than an
 // odd one: a row is written the first time somebody sets something for that table.
 
-define('STREAM_DEFAULT_DELAY', 10); // seconds a screen stays up
+define('STREAM_DEFAULT_DELAY', 15); // seconds a screen stays up
 define('STREAM_MIN_DELAY', 1);
 define('STREAM_MAX_DELAY', 600);
 

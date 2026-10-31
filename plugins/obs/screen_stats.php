@@ -79,27 +79,47 @@ function obs_stats_fact_games($scope, $scope_id, $flag)
 
 $facts = array();
 
-// Three of three: the whole mafia named by a player shot in the first night. The last one to
-// do it is named under the number - it is the one the table still remembers.
-$perfect = obs_stats_fact_games($scope, $scope_id, SCORING_FLAG_FIRST_LEGACY_3);
-if ($perfect > 0)
+// Three of three: the whole mafia named by a player shot in the first night. Everyone who did
+// it is named under the number, latest first - it is the rarest thing on the screen, and a
+// tournament that has it four times has four people who want to see their name there. Which
+// game it was in is left out: by the time the screen comes round nobody is looking it up, and
+// without it the whole list fits on a line.
+$done = 0;
+$names = array();
+$query = new DbQuery(
+	'SELECT p.nick_name FROM players p JOIN games g ON g.id = p.game_id'.
+	' WHERE g.' . $scope . ' = ? AND (g.flags & ' . GAME_FLAG_CANCELED . ') = 0 AND (p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0'.
+	' ORDER BY g.end_time DESC', $scope_id);
+while ($row = $query->next())
 {
-	$who = '';
-	$query = new DbQuery(
-		'SELECT p.nick_name, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id'.
-		' WHERE g.' . $scope . ' = ? AND (g.flags & ' . GAME_FLAG_CANCELED . ') = 0 AND (p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0'.
-		' ORDER BY g.end_time DESC LIMIT 1', $scope_id);
-	if ($row = $query->next())
+	list ($nick) = $row;
+	++$done;
+	if ($nick == '')
 	{
-		list ($nick, $table_num, $game_num) = $row;
-		$who = htmlspecialchars($nick) . ' &middot; ' . get_label('Table [0]', (int)$table_num) . ', ' . get_label('Game [0]', (int)$game_num);
+		continue; // a record that kept no name has nobody to name
 	}
+	// Somebody who did it more than once is named once, with how many times after them - a
+	// name written out twice reads as a mistake rather than as a feat done twice.
+	if (!isset($names[$nick]))
+	{
+		$names[$nick] = 0;
+	}
+	++$names[$nick];
+}
 
+$best = array();
+foreach ($names as $nick => $times)
+{
+	$best[] = htmlspecialchars($nick) . ($times > 1 ? ' (' . $times . ')' : '');
+}
+
+if ($done > 0)
+{
 	$fact = new stdClass();
 	$fact->name = get_label('Perfect best guess');
-	$fact->value = $perfect;
+	$fact->value = $done;
 	$fact->of = '';
-	$fact->sub = $who;
+	$fact->sub = implode(', ', $best);
 	$facts[] = $fact;
 }
 
