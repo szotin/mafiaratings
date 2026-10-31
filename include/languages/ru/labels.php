@@ -2125,6 +2125,8 @@ $labelMenu = array (
 'wins: [0]' => 'побед: [0]', // plugins/obs/screens
 'out of [0]' => 'из [0]', // plugins/obs/screens
 '[0]% of games' => '[0]% игр', // plugins/obs/screens
+'Full screen' => 'На весь экран', // text_broadcast.php
+'Leave full screen' => 'Выйти из полноэкранного режима', // text_broadcast.php
 );
 
 return $labelMenu;

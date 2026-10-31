@@ -66,6 +66,10 @@ $options->delay = TB_DELAY;
 // language the rest of the page is in, rather than built out of pieces in the script.
 $options->dayLabel = get_label('Day [0]', '[0]');
 $options->nightLabel = get_label('Night [0]', '[0]');
+// What the full screen button says it does, which is one thing or the other depending on where
+// the page already is.
+$options->fullLabel = get_label('Full screen');
+$options->windowLabel = get_label('Leave full screen');
 
 echo '<!DOCTYPE HTML>';
 echo '<html><head>';
@@ -84,6 +88,14 @@ echo '<div class="tb-text" id="tb-text"></div>';
 echo '<iframe class="tb-overlay" id="tb-overlay" scrolling="no" src="plugins/obs/overlay.php?' . $scope . '&viewer=1"></iframe>';
 echo '<iframe class="tb-between" id="tb-between" scrolling="no" src="plugins/obs/between.php?' . $scope . '&viewer=1"></iframe>';
 echo '</div>';
+
+// Full screen, and with it the phone turned the way the drawing is. A browser will do neither
+// unless the reader asked for it, so it hangs on a button; the script takes the button away
+// where the browser cannot do it at all.
+echo '<button class="tb-full" id="tb-full" type="button" title="' . get_label('Full screen') . '">';
+echo '<svg class="tb-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9V3h6v2H5v4H3zm12-6h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 0h2v6h-6v-2h4v-4z"/></svg>';
+echo '<svg class="tb-leave" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h2v6H5V7h4V3zm4 0h2v4h4v2h-6V3zM5 15h6v6H9v-4H5v-2zm8 0h6v2h-4v4h-2v-6z"/></svg>';
+echo '</button>';
 
 ?>
 <script>
@@ -210,6 +222,86 @@ echo '</div>';
 			// The site not answering is not news: the page goes on showing what it has and asks
 			// again next time round.
 			catch(function(error) { });
+	}
+
+	// Full screen, and the phone turned the way the drawing is drawn. The page is one picture
+	// of a fixed shape: standing it up on end leaves a strip of it across the middle of the
+	// screen with nothing above or below, so the screen is asked to stay lying down. Neither
+	// can be asked for except out of something the reader did, which is what the button is
+	// for, and a browser that will not do it at all is left without one.
+	var full = document.getElementById('tb-full');
+	var root = document.documentElement;
+	var enter = root.requestFullscreen || root.webkitRequestFullscreen;
+	var leave = document.exitFullscreen || document.webkitExitFullscreen;
+
+	function fullscreen()
+	{
+		return document.fullscreenElement || document.webkitFullscreenElement || null;
+	}
+
+	// A phone that cannot be held still - a tablet, a desktop, a phone whose browser does not
+	// do this - simply says no, and the page is no worse off for having asked.
+	function lie(down)
+	{
+		var orientation = screen.orientation;
+		if (!orientation)
+		{
+			return;
+		}
+		try
+		{
+			var promise = down ? orientation.lock('landscape') : orientation.unlock();
+			if (promise && promise.catch)
+			{
+				promise.catch(function(error) { });
+			}
+		}
+		catch (error) { }
+	}
+
+	if (!enter || !leave)
+	{
+		full.parentNode.removeChild(full);
+	}
+	else
+	{
+		full.addEventListener('click', function()
+		{
+			if (fullscreen())
+			{
+				leave.call(document);
+			}
+			else
+			{
+				var promise = enter.call(root);
+				// The screen can only be held still once the page has the whole of it, so the
+				// one waits for the other. An older browser answers with nothing at all.
+				if (promise && promise.then)
+				{
+					promise.then(function() { lie(true); }).catch(function(error) { });
+				}
+				else
+				{
+					lie(true);
+				}
+			}
+		});
+
+		// However the page got in or out - the button, the key that leaves full screen, the
+		// phone's own way back - the button says what it would do next.
+		function changed()
+		{
+			var on = !!fullscreen();
+			full.className = 'tb-full' + (on ? ' on' : '');
+			full.title = on ? options.windowLabel : options.fullLabel;
+			if (!on)
+			{
+				lie(false);
+			}
+		}
+
+		document.addEventListener('fullscreenchange', changed);
+		document.addEventListener('webkitfullscreenchange', changed);
 	}
 
 	setLive(false);

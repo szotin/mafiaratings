@@ -10,8 +10,22 @@
 html {
 	/*  120 by 67.5 is the drawing both pages are made in: 1920 by 1080 at the 16px they were
 	    drawn at. The smaller of the two shares is the biggest rem it still fits the window at,
-	    which is what the cards do with the same line in obs.css. */
+	    which is what the cards do with the same line in obs.css.
+
+	    The height is asked for in dvh, which is the window as it stands. 100vh on a phone is
+	    the window as it would be with the address bar out of the way, and the bar does not go
+	    away by itself on a page that does not scroll - so everything drawn against the bottom,
+	    which is the whole row of players, hung below the screen. The vh line above is for a
+	    browser that has never heard of dvh; one that has reads the line after it instead. */
 	font-size: min(100vw / 120, 100vh / 67.5);
+	font-size: min(100vw / 120, 100dvh / 67.5);
+}
+
+/*  A width here is the whole of a width, padding and all - as it is in obs.css, which the
+    drawing is shared with. Without this the words were laid out in a band wider than the page
+    by the padding on either side of them, and the end of a long line was cut off by the edge. */
+* {
+	box-sizing: border-box;
 }
 
 html, body {
@@ -23,10 +37,24 @@ html, body {
 	font-family: 'Roboto Slab', serif;
 }
 
+/*  Whatever the drawing does not fill is left around it rather than taken out of it. */
+body {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	height: 100dvh;
+}
+
+/*  The drawing, and nothing besides: 120 by 67.5 rem at the biggest rem the window holds it
+    at, so it is the window in one direction and short of it in the other. The cards are given
+    a box of exactly the shape they were drawn for - they are pages of their own and lay
+    themselves out in whatever they are given, so a box of any other shape is what pulled the
+    info bar and the players apart. */
 .tb-stage {
 	position: relative;
-	width: 100vw;
-	height: 100vh;
+	width: 120rem;
+	height: 67.5rem;
 	overflow: hidden;
 	background-color: #4d545f;
 }
@@ -53,6 +81,18 @@ html, body {
 	line-height: 1.45;
 	scrollbar-width: thin;
 	scrollbar-color: #555 transparent;
+}
+
+/*  On a small screen the whole drawing is small, and the cards can be read at any size because
+    there is nothing to read on them. The words cannot: at the share of the screen they are
+    given on a phone they come out at about ten pixels. So they are written larger there, and
+    with less room wasted on either side of them - the band scrolls, so what does not fit is
+    only a line or two further down. */
+@media (max-width: 1000px) {
+	.tb-text {
+		padding: 0.8rem 2.4rem;
+		font-size: 2.4rem;
+	}
 }
 
 .tb-text::-webkit-scrollbar { width: 0.5rem; }
@@ -117,3 +157,51 @@ html, body {
 .tb-hidden {
 	display: none;
 }
+
+/*  Full screen, which on a phone is the difference between reading the game and reading the
+    address bar: the bar takes a strip off a screen that is small to begin with, and nothing
+    inside a page can move it. The button is in pixels rather than in rem - it is not part of
+    the drawing, and a thumb is the size it is however small the window has made everything
+    else. The page hides it where the browser will not do full screen at all. */
+.tb-full {
+	position: fixed;
+	right: 10px;
+	top: 10px;
+	z-index: 10;
+	/*  Only where it is wanted. A window on a desktop is already whatever size it was made,
+	    and the browser has its own way of filling the screen; it is a phone that is handed a
+	    screen with a strip taken out of it. */
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background-color: rgba(0, 0, 0, 0.5);
+	color: #fff;
+	opacity: 0.7;
+	cursor: pointer;
+	transition: opacity 0.2s;
+}
+
+.tb-full:hover,
+.tb-full:focus {
+	opacity: 1;
+}
+
+/*  A touch screen, which is where the button is for. */
+@media (pointer: coarse) {
+	.tb-full { display: flex; }
+}
+
+.tb-full svg {
+	width: 22px;
+	height: 22px;
+	fill: currentColor;
+}
+
+.tb-full .tb-leave { display: none; }
+.tb-full.on .tb-leave { display: block; }
+.tb-full.on .tb-enter { display: none; }
