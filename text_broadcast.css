@@ -139,7 +139,7 @@ body {
 .tb-step {
 	position: absolute;
 	right: 4.8rem;
-	top: 7rem;
+	top: 8.75rem;
 	/*  Over the words, and over the cards as well - the corner it stands in is empty on them.
 	    What a stream shows between games is above it in turn, at 2, and covers it. */
 	z-index: 1;
