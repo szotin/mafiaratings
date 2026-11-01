@@ -2125,6 +2125,11 @@ $labelMenu = array (
 '[0]% of games' => '[0]% ігор', // plugins/obs/screens
 'Full screen' => 'На весь екран', // text_broadcast.php
 'Leave full screen' => 'Вийти з повноекранного режиму', // text_broadcast.php
+'Role distribution' => 'Роздача ролей', // include/game_log.php
+'Arrangement' => 'Домовленість', // include/game_log.php
+'Relaxed sitting' => 'Вільна посадка', // include/game_log.php
+'Night [0] shooting' => 'Ніч [0] стрільба', // include/game_log.php
+'Night [0] checks' => 'Ніч [0] перевірки', // include/game_log.php
 );
 
 return $labelMenu;

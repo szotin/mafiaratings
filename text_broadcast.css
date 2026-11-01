@@ -131,6 +131,47 @@ body {
 	animation: tb-arrive 2.5s ease-out;
 }
 
+/*  Where the table is standing: the step of the game, in a frame in the top right corner of
+    the words. It stands in the drawing rather than in the band of words, so the band scrolls
+    under it and it stays where it is - a reader who has gone back up the game is still told
+    where the game is now. The frame is written in the two colours the headings of a day and
+    of a night are written in, so it says which of them it is twice over. */
+.tb-step {
+	position: absolute;
+	right: 4.8rem;
+	top: 7rem;
+	/*  Over the words, and over the cards as well - the corner it stands in is empty on them.
+	    What a stream shows between games is above it in turn, at 2, and covers it. */
+	z-index: 1;
+	padding: 0.4rem 1.2rem;
+	border: 0.125rem solid rgba(255, 204, 102, 0.6);
+	border-radius: 0.4rem;
+	/*  Dark enough that a line passing behind it goes out of sight rather than showing
+	    through half-read. */
+	background-color: rgba(30, 34, 41, 0.92);
+	color: #ffcc66;
+	font-size: 1.7rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	white-space: nowrap;
+	/*  Nothing here is to be touched: a tap on it is a tap on the words behind it. */
+	pointer-events: none;
+}
+
+.tb-step.night {
+	border-color: rgba(138, 180, 255, 0.6);
+	color: #8ab4ff;
+}
+
+/*  On a small screen, where the words are written larger for the same reason - see .tb-text.
+    This is read beside them, so it grows with them and keeps to the margin they keep to. */
+@media (max-width: 1000px) {
+	.tb-step {
+		right: 2.4rem;
+		font-size: 2.2rem;
+	}
+}
+
 /*  The cards, which are the OBS pages themselves rather than a copy of them: one page, shown
     in a stream and here. Nothing in them is to be clicked, so clicks go through to the text. */
 .tb-overlay {

@@ -552,3 +552,51 @@ function game_log_votes($game)
 	}
 	return $votes;
 }
+
+
+// Where the table is standing right now, in the few words a text broadcast shows beside the
+// telling: the step of the game, and which day or night it belongs to. The day and the night
+// are numbered as the headings of the telling number them - the round the game keeps, where
+// the first night is 0.
+//
+// It is made here, and not in the page, because the words are labels and labels belong in PHP;
+// and it is a thing of its own rather than the phase and the state an overlay is given, because
+// those cannot tell the whole story: the handing out of the roles and the beginning of the
+// first night are both "night, starting, round 0", and a reader wants to know which it is.
+//
+// Returns NULL where there is no step to name: a game whose screen has only been opened, and a
+// game that has been played out.
+function game_log_step($game)
+{
+	$g = $game->data;
+	if (!isset($g->time) || !isset($g->time->time) || $g->time->time == GAMETIME_END)
+	{
+		return NULL;
+	}
+
+	$round = isset($g->time->round) ? (int)$g->time->round : 0;
+	switch ($g->time->time)
+	{
+		case GAMETIME_START:
+			return get_label('Role distribution');
+		case GAMETIME_ARRANGEMENT:
+			return get_label('Arrangement');
+		case GAMETIME_RELAXED_SITTING:
+			return get_label('Relaxed sitting');
+		case GAMETIME_SHOOTING:
+			return get_label('Night [0] shooting', $round);
+		case GAMETIME_DON:
+		case GAMETIME_SHERIFF:
+			return get_label('Night [0] checks', $round);
+		case GAMETIME_VOTING_START:
+		case GAMETIME_VOTING:
+		case GAMETIME_VOTING_KILL_ALL:
+			// The thirty seconds a tied player speaks for is part of the counting it belongs to,
+			// so the table is still standing in the voting while it is being given.
+			return get_label('Day [0] voting', $round);
+	}
+
+	// Whatever is left is the day or the night itself: a night beginning or ending, the speeches,
+	// the last speech of somebody who has been shot or voted out.
+	return Game::is_night($g->time) ? get_label('Night [0]', $round) : get_label('Day [0]', $round);
+}

@@ -82,6 +82,9 @@ echo '</head><body>';
 
 echo '<div class="tb-stage">';
 echo '<div class="tb-text" id="tb-text"></div>';
+// Where the table is standing, over the words rather than among them: the telling scrolls and
+// this does not, so a reader who has gone back up the game is still told where it is now.
+echo '<div class="tb-step tb-hidden" id="tb-step"></div>';
 // viewer=1 says that these are being watched rather than run. They are the same pages a stream
 // puts over its picture, but nothing here is standing beside the table, so nothing they ask for
 // is to be taken as word from it - see api/get/stream.php.
@@ -105,6 +108,7 @@ echo '</button>';
 	var text = document.getElementById('tb-text');
 	var between = document.getElementById('tb-between');
 	var overlay = document.getElementById('tb-overlay');
+	var step = document.getElementById('tb-step');
 
 	// What is on the page now, a line to an entry, each one the day or night it belongs to and
 	// the line itself. It is held as flat text so that what came back can be compared with it
@@ -120,6 +124,17 @@ echo '</button>';
 		between.className = 'tb-between' + (live ? ' tb-hidden' : '');
 		overlay.className = 'tb-overlay' + (live ? '' : ' tb-hidden');
 		text.className = 'tb-text' + (live ? '' : ' tb-hidden');
+	}
+
+	// Where the table is standing, which the site says in so many words - see
+	// game_log_step(). The frame is written in the colour of the day or the night it
+	// belongs to, which is the colour its heading in the telling is written in.
+	function setStep(game)
+	{
+		var words = (game && game.step) ? game.step : '';
+		step.textContent = words;
+		step.className = 'tb-step' + (words == '' ? ' tb-hidden' : '') +
+			((game && game.phase == 'night') ? ' night' : '');
 	}
 
 	function flatten(parts)
@@ -223,6 +238,7 @@ echo '</button>';
 				var game = answer.game ? answer.game : null;
 				var live = !!(game && game.live);
 				setLive(live);
+				setStep(live ? game : null);
 				if (live)
 				{
 					render(game.log ? game.log : []);

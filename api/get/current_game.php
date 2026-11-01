@@ -480,6 +480,14 @@ class ApiPage extends GetApiPageBase
 			// recording are counted from as well - see include/game.php.
 			$game->live = (isset($g->time) && $g->time->time != GAMETIME_END);
 
+			// Where the table is standing, for a broadcast to show beside the telling - a thing
+			// the words themselves do not say. See game_log_step().
+			$step = game_log_step($this->game);
+			if (!is_null($step))
+			{
+				$game->step = $step;
+			}
+
 			$options = new stdClass();
 			$options->hide_roles = !$show_roles;
 			$game->log = array();
@@ -685,6 +693,9 @@ class ApiPage extends GetApiPageBase
  			$param->sub_param('nominees', 'Array of players currently nominated, in the order the moderator calls them. When the table has split, only the players who tied are here. It is set only in the day phase.');
  			$param->sub_param('votingCanceled', 'Boolean which is true when votings were canceled (most likely because someone was mod-killed). It is set only in the day phase.');
  			$param->sub_param('votes', 'Array of the hands counted in the current round, each {nominee, voters}, where voters is an array of player numbers in the order they sit. Only the count being taken: when a table splits every hand comes down, so this is empty again until the new count begins. A count the moderator is still taking is not here at all - it shows up when they move on from it. The last name of a count is the exception: it holds everybody who was not counted for anybody else, so it is here as soon as the counting reaches it. It is set only in the day phase.');
+ 			$param->sub_param('live', 'True while there is a game to follow at the table: from the moment the roles start being handed out to the moment the game is played out. It is set only when log is asked for.');
+ 			$param->sub_param('log', 'The game told in words, as an array of {night, round, lines} - the same words the site shows under a game that has been played, in the order they happened and grouped by the day or the night each belongs to. A step the moderator is still standing in is held back until they move on from it. It is set only when log is asked for.');
+ 			$param->sub_param('step', 'Where the table is standing right now, in a few words and in the language of the request - "Role distribution", "Day 1 voting", "Night 2 checks". It is set only when log is asked for, and only while there is a game under way.');
 				
 		return $help;
 	}
