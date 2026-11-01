@@ -1102,6 +1102,88 @@ function broadcast_bind_event($event_id, $refresh = true)
 define('BROADCAST_COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
 define('BROADCAST_ICON_WIDTH', 48);
 
+// How often the lights ask whether the tables are still playing, in milliseconds. A game turns
+// over in minutes and a page of broadcasts is left open for hours, so this is slow enough to
+// cost the site nothing and quick enough that the light is never telling yesterday's news.
+define('BROADCAST_LIGHT_DELAY', 10000);
+
+// What the light says of itself, in one place: it is written into the page when the page is
+// drawn and into the script that keeps it up to date, and the two must say the same thing.
+function broadcast_light_labels()
+{
+	$labels = new stdClass();
+	$labels->on = get_label('A game is on');
+	$labels->off = get_label('Between games');
+	return $labels;
+}
+
+// The light itself, in the state the table is in. The table number is written on it so that
+// the script can find it again without being told the order the squares came out in.
+function broadcast_light_html($table_num, $on)
+{
+	$labels = broadcast_light_labels();
+	return '<span class="bc-light ' . ($on ? 'on' : 'off') . '" data-table="' . (int)$table_num .
+		'" title="' . htmlspecialchars($on ? $labels->on : $labels->off) . '"></span>';
+}
+
+// The lights, kept up to date while the page is open. Somebody picking a table to follow is
+// choosing between tables that are playing and tables that are between games, and that changes
+// every few minutes all evening - nobody reloads the page to find out. So the lights ask the
+// site which tables are playing and recolour themselves; see api/get/live_tables.php. Nothing
+// else on the page moves, because nothing else changes that often: a broadcast beginning or
+// ending adds or moves a square, and that is worth a reload.
+function show_broadcast_lights_script($tournament_id, $event_id)
+{
+	$labels = broadcast_light_labels();
+	$options = new stdClass();
+	$options->url = 'api/get/live_tables.php?' .
+		(($tournament_id > 0) ? ('tournament_id=' . (int)$tournament_id) : ('event_id=' . (int)$event_id));
+	$options->delay = BROADCAST_LIGHT_DELAY;
+	$options->onLabel = $labels->on;
+	$options->offLabel = $labels->off;
+
+	$script = <<<'SCRIPT'
+$(function()
+{
+	var lights = $('span.bc-light');
+	if (lights.length == 0)
+	{
+		return;
+	}
+
+	function ask()
+	{
+		$.getJSON(broadcastLights.url, function(answer)
+		{
+			// An answer that carries an error is not news about the tables: the site could not
+			// say what is happening at them. Taken as "nobody is playing" it would turn every
+			// light red while the games go on, so it is passed over and the lights stand.
+			if (!answer || answer.error || !answer.tables)
+			{
+				return;
+			}
+
+			var on = {};
+			for (var i = 0; i < answer.tables.length; ++i)
+			{
+				on[answer.tables[i]] = true;
+			}
+			lights.each(function()
+			{
+				var live = (on[$(this).attr('data-table')] === true);
+				$(this).attr('class', 'bc-light ' + (live ? 'on' : 'off'));
+				$(this).attr('title', live ? broadcastLights.onLabel : broadcastLights.offLabel);
+			});
+		});
+	}
+
+	setInterval(ask, broadcastLights.delay);
+});
+SCRIPT;
+
+	echo '<script>var broadcastLights = ' . json_encode($options) . ';' . $script . '</script>';
+}
+
 // One square: which table of which round it is on top, the picture to click in the middle, and
 // what kind of broadcast it is underneath. The table is what somebody is looking for, so it is
 // the heading; the kind is how they will be watching it, which the picture has already said.
@@ -1114,7 +1196,15 @@ function show_broadcast_tile($tile)
 		htmlspecialchars(str_replace('<br>', ' ', $tile->caption)) . '">';
 	echo '<img src="' . $tile->icon . '" width="' . BROADCAST_ICON_WIDTH . '"></a>';
 	echo '</td></tr>';
-	echo '<tr class="dark" style="height: 30px;"><td align="center">' . $tile->kind . '</td></tr>';
+	echo '<tr class="dark" style="height: 30px;"><td align="center">';
+	// A light before the kind at a table something could be happening at right now - see
+	// show_broadcast_lights_script(). A square for a broadcast that is over, or one that has
+	// not begun, carries none: there is nothing for it to be saying.
+	if (isset($tile->on))
+	{
+		echo broadcast_light_html($tile->table, $tile->on);
+	}
+	echo $tile->kind . '</td></tr>';
 	echo '</table>';
 }
 
@@ -1211,6 +1301,10 @@ function show_broadcasts($owner, $tournament_id, $event_id, $text)
 		// The table on one line and everything that narrows it down on the next, so that the
 		// tables line up across the squares and the eye runs down them.
 		$tile->caption = get_label('Table [0]', (int)$b->table + 1);
+		// Which table it is of, kept for the light underneath. Tables are the tournament's
+		// rather than the round's, so the number is the same one the text broadcast of that
+		// table is read at - see stream_live_tables().
+		$tile->table = (int)$b->table + 1;
 		$which = ($rounds > 1) ? $b->event_name : '';
 		if (count($days[$b->event_id]) > 1)
 		{
@@ -1263,13 +1357,29 @@ function show_broadcasts($owner, $tournament_id, $event_id, $text)
 			$tile->icon = 'images/text.png';
 			$tile->url = 'text_broadcast.php?' . $scope . '&table_num=' . $table_num;
 			$tile->caption = get_label('Table [0]', $table_num);
+			$tile->table = $table_num;
 			$live[] = $tile;
 		}
+	}
+
+	// Which of the tables are playing right now. Only a square in "Live now" is given a light:
+	// a broadcast that is over is over whatever the table is doing this evening, and one that
+	// has not begun has nothing to be saying either.
+	$playing = stream_live_tables($tournament_id, $event_id);
+	foreach ($live as $tile)
+	{
+		$tile->on = isset($playing[$tile->table]);
 	}
 
 	show_broadcast_group(get_label('Live now'), $live);
 	show_broadcast_group(get_label('Past'), $past);
 	show_broadcast_group(get_label('Future'), $future);
+
+	// And from here on they keep themselves up to date.
+	if (!empty($live))
+	{
+		show_broadcast_lights_script($tournament_id, $event_id);
+	}
 
 	if (empty($live) && empty($past) && empty($future))
 	{

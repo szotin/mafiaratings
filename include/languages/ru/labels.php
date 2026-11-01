@@ -2131,6 +2131,7 @@ $labelMenu = array (
 'Night [0] shooting' => 'Ночь [0] стрельба', // include/game_log.php
 'Night [0] checks' => 'Ночь [0] проверки', // include/game_log.php
 'The game is not saved: game [0] at table [1] has already been played (#[2]). Do not close this page - free the number and save again.' => 'Игра не сохранена: игра [0] за столом [1] уже сыграна (#[2]). Не закрывайте страницу — освободите номер и сохраните ещё раз.', // include/game.php
+'A game is on' => 'Идёт игра', // include/broadcast.php
 );
 
 return $labelMenu;

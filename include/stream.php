@@ -133,6 +133,55 @@ function stream_text_tables($owner)
 	return $tables;
 }
 
+// The tables a game is actually being played at this very moment, by number.
+//
+// This is not stream_text_tables(). That one says which tables can be read at all, and a table
+// between games can be: the reader sits down in front of it and waits for the next one. Here
+// the question is whether there is a game going on right now, which is what the light beside a
+// broadcast says - see show_broadcast_tile().
+//
+// The line is drawn where the text broadcast draws it. A screen that has been opened and
+// nothing done on it yet carries no time of its own, and a game on its last screen, where the
+// referee is entering the bonus points, carries the end: neither is a game anybody can follow.
+// Between those two the table is playing - see api/get/current_game.php.
+//
+// Scoped the way the broadcast beside it is: the page of a tournament asks about the whole
+// tournament, the page of an event about that event. That is a pair of ids rather than a stream
+// owner on purpose - an owner turns a round into its tournament, and the light would then say a
+// game is on at a table where it is another round being played.
+//
+// A moderator can leave more than one unfinished game behind at one table, so one row under way
+// is enough to say the table is.
+function stream_live_tables($tournament_id, $event_id)
+{
+	$tournament_id = (int)$tournament_id;
+	$event_id = (int)$event_id;
+	$playing = array();
+	if ($tournament_id <= 0 && $event_id <= 0)
+	{
+		return $playing;
+	}
+
+	$query = ($tournament_id > 0)
+		? new DbQuery('SELECT g.table_num, g.game FROM current_games g JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?', $tournament_id)
+		: new DbQuery('SELECT table_num, game FROM current_games WHERE event_id = ?', $event_id);
+	while ($row = $query->next())
+	{
+		list ($table_num, $game) = $row;
+		if (is_null($table_num))
+		{
+			continue; // a game nobody said the table of is at no table anybody is watching
+		}
+		$g = json_decode($game);
+		if (is_null($g) || !isset($g->time) || !isset($g->time->time) || $g->time->time == GAMETIME_END)
+		{
+			continue;
+		}
+		$playing[(int)$table_num] = true;
+	}
+	return $playing;
+}
+
 // The language a page standing at a table is to be shown in, worked out from the address it
 // was opened by: the address names the table, and what the table is set to show is on the
 // site - see stream_settings(). That is the whole point of it being there. A source set up in

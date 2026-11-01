@@ -351,3 +351,35 @@ span.tri-filter.no i { left: 1px; }
 div.switch-row { margin-top: 10px; }
 span.switch-item { display: inline-block; white-space: nowrap; margin-right: 18px; }
 span.switch-item > span.switch-text { cursor: pointer; padding-left: 4px; }
+
+/*  Whether a game is on at the table a broadcast is of: green while one is being played, red
+    between games. Somebody choosing a table to follow is choosing between the two, and the
+    light says which it is without reading anything - so it stands before the kind of broadcast
+    rather than after it, where the eye runs into it first. It keeps itself up to date while
+    the page is open; see include/broadcast.php. */
+span.bc-light {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	margin-right: 6px;
+	box-sizing: border-box;
+	vertical-align: middle;
+	border: 1px solid #909090;
+	border-radius: 50%;
+	background-color: #cccccc;
+	transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+/*  Both states glow a little: on a page of squares the light is read from across the room, and
+    a dot that only changes shade reads as two shades of the same dot rather than as a lamp. */
+span.bc-light.on {
+	border-color: #3f8f2f;
+	background-color: #5ec24a;
+	box-shadow: 0px 0px 6px #5ec24a;
+}
+
+span.bc-light.off {
+	border-color: #a33a3a;
+	background-color: #e05050;
+	box-shadow: 0px 0px 6px #e05050;
+}

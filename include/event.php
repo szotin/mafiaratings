@@ -638,10 +638,11 @@ class EventPageBase extends PageBase
 		echo '<td valign="top" align="right">';
 		show_back_button();
 		echo '</td></tr><tr><td style="padding: 0px 0px 0px 20px;">';
-		if ($this->broadcasts > 0 || $this->text_broadcasts)
-		{
-			echo '<a href="event_broadcasts.php?id=' . $this->id . '&bck=1" title="' . get_label('[0] broadcasts', $this->name) . '"><img src="images/broadcast.png" width="48"></a>';
-		}
+		// Nothing stands beside the heading any more. The tower that led to the broadcasts was
+		// put here when there was nowhere else for it to go; it has a place of its own in the
+		// menu above now, between the standings and the games, and a second way in beside the
+		// heading only made the page busier. The cell stays, so that the club and tournament
+		// icons keep the column they have always been in.
 		echo '</td><td align="right" valign="bottom"><table><tr><td align="center">';
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
 		$this->club_pic->show(ICONS_DIR, true, 48);
