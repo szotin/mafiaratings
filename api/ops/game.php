@@ -753,6 +753,29 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 				$log = array();
+
+				// The table and the number are taken here, as the screen is opened, rather than
+				// left until the first save. Until they were, two moderators could have the same
+				// table and game open at once and neither screen would show anything of the other,
+				// there being nothing written down yet to show. The one who saved second was told
+				// the game was not his by a message the screen says nothing about, so he played it
+				// out and wrote it down as well, and the table ended up with two first games.
+				//
+				// Two screens opened in the same breath both find the number free, so the row is
+				// offered rather than placed: whoever loses is told who has the game, which is the
+				// answer they would have been given a minute later anyway.
+				Db::exec(get_label('game'),
+					'INSERT IGNORE INTO current_games (event_id, table_num, game_num, user_id, game, start_time)'.
+					' VALUES (?, ?, ?, ?, ?, 0)',
+					$event_id, $table_num, $game_num, $_profile->user_id, json_encode($game));
+				list ($owner_id) = Db::record(get_label('game'),
+					'SELECT user_id FROM current_games WHERE event_id = ? AND table_num = ? AND game_num = ?',
+					$event_id, $table_num, $game_num);
+				if ($owner_id != $_profile->user_id)
+				{
+					list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $owner_id);
+					throw new Exc(get_label('The game is moderated by [0].', $user_name));
+				}
 			}
 			
 			$regs = get_event_reg_array($event_id);

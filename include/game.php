@@ -4309,6 +4309,21 @@ class Game
 				throw new Exc(get_label('Unknown [0]', get_label('result')));
 			}
 			
+			// The number this game is being written under may have been taken while it was
+			// being played - most often by the very game it was mistaken for. The screen asks
+			// when it opens and every save asks again, but a game is written down here, and
+			// this is the last moment anything can be said about it. Without it both games
+			// went in and the table was left with two first games.
+			if (!is_null($table_num) && !is_null($game_num))
+			{
+				$query = new DbQuery('SELECT id FROM games WHERE event_id = ? AND table_num = ? AND game_num = ?', $data->eventId, $table_num, $game_num);
+				if ($row = $query->next())
+				{
+					list ($gid) = $row;
+					throw new Exc(get_label('The game is not saved: game [0] at table [1] has already been played (#[2]). Do not close this page - free the number and save again.', $game_num, $table_num, $gid));
+				}
+			}
+
 			Db::begin();
 			Db::exec(get_label('game'),
 				// json is NOT NULL and, being TEXT, cannot carry a default, so it has to be

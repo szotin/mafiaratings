@@ -2726,7 +2726,11 @@ function gameNext()
 					game.time = time;
 					
 					_runSaving = true; // resume saving current game in case of error
-					return true;
+					// And what the site said is shown. Returning true here told the waiter to keep
+					// it to itself, so a game that would not go in - the number already played, the
+					// game taken over - went quiet: the screen simply stayed where it was and the
+					// moderator had no way of knowing the game had not been written down.
+					return false;
 				});
 				return; // Bypass gameDirty() - it is not needed any more
 			}

@@ -1,6 +1,9 @@
 var _renderCallback = null;
 var _cofigurableFeatures = "agslvkno";
 var _settingsFlags = 0;
+// What the site last said when it would not take a save, so that it is said once rather than
+// once a second for as long as it goes on. Forgotten again as soon as a save gets through.
+var _lastSaveRefusal = null;
 
 //-----------------------------------------------------------
 // Private API. Don't use it outside of this file.
@@ -803,7 +806,16 @@ function _uiErrorListener(type, message, data)
 		dlg.error(message);
 		break;
 	case 1: // error setting data
-		// nothing to do - connection listener takes care
+		// A save the site refused is not the line coming and going: the game has been taken
+		// over, or the number it is being written under has been played already. The little
+		// picture in the corner says both in the same breath, and a moderator who reads it as
+		// a bad line plays the game to the end and loses it - which is how a table came to
+		// have two first games. State 3 is the site answering and saying no; 2 is the line.
+		if (_connectionState == 3 && message != _lastSaveRefusal)
+		{
+			_lastSaveRefusal = message;
+			dlg.error(message);
+		}
 		break;
 	case 2: // version mismatch
 		var _errorDialog = false;
@@ -822,6 +834,13 @@ function _uiErrorListener(type, message, data)
 
 function _uiConnectionListener(state)
 {
+	// A save that got through says the last refusal is over with, so the next one is told
+	// again even if it says the same thing.
+	if (state == 0)
+	{
+		_lastSaveRefusal = null;
+	}
+
 	let url = "images/connected.png";
 	if (state == 1)
 		url = "images/save.png";
