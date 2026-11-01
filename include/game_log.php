@@ -25,6 +25,12 @@ function game_log_sections($game, $options = NULL)
 		: function ($num) { return (is_numeric($num) && $num >= 1 && $num <= 10) ? $num : get_label('no one'); };
 	$hide_roles = (is_object($options) && isset($options->hide_roles) && $options->hide_roles);
 
+	// get_gametime_text names a player through a callable of its own shape, which takes the
+	// game as well as the seat. A line that says when something happened names whoever it
+	// mentions the same way as the rest of the telling does, so the naming above is handed
+	// on to it instead of being left to its default - a function only view_game.php has.
+	$gametime_player = function ($game, $num) use ($player_html) { return call_user_func($player_html, $num); };
+
 	$told = game_log_told_filter($game);
 
 	$sections = array();
@@ -137,7 +143,7 @@ function game_log_sections($game, $options = NULL)
 					switch ($player->death->type)
 					{
 						case DEATH_TYPE_GIVE_UP:
-							$line .= get_label('[0] gives up and leaves the game [2]. [1]', call_user_func($player_html, $action->player), $info, $game->get_gametime_text($action));
+							$line .= get_label('[0] gives up and leaves the game [2]. [1]', call_user_func($player_html, $action->player), $info, $game->get_gametime_text($action, $gametime_player));
 							break;
 						case DEATH_TYPE_WARNINGS:
 							$line .= get_label('[0] gets fourth warning and leaves the game. [1]', call_user_func($player_html, $action->player), $info);
@@ -146,10 +152,10 @@ function game_log_sections($game, $options = NULL)
 							$line .= get_label('[0] gets the second technical foul and leaves the game. [1]', call_user_func($player_html, $action->player), $info);
 							break;
 						case DEATH_TYPE_KICK_OUT:
-							$line .= get_label('[0] is kicked out from the game [2]. [1]', call_user_func($player_html, $action->player), $info, $game->get_gametime_text($action));
+							$line .= get_label('[0] is kicked out from the game [2]. [1]', call_user_func($player_html, $action->player), $info, $game->get_gametime_text($action, $gametime_player));
 							break;
 						case DEATH_TYPE_TEAM_KICK_OUT:
-							$line .= get_label('[0] is kicked out from the game with team defeat [2]. [1]', call_user_func($player_html, $action->player), $is_maf ? get_label('Town wins.') : get_label('Mafia wins.'), $game->get_gametime_text($action));
+							$line .= get_label('[0] is kicked out from the game with team defeat [2]. [1]', call_user_func($player_html, $action->player), $is_maf ? get_label('Town wins.') : get_label('Mafia wins.'), $game->get_gametime_text($action, $gametime_player));
 							break;
 						case DEATH_TYPE_NIGHT:
 							$line .= get_label('[0] is shot and leaves the game. [1]', call_user_func($player_html, $action->player), $info);
@@ -171,16 +177,16 @@ function game_log_sections($game, $options = NULL)
 				switch (++$warnings[$action->player-1])
 				{
 					case 2:
-						$line .= get_label('[0] gets second warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action));
+						$line .= get_label('[0] gets second warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action, $gametime_player));
 						break;
 					case 3:
-						$line .= get_label('[0] gets third warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action));
+						$line .= get_label('[0] gets third warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action, $gametime_player));
 						break;
 					case 4:
-						$line .= get_label('[0] gets fourth warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action));
+						$line .= get_label('[0] gets fourth warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action, $gametime_player));
 						break;
 					default:
-						$line .= get_label('[0] gets a warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action));
+						$line .= get_label('[0] gets a warning [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action, $gametime_player));
 						break;
 				}
 				break;
@@ -188,10 +194,10 @@ function game_log_sections($game, $options = NULL)
 				switch (++$techFouls[$action->player-1])
 				{
 					case 2:
-						$line .= get_label('[0] gets the second technical foul [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action));
+						$line .= get_label('[0] gets the second technical foul [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action, $gametime_player));
 						break;
 					default:
-						$line .= get_label('[0] gets a technical foul [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action));
+						$line .= get_label('[0] gets a technical foul [1].', call_user_func($player_html, $action->player), $game->get_gametime_text($action, $gametime_player));
 						break;
 				}
 				break;

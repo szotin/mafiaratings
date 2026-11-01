@@ -98,7 +98,11 @@ class ApiPageBase
 				header('location: ' . $url);
 				echo '<p>Redirecting to ' . $url . '</p>';
 			}
-			catch (Exception $e)
+			// Throwable rather than Exception: since PHP 7 a mistake in the code itself - a call to
+			// something that is not there, a value of the wrong type - arrives as an Error, which is
+			// not an Exception. Caught here it is said out loud; left uncaught it takes the whole
+			// answer down and whoever asked is left with nothing at all.
+			catch (Throwable $e)
 			{
 				Exc::log($e, true);
 				echo '<p>Error: ' . $e->getMessage() . '</p>';
@@ -160,7 +164,10 @@ class ApiPageBase
 				header('location: ' . $url);
 				$this->response['redirect'] = $url;
 			}
-			catch (Exception $e)
+			// See above: an Error is not an Exception, and an API that lets one through answers
+			// with an empty 500 saying nothing of what went wrong - neither to whoever asked nor
+			// to whoever has to find it afterwards.
+			catch (Throwable $e)
 			{
 				Db::rollback();
 				Exc::log($e, true);

@@ -211,7 +211,16 @@ echo '</button>';
 			then(function(response) { return response.ok ? response.json() : Promise.reject(response.status); }).
 			then(function(answer)
 			{
-				var game = (answer && answer.game) ? answer.game : null;
+				// An answer that carries an error is not news about the table: the site could
+				// not say what is happening there. Taken as "no game" it would put the
+				// between-games screens up over a game that is being played, and leave them
+				// there. So it is passed over, and the page goes on showing what it has.
+				if (!answer || answer.error)
+				{
+					return;
+				}
+
+				var game = answer.game ? answer.game : null;
 				var live = !!(game && game.live);
 				setLive(live);
 				if (live)

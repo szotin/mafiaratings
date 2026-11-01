@@ -3806,6 +3806,16 @@ class Game
 	
 	function get_gametime_text($gametime, $output_player_function = 'get_player_number_html')
 	{
+		// The default names a function that only the pages showing a game define. Anywhere
+		// else - include/game_log.php telling a game in words to a text broadcast, for one -
+		// it is a function that is not there, and PHP 8 answers a call to one of those with a
+		// fatal error rather than with a warning: the whole answer goes, not just the name
+		// that was wanted. Where there is nothing to make a name with, the seat says who it is.
+		if (!is_callable($output_player_function))
+		{
+			$output_player_function = function ($game, $num) { return $num; };
+		}
+		
 		if (!isset($gametime->time))
 		{
 			return get_label('at unknown time');
