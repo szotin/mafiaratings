@@ -133,41 +133,51 @@ function stream_text_tables($owner)
 	return $tables;
 }
 
-// The tables a game is actually being played at this very moment, by number.
+// What a table being played at is called, where more than one competition's tables are on the
+// same page.
+//
+// A table number on its own means nothing outside the thing it belongs to: table 1 of the
+// tournament at one club this evening and table 1 of another are different tables, and a page
+// that lists the broadcasts of a club, of a league, of a series, of an address or of the whole
+// site has both of them on it. So a table is named by what owns it as well as by its number -
+// "t636-1" is table 1 of tournament 636, "e15359-2" table 2 of an event played on its own. That
+// is the same pairing stream_owner() makes: a round of a tournament is the tournament's, because
+// the tables are kept from round to round.
+function stream_live_key($tournament_id, $event_id, $table_num)
+{
+	$tournament_id = (int)$tournament_id;
+	return (($tournament_id > 0) ? ('t' . $tournament_id) : ('e' . (int)$event_id)) . '-' . (int)$table_num;
+}
+
+// The tables a game is actually being played at this very moment, as a set of those names.
 //
 // This is not stream_text_tables(). That one says which tables can be read at all, and a table
-// between games can be: the reader sits down in front of it and waits for the next one. Here
-// the question is whether there is a game going on right now, which is what the light beside a
+// between games can be: the reader sits down in front of it and waits for the next one. Here the
+// question is whether there is a game going on right now, which is what the light beside a
 // broadcast says - see show_broadcast_tile().
 //
-// The line is drawn where the text broadcast draws it. A screen that has been opened and
-// nothing done on it yet carries no time of its own, and a game on its last screen, where the
-// referee is entering the bonus points, carries the end: neither is a game anybody can follow.
-// Between those two the table is playing - see api/get/current_game.php.
+// The line is drawn where the text broadcast draws it. A screen that has been opened and nothing
+// done on it yet carries no time of its own, and a game on its last screen, where the referee is
+// entering the bonus points, carries the end: neither is a game anybody can follow. Between those
+// two the table is playing - see api/get/current_game.php.
 //
-// Scoped the way the broadcast beside it is: the page of a tournament asks about the whole
-// tournament, the page of an event about that event. That is a pair of ids rather than a stream
-// owner on purpose - an owner turns a round into its tournament, and the light would then say a
-// game is on at a table where it is another round being played.
+// What is asked about is the page's own scope, handed in as a condition on the events table under
+// the alias e - see broadcast_scope() in broadcast.php. That is on purpose: the lights are asked
+// about exactly the squares the page is showing, and no more. The page of one round asks about
+// that round, so a game at the same table in another round of the same tournament does not light
+// it up; the page of a club asks about the club, so any of its rounds does.
 //
 // A moderator can leave more than one unfinished game behind at one table, so one row under way
 // is enough to say the table is.
-function stream_live_tables($tournament_id, $event_id)
+function stream_live_keys($condition)
 {
-	$tournament_id = (int)$tournament_id;
-	$event_id = (int)$event_id;
 	$playing = array();
-	if ($tournament_id <= 0 && $event_id <= 0)
-	{
-		return $playing;
-	}
-
-	$query = ($tournament_id > 0)
-		? new DbQuery('SELECT g.table_num, g.game FROM current_games g JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?', $tournament_id)
-		: new DbQuery('SELECT table_num, game FROM current_games WHERE event_id = ?', $event_id);
+	$query = new DbQuery(
+		'SELECT e.tournament_id, g.event_id, g.table_num, g.game FROM current_games g' .
+		' JOIN events e ON e.id = g.event_id WHERE ', $condition);
 	while ($row = $query->next())
 	{
-		list ($table_num, $game) = $row;
+		list ($tournament_id, $event_id, $table_num, $game) = $row;
 		if (is_null($table_num))
 		{
 			continue; // a game nobody said the table of is at no table anybody is watching
@@ -177,7 +187,7 @@ function stream_live_tables($tournament_id, $event_id)
 		{
 			continue;
 		}
-		$playing[(int)$table_num] = true;
+		$playing[stream_live_key($tournament_id, $event_id, $table_num)] = true;
 	}
 	return $playing;
 }

@@ -195,6 +195,7 @@ class AddressPageBase extends PageBase
 			new MenuItem('address_info.php?id=' . $this->id, get_label('Address'), get_label('[0] information', $this->name))
 			, new MenuItem('address_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name))
 			, new MenuItem('address_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
+			, new MenuItem('address_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('[0] broadcasts', $this->name))
 			, new MenuItem('address_games.php?id=' . $this->id, get_label('Games'), get_label('Games list at [0]', $this->name))
 			, new MenuItem('#stats', get_label('Reports'), NULL, array
 			(

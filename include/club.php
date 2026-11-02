@@ -155,6 +155,7 @@ class ClubPageBase extends PageBase
 			, new MenuItem('club_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series history', $this->name))
 			, new MenuItem('club_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name))
 			, new MenuItem('club_events.php?id=' . $this->id, get_label('Events'), get_label('[0] events history', $this->name))
+			, new MenuItem('club_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('[0] broadcasts', $this->name))
 			, new MenuItem('club_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name))
 			, new MenuItem('#stats', get_label('Reports'), NULL, array
 			(

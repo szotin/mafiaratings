@@ -76,6 +76,7 @@ class LeaguePageBase extends PageBase
 			new MenuItem('league_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Member clubs of [0].', $this->name)),
 			new MenuItem('league_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series history', $this->name)),
 			new MenuItem('league_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] tournaments history', $this->name)),
+			new MenuItem('league_broadcasts.php?id=' . $this->id, get_label('Broadcasts'), get_label('[0] broadcasts', $this->name)),
 			new MenuItem('league_games.php?id=' . $this->id, get_label('Games'), get_label('Games list of [0]', $this->name)),
 			new MenuItem('#stats', get_label('Stats'), NULL, array
 			(
