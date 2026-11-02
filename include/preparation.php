@@ -88,6 +88,16 @@ trait PreparationTabs
 			dlg.form(url, refr, 400);
 		}
 
+		function swapGames(eventId)
+		{
+			dlg.form("form/seating_games_swap.php?event_id=" + eventId, refr, 400);
+		}
+
+		function swapTables(eventId)
+		{
+			dlg.form("form/seating_tables_swap.php?event_id=" + eventId, refr, 400);
+		}
+
 		function uploadDimTom(eventId)
 		{
 			$('#upload-' + eventId).trigger('click');
@@ -153,6 +163,26 @@ trait PreparationTabs
 		$misc = json_decode($misc_str);
 
 		$has_seating = !empty($misc->seating);
+
+		// How much there is to move around. A seating with a single game has no two games to
+		// swap and one with a single table no two tables, so those buttons would only open a
+		// dialog that refuses. Tables are counted as the least any game has: a few seatings do
+		// not run the same number throughout, and a table missing from some games cannot be
+		// swapped - see form/seating_tables_swap.php.
+		$games_count = 0;
+		$tables_count = 0;
+		if ($has_seating && isset($misc->seating->rounds) && is_array($misc->seating->rounds))
+		{
+			$games_count = count($misc->seating->rounds);
+			if ($games_count > 0)
+			{
+				$tables_count = PHP_INT_MAX;
+				foreach ($misc->seating->rounds as $round)
+				{
+					$tables_count = min($tables_count, is_array($round) ? count($round) : 0);
+				}
+			}
+		}
 		$url = 'https://dimtom.github.io/web_schedule';
 
 		echo '<input type="file" id="upload-' . $event_id . '" style="display:none" onchange="doUploadDimTom(' . $event_id . ')">';
@@ -165,6 +195,14 @@ trait PreparationTabs
 		else
 		{
 			echo '<button onclick="swapPlayers(' . $event_id . ')"><img src="images/user_change.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap players') . '</button>';
+			if ($games_count > 1)
+			{
+				echo ' <button onclick="swapGames(' . $event_id . ')"><img src="images/table.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap games') . '</button>';
+			}
+			if ($tables_count > 1)
+			{
+				echo ' <button onclick="swapTables(' . $event_id . ')"><img src="images/table.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap tables') . '</button>';
+			}
 			echo ' <button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
 
 			$stored_hash    = isset($misc->seating->hash)    ? $misc->seating->hash    : null;

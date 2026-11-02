@@ -2590,6 +2590,145 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// swap_seating_games
+	//-------------------------------------------------------------------------------------------------------
+	function swap_seating_games_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		// 1-based, the way the dialog and the seating pages number the games.
+		$game1 = (int)get_required_param('game1');
+		$game2 = (int)get_required_param('game2');
+
+		Db::begin();
+		list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
+			'SELECT club_id, tournament_id, misc FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+
+		$misc = is_null($misc_str) ? null : json_decode($misc_str);
+		if (is_null($misc) || !isset($misc->seating->rounds) || !is_array($misc->seating->rounds))
+		{
+			throw new Exc(get_label('Seating is not generated for this round'));
+		}
+
+		$rounds = $misc->seating->rounds;
+		$count = count($rounds);
+		foreach (array($game1, $game2) as $g)
+		{
+			if ($g < 1 || $g > $count)
+			{
+				throw new Exc(get_label('Game [0] is not in this seating.', $g));
+			}
+		}
+		if ($game1 == $game2)
+		{
+			throw new Exc(get_label('Games must be different.'));
+		}
+
+		// Nothing about who sits with whom changes - a game is a whole round across every table,
+		// so moving two of them around each other leaves every pairing, every seat number and
+		// every player's number of games exactly as they were. Only the order they are played in
+		// changes, which is the point.
+		$tmp = $misc->seating->rounds[$game1 - 1];
+		$misc->seating->rounds[$game1 - 1] = $misc->seating->rounds[$game2 - 1];
+		$misc->seating->rounds[$game2 - 1] = $tmp;
+
+		// Hand-arranged now, so nothing may offer to replace the seating: taking an improved
+		// version would put the games back in the order they came in. See
+		// show_seating_quality_bar() and include/preparation.php.
+		$misc->seating->manual = true;
+
+		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+		Db::commit();
+	}
+
+	function swap_seating_games_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER,
+			'Swap two games of a round\'s seating, so they are played in each other\'s order. Who sits with whom is unaffected; only the order changes.');
+		$help->request_param('event_id', 'The event (round) id.');
+		$help->request_param('game1', 'First game, numbered from 1.');
+		$help->request_param('game2', 'Second game, numbered from 1.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// swap_seating_tables
+	//-------------------------------------------------------------------------------------------------------
+	function swap_seating_tables_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+		// 1-based, the way the dialog and the seating pages number the tables.
+		$table1 = (int)get_required_param('table1');
+		$table2 = (int)get_required_param('table2');
+
+		Db::begin();
+		list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
+			'SELECT club_id, tournament_id, misc FROM events WHERE id = ?', $event_id);
+		check_permissions(
+			PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER |
+			PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE,
+			$club_id, $event_id, $tournament_id);
+
+		$misc = is_null($misc_str) ? null : json_decode($misc_str);
+		if (is_null($misc) || !isset($misc->seating->rounds) || !is_array($misc->seating->rounds) || !count($misc->seating->rounds))
+		{
+			throw new Exc(get_label('Seating is not generated for this round'));
+		}
+
+		if ($table1 == $table2)
+		{
+			throw new Exc(get_label('Tables must be different.'));
+		}
+
+		// Both tables have to be there in every game. A few seatings do not run the same number
+		// of tables throughout, and swapping a table into games that do not have it would leave
+		// the seating a different shape than its hash says.
+		foreach ($misc->seating->rounds as $round)
+		{
+			$count = is_array($round) ? count($round) : 0;
+			foreach (array($table1, $table2) as $t)
+			{
+				if ($t < 1 || $t > $count)
+				{
+					throw new Exc(get_label('Table [0] is not in every game of this seating.', $t));
+				}
+			}
+		}
+
+		// Done in every game, this is a relabelling: the same ten people still sit down together,
+		// each on the same seat number, so who meets whom and how often is untouched. Even the
+		// tables score is the same, since it measures how evenly a player is spread over the
+		// tables and that is symmetric in them. What changes is which table a group is called to.
+		foreach ($misc->seating->rounds as $i => $round)
+		{
+			$tmp = $misc->seating->rounds[$i][$table1 - 1];
+			$misc->seating->rounds[$i][$table1 - 1] = $misc->seating->rounds[$i][$table2 - 1];
+			$misc->seating->rounds[$i][$table2 - 1] = $tmp;
+		}
+
+		// Hand-arranged now, so nothing may offer to replace the seating: taking an improved
+		// version would put the tables back. See show_seating_quality_bar() and
+		// include/preparation.php.
+		$misc->seating->manual = true;
+
+		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+		Db::commit();
+	}
+
+	function swap_seating_tables_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER,
+			'Swap two tables of a round\'s seating, in every game. Who sits with whom and on which seat is unaffected; only the table a group is called to changes.');
+		$help->request_param('event_id', 'The event (round) id.');
+		$help->request_param('table1', 'First table, numbered from 1.');
+		$help->request_param('table2', 'Second table, numbered from 1.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// clear_seating
 	//-------------------------------------------------------------------------------------------------------
 	function clear_seating_op()
