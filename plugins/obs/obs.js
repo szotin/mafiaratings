@@ -15,6 +15,7 @@ var obs = new function()
 	var game;      // the last game state we got from the site
 	var offline;   // true when the site did not answer the last request
 	var hideRoles; // true when the game being played keeps its roles off the overlays
+	var dealt;     // how far the roles have been handed out - see dealtTo()
 	var shown;     // the voters already on the screen, so that only a new one flies in
 
 	this.start = function(pageOptions)
@@ -109,10 +110,63 @@ var obs = new function()
 	// what a player is
 	//--------------------------------------------------------------------------------------
 	// The role as the viewers are allowed to know it. A game that hides its roles shows none at
-	// all, and so does a seat whose role has not been handed out yet.
+	// all, and so does a seat the deal has not reached yet.
 	function roleOf(player)
 	{
-		return (!hideRoles && player && player.role) ? player.role : '';
+		if (hideRoles || !player)
+		{
+			return '';
+		}
+		if (player.role)
+		{
+			return player.role;
+		}
+		// A seat the deal has already gone past with nothing written down against it is a
+		// civilian - see dealtTo().
+		return (player.number <= dealt) ? 'town' : '';
+	}
+
+	// How far the roles have been handed out, as the last seat that counts as dealt. They are
+	// dealt round the table in the order of the seats, and the game writes down only what a
+	// player was given: a civilian is nothing at all until the whole deal is over and the site
+	// says so for everybody. So a seat with a role means the deal has been past every seat
+	// before it, and the blanks among those are the civilians rather than seats still to come.
+	//
+	// And once the cards that are not a civilian's are all out - the sheriff, the don and the
+	// two mafiosi every table is dealt, see gameGenerateRoles() in js/src/game.js - there is
+	// nothing left to hand out at all, so every seat still blank is a civilian however far
+	// round the table the deal has got.
+	function dealtTo(g)
+	{
+		var last = 0;
+		var sheriff = 0;
+		var don = 0;
+		var maf = 0;
+		for (var i = 0; i < g.players.length; ++i)
+		{
+			var player = g.players[i];
+			if (!player.role)
+			{
+				continue;
+			}
+			if (player.number > last)
+			{
+				last = player.number;
+			}
+			if (player.role == 'sheriff')
+			{
+				++sheriff;
+			}
+			else if (player.role == 'don')
+			{
+				++don;
+			}
+			else if (player.role == 'maf')
+			{
+				++maf;
+			}
+		}
+		return (sheriff >= 1 && don >= 1 && maf >= 2) ? SEATS : last;
 	}
 
 	function isMafia(role)
@@ -169,6 +223,7 @@ var obs = new function()
 		// The game itself says whether its roles are shown, and the moderator can turn that over
 		// in the middle of it, so it is read afresh every time rather than settled at start-up.
 		hideRoles = (g.hideRoles === true);
+		dealt = dealtTo(g);
 
 		var stage = document.getElementById('stage');
 		stage.className = 'ov ' + (g.phase == 'night' ? 'night' : 'day') + (offline ? ' offline' : '');
