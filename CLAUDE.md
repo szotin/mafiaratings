@@ -46,10 +46,12 @@ Bit-flag based, defined in `include/constants.php`. Eight levels from player to 
 - Multilingual: each module has per-language files (e.g., `game_en.js`, `game_ru.js`, `game_ua.js`). Supported languages: English, Russian, Ukrainian.
 
 ### OBS Studio Overlays
-- `plugins/obs/` — the pages shown as browser sources in OBS Studio: `overlay.php`, `players.php` and `gamestats.php`. All three are built by `obs.php` and refreshed by `obs.js`; `obs.css` and `images/` hold the look.
-- They poll `api/get/current_game.php` on their own site by a relative URL, so the same code works on production and on a testing server with no configuration.
-- `obs.js` is plain JavaScript loaded as it is — it is not compiled by the Closure Compiler, and it does not use jQuery.
-- `game_obs.php` is the page where a club manager copies the URLs of these overlays.
+- `plugins/obs/` — the pages shown as browser sources in OBS Studio. Over the picture: `overlay.php`, and `players.php` / `gamestats.php`, which are the same drawing with one half left out. All three are built by `obs.php` and refreshed by `obs.js`; `obs.css` holds the look and `fonts/` the two self-hosted fonts.
+- Between games: `between.php`, a shell that `between.js` fills by fetching one screen at a time from `screen_results.php`, `screen_standings.php`, `screen_upcoming.php`, `screen_stats.php` and `screen_title.php`. Each screen is an ordinary page that prints itself, `screens.php` holds what they share, and a screen that prints nothing is skipped. `between.css` holds the look.
+- `scenes.js` switches the OBS scene from inside a source, through `window.obsstudio`.
+- They poll `api/get/current_game.php` and `api/get/stream.php` on their own site by a relative URL, so the same code works on production and on a testing server with no configuration.
+- `obs.js`, `between.js` and `scenes.js` are plain JavaScript loaded as they are — they are not compiled by the Closure Compiler, and they do not use jQuery.
+- `streams.php` is the page where a club manager sets a table's stream up and copies the URLs of these sources; `text_broadcast.php` shows the same pages to a reader instead of a camera.
 
 ### Database Migrations
 Build a fresh database by running `db/create_database.sql` (the initial base schema) and then applying `db/alter1.sql` through the latest `db/alter*.sql` in order. New migrations go in the next `db/alterNNN.sql`, etc.

@@ -13,7 +13,6 @@ define('OBS_SCENE_DELAY', 2000);
 // ground, whether it is to show anything at all. None of it has to follow the game, so it is
 // asked for about as often as a between-games screen stays up.
 define('OBS_SETTINGS_DELAY', 10000);
-define('OBS_NO_LOGO', 'images/aml_logo.png'); // the picture shown instead of a logo that we do not have
 
 // Shows a browser source page for OBS Studio. $view is one of:
 //   'overlay'   - the info bar and the players;
@@ -66,52 +65,81 @@ function show_obs_page($view)
 		$options->retryDelay = max((int)$_REQUEST['retry_delay'], 100);
 	}
 
+	// The words the script writes into the overlay. They are settled here because the page is
+	// drawn in the language the table is set to show, and a script cannot ask get_label().
 	$options->labels = new stdClass();
-	$options->labels->referee = get_label('Referee');
-	$options->labels->stages = array(get_label('round'), get_label('finals'), get_label('semis'), get_label('quarters'));
+	$options->labels->day = get_label('Day [0]');
+	$options->labels->night = get_label('Night [0]');
+	$options->labels->table = get_label('Table [0]');
+	$options->labels->game = get_label('Game [0]');
+	$options->labels->nominated = get_label('Nominees');
+	$options->labels->noVoting = get_label('No voting this round');
+	$options->labels->tieTag = get_label('Tie');
+	$options->labels->townWins = get_label('Town win');
+	$options->labels->mafiaWins = get_label('Mafia win');
+	$options->labels->tie = get_label('Tie');
+	$options->labels->gameOver = get_label('Game over');
+	$options->labels->offline = get_label('OFFLINE');
+	// One for a single vote, one for a few of them and one for many: Russian and Ukrainian need
+	// all three, English uses the last two. The script picks by the count - see votesWord().
+	$options->labels->votes = explode('|', get_label('vote|votes|votes'));
+	// What the game is doing right now. A speech is not among them: the card of whoever is
+	// speaking says it better, and the label would be up for most of the game.
+	$options->labels->states = array(
+		'notStarted' => get_label('Not started'),
+		'starting' => get_label('Dealing roles'),
+		'arranging' => get_label('Mafia arranging'),
+		'voting' => get_label('Voting'),
+		'nomineeSpeaking' => get_label('Tie speeches'),
+		'shooting' => get_label('Mafia shooting'),
+		'donChecking' => get_label('Don checking'),
+		'sheriffChecking' => get_label('Sheriff checking'),
+		'mafiaWon' => get_label('Game over'),
+		'townWon' => get_label('Game over'),
+		'tie' => get_label('Game over'),
+		'end' => get_label('Game over'));
 
 	echo '<!DOCTYPE HTML>';
 	// The page says on the html element which of the three it is, so that the stylesheet
 	// knows the size this one is meant to be given. The name is not the one the body carries:
 	// the body classes are what the parts are styled by, and the root must not pick those up.
-	echo '<html class="view-' . $view . '"><head>';
+	//
+	// A page somebody is watching rather than one standing in front of a camera says so too:
+	// the scrims the pills and the cards are given to read over a picture have no picture to
+	// read over there, and on the light ground of a text broadcast they are a grey haze over
+	// the words. See viewer in text_broadcast.php.
+	$viewed = (isset($_REQUEST['viewer']) && (int)$_REQUEST['viewer'] != 0);
+	echo '<html class="view-' . $view . ($viewed ? ' no-scrim' : '') . '"><head>';
 	echo '<meta content="text/html; charset=utf-8" http-equiv="Content-Type">';
 	echo '<title>' . get_label('OBS Studio integration') . '</title>';
-	echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700">';
-	echo '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gagalin">';
 	echo '<link rel="stylesheet" href="' . obs_file('obs.css') . '">';
 	echo '<script src="' . obs_file('obs.js') . '"></script>';
-	echo '<script src="' . obs_file('voting.js') . '"></script>';
 	// Changes the OBS scene from inside the source, which is why there is no
 	// obs-websocket here. Outside OBS it does nothing at all.
 	echo '<script src="' . obs_file('scenes.js') . '"></script>';
 	echo '</head><body>';
 
-	if ($view == 'overlay')
+	// The stage everything is placed against. It is the same drawing in all three views, with
+	// the parts the view does not show left out of it - see obs.css, which gives each view the
+	// height it is meant to be given in OBS Studio.
+	echo '<div class="ov day" id="stage">';
+	if ($view != 'players')
 	{
-		echo '<div class="top-bar">';
-		show_gamestats();
-		show_referee();
-		show_round();
-		echo '</div>';
+		echo '<div class="tl" id="tl"></div>';
+		echo '<div class="sheet" id="nom"></div>';
+		echo '<div class="tr" id="tr"></div>';
 	}
-	else if ($view == 'gamestats')
-	{
-		show_gamestats();
-	}
-
 	if ($view != 'gamestats')
 	{
 		echo '<div class="players" id="players"></div>';
 	}
-
-	// The sheet the voting is drawn on - the hands put up over the players. It lies over the
-	// whole source and takes no room of its own. Only here: the hands fly from the players to
-	// the info bar, and the overlay is the one source that has both of them. See voting.js.
+	// The banner that says who won. Only where the whole picture is: it is drawn across the
+	// middle of the camera, which the two narrow views do not have.
 	if ($view == 'overlay')
 	{
-		echo '<div class="voting" id="voting"></div>';
+		echo '<div class="sheet" id="over"></div>';
 	}
+	echo '</div>';
 
 	echo '<script>obs.start(' . json_encode($options) . ');</script>';
 	echo '<script>obsScenes.start("../../api/get/stream.php?op=settings", ' .
@@ -126,34 +154,6 @@ function obs_file($name)
 {
 	$time = filemtime(__DIR__ . '/' . $name);
 	return $time ? $name . '?' . $time : $name;
-}
-
-// The info bar: the best move, the checks, and the nominees. obs.js fills the sections in.
-function show_gamestats()
-{
-	echo '<div class="gamestats" id="gamestats">';
-	foreach (array('legacy', 'sheriff-check', 'don-check', 'nominees') as $section)
-	{
-		echo '<div class="section ' . $section . ' empty" id="' . $section . '"><div class="label"></div><div class="elements"></div></div>';
-	}
-	echo '<div class="connection-status">' . get_label('OFFLINE') . '</div>';
-	echo '</div>';
-}
-
-function show_referee()
-{
-	echo '<div class="referee" id="referee">';
-	echo '<div class="photo"><img id="referee-photo" src="' . OBS_NO_LOGO . '"></div>';
-	echo '<span class="name" id="referee-name">' . get_label('Referee') . '</span>';
-	echo '</div>';
-}
-
-function show_round()
-{
-	echo '<div class="round" id="round" style="display: none;">';
-	echo '<div class="photo"><img id="round-logo" src="' . OBS_NO_LOGO . '"></div>';
-	echo '<span class="name" id="round-name"></span>';
-	echo '</div>';
 }
 
 ?>

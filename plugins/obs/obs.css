@@ -1,11 +1,53 @@
-/*  Styles of the OBS Studio browser source pages. The pages are shown on top of a video, so
-    everything that is not painted here must stay transparent.
+/*  Styles of the OBS Studio browser source pages: the overlay that stands over the table
+    camera while a game is played.
 
-    Every length here is in rem, and the rem itself is a share of the source, so a page is one
+    This is the design handed over by the designer (Mafia_Broadcast_Handoff), followed to the
+    value, and it is the same visual system the between-games frames are drawn in - see
+    between.css. The pages are shown on top of a video, so everything that is not painted here
+    stays transparent.
+
+    Every length is in rem, and the rem itself is a share of the source, so a page is one
     drawing scaled to whatever size the browser source is given rather than a layout that
     rearranges itself - and because the share is in vw and vh, it follows the source being
-    resized without anything having to be measured or reloaded. Font sizes stay in em, which
-    follows along. */
+    resized without anything having to be measured or reloaded. The designer drew at
+    1920 x 1080 with 16px text, so one of the designer's pixels is 1/16 rem: 56px is 3.5rem. */
+
+/*  The two fonts, served from here rather than from Google: a browser source in OBS is often
+    opened before the machine has any network, and an overlay that came up in Times New Roman
+    would go out on the stream that way. Both are variable fonts, so one file carries every
+    weight that is asked for; the Cyrillic and the Latin are separate files, so an overlay in
+    English never fetches the Cyrillic one. */
+@font-face {
+	font-family: 'Onest';
+	font-weight: 400 800;
+	font-display: block;
+	src: url(fonts/onest-cyrillic.woff2) format('woff2');
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+	font-family: 'Onest';
+	font-weight: 400 800;
+	font-display: block;
+	src: url(fonts/onest-latin.woff2) format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: 'Unbounded';
+	font-weight: 200 900;
+	font-display: block;
+	src: url(fonts/unbounded-cyrillic.woff2) format('woff2');
+	unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+@font-face {
+	font-family: 'Unbounded';
+	font-weight: 200 900;
+	font-display: block;
+	src: url(fonts/unbounded-latin.woff2) format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 /*  How big the rem is. 120 is how wide the drawing is in rem and the second number how tall,
     so the smaller of the two is the biggest rem the drawing still fits the source at: the width
@@ -15,13 +57,21 @@
     or shrunk to it - which is also what makes a source follow being resized. */
 html { font-size: calc(100vw / 120); }                                /* 1920 wide */
 html.view-overlay { font-size: min(100vw / 120, 100vh / 67.5); }      /* 1920 x 1080 */
-html.view-players { font-size: min(100vw / 120, 100vh / 16.875); }    /* 1920 x 260 */
-html.view-gamestats { font-size: min(100vw / 120, 100vh / 6.3125); }  /* 1920 x 100 */
+html.view-players { font-size: min(100vw / 120, 100vh / 22.5); }      /* 1920 x 360 */
+html.view-gamestats { font-size: min(100vw / 120, 100vh / 12.5); }    /* 1920 x 200 */
 
 * {
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
+}
+
+body {
+	background-color: transparent;
+	color: #fff;
+	font-family: 'Onest', system-ui, sans-serif;
+	line-height: 1.4;
+	overflow: hidden; /* a browser source in OBS Studio has no scrollbars */
 }
 
 /*  Nothing at all, when the table is set to show nothing - see STREAM_FLAG_HIDE_GLYPHS. The
@@ -30,543 +80,921 @@ body.hidden-source > * {
 	display: none;
 }
 
-body {
-	background-color: transparent;
-	color: #fff;
-	font-family: 'Roboto Slab', serif;
-	line-height: 1.4;
-	overflow: hidden; /* a browser source in OBS Studio has no scrollbars */
-}
-
-.view-overlay body {
-	display: flex;
-	flex-direction: column;
-	height: 100vh;
-}
-
-.top-bar {
-	display: flex;
-	align-items: center;
-	flex: 0 1 auto;
-	height: 6.25rem;
-	background-color: rgba(0, 0, 0, 0.7);
-}
-
-@keyframes fade-in {
-	0% { opacity: 0.5; }
-	100% { opacity: 1; }
-}
-
-@keyframes fade-out {
-	0% { opacity: 1; }
-	100% { opacity: 0.5; }
-}
-
-@keyframes flash {
-	0%, 50%, 100% { opacity: 1; }
-	25%, 75% { opacity: 0; }
-}
-
 /*--------------------------------------------------------------------------------------
-    the info bar: the best move, the checks of the sheriff and of the don, and the nominees
+    the stage
   --------------------------------------------------------------------------------------*/
-.gamestats {
-	display: flex;
-	align-items: center;
-	padding: 1.0625rem;
-	font-size: 2em;
-	line-height: normal;
-}
-
-.gamestats.offline {
-	opacity: 0.8;
-}
-
-.connection-status {
-	font-size: .7em;
-	color: rgb(255, 0, 0);
-}
-
-.gamestats:not(.offline) .connection-status {
-	display: none;
-}
-
-/* when the roles are hidden there is nothing to tell about the checks */
-.gamestats.hide-roles .sheriff-check,
-.gamestats.hide-roles .don-check {
-	display: none;
-}
-
-.section {
-	display: flex;
-	margin-right: 3.125rem;
-}
-
-.section .label {
-	min-width: 3.75rem;
-	min-height: 3.75rem;
-	border-top-left-radius: 0.9375rem;
-	border-bottom-left-radius: 0.9375rem;
-	background-color: #000;
-	background-size: 3.125rem;
-	background-position: center;
-	background-repeat: no-repeat;
-}
-
-.section.legacy { min-width: 9.375rem; }
-.section.sheriff-check { min-width: 12.5rem; }
-.section.don-check { min-width: 12.5rem; }
-
-.section.legacy .label { background-image: url(images/killed_1.png); }
-.section.sheriff-check .label { background-image: url(images/sheriff.png); }
-.section.don-check .label { background-image: url(images/don.png); }
-.section.nominees .label { background-image: url(images/voted_white.png); }
-
-.section.empty .label {
-	border-top-right-radius: 0.9375rem;
-	border-bottom-right-radius: 0.9375rem;
-	animation: fade-out 3s forwards;
-}
-
-.section.data .label {
-	animation: fade-in 1.5s;
-}
-
-.section .elements {
-	display: flex;
-	min-height: 3.75rem;
-}
-
-.element {
-	min-width: 2.5rem;
-	min-height: 3.75rem;
-	padding: 0.75rem;
-	color: #fff;
-	background-color: rgba(90, 90, 90, 0.8);
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	animation: flash 1.5s;
-}
-
-.element:last-child {
-	border-top-right-radius: 0.9375rem;
-	border-bottom-right-radius: 0.9375rem;
-}
-
-.gamestats:not(.hide-roles) .element.role-town { background-image: url(images/red_player_bg.jpg); }
-.gamestats:not(.hide-roles) .element.role-don,
-.gamestats:not(.hide-roles) .element.role-maf { background-image: url(images/black_player_bg.jpg); }
-.gamestats:not(.hide-roles) .element.role-sheriff { background-image: url(images/green_player_bg.jpg); }
-
-/*--------------------------------------------------------------------------------------
-    the referee and the round in the right corner of the info bar
-  --------------------------------------------------------------------------------------*/
-.referee,
-.round {
+/*  Everything is placed against this rather than against the window, so that the three views
+    are the same drawing with parts left out rather than three layouts. */
+.ov {
 	position: relative;
+	width: 120rem;
+	height: 67.5rem;
+	overflow: hidden;
+
+	--ink: #FFFFFF;
+	--ink2: rgba(255, 255, 255, 0.74);
+	--ink3: rgba(255, 255, 255, 0.56);
+	--line: rgba(255, 255, 255, 0.14);
+	--red: #FF4D5E;
+	--gold: #F5C451;
+	--amber: #FFB547;
+	--moon: #C9D4FF;
+	--card-sh: 0 0.625rem 1.625rem rgba(0, 0, 0, 0.4);
+}
+
+/*  The players view is the strip and what stands above it; the info bar view is the pills. Both
+    are the overlay with the rest left out, and both keep what they show where it is. */
+.view-players .ov { height: 22.5rem; }
+.view-gamestats .ov { height: 12.5rem; }
+
+/*  Two soft scrims, so that the pills and the cards read over any camera picture. They are not
+    drawn in the views that are only one of the two. */
+.view-overlay .ov::before,
+.view-overlay .ov::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	pointer-events: none;
+}
+
+.view-overlay .ov::before {
+	top: 0;
+	height: 12.5rem;
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0.42), transparent);
+}
+
+.view-overlay .ov::after {
+	bottom: 0;
+	height: 20rem;
+	background: linear-gradient(0deg, rgba(0, 0, 0, 0.55), transparent);
+}
+
+/*  A page being watched rather than shown over a camera has nothing to read over, so it is
+    given no scrims at all - on the light ground of a text broadcast they would only be a grey
+    haze over the page. See obs.php. */
+html.no-scrim .ov::before,
+html.no-scrim .ov::after {
+	display: none;
+}
+
+.ov > * {
+	position: relative;
+	z-index: 1;
+}
+
+/*  The two parts that are put up and taken down - the nominees and the banner - are written into
+    a sheet of their own that lies over the whole stage, so that what is inside them is placed
+    against the stage and not against the moment they happen to be written into. */
+.ov > .sheet {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+/*  Night is a shade over the players rather than a colour of its own. */
+.ov.night .players { filter: brightness(0.88); }
+
+/*--------------------------------------------------------------------------------------
+    glass, and the number chips
+  --------------------------------------------------------------------------------------*/
+/*  One dark glass for every pill and panel, with no edge or outline: an outline reads as a
+    light line along the bottom against the drop shadow. */
+.gl {
+	background: rgba(14, 8, 11, 0.42);
+	backdrop-filter: blur(0.5rem) saturate(1.4);
+	-webkit-backdrop-filter: blur(0.5rem) saturate(1.4);
+	box-shadow: 0 0.625rem 1.75rem rgba(0, 0, 0, 0.35);
+	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.45);
+}
+
+/*  One flat chip system everywhere a seat number appears - on a card, in the checks, among the
+    nominees, in the votes, in the best guess. The fill says what that seat is. */
+.chip {
+	flex: none;
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-weight: 800;
+	font-size: 1.0625rem;
+	font-variant-numeric: tabular-nums;
+	color: #fff;
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.2), 0 0.1875rem 0.375rem rgba(0, 0, 0, 0.35);
+}
+
+.chip.r { background: linear-gradient(160deg, #F04A5C, #C41A30); }
+
+.chip.b {
+	background: #3B3640;
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.18), 0 0.125rem 0.375rem rgba(0, 0, 0, 0.4);
+}
+
+.chip.g {
+	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
+	text-shadow: 0 0.0625rem 0.125rem rgba(70, 38, 0, 0.6);
+}
+
+/*  A seat nobody has a role for yet - while the roles are being handed out, and on the cards of
+    the next game. Hollow rather than dark, so that it never reads as a mafia chip. */
+.chip.n {
+	background: rgba(255, 255, 255, 0.2);
+	backdrop-filter: blur(0.375rem);
+	-webkit-backdrop-filter: blur(0.375rem);
+	color: rgba(255, 255, 255, 0.85);
+	box-shadow: none;
+}
+
+.chip.sm { width: 1.6875rem; height: 1.6875rem; font-size: 0.75rem; }
+.chip.xs { width: 1.3125rem; height: 1.3125rem; font-size: 0.625rem; }
+
+/*  Every icon that stands on the picture rather than inside a chip is given the same shadow, so
+    that a white pistol on a white shirt still reads. */
+.phase .ic svg,
+.ck .ic svg,
+.pill svg,
+.nom .lb svg,
+.pc .role svg,
+.elim svg {
+	filter: drop-shadow(0 0.0625rem 0.125rem rgba(0, 0, 0, 0.45));
+}
+
+/*--------------------------------------------------------------------------------------
+    top left: the phase, the checks and the nominees
+  --------------------------------------------------------------------------------------*/
+.tl {
+	position: absolute;
+	left: 1.75rem;
+	top: 1.5rem;
 	display: flex;
 	align-items: center;
-	overflow: hidden;
-	margin-right: 1.03125rem;
-	font-size: 2em;
-	border-radius: 0.9375rem;
+	gap: 0.625rem;
 }
 
-.referee {
-	min-width: 12.5rem;
-	margin-left: auto; /* everything before the referee stays in the left corner */
+.phase {
+	height: 3.5rem;
+	padding: 0 1.375rem 0 0.875rem;
+	border-radius: 1.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
 }
 
-.round {
-	min-width: 6.25rem;
+.phase .ic {
+	width: 2.125rem;
+	height: 2.125rem;
+	display: grid;
+	place-items: center;
 }
 
-.referee::before,
-.round::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0, 0, 0, 0.4);
-	border-radius: 0.9375rem;
-	z-index: -1;
-}
+.phase .ic svg { width: 1.875rem; height: 1.875rem; }
+.phase.day .ic { color: #FFF1D6; }
+.phase.night .ic { color: var(--moon); }
 
-.referee .photo,
-.round .photo {
-	height: 4.125rem;
-	overflow: hidden;
-	background-color: #000;
-	border-radius: 0.9375rem;
-}
-
-.referee .photo img,
-.round .photo img {
-	width: 4.125rem;
-	height: 4.125rem;
-	object-fit: contain;
-}
-
-.referee .name,
-.round .name {
-	margin: 0 1.25rem;
-	font-family: 'Gagalin', sans-serif;
-	letter-spacing: 0.1875rem;
+.phase .pn {
+	font-size: 1.125rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
 	white-space: nowrap;
 }
+
+.phase .dv, .pill .dv {
+	flex: none;
+	width: 0.0625rem;
+	background: var(--line);
+}
+
+.phase .dv { height: 1.625rem; }
+
+.phase .st {
+	font-size: 1.125rem;
+	font-weight: 700;
+	color: var(--ink2);
+	white-space: nowrap;
+}
+
+.checks {
+	display: flex;
+	gap: 0.625rem;
+}
+
+/*  A pill of checks appears only once there is a check in it. */
+.ck {
+	height: 3.5rem;
+	padding: 0 0.625rem 0 0.75rem;
+	border-radius: 1.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.ck .ic {
+	position: relative;
+	width: 2.375rem;
+	height: 2.375rem;
+	display: grid;
+	place-items: center;
+}
+
+/*  The icon sits in a soft circle of its own rather than on a rim: a dark cloud that lifts it
+    off whatever is behind the glass. */
+.ck .ic::before, .pc .role::before {
+	content: "";
+	position: absolute;
+	inset: -0.25rem;
+	border-radius: 50%;
+	background: radial-gradient(circle, rgba(60, 8, 18, 0.2) 0%, rgba(60, 8, 18, 0.08) 45%, rgba(60, 8, 18, 0) 70%);
+}
+
+.ck .ic svg { position: relative; width: 1.625rem; height: 1.625rem; }
+.ck.s .ic { color: var(--gold); }
+.ck.d .ic { color: #fff; }
+
+/*  The nominees, under the phase pill. It stands while there are nominees and all through the
+    voting, and goes as soon as the voted-out card drops. */
+.nom {
+	position: absolute;
+	left: 1.75rem;
+	top: 5.875rem;
+	border-radius: 1.375rem;
+	padding: 0.75rem 0.875rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.nom .lb {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0 0.125rem;
+	font-size: 0.875rem;
+	font-weight: 800;
+	letter-spacing: 0.16em;
+	line-height: 1;
+	color: var(--ink3);
+}
+
+.nom .lb svg {
+	flex: none;
+	display: block;
+	width: 1.0625rem;
+	height: 1.0625rem;
+	margin-top: -0.125rem;
+	color: var(--ink2);
+}
+
+.nom .cols { display: flex; gap: 0.5rem; }
+.nom .chip { text-shadow: none; }
+
+/*  A nominee who was not voted out fades once the vote is settled. */
+.nom .chip.fade { opacity: 0.35; }
+
+/*  Voting that was called off: a quiet line in place of the nominees. */
+.nom.quiet { padding: 0.625rem 1rem; border-radius: 1.375rem; }
+
+.nom .msg {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: var(--ink2);
+}
+
+.nom .msg svg { width: 1.125rem; height: 1.125rem; opacity: 0.7; }
+
+/*--------------------------------------------------------------------------------------
+    top right: the tournament and the judge
+  --------------------------------------------------------------------------------------*/
+.tr {
+	position: absolute;
+	right: 1.75rem;
+	top: 1.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 0.625rem;
+}
+
+.pill {
+	height: 3.25rem;
+	padding: 0 1.125rem;
+	border-radius: 1.625rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	max-width: 50rem;
+	white-space: nowrap;
+	font-size: 1.0625rem;
+	font-weight: 700;
+	/*  Everything in these two pills is the same shade: the tournament, the table, the game and
+	    the judge are one line of information rather than a heading and its small print. */
+	color: rgba(255, 255, 255, 0.85);
+}
+
+.pill.game { padding-left: 0.875rem; }
+.pill .nm { overflow: hidden; text-overflow: ellipsis; }
+.pill .dv { height: 1.5rem; }
+.pill svg { flex: none; width: 1.1875rem; height: 1.1875rem; }
+
+/*  The tournament's logo on a light tile, which is how a logo drawn for paper reads on a dark
+    pill at this size. */
+.pill .tlogo {
+	flex: none;
+	width: 1.875rem;
+	height: 1.875rem;
+	margin-left: -0.5rem;
+	border-radius: 0.5rem;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: linear-gradient(160deg, #FFF6E8, #FFE2BF);
+	box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.35);
+}
+
+.pill .tlogo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.pill.judge { padding: 0 1.25rem 0 0.4375rem; }
+
+.pill .av {
+	position: relative;
+	flex: none;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: 50%;
+	overflow: hidden;
+	background: radial-gradient(circle at 50% 30%, #D02A3B 0%, #7A0C1A 62%, #3A060D 100%);
+	box-shadow: 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.35);
+}
+
+/*  A photograph is of a person standing, so the head is at the top of it: it is pushed down a
+    little and blown up, which is as near a portrait crop as a square picture gets. */
+.pill .av img {
+	position: absolute;
+	left: 0;
+	top: 0.25rem;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: 50% 0;
+	transform: scale(1.3);
+	transform-origin: 50% 0;
+}
+
+.pill .av svg { width: 100%; height: 100%; }
 
 /*--------------------------------------------------------------------------------------
     the players
   --------------------------------------------------------------------------------------*/
 .players {
-	position: relative;
-	/* In front of the sheet the voting is drawn on, so that a hand rising into its place
-	   comes out from behind the cards rather than sliding over them. Where a hand comes to
-	   rest - just above the card - nothing overlaps, so this is only about the way in. */
-	z-index: 1;
+	position: absolute;
+	left: 5rem;
+	right: 5rem;
+	bottom: 1.375rem;
+	display: grid;
+	grid-template-columns: repeat(10, minmax(0, 1fr));
+	gap: 0.375rem;
+	align-items: end;
+}
+
+/*  A seat is the card and whatever stands above it - the best guess, a vote card, the pill
+    saying who voted a player out. */
+.cell {
+	min-width: 0;
 	display: flex;
-	justify-content: space-around;
-	align-items: flex-start;
-	/* The row is the whole width of the drawing, which is the whole width of the source unless
-	   the height is what the rem is being held back by - then it is narrower than the source and
-	   stands in the middle of it. */
-	width: 120rem;
-	height: 15.625rem;
-	margin: 1.25rem auto 0 auto;
-}
-
-.view-overlay .players {
-	flex: 0 1 auto;
-	margin-top: auto; /* the players stay at the bottom of the screen */
-}
-
-.player-card {
-	position: relative;
-	width: 11.875rem;
-	height: 13.125rem;
-	perspective: 37.5rem;
-}
-
-.player-card-inner {
-	height: 13.125rem;
-	transform-style: preserve-3d;
-}
-
-/* Every change worth showing gives the card another half circle, always the same way round, so
-   the two sides take turns facing us. The angle keeps going instead of swinging back: -360 is
-   the same picture as 0, which is what makes the next half circle carry on from there. */
-@keyframes turn-to-back {
-	from { transform: rotateY(0deg); }
-	to { transform: rotateY(-180deg); }
-}
-
-@keyframes turn-to-front {
-	from { transform: rotateY(-180deg); }
-	to { transform: rotateY(-360deg); }
-}
-
-.player-card-inner.to-back {
-	transform: rotateY(-180deg);
-	animation: turn-to-back 1s;
-}
-
-.player-card-inner.to-front {
-	transform: rotateY(-360deg);
-	animation: turn-to-front 1s;
-}
-
-/* The card turns another half circle for every change worth showing, so the angle grows past
-   360 and is set by obs.js rather than here. The two sides take turns facing us. */
-.card-face {
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 11.25rem;
-	height: 12.5rem;
-	backface-visibility: hidden;
-}
-
-.card-face.turned-away {
-	transform: rotateY(180deg);
-}
-
-.player-bg,
-.player-photo {
-	width: 10.625rem;
-	height: 12.5rem;
-	border-radius: 0.625rem;
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	transform: scale(0.95);
-}
-
-.player-card.dead .player-bg,
-.player-card.dead .player-photo {
-	transform: translate(0, 3.125rem) scale(0.95);
-}
-
-.player-card.speaking .player-bg,
-.player-card.speaking .player-photo {
-	transform: scale(1.1);
-}
-
-.player-bg {
-	position: absolute;
-	/* Red is where every card starts, and red is where a civilian stays - which is six of the ten
-	   and everybody at all until the deal begins. */
-	background-image: url(images/red_player_bg.jpg);
-}
-
-.card-face.role-don .player-bg,
-.card-face.role-maf .player-bg { background-image: url(images/black_player_bg.jpg); }
-.card-face.role-sheriff .player-bg { background-image: url(images/green_player_bg.jpg); }
-
-.player-card.dead .player-bg { filter: grayscale(30%) opacity(85%); }
-
-.player-photo {
-	position: relative;
-	box-shadow: 0 0 3.125rem rgba(0, 0, 0, 0.315);
-	transition: transform 0.5s;
-	/* The figure of nobody in particular, which is what a player we have no picture of wears -
-	   the same one the site puts in place of a face it does not have. A seat with nobody on it
-	   wears the back of a card instead, which obs.js puts there. */
-	background-image: url(images/user_null.png);
-}
-
-.player-card.dead .player-photo { filter: grayscale(80%) opacity(80%); }
-.player-card.speaking .player-photo { box-shadow: inset 0 0 1.25rem #fff; }
-
-.player-name-bar {
-	position: absolute;
-	right: 0;
-	bottom: 0;
-	left: 0;
-	display: flex;
+	flex-direction: column;
 	align-items: center;
-	min-height: 1.875rem;
-	background-color: rgba(0, 0, 0, 0.5);
-	border-bottom-left-radius: 0.625rem;
-	border-bottom-right-radius: 0.625rem;
+	gap: 0.625rem;
 }
 
-.player-number {
-	width: 1.875rem;
-	height: 1.875rem;
-	background-color: rgba(0, 0, 0, 0.9);
-	border-bottom-left-radius: 0.625rem;
+.cell .pc { width: 100%; }
+
+.pc {
+	position: relative;
+	height: 12.75rem;
+	border-radius: 1.25rem;
+	box-shadow: var(--card-sh);
+	transition: height 0.4s ease, filter 0.35s ease;
 }
 
-.player-name {
-	width: 100%;
-	white-space: nowrap;
+.pc.town, .pc.sher {
+	background: radial-gradient(120% 70% at 50% 18%, #C92E3E 0%, rgba(201, 46, 62, 0) 70%),
+		linear-gradient(180deg, #A8192A 0%, #7A0C1A 60%, #3E040D 100%);
 }
 
-.player-number,
-.player-name {
-	font-size: 1.3rem;
-	text-align: center;
-	text-overflow: ellipsis;
+.pc.maf, .pc.don {
+	background: radial-gradient(120% 70% at 50% 18%, #4A4347 0%, rgba(74, 67, 71, 0) 70%),
+		linear-gradient(180deg, #2E282B 0%, #171214 60%, #090607 100%);
+}
+
+/*  A seat whose role nobody has been shown yet. The sheriff and the don wear the card of their
+    own side: only the icon and the seat chip tell them apart. */
+.pc.none {
+	background: radial-gradient(120% 70% at 50% 18%, #5A4E54 0%, rgba(90, 78, 84, 0) 70%),
+		linear-gradient(180deg, #3A3236 0%, #211B1E 60%, #120E10 100%);
+}
+
+.pc .clip {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
 	overflow: hidden;
 }
 
-/* the glyph of the role in the top left corner */
-.player-role {
+/*  The photograph. A cut-out would stand on the card; ours are square photographs, so they fill
+    the card and the card itself shows only where there is no photograph at all. */
+.pc .ph {
 	position: absolute;
-	top: 0.3125rem;
-	left: 0.3125rem;
-	width: 2.5rem;
-	height: 2.5rem;
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	border-bottom-right-radius: 0.625rem;
-	/* No fading in: the glyph is put on the side that is facing away, and the turn is what shows
-	   it off. */
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
 }
 
-.card-face.role-sheriff .player-role { background-image: url(images/sheriff.png); }
-.card-face.role-don .player-role { background-image: url(images/don.png); }
-.card-face.role-maf .player-role { background-image: url(images/pistol.png); }
-
-/*--------------------------------------------------------------------------------------
-    the voting: the hands put up over the players
-
-    Everything here is placed by its transform, by voting.js, and moved by having its place
-    changed - the flight from a player up to the info bar is this transition and nothing
-    else. See the top of voting.js.
-  --------------------------------------------------------------------------------------*/
-.voting {
-	position: fixed;
-	top: 0;
-	left: 0;
+.pc .ph img {
 	width: 100%;
 	height: 100%;
-	pointer-events: none;
+	object-fit: cover;
+	object-position: 50% 12%;
+	display: block;
 }
 
-@keyframes appear {
-	0% { opacity: 0; }
-	100% { opacity: 1; }
-}
-
-/* A hand: the number of the player who put it up, in the colour of their role - the colours
-   of the info bar, a size smaller, since there are ten of these and they stand over the
-   game itself. */
-.vote-token {
+/*  Nobody in particular: the figure the site uses for a player with no photograph. */
+.pc .ph svg {
 	position: absolute;
-	top: 0;
+	left: 12%;
+	right: 12%;
+	bottom: 0;
+	width: 76%;
+	height: 82%;
+}
+
+/*  The fade the name is read against. */
+.pc .clip::after {
+	content: "";
+	position: absolute;
 	left: 0;
-	z-index: 2;
+	right: 0;
+	bottom: 0;
+	height: 30%;
+	background: linear-gradient(180deg, transparent 0%, rgba(10, 6, 8, 0.4) 40%, rgba(10, 6, 8, 0.82) 100%);
+}
+
+.pc .meta {
+	position: absolute;
+	z-index: 6;
+	left: 0.3125rem;
+	right: 0;
+	bottom: 0.3125rem;
+	height: 1.875rem;
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	width: 2.25rem;
-	height: 2.25rem;
-	color: #fff;
-	font-size: 1.4rem;
+}
+
+/*  The seat number is the same chip as everywhere else, in the colour of the role. */
+.pc .seat {
+	position: relative;
+	z-index: 1;
+	flex: none;
+	width: 1.875rem;
+	height: 1.875rem;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
 	font-weight: 700;
-	background-color: rgba(90, 90, 90, 0.8);
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	border-radius: 0.5rem;
-	box-shadow: 0 0 0.625rem rgba(0, 0, 0, 0.5);
-	transform-origin: 0 0;
-	transition: transform 1.3s cubic-bezier(0.4, 0, 0.2, 1);
-	animation: appear 0.6s;
+	font-size: 0.8125rem;
+	font-variant-numeric: tabular-nums;
+	color: #fff;
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.2), 0 0.1875rem 0.375rem rgba(0, 0, 0, 0.35);
 }
 
-.vote-token.role-town { background-image: url(images/red_player_bg.jpg); }
-.vote-token.role-don,
-.vote-token.role-maf { background-image: url(images/black_player_bg.jpg); }
-.vote-token.role-sheriff { background-image: url(images/green_player_bg.jpg); }
+.pc.town .seat, .pc.sher .seat { background: linear-gradient(160deg, #F04A5C, #C41A30); }
 
-/* On its way in: up from among the cards into its place over its own player. voting.js puts
-   it down below and lets it come up, and takes this off once it is there, so that the long
-   flight to the info bar is the one above. */
-.vote-token.rising {
-	transition: transform 1s cubic-bezier(0.2, 0.8, 0.3, 1);
+.pc.sher .seat {
+	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
+	text-shadow: 0 0.0625rem 0.125rem rgba(70, 38, 0, 0.6);
 }
 
-/*  On its way off the screen, when the names it was counted for leave the info bar. There
-    are five ways to go and voting.js picks one of them for the whole voting, so that a day
-    goes the same way all at once and no two days in a row need go alike. Where each hand
-    ends up is worked out there as well - this is only how long it takes to get there.
-
-    Turning to dust: off to the right and up a little, blurring as it goes. */
-.vote-token.leaving.away {
-	opacity: 0;
-	filter: blur(0.5rem);
-	transition: transform 1.1s cubic-bezier(0.3, 0.2, 0.5, 1), opacity 1.1s ease-in, filter 1.1s;
+.pc.maf .seat, .pc.don .seat {
+	background: #3B3640;
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.18), 0 0.125rem 0.375rem rgba(0, 0, 0, 0.4);
 }
 
-/* Gathering into one: they meet at the middle of where they were standing, and the heap
-   collapses once they are all there - the second step is .gone. */
-.vote-token.leaving.together {
-	transition: transform 0.6s ease-in-out;
+.pc.none .seat {
+	background: rgba(255, 255, 255, 0.2);
+	backdrop-filter: blur(0.375rem);
+	-webkit-backdrop-filter: blur(0.375rem);
+	color: rgba(255, 255, 255, 0.85);
+	box-shadow: none;
 }
 
-.vote-token.leaving.together.gone {
-	opacity: 0;
-	transition: transform 0.4s ease-in, opacity 0.4s ease-in;
-}
-
-/* Falling: down off the bottom of the screen, each at its own angle and its own slant. */
-.vote-token.leaving.falling {
-	opacity: 0;
-	transition: transform 1.2s cubic-bezier(0.45, 0, 1, 1), opacity 1.2s ease-in;
-}
-
-/* Just going, which is what they always did. */
-.vote-token.leaving.fading {
-	opacity: 0;
-	transition: opacity 0.6s;
-}
-
-/* Scattering: every one its own way, turning over as it goes. */
-.vote-token.leaving.scattering {
-	opacity: 0;
-	transition: transform 1.1s cubic-bezier(0.15, 0.6, 0.4, 1), opacity 1.1s ease-in;
-}
-
-/*  The top right corner of the card: the warnings or the way the player died, and the
-    technical fouls beside them. One row, because the other corner belongs to the role and a
-    mark put there would stand on top of it. The fouls come first, so the warnings keep the
-    corner itself. */
-.player-marks {
+/*  The nickname lies across the whole card and keeps clear of the chip, so that a short name
+    sits in the middle of the card rather than beside the number. A name too long for the room
+    is set smaller - see fitNames() in obs.js - and one that is too long even for that is cut. */
+.pc .nick {
 	position: absolute;
-	top: 0;
+	left: 0;
 	right: 0;
+	top: 0;
+	bottom: 0;
+	padding-left: var(--nl, 2.25rem);
+	padding-right: 0.5rem;
+	line-height: 1.875rem;
+	font-weight: 800;
+	font-size: 1.3125rem;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: #fff;
+	text-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.45);
+}
+
+/*  The role, in a soft circle in the top left corner. */
+.pc .role {
+	position: absolute;
+	z-index: 3;
+	left: 0.4375rem;
+	top: 0.4375rem;
+	width: 2.125rem;
+	height: 2.125rem;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	color: #fff;
+	background: radial-gradient(circle, rgba(10, 6, 8, 0.38) 0%, rgba(10, 6, 8, 0.26) 60%, rgba(10, 6, 8, 0.14) 100%);
+	backdrop-filter: blur(0.375rem);
+	-webkit-backdrop-filter: blur(0.375rem);
+	box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.18);
+}
+
+.pc .role::before { display: none; }
+.pc .role svg { width: 1.25rem; height: 1.25rem; }
+.pc .role.s { color: var(--gold); }
+
+/*  The corner the fouls and the way a player left the game are shown in. */
+.pc .marks {
+	position: absolute;
+	z-index: 3;
+	right: 0.5rem;
+	top: 0.5625rem;
 	display: flex;
-	align-items: flex-start;
+	flex-direction: column;
+	align-items: flex-end;
 	gap: 0.3125rem;
 }
 
-/* the warnings or the way the player died */
-.player-mark {
-	min-width: 1.875rem;
-	max-width: 3.125rem;
-	height: 2.1875rem;
-	padding: 0 0.3125rem;
-	text-align: center;
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	border-top-right-radius: 0.625rem;
-	border-bottom-left-radius: 0.625rem;
+/*  The critical foul stands beside the fouls rather than under them: the corner is small and two
+    marks one above the other would reach down over the picture. */
+.pc .marks .row {
+	display: flex;
+	align-items: center;
+	gap: 0.3125rem;
 }
 
-.player-mark span {
-	color: #fff;
-	font-size: 1.5rem;
+.fouls {
+	height: 1.5rem;
+	padding: 0 0.4375rem;
+	border-radius: 0.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	background: rgba(10, 6, 8, 0.38);
+	backdrop-filter: blur(0.625rem) saturate(1.6);
+	-webkit-backdrop-filter: blur(0.625rem) saturate(1.6);
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.22), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.3);
+}
+
+.fouls i {
+	width: 0.5rem;
+	height: 0.5rem;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.22);
+}
+
+.fouls i.on {
+	background: var(--amber);
+	box-shadow: 0 0 0.375rem rgba(255, 181, 71, 0.7);
+}
+
+/*  Three fouls is one away from leaving the game, so the dots stop being a count and become a
+    warning. */
+.fouls.hot i.on {
+	background: #FF6A3D;
+	box-shadow: 0 0 0.375rem rgba(255, 106, 61, 0.8);
+}
+
+/*  A critical foul is its own mark rather than a fourth dot: it is counted apart and costs the
+    player the game at two. */
+.fouls.tfg {
+	width: 1.5rem;
+	padding: 0;
+	justify-content: center;
+	background: rgba(10, 6, 8, 0.5);
+}
+
+.fouls.tfg svg {
+	width: 1rem;
+	height: 1rem;
+	color: #FF3B52;
+	filter: drop-shadow(0 0 0.1875rem rgba(255, 40, 65, 0.7));
+}
+
+/*  Why a player is out of the game: a crosshair and the night they were shot on, a thumb and the
+    day they were voted out on, or a red cross for a player the judge removed. */
+.elim {
+	height: 1.875rem;
+	padding: 0 0.625rem 0 0.5rem;
+	border-radius: 0.9375rem;
+	display: flex;
+	align-items: center;
+	gap: 0.3125rem;
 	font-weight: 800;
-	letter-spacing: 0.2rem;
-}
-
-/* The technical fouls, next to the warnings and in the same red that three of those wear: two
-   of them take the player out of the game, so the mark says so from across the room. */
-.player-fouls {
-	min-width: 1.875rem;
-	height: 2.1875rem;
-	padding: 0.25rem 0.375rem 0;
-	text-align: center;
+	font-size: 1rem;
+	white-space: nowrap;
 	color: #fff;
-	font-size: 1.1rem;
-	font-weight: 800;
-	background-color: rgba(255, 0, 0, 0.603);
-	border-bottom-left-radius: 0.625rem;
-	border-bottom-right-radius: 0.625rem;
+	background: rgba(10, 6, 8, 0.42);
+	backdrop-filter: blur(0.625rem) saturate(1.6);
+	-webkit-backdrop-filter: blur(0.625rem) saturate(1.6);
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.25), 0 0.25rem 0.625rem rgba(0, 0, 0, 0.3);
 }
 
-.player-card.warnings-1 .player-mark,
-.player-card.warnings-2 .player-mark { background-color: rgba(0, 0, 0, 0.5); }
+.elim svg { width: 1.0625rem; height: 1.0625rem; }
+.elim span { line-height: 1; }
+.elim.shooting svg { color: var(--red); }
+.elim.voting svg { color: #fff; transform: rotate(-14deg); }
 
-.player-card.warnings-3 .player-mark,
-.player-card.warnings-4 .player-mark,
-.player-card.death-kickOut .player-mark { background-color: rgba(255, 0, 0, 0.603); }
+.elim.out {
+	height: 1.5rem;
+	padding: 0 0.5625rem;
+	border-radius: 0.75rem;
+	background: rgba(10, 6, 8, 0.5);
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.22), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.3);
+}
 
-.player-card.death-voting .player-mark,
-.player-card.death-shooting .player-mark {
-	margin: 0.3125rem 0.3125rem 0 0;
+.elim.out svg {
+	width: 0.875rem;
+	height: 0.875rem;
+	color: #FF3B52;
+	filter: drop-shadow(0 0 0.1875rem rgba(255, 40, 65, 0.7));
+}
+
+/*  A player who is out. The card drops, the photograph goes grey under a dark wash, and the name
+    dims - but the card never moves sideways and the ones beside it stay where they are. */
+.pc.dead { height: 9.625rem; }
+.pc.dead .ph { filter: saturate(0.25) brightness(0.75); }
+
+.pc.dead .clip::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background: rgba(14, 9, 11, 0.6);
+	backdrop-filter: saturate(0.3);
+	-webkit-backdrop-filter: saturate(0.3);
+}
+
+.pc.dead .meta { opacity: 0.85; }
+
+/*  Who is speaking. A frame on the card, no pulse: the card never moves or resizes, because ten
+    cards that breathe are ten things moving on a stream nobody is looking at.
+
+    It is built to be seen on whatever the card happens to stand on. A white ring alone is lost
+    on a bright hall or on the light ground of a text broadcast, and a dark one is lost against
+    the card itself, which is dark to begin with - so the ring is white and is given a dark
+    keyline outside it. One of the two always reads: on a dark picture the white ring and its
+    glow, on a light one the keyline, and on anything in between both of them. */
+.pc.speak::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 4;
+	border-radius: inherit;
+	pointer-events: none;
+	box-shadow:
+		inset 0 0 0 0.09375rem rgba(255, 255, 255, 0.7),
+		0 0 0 0.125rem rgba(255, 255, 255, 0.85),
+		0 0 0 0.25rem rgba(0, 0, 0, 0.5),
+		0 0 0.875rem 0.25rem rgba(255, 255, 255, 0.28);
+}
+
+/*  The winners stay bright and the losers are muted, once the game is over. */
+.pc.lose .ph { filter: saturate(0.55) brightness(0.75); }
+
+/*--------------------------------------------------------------------------------------
+    the best guess
+  --------------------------------------------------------------------------------------*/
+/*  The three seats named by the player shot on the first night, above their card. */
+.bmw {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	transition: opacity 0.4s;
+}
+
+.bmw.dim { opacity: 0.35; }
+
+.bm {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.75rem;
+}
+
+/*  The chips are see-through here, because they stand on the camera picture rather than on a
+    pill, and a solid charcoal circle over a bright hall reads as a hole. */
+.bm .chip {
 	width: 2.5rem;
 	height: 2.5rem;
-	background-color: transparent;
+	font-size: 1.25rem;
+	color: #fff;
+	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.6);
 }
 
-.player-card.death-voting .player-mark { background-image: url(images/voted_white.png); }
+.bm .chip.b {
+	background: rgba(59, 54, 64, 0.9);
+	backdrop-filter: blur(0.625rem);
+	-webkit-backdrop-filter: blur(0.625rem);
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.2), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.45);
+}
 
-/* the player was shot in the night. The number of the night is painted on the picture. */
-.player-card.death-shooting .player-mark { background-image: url(images/shooting_white.png); }
-.player-card.death-shooting.round-0 .player-mark { background-image: url(images/killed_1.png); }
-.player-card.death-shooting.round-1 .player-mark { background-image: url(images/killed_2.png); }
-.player-card.death-shooting.round-2 .player-mark { background-image: url(images/killed_3.png); }
-.player-card.death-shooting.round-3 .player-mark { background-image: url(images/killed_4.png); }
-.player-card.death-shooting.round-4 .player-mark { background-image: url(images/killed_5.png); }
-.player-card.death-shooting.round-5 .player-mark { background-image: url(images/killed_6.png); }
-.player-card.death-shooting.round-6 .player-mark { background-image: url(images/killed_7.png); }
-.player-card.death-shooting.round-7 .player-mark { background-image: url(images/killed_8.png); }
-.player-card.death-shooting.round-8 .player-mark { background-image: url(images/killed_9.png); }
+.bm .chip.r { background: linear-gradient(160deg, rgba(255, 91, 107, 0.95), rgba(216, 31, 55, 0.95)); }
+
+/*--------------------------------------------------------------------------------------
+    the voting
+  --------------------------------------------------------------------------------------*/
+/*  A vote card above each nominee's card: how many votes they have, and who gave them. It grows
+    upward and is never wider than the card under it. */
+.stk {
+	position: relative;
+	z-index: 30;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.5rem 0.375rem 0.625rem;
+	border-radius: 1.25rem;
+	background: rgba(14, 8, 11, 0.42);
+	backdrop-filter: blur(0.625rem);
+	-webkit-backdrop-filter: blur(0.625rem);
+	box-shadow: 0 0.5rem 1.375rem rgba(0, 0, 0, 0.3);
+	transition: opacity 0.4s;
+}
+
+.stk-n {
+	position: relative;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.1875rem;
+	line-height: 1;
+	color: #fff;
+}
+
+.stk-n b { font-size: 1.75rem; font-weight: 700; }
+
+.stk-n small {
+	font-size: 0.625rem;
+	font-weight: 700;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.6);
+}
+
+/*  The voters, five to a row at the most, in rows that are kept even - seven votes are four and
+    three rather than five and two. The width of the card is what the rows are counted into. */
+.stk-c {
+	display: flex;
+	flex-wrap: wrap-reverse;
+	justify-content: center;
+	gap: 0.25rem;
+	max-width: calc(var(--per, 5) * 1.6875rem + (var(--per, 5) - 1) * 0.25rem);
+}
+
+.stk-c:empty { display: none; }
+
+/*  A vote arrives as a copy of the voter's seat chip and flies from their card to this one. */
+.stk-c .chip.fly {
+	animation: fly 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes fly {
+	0% { transform: translate(var(--dx, 0), var(--dy, 5rem)); }
+	100% { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.stk-c .chip.fly { animation: none; }
+}
+
+/*  A tie, said in the corner so that the count stays in the middle. */
+.stk-tag {
+	position: absolute;
+	top: 0.4375rem;
+	right: 0.4375rem;
+	padding: 0.1875rem 0.4375rem;
+	border-radius: 0.5rem;
+	font-size: 0.625rem;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	line-height: 1;
+	color: #fff;
+	background: rgba(58, 54, 62, 0.72);
+	backdrop-filter: blur(0.625rem) saturate(1.4);
+	-webkit-backdrop-filter: blur(0.625rem) saturate(1.4);
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.28), inset 0 -0.0625rem 0.125rem rgba(0, 0, 0, 0.4), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.35);
+}
+
+/*  The one who was voted out, and the ones who were not. */
+.stk.out {
+	box-shadow: 0 0 0 0.125rem rgba(255, 77, 94, 0.55), 0 0 1.625rem rgba(255, 77, 94, 0.45), 0 0.5rem 1.375rem rgba(0, 0, 0, 0.3);
+}
+
+.stk.fade { opacity: 0.35; }
+
+/*  Once the vote is over the card drops like any other, and the space above it says who voted
+    them out. The pill is exactly as wide as the card, and with six or more voters it takes two
+    rows and the card drops a little further, so that the two together never rise above the
+    cards beside them. */
+.vby {
+	width: 100%;
+	height: 2.75rem;
+	box-sizing: border-box;
+	padding: 0 0.5rem 0 0.5625rem;
+	border-radius: 1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3125rem;
+	background: rgba(14, 8, 11, 0.5);
+	backdrop-filter: blur(0.625rem);
+	-webkit-backdrop-filter: blur(0.625rem);
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.14), 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
+}
+
+.vby .vbi {
+	display: grid;
+	place-items: center;
+	width: 1rem;
+	height: 1rem;
+	flex: none;
+	color: rgba(255, 255, 255, 0.75);
+}
+
+.vby .vbi svg { width: 0.9375rem; height: 0.9375rem; filter: drop-shadow(0 0.0625rem 0.125rem rgba(0, 0, 0, 0.6)); }
+
+.vby .vbc {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.25rem;
+	max-width: calc(var(--per, 5) * 1.3125rem + (var(--per, 5) - 1) * 0.25rem);
+}
+
+.cell.vbo { gap: 0.375rem; }
+.cell.vbo.r2 .vby { height: 3.625rem; }
+.cell.vbo.r2 .pc.dead { height: 8.75rem; }
+
+/*--------------------------------------------------------------------------------------
+    the game is over
+  --------------------------------------------------------------------------------------*/
+.over {
+	position: absolute;
+	left: 50%;
+	top: 44%;
+	transform: translate(-50%, -50%);
+	padding: 2.125rem 4rem 1.875rem;
+	border-radius: 2rem;
+	text-align: center;
+}
+
+.over.town { background: linear-gradient(160deg, rgba(232, 52, 72, 0.62), rgba(150, 14, 32, 0.5)); }
+.over.maf { background: linear-gradient(160deg, rgba(40, 34, 38, 0.6), rgba(6, 4, 5, 0.62)); }
+
+.over h1 {
+	margin: 0;
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 4.5rem;
+	line-height: 1.1;
+	letter-spacing: 0.01em;
+	color: #FFEDEF;
+	text-shadow: 0 0 2.75rem rgba(255, 59, 78, 0.6);
+}
+
+.over.maf h1 { text-shadow: 0 0 2.75rem rgba(255, 59, 78, 0.45); }
+
+.over .sub {
+	margin-top: 0.625rem;
+	font-size: 1.375rem;
+	font-weight: 600;
+	color: rgba(255, 255, 255, 0.6);
+}
+
+.over.town .sub { color: rgba(255, 255, 255, 0.82); }

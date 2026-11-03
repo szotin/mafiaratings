@@ -13,17 +13,95 @@ var obs = new function()
 	var stream;     // how this table is set up, as last heard from the site
 	var at;         // which screen of the round we are on
 	var empty;      // how many screens in a row had nothing, so as not to spin forever
+	var timer;      // when the screen that is up gives way to the next one
+	var walk;       // which way round the screens is the one in play - see restart()
+	var restarted;  // when the round was last begun again, so that it is not begun twice over
+	var ready;      // who to tell when the screen the round begins with is up, if anybody
 
 	this.start = function(pageOptions)
 	{
 		options = pageOptions;
 		at = -1;
 		empty = 0;
+		timer = null;
+		walk = 0;
+		restarted = 0;
+		ready = null;
 
 		// Nothing can be shown until we know what to show, so the first answer is waited for
 		// rather than guessed at. After that it is asked for again on its own clock.
 		settings().then(function() { next(); });
 		setInterval(settings, options.settingsInterval);
+
+		// OBS says when this source starts being shown: obsSourceActiveChanged when the scene it
+		// stands in becomes the one on the air, obsSourceVisibleChanged when the source itself is
+		// switched on in a scene already showing. Either way the round begins again - see
+		// restart(). Outside OBS neither of them is ever sent.
+		window.addEventListener('obsSourceActiveChanged', function(event)
+		{
+			if (!event.detail || event.detail.active)
+			{
+				restart();
+			}
+		});
+		window.addEventListener('obsSourceVisibleChanged', function(event)
+		{
+			if (!event.detail || event.detail.visible)
+			{
+				restart();
+			}
+		});
+	}
+
+	// The same thing asked for from outside, by a page that has these screens in a frame of its
+	// own: a browser source has OBS to tell it when it starts being shown, and a frame has only
+	// the page around it. See text_broadcast.php, which brings the screens up the moment a game
+	// is over - and which waits for the word given back here before it shows the frame at all,
+	// so that the first screen is what comes up and not what was standing there before.
+	this.restart = function(done)
+	{
+		restart(done);
+	}
+
+	// Back to the first screen. A source nobody is looking at goes on turning its screens over
+	// all the while - OBS does not stop the page, it only stops drawing it - so by the time the
+	// scene comes up it would be standing on whichever screen its clock had reached, halfway
+	// through a round and halfway through a screen's time. So it starts afresh: the table is
+	// shown what the round begins with, for as long as a screen is meant to stand.
+	//
+	// What was up is taken down at once rather than faded away. It belongs to a round that is
+	// over, and the first screen cannot be up before it has been fetched: left there it would
+	// be the first thing the scene shows, which is the one thing this is here to prevent. The
+	// ground it leaves is the ground the screens stand on anyway, and the first screen comes up
+	// out of it the way the first screen of all does.
+	//
+	// Whatever was on its way is dropped rather than waited for: a screen fetched for the round
+	// that has just been abandoned would arrive on top of the new one and set a second clock
+	// going beside the first, and from then on the screens would turn over twice as fast.
+	//
+	// The two things OBS says - the scene becoming active and the source becoming visible -
+	// arrive together when a scene is switched to, and either of them alone is reason enough,
+	// so the second one to arrive is passed over.
+	function restart(done)
+	{
+		var now = Date.now();
+		if (now - restarted < 1000)
+		{
+			return;
+		}
+		restarted = now;
+		at = -1;
+		empty = 0;
+		walk += 1;
+		ready = (typeof done == 'function') ? done : null;
+
+		var screen = document.getElementById('screen');
+		while (screen.firstChild)
+		{
+			screen.removeChild(screen.firstChild);
+		}
+
+		next();
 	}
 
 	//-----------------------------------------------------------------------------------------
@@ -68,11 +146,20 @@ var obs = new function()
 	// comes round, so a game written down between two showings is there the next time. The list
 	// can change under us when the site is asked again, which is why the place in it is kept as
 	// a number and brought back inside the list rather than trusted to stay where it was.
+	//
+	// Every walk is numbered, and what comes back is put up only while the walk that asked for
+	// it is still the one in play: the round can be begun again from under it - see restart().
 	function next()
 	{
+		if (timer !== null)
+		{
+			clearTimeout(timer);
+			timer = null;
+		}
+
 		if (!stream || !stream.screens || stream.screens.length <= 0)
 		{
-			setTimeout(next, 1000); // nothing to show yet; ask again shortly
+			later(1000); // nothing to show yet; ask again shortly
 			return;
 		}
 
@@ -81,7 +168,26 @@ var obs = new function()
 		{
 			at = 0;
 		}
-		load(stream.screens[at]).then(show);
+
+		var mine = walk;
+		load(stream.screens[at]).then(function(html)
+		{
+			if (mine === walk)
+			{
+				show(html);
+			}
+		});
+	}
+
+	// When the screen that is up gives way to the next one. There is only ever the one clock:
+	// a round begun again sets it afresh rather than running beside the one it found.
+	function later(delay)
+	{
+		if (timer !== null)
+		{
+			clearTimeout(timer);
+		}
+		timer = setTimeout(next, delay);
 	}
 
 	function load(page)
@@ -119,19 +225,37 @@ var obs = new function()
 		// last game of a tournament. Put up the title rather than a blank rectangle, which would
 		// be indistinguishable from a source that is not working.
 		empty = 0;
-		load(stream.fallback).then(put);
+		var mine = walk;
+		load(stream.fallback).then(function(html)
+		{
+			if (mine === walk)
+			{
+				put(html);
+			}
+		});
 	}
 
-	// How long each way through takes, from the lengths written into between.css: the turn is
-	// two halves of six tenths, the page leaving is nine tenths. They are here so that the
-	// frame left behind is taken away when it is done with.
-	var TURN = 1200;
-	var SLIDE = 900;
+	// How long one screen takes to give way to the next, as it is written into between.css.
+	// It is here so that the frame left behind is taken away when it is done with.
+	var FADE = 1800;
 
-	// One screen gives way to the next, one of two ways picked at random: the page turns over
-	// about one of its two axes, or it leaves to one side and the next one is standing under it.
-	// Either way the new frame goes in underneath first, so there is never a moment with
-	// nothing on the screen.
+	// Somebody was waiting for the round to be standing on its first screen again - see
+	// restart(). The screen is in the page by now and drawn in the same breath as this, so the
+	// word goes out as soon as it is there and is given only once.
+	function up()
+	{
+		if (ready === null)
+		{
+			return;
+		}
+		var tell = ready;
+		ready = null;
+		tell();
+	}
+
+	// One screen gives way to the next by fading: the new frame goes in underneath, whole and
+	// still, and the one on top goes slowly out until it is not there. So there is never a
+	// moment with nothing on the screen, and nothing moves but the light.
 	function put(html)
 	{
 		var screen = document.getElementById('screen');
@@ -140,7 +264,7 @@ var obs = new function()
 		var frame = holder.firstElementChild;
 		if (!frame)
 		{
-			setTimeout(next, stream.delay); // nothing came back that can be put up
+			later(stream.delay); // nothing came back that can be put up
 			return;
 		}
 
@@ -155,11 +279,13 @@ var obs = new function()
 		screen.insertBefore(frame, old.length > 0 ? old[0] : null);
 		dots(frame);
 		shrink(frame);
-		setTimeout(next, stream.delay);
+		later(stream.delay);
+		up();
 
-		// The first frame of all has nothing to give way: it simply arrives. The class comes
-		// off again once it has - left on, its animation would be the one still standing when
-		// this frame is the one giving way, and the frame would sit there instead of leaving.
+		// The first frame of all has nothing to give way: it comes up out of the ground. The
+		// class comes off again once it has - left on, its animation would be the one still
+		// standing when this frame is the one going out, and the frame would sit there at full
+		// strength instead of fading.
 		if (old.length <= 0)
 		{
 			frame.classList.add('first');
@@ -169,27 +295,14 @@ var obs = new function()
 			return;
 		}
 
-		var turning = (Math.random() < 0.5);
-		var length = turning ? TURN : SLIDE;
-		if (turning)
+		for (var j = 0; j < old.length; ++j)
 		{
-			turn(frame, old);
-		}
-		else
-		{
-			slide(old);
+			old[j].classList.add('leave');
 		}
 
-		// What is left behind goes when the way through is done, and the new frame is put
-		// straight whatever that way managed to do. A source that is not being drawn at all -
-		// a scene nobody is on, a window put away - finishes nothing, and a clock on its own
-		// would take the old frame away and leave the ground bare until the browser got round
-		// to the new one. So the clock is the second answer, is given longer than the movement
-		// itself, and sets the frame down where it belongs before it sweeps.
-		//
-		// The movement to wait for is the last one of the two: the half that brings the new
-		// frame up when the page turns, and the old frame leaving when it slides. The other
-		// one ends halfway through and would sweep too early.
+		// What is left behind goes when the fade is done. A source that is not being drawn at
+		// all - a scene nobody is on, a window put away - finishes nothing, so a clock is kept
+		// as the second answer and is given longer than the fade itself.
 		var swept = false;
 		function sweep()
 		{
@@ -198,13 +311,6 @@ var obs = new function()
 				return;
 			}
 			swept = true;
-			// Nothing of the way through is left on the frame. It is where it belongs now -
-			// taking the class off puts it there even if the movement never ran - and it has
-			// its own way out to come, which anything left behind here would stand in the way
-			// of: a frame holding animation: none cannot leave at all.
-			frame.classList.remove('turn-in');
-			frame.style.removeProperty('animation');
-			frame.style.removeProperty('transform');
 			for (var i = 0; i < old.length; ++i)
 			{
 				if (old[i].parentNode)
@@ -214,9 +320,9 @@ var obs = new function()
 			}
 		}
 
-		// Only the frame's own movement ending counts. The event rises from whatever is inside
-		// the frame as well, and a screen is free to have something of its own moving on it.
-		var waiting = turning ? frame : old[old.length - 1];
+		// Only the frame's own fade ending counts. The event rises from whatever is inside the
+		// frame as well, and a screen is free to have something of its own moving on it.
+		var waiting = old[old.length - 1];
 		waiting.addEventListener('animationend', function(event)
 		{
 			if (event.target == waiting)
@@ -224,44 +330,7 @@ var obs = new function()
 				sweep();
 			}
 		});
-		setTimeout(sweep, length + 1000);
-	}
-
-	// The page turning over: what is up turns away about an axis - upright or lying down,
-	// either way round - and the next comes up out of the same turn. The diagonals were tried
-	// and taken out again: a page folding about a corner reads as a mistake rather than as a
-	// page being turned.
-	function turn(frame, old)
-	{
-		var axes = [[0, 1], [1, 0]];
-		var axis = axes[Math.floor(Math.random() * axes.length)];
-		var way = (Math.random() < 0.5) ? 1 : -1;
-
-		var all = old.concat([frame]);
-		for (var i = 0; i < all.length; ++i)
-		{
-			all[i].style.setProperty('--ax', axis[0] * way);
-			all[i].style.setProperty('--ay', axis[1] * way);
-		}
-		for (var j = 0; j < old.length; ++j)
-		{
-			old[j].classList.add('turn-out');
-		}
-		frame.classList.add('turn-in');
-	}
-
-	// The page leaving to one side, with the next one already standing under it. The new frame
-	// does nothing at all here - it is simply uncovered.
-	function slide(old)
-	{
-		var ways = [[-100, 0], [100, 0], [0, -100], [0, 100]];
-		var way = ways[Math.floor(Math.random() * ways.length)];
-		for (var i = 0; i < old.length; ++i)
-		{
-			old[i].style.setProperty('--tx', way[0] + '%');
-			old[i].style.setProperty('--ty', way[1] + '%');
-			old[i].classList.add('slide-out');
-		}
+		setTimeout(sweep, FADE + 1000);
 	}
 
 	// A name too long for its card is made smaller, a step at a time, and only cut off when

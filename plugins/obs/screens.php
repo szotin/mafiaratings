@@ -15,8 +15,6 @@ require_once 'obs.php'; // obs_file() - the same cache-busting the overlays use
 // this one", which is how the rules about when a screen is shown are expressed: the screen
 // itself decides, and the rotation just leaves out whatever came back empty.
 
-define('OBS_SCREEN_DELAY', 10); // seconds a screen stays up before the next one
-
 // Starts a screen the way obs.php starts an overlay: the language comes from the URL so that the
 // browser source shows what the club wants rather than what some session once decided.
 function obs_screen_start()
@@ -119,6 +117,31 @@ function obs_seated_games($misc, $table_num)
 	return $games;
 }
 
+// The badge in the top left corner of every frame. A tournament that has a logo of its own
+// wears it; one that has none wears its club's, which is what the stream is run by anyway.
+// Nothing at all when neither has a picture - the name then stands where the two of them
+// would, rather than beside an empty tile.
+function obs_logo($pic, $id, $name, $flags, $club_id)
+{
+	$pic->set($id, $name, $flags);
+	if ($pic->has_image())
+	{
+		return $pic->url(ICONS_DIR);
+	}
+
+	if ($club_id > 0)
+	{
+		list ($club_name, $club_flags) = Db::record(get_label('club'), 'SELECT name, flags FROM clubs WHERE id = ?', $club_id);
+		$club = new Picture(CLUB_PICTURE);
+		$club->set((int)$club_id, $club_name, (int)$club_flags);
+		if ($club->has_image())
+		{
+			return $club->url(ICONS_DIR);
+		}
+	}
+	return '';
+}
+
 // Works out what is going on at this table: which round of the tournament is being played and
 // which game comes next. A tournament is walked in the order its rounds are played, and the
 // round we are in is the first one that still has a game left at this table - so when a round
@@ -140,8 +163,10 @@ function obs_event_context($event_id, $table_num)
 	$c->normalizer_id = 0;
 	$c->normalizer_version = 0;
 
-	list ($name, $c->club_id, $c->scoring_id, $c->scoring_version, $c->scoring_options) = Db::record(get_label('event'),
-		'SELECT name, club_id, scoring_id, scoring_version, scoring_options FROM events WHERE id = ?', $event_id);
+	list ($name, $event_flags, $c->club_id, $c->scoring_id, $c->scoring_version, $c->scoring_options) = Db::record(get_label('event'),
+		'SELECT name, flags, club_id, scoring_id, scoring_version, scoring_options FROM events WHERE id = ?', $event_id);
+
+	$c->logo = obs_logo(new Picture(EVENT_PICTURE), $event_id, $name, (int)$event_flags, $c->club_id);
 
 	// The event is what the screens head themselves with, and there is no round under it to
 	// name a second time.
@@ -195,6 +220,7 @@ function obs_context()
 		'SELECT name, flags, club_id, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options'.
 		' FROM tournaments WHERE id = ?', $tournament_id);
 	$c->tournament_flags = (int)$c->tournament_flags;
+	$c->logo = obs_logo(new Picture(TOURNAMENT_PICTURE), $tournament_id, $c->tournament_name, $c->tournament_flags, $c->club_id);
 
 	// The rounds in the order they are played. events.round is a stage number rather than a
 	// sequence, so the clock is what puts them in order.
@@ -391,16 +417,17 @@ function obs_icon($name)
 			'<circle cx="12.00" cy="1.60" r="1.7"/><circle cx="21.01" cy="6.80" r="1.7"/><circle cx="21.01" cy="17.20" r="1.7"/>' .
 			'<circle cx="12.00" cy="22.40" r="1.7"/><circle cx="2.99" cy="17.20" r="1.7"/><circle cx="2.99" cy="6.80" r="1.7"/></g></svg>';
 	case 'pistol': // the mafia
-		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.5 7.2h15.2l.9-1.2h2.9v3.6h-1.8l-.5 1H13l-.8 3a1.4 1.4 0 0 1-1.35 1.05H9.2L8 19H4.1l1.9-6.5-3.5-1.7z"/></svg>';
-	case 'hat': // the don
-		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2 16.6c0-1.1 3.7-2.2 10-2.2s10 1.1 10 2.2-3.7 2.4-10 2.4S2 17.7 2 16.6z"/>' .
-			'<path fill="currentColor" d="M6.6 14.6l.7-5.6C7.5 7.2 9.1 5.8 12 5.8s4.5 1.4 4.7 3.2l.7 5.6c-1.7-.5-3.4-.7-5.4-.7s-3.7.2-5.4.7z"/></svg>';
+		return '<svg viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M2 6.2h19.2v4.3h-7.4c0 2.1-1.2 3.3-3.2 3.3h-.9L8.1 19.8H3.5l1.8-9.3H2zM10.1 10.5h2.2c0 1-.6 1.6-1.6 1.6h-.6z"/></svg>';
+	case 'hat': // the don - a fedora, pinched along the crown
+		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M1.8 16.2c0-1.4 4.2-2.6 10.2-2.6s10.2 1.2 10.2 2.6-4.2 2.6-10.2 2.6S1.8 17.6 1.8 16.2z"/>' .
+			'<path fill="currentColor" d="M6.6 14l.8-5.7c.3-1.6 1.8-2.6 3-2 .6.3 1 .4 1.6.4s1-.1 1.6-.4c1.2-.6 2.7.4 3 2l.8 5.7c-1.6-.4-3.4-.6-5.4-.6s-3.8.2-5.4.6z"/>' .
+			'<path d="M7 12.2c1.6-.4 3.2-.6 5-.6s3.4.2 5 .6" fill="none" stroke="rgba(0,0,0,.4)" stroke-width="1.3"/></svg>';
 	case 'target': // shot in the night, and the best move that follows from it
 		return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">' .
 			'<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/>' .
 			'<path d="M12 1.8v4.4M12 17.8v4.4M1.8 12h4.4M17.8 12h4.4"/></svg>';
-	case 'thumb': // voted out - a hand put up, tilted
-		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2 10.5h3.6V21H2zM7.3 21V10.3l4.6-6.9c.6-.9 2-.7 2.3.4.2.6.2 1.2 0 1.8l-1.1 3.6h6.1c1.5 0 2.6 1.4 2.2 2.9l-1.8 6.9c-.4 1.2-1.4 2-2.7 2z"/></svg>';
+	case 'thumb': // voted out - a hand put up
+		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 10h3.4a.6.6 0 0 1 .6.6v9.8a.6.6 0 0 1-.6.6H3a.6.6 0 0 1-.6-.6v-9.8A.6.6 0 0 1 3 10zm6 11V10.6l3.9-6.4a1.6 1.6 0 0 1 2.9 1.2l-.9 3.6h4.6a2.2 2.2 0 0 1 2.1 2.8l-2 7.3a2.6 2.6 0 0 1-2.5 1.9z"/></svg>';
 	case 'gavel': // the referee
 		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.2 2.6l6.2 6.2-2.1 2.1-6.2-6.2zM8.3 7.5l6.2 6.2-2.1 2.1-6.2-6.2zM11.3 5.9l4.8 4.8-1.8 1.8-4.8-4.8zM10.4 13l1.4 1.4-7.3 7.3L3 20.3zM13 20h9v2h-9z"/></svg>';
 	}
@@ -422,43 +449,143 @@ function obs_frame_end()
 	echo '</div>';
 }
 
-// The line across the top of every frame: the tournament on the left, the title and what it is
-// about in the middle, and on the right a pill with whatever that frame has to say there -
-// usually the referee. $title and $sub are plain text; $pill is ready-made html.
-function obs_head($tournament, $title, $sub, $pill = '')
+// The line across the top of every frame. Three things stand in it and nothing else:
+//   left   - the tournament, its logo on a tile and under its name the one line that says
+//            which part of it this is (the round, or what the numbers are counted over);
+//   centre - the title, with a second line only where the title leaves something unsaid -
+//            the kind of mafia win, which is the whole of what is added to "MAFIA WIN";
+//   right  - the one number the frame is about: which game of how many, which places are
+//            listed, how many games the tournament has behind it.
+//
+// Everything else that used to be up here - the table, the referee, the game - has gone to
+// the foot of the frame, where it does not have to be read before the title.
+function obs_head($c, $title, $line = '', $sub = '', $num = '')
 {
 	echo '<div class="hd">';
-	echo '<div class="tn"><i></i><span>' . htmlspecialchars($tournament) . '</span></div>';
+
+	echo '<div class="blk">';
+	if ($c->logo != '')
+	{
+		echo '<span class="tlogo"><img src="' . $c->logo . '" alt=""></span>';
+	}
+	echo '<div><div class="b1">' . htmlspecialchars($c->tournament_name) . '</div>' .
+		'<div class="b2">' . htmlspecialchars($line) . '</div></div></div>';
+
 	echo '<div class="ttl"><h1>' . htmlspecialchars($title) . '</h1>' .
-		($sub == '' ? '' : '<div class="sub">' . $sub . '</div>') . '</div>';
-	echo ($pill == '' ? '<div></div>' : '<div class="pill">' . $pill . '</div>');
+		($sub == '' ? '' : '<div class="sub">' . htmlspecialchars($sub) . '</div>') . '</div>';
+
+	echo '<div class="blk r">' .
+		($num == '' ? '' : '<div><div class="b1">' . htmlspecialchars($num) . '</div></div>') .
+		'</div>';
+
 	echo '</div>';
 }
 
-// The line under the title: which round, which table, which game, in the order they are said
-// out loud. An event standing on its own has no round to name - the frame is already headed
-// with its name.
-function obs_head_sub($round_name, $table_num, $game_num, $extra = '')
+// The referee, in the bottom right corner: the table, the gavel, the name and the face. No
+// word before the name - their nicknames run long and the gavel says what it is.
+// $judge is what obs_players() returned, or NULL when nobody is at the table.
+function obs_foot($table_num, $judge)
 {
-	$parts = array();
-	if ($round_name != '')
+	echo '<div class="ftr">';
+	echo '<span>' . get_label('Table [0]', $table_num) . '</span>';
+	if (!is_null($judge))
 	{
-		$parts[] = htmlspecialchars($round_name);
+		echo '<span class="fdv"></span>' . obs_icon('gavel') .
+			'<b>' . htmlspecialchars($judge->name) . '</b>';
+		if ($judge->photo != '')
+		{
+			echo '<span class="jav"><img src="' . $judge->photo . '" alt=""></span>';
+		}
+		else
+		{
+			echo '<span class="jav none"></span>';
+		}
 	}
-	$parts[] = get_label('Table [0]', $table_num);
-	$parts[] = get_label('Game [0]', $game_num);
-	if ($extra != '')
-	{
-		$parts[] = $extra;
-	}
-	return implode(' &middot; ', $parts);
+	echo '</div>';
 }
 
-// The referee in a pill: the gavel and the name, with no word before it. Their nicknames run
-// long and the name is the only part anybody reads.
-function obs_head_judge($name)
+// Who is running this table, for the foot of a frame. The game under way is the one with a
+// referee at it; between two games the one just played out is the nearest thing to it, and
+// it is the same person anyway more often than not.
+function obs_judge($c)
 {
-	return obs_icon('gavel') . '<span class="nm">' . htmlspecialchars($name) . '</span>';
+	$id = 0;
+	if (!is_null($c->playing) && isset($c->playing->log->moderator->id))
+	{
+		$id = (int)$c->playing->log->moderator->id;
+	}
+	else if (!is_null($c->done) && isset($c->done->log->moderator->id))
+	{
+		$id = (int)$c->done->log->moderator->id;
+	}
+	if ($id <= 0)
+	{
+		return NULL;
+	}
+
+	$players = obs_players(array($id), $c->event_id, $c->tournament_id, $c->club_id);
+	return isset($players[$id]) ? $players[$id] : NULL;
+}
+
+// How many games this table plays in that round, for the "game 8 of 10" in the corner. Zero
+// when the round has no seating, and then the corner says the game and nothing more.
+function obs_round_games($event_id, $table_num)
+{
+	list ($misc) = Db::record(get_label('event'), 'SELECT misc FROM events WHERE id = ?', $event_id);
+	return obs_seated_games($misc, $table_num);
+}
+
+// Which game of how many, as the corner of a frame says it.
+function obs_head_game($game_num, $games)
+{
+	return $games > 0 ? get_label('Game [0] of [1]', $game_num, $games) : get_label('Game [0]', $game_num);
+}
+
+// A number with the word after it, in the form that number takes. $label holds the three
+// forms separated by bars - one thing, a few of them, many of them - because that is what
+// Russian and Ukrainian count in; English uses the second for everything but one.
+function obs_count($count, $label)
+{
+	global $_lang;
+
+	$forms = explode('|', get_label($label));
+	if (count($forms) < 3)
+	{
+		return $count . ' ' . get_label($label);
+	}
+
+	if (($_lang & (LANG_RUSSIAN | LANG_UKRAINIAN)) != 0)
+	{
+		$tens = $count % 100;
+		$ones = $count % 10;
+		$form = ($ones == 1 && $tens != 11) ? 0 :
+			(($ones >= 2 && $ones <= 4 && ($tens < 12 || $tens > 14)) ? 1 : 2);
+	}
+	else
+	{
+		$form = ($count == 1) ? 0 : 1;
+	}
+	return $count . ' ' . $forms[$form];
+}
+
+// The colour a seat number is drawn in, which is the one thing every number on every frame
+// agrees on: the town's red, the mafia's charcoal, the sheriff's gold, and the flat grey of
+// a seat whose part is not known - before a game, or on a frame that does not tell.
+function obs_seat_class($role, $unknown = false)
+{
+	if ($unknown)
+	{
+		return 'n';
+	}
+	switch ($role)
+	{
+	case 'maf':
+	case 'don':
+		return 'b';
+	case 'sheriff':
+		return 'g';
+	}
+	return 'r';
 }
 
 // One player card. $player is what obs_players() returned, or NULL for a seat we know nothing
@@ -522,7 +649,7 @@ function obs_card($seat, $player, $o = NULL)
 	}
 
 	echo '<div class="meta">';
-	echo '<span class="seat">' . $seat . '</span>';
+	echo '<span class="seat ' . obs_seat_class($neutral ? '' : $role, $neutral) . '">' . $seat . '</span>';
 	echo '<span class="nick">' . (is_null($player) ? '' : htmlspecialchars($player->name)) . '</span>';
 	echo '<div class="l2">';
 	if (!is_null($player))

@@ -2,10 +2,13 @@
     the players are on a break - the result of the game just played, the standings, who sits
     down next, and how the tournament has gone.
 
-    This is the design handed over by the designer (Mafia_Frames_Handoff), followed to the
+    This is the design handed over by the designer (Mafia_Broadcast_Handoff), followed to the
     value: a near-black base under large blurred red and violet glows, frosted glass panels,
-    and players cut out onto cards in the colour of their team. Everything the designer gave
-    in pixels at 1920 x 1080 is written here in rem, because the rem is a share of the screen -
+    and players cut out onto cards in the colour of their team. The frames and the in-game
+    overlay are one system - the cards, the number chips, the role badges and the glass are
+    the same here as in obs.css, and the two are meant to be read as one broadcast.
+    Everything the designer gave in pixels at 1920 x 1080 is written here in rem, because
+    the rem is a share of the screen -
     1rem is the designer's 16px, and the whole drawing is then scaled to whatever size the
     browser source is given in OBS rather than being a layout that rearranges itself.
 
@@ -107,11 +110,15 @@ body.between {
 	--gold: #F5C451;
 	--mint: #5CF2A0;
 
+	/* The two corners of the page: the tournament on the left, the number of the frame on the
+	   right, and the judge below them. They are lettering on the page rather than pills, so
+	   they have a strength of their own between the title and the quiet text. */
+	--hd1: rgba(255, 255, 255, 0.92);
+	--hd2: rgba(255, 255, 255, 0.60);
+
 	/* The cards, which are the same in both themes. */
-	--town-card: radial-gradient(120% 70% at 50% 18%, #E5394A 0%, rgba(229, 57, 74, 0) 70%), linear-gradient(180deg, #C21E30 0%, #8E0F1E 60%, #4A0610 100%);
-	--town-fade: #4A0610;
-	--town-line: rgba(255, 150, 160, 0.30);
-	--neu-line: rgba(255, 255, 255, 0.10);
+	--town-card: radial-gradient(120% 70% at 50% 18%, #C92E3E 0%, rgba(201, 46, 62, 0) 70%), linear-gradient(180deg, #A8192A 0%, #7A0C1A 60%, #3E040D 100%);
+	--maf-card: radial-gradient(120% 70% at 50% 18%, #4A4347 0%, rgba(74, 67, 71, 0) 70%), linear-gradient(180deg, #2E282B 0%, #171214 60%, #090607 100%);
 
 	--pts-bg: rgba(255, 64, 86, 0.30);
 	--pts-edge: rgba(255, 150, 160, 0.55);
@@ -145,6 +152,9 @@ body.between.bg-light {
 
 	--line: rgba(26, 14, 18, 0.10);
 	--dot: rgba(26, 14, 18, 0.20);
+
+	--hd1: #1A0E12;
+	--hd2: rgba(26, 14, 18, 0.60);
 
 	--pts-bg: rgba(226, 52, 71, 0.10);
 	--pts-edge: rgba(226, 52, 71, 0.45);
@@ -220,14 +230,11 @@ body.between.bg-clear .glow {
 }
 
 /* One screen gives way to the next. Every frame is a sheet of its own, laid in the same place
-   as the one before it, and a new one always goes under what is already up: the page that
-   leaves uncovers it, and the page that turns over shows it coming up out of the same turn.
-   So nothing is ever taken off the screen before something stands in its place, and the
-   ground is never seen between two frames.
-
-   There are two ways through and between.js picks one at random, with the axis or the
-   direction of it, so that an evening of this does not play the same trick every ten seconds.
-   The old frame is taken away once the way through is done - see put() there. */
+   as the one before it, and a new one always goes under what is already up: the one on top
+   fades away and the one underneath is there behind it, whole and still, the whole time. So
+   nothing is ever taken off the screen before something stands in its place, the ground is
+   never seen between two frames, and nothing moves on the way through - only the light
+   changes. The old frame is taken away once it has gone - see put() in between.js. */
 .screen > .fr {
 	position: absolute;
 	left: 0;
@@ -248,39 +255,22 @@ body.between.bg-clear .glow {
 }
 
 .screen > .fr.first {
-	animation: fr-first 0.8s ease both;
+	animation: fr-first 1.4s ease both;
 }
 
-/*  The page turning over. --ax and --ay are the axis the script picked - upright or lying
-    down, either way round - and the half that brings the new frame up begins where the half
-    that took the old one away ended, so the two read as one movement. The first half gathers
-    speed and the second half loses it, as a sheet of paper does. */
-@keyframes fr-turn-out {
-	from { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, 0deg); }
-	to   { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, 90deg); }
+/*  The frame on top going out. Near two seconds, eased in and out, and on a layer of its own:
+    a fade at an even pace shows its beginning and its end as two small steps, a short one
+    reads as a blink rather than as a change, and a layer that is composed rather than painted
+    again every frame is what keeps the gradients and the photographs from stepping as they
+    go. The screens stand for ten seconds apiece, so eight of them are still perfectly still. */
+@keyframes fr-leave {
+	from { opacity: 1; }
+	to   { opacity: 0; }
 }
 
-@keyframes fr-turn-in {
-	from { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, -90deg); }
-	to   { transform: perspective(150rem) rotate3d(var(--ax), var(--ay), 0, 0deg); }
-}
-
-.screen > .fr.turn-out {
-	animation: fr-turn-out 0.6s cubic-bezier(0.4, 0, 1, 1) forwards;
-}
-
-.screen > .fr.turn-in {
-	animation: fr-turn-in 0.6s cubic-bezier(0, 0, 0.2, 1) 0.6s both;
-}
-
-/*  The page leaving, in the direction the script picked, with the next one standing under it.
-    It gathers speed as it goes rather than drifting off at an even pace. */
-@keyframes fr-slide-out {
-	to { transform: translate(var(--tx), var(--ty)); }
-}
-
-.screen > .fr.slide-out {
-	animation: fr-slide-out 0.9s cubic-bezier(0.4, 0, 1, 1) forwards;
+.screen > .fr.leave {
+	animation: fr-leave 1.8s cubic-bezier(0.37, 0, 0.63, 1) forwards;
+	will-change: opacity;
 }
 
 .glow {
@@ -325,30 +315,73 @@ body.between.bg-clear .glow {
 	align-items: center;
 }
 
-/* The tournament, with the red dot that says this is a live broadcast. */
-.tn {
+/*  The corners of the header. On the left the tournament - its logo on a tile, its name, and
+    under the name the one line that says which part of it this is. On the right the one
+    number the frame is about: which game of how many, which places the table shows, how many
+    games the tournament has behind it. Both are plain lettering: the pills these used to be
+    made the corners louder than the title between them. */
+.hd .blk {
 	display: flex;
 	align-items: center;
 	gap: 0.875rem;
 	min-width: 0;
-	font-size: 1.5rem;
-	font-weight: 700;
-	color: var(--ink2);
 }
 
-.tn span {
+.hd .blk.r {
+	justify-self: end;
+	text-align: right;
+}
+
+.hd .blk > div {
+	min-width: 0;
+}
+
+/* The logo stands on a warm tile rather than on the page, so that a dark logo is still
+   something and the ten tournaments that use a black square do not all disappear. */
+.hd .blk .tlogo {
+	flex: none;
+	width: 3rem;
+	height: 3rem;
+	border-radius: 0.8125rem;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: linear-gradient(160deg, #FFF6E8, #FFE2BF);
+	box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.35);
+}
+
+.hd .blk .tlogo img {
+	width: 2.5rem;
+	height: 2.5rem;
+	object-fit: contain;
+	display: block;
+}
+
+.hd .blk .b1 {
+	font-size: 1.5rem;
+	font-weight: 800;
+	line-height: 1.15;
+	color: var(--hd1);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
-.tn i {
-	flex: none;
-	width: 0.75rem;
-	height: 0.75rem;
-	border-radius: 50%;
-	background: var(--red);
-	box-shadow: 0 0 1.125rem 0.25rem rgba(255, 77, 94, 0.55);
+.hd .blk .b2 {
+	margin-top: 0.1875rem;
+	font-size: 1.125rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	color: var(--hd2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* A round with nothing to say about itself leaves the name on its own rather than sitting
+   high above an empty line. */
+.hd .blk .b2:empty {
+	display: none;
 }
 
 .ttl {
@@ -375,29 +408,83 @@ body.between.bg-clear .glow {
 	white-space: nowrap;
 }
 
-/* The pill in the right corner. What it holds is the frame's business - the judge, the table,
-   how many games have been played. */
-.pill {
-	justify-self: end;
+/*  The judge, in the bottom right corner of every frame: the table, the gavel, the name and
+    the face. It is set halfway between the lowest thing on the frame and the bottom of the
+    page, so each frame places it for itself - see .f1 .ftr and the rest below. */
+.ftr {
+	position: absolute;
+	right: 5.125rem;
+	transform: translateY(-50%);
 	display: flex;
 	align-items: center;
 	gap: 0.75rem;
-	height: 3.25rem;
-	padding: 0 1.5rem;
-	max-width: 32.5rem;
-	border-radius: 1.625rem;
-	border: 1px solid var(--gl-edge);
-	background: linear-gradient(180deg, var(--gl-top), var(--gl-bot));
-	backdrop-filter: blur(1.5rem) saturate(160%);
-	box-shadow: inset 0 1px 0 var(--gl-hi), 0 0.75rem 1.875rem rgba(0, 0, 0, 0.18);
 	font-size: 1.375rem;
-	font-weight: 700;
+	font-weight: 600;
+	color: var(--ink2);
+	z-index: 4;
 }
 
-.pill .mu { color: var(--ink3); }
-.pill svg { width: 1.375rem; height: 1.375rem; flex: none; color: var(--ink3); }
-.pill .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pill .dv { width: 1px; height: 1.5rem; background: var(--line); flex: none; }
+.ftr b {
+	font-weight: 700;
+	color: var(--hd1);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 32rem;
+}
+
+.ftr .fdv {
+	flex: none;
+	width: 1px;
+	height: 1.375rem;
+	margin: 0 0.25rem;
+	background: var(--line);
+}
+
+.ftr svg {
+	flex: none;
+	width: 1.3125rem;
+	height: 1.3125rem;
+	color: var(--ink2);
+}
+
+/* The face, on the same ground every other face in the frames stands on. */
+.jav {
+	flex: none;
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 50%;
+	overflow: hidden;
+	position: relative;
+	background: var(--av-bg);
+	box-shadow: 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.35);
+}
+
+.jav.none { background: url(images/user_null.png) center / cover no-repeat, var(--av-bg); }
+
+.jav img {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: 50% 15%;
+	display: block;
+}
+
+.jav img.cut {
+	object-position: 50% 0%;
+	transform: scale(1.3);
+	transform-origin: 50% 0%;
+	top: 0.1875rem;
+}
+
+/* Where the line sits on each frame: the middle of the gap the cards or the table leave. */
+.f1 .ftr { top: 62.1875rem; }
+.f2 .ftr { top: 61.6875rem; }
+.f3 .ftr { top: 63.375rem; }
+.f4 .ftr { top: 62.4375rem; }
 
 /*  Which of the frames is up, at the bottom of the page. The dots are the shell's rather than
     any one frame's - between.js knows the whole round of screens and which of them this is,
@@ -441,48 +528,30 @@ body.between.bg-clear .glow {
 	--c-ink: #fff;
 	--c-ink2: rgba(255, 255, 255, 0.72);
 	--c-dim: rgba(255, 255, 255, 0.16);
-	--c-dim-edge: rgba(255, 255, 255, 0.28);
+}
+
+/*  Two grounds and no outlines at all. The sheriff and the don stand on the card of their own
+    side like everybody else: the badge in the corner and the colour of the seat chip are what
+    tell them apart, and the gold frame the sheriff used to wear is gone - it made one card
+    shout across a row of ten. */
+.card.town,
+.card.neutral,
+.card.sher {
+	background: var(--town-card);
+}
+
+.card.maf,
+.card.don {
+	background: var(--maf-card);
 }
 
 .card.town,
-.card.neutral {
-	background: var(--town-card);
-	--fade: var(--town-fade);
-}
-
-.card.town {
-	border: 1px solid var(--town-line);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), var(--gl-sh);
-}
-
-/* Frame 3: the roles are not known before the game, so every card is the same and its edge is
-   nearly invisible. */
-.card.neutral {
-	border: 1px solid var(--neu-line);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), var(--gl-sh);
-}
-
-.card.maf {
-	border: 1px solid rgba(0, 0, 0, 0.55);
-	background: radial-gradient(120% 70% at 50% 18%, #4A4347 0%, rgba(74, 67, 71, 0) 70%), linear-gradient(180deg, #2E282B 0%, #171214 60%, #090607 100%);
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), var(--gl-sh);
-	--fade: #090607;
-}
-
-.card.sher {
-	border: 2px solid var(--gold);
-	box-shadow: 0 0 1.625rem rgba(245, 196, 81, 0.30), var(--gl-sh);
-}
-
-/* The gold edge of the dark theme all but disappears on a pale page, so it is drawn heavier. */
-body.between.bg-light .card.sher {
-	border: 3px solid #E0A812;
-	box-shadow: 0 0 0 2px rgba(224, 168, 18, 0.35), 0 0 1.5rem rgba(224, 168, 18, 0.45), var(--gl-sh);
-}
-
+.card.neutral,
+.card.sher,
+.card.maf,
 .card.don {
-	border: 2px solid #2B2C31;
-	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07), var(--gl-sh);
+	border: 0;
+	box-shadow: var(--gl-sh);
 }
 
 /*  The photograph, which stands on the card's own colour rather than in a box of its own. A
@@ -527,43 +596,46 @@ body.between.bg-light .card.sher {
 	background: center / cover no-repeat url(images/user_null.png);
 }
 
+/*  The shade the name is read against: one dark wash over the bottom of the card, the same
+    on a red card and on a black one, which is what the in-game cards wear as well. */
 .card::after {
 	content: "";
 	position: absolute;
 	left: 0;
 	right: 0;
 	bottom: 0;
-	height: 42%;
+	height: 46%;
 	z-index: 2;
-	background: linear-gradient(180deg, transparent 0%, var(--fade) 78%);
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(10, 6, 8, 0.4) 40%, rgba(10, 6, 8, 0.82) 100%);
 	pointer-events: none;
 }
 
-/* The role, top left. Only on frame 1 - before a game nobody knows them. */
+/*  The role, top left. Only on frame 1 - before a game nobody knows them. It is the mark
+    itself on a breath of shade rather than a badge: a hard circle in the corner of every
+    black card was the first thing the eye went to, ahead of the faces. */
 .role {
 	position: absolute;
 	z-index: 3;
-	left: 1.125rem;
-	top: 1.125rem;
-	width: 2.875rem;
-	height: 2.875rem;
+	left: 0.875rem;
+	top: 0.875rem;
+	width: 3.125rem;
+	height: 3.125rem;
 	border-radius: 50%;
 	display: grid;
 	place-items: center;
-	background: rgba(10, 6, 8, 0.78);
-	border: 1px solid rgba(255, 255, 255, 0.38);
-	backdrop-filter: blur(0.875rem);
-	box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.35);
+	background: radial-gradient(circle, rgba(10, 6, 8, 0.38) 0%, rgba(10, 6, 8, 0.26) 60%, rgba(10, 6, 8, 0.14) 100%);
+	backdrop-filter: blur(0.375rem);
+	box-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.18);
 	color: #fff;
 }
 
-.role svg { width: 1.875rem; height: 1.875rem; }
-
-.role.sher {
-	background: var(--gold);
-	border-color: rgba(255, 255, 255, 0.7);
-	color: #2A1A00;
+.role svg {
+	width: 1.75rem;
+	height: 1.75rem;
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
+
+.role.sher { color: var(--gold); }
 
 /* How the player left the game, top right: the mark and the number of the night or the vote,
    and no words. */
@@ -578,20 +650,18 @@ body.between.bg-light .card.sher {
 	display: flex;
 	align-items: center;
 	gap: 0.4375rem;
-	background: rgba(10, 6, 8, 0.74);
-	border: 1px solid rgba(255, 255, 255, 0.30);
-	backdrop-filter: blur(0.875rem);
-	box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.35);
+	background: rgba(10, 6, 8, 0.42);
+	backdrop-filter: blur(0.625rem);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0.25rem 0.625rem rgba(0, 0, 0, 0.3);
 	color: #fff;
-	font-family: 'Unbounded', sans-serif;
-	font-weight: 700;
+	font-weight: 800;
 	font-size: 1.125rem;
 	line-height: 1;
 }
 
 .elim svg { width: 1.375rem; height: 1.375rem; }
 .elim.night svg { color: var(--red); }
-.elim.vote svg { color: #fff; transform: rotate(-14deg); }
+.elim.vote svg { color: #fff; }
 
 /* The seat, the name and the club along the bottom. */
 .meta {
@@ -613,16 +683,19 @@ body.between.bg-light .card.sher {
 .meta .nick { grid-area: nick; }
 .meta .l2 { grid-area: club; }
 
+/*  The seat, in the colour of the part that seat played - the same chip the overlay drew on
+    the table all game, and the same one the panel of checks is made of below. A card does
+    not have to be read for its role any more: the chip says it. */
 .seat {
 	flex: none;
 	border-radius: 50%;
 	display: grid;
 	place-items: center;
 	background: var(--c-dim);
-	color: var(--c-ink2);
-	font-family: 'Unbounded', sans-serif;
-	font-weight: 700;
+	color: #fff;
+	font-weight: 800;
 	font-variant-numeric: tabular-nums;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0.1875rem 0.375rem rgba(0, 0, 0, 0.35);
 }
 
 .nick {
@@ -724,7 +797,7 @@ body.between.bg-light .moves {
 	display: grid;
 	/* The person on top, what they are below them, then the chips - and the last row for the
 	   one thing that is only ever said of a best guess. */
-	grid-template-rows: 1.875rem 1.375rem 3.25rem 1rem;
+	grid-template-rows: 2.125rem 1.25rem 3.25rem 1rem;
 	row-gap: 0.875rem;
 	justify-items: center;
 	align-content: center;
@@ -749,9 +822,9 @@ body.between.bg-light .moves {
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
-	font-size: 0.875rem;
+	font-size: 0.9375rem;
 	font-weight: 800;
-	letter-spacing: 0.14em;
+	letter-spacing: 0.16em;
 	text-transform: uppercase;
 	color: var(--ink3);
 	white-space: nowrap;
@@ -760,9 +833,9 @@ body.between.bg-light .moves {
 .mv .who {
 	display: flex;
 	align-items: center;
-	gap: 0.625rem;
+	gap: 0.75rem;
 	font-weight: 800;
-	font-size: 1.5rem;
+	font-size: 1.625rem;
 	line-height: 1.2;
 	white-space: nowrap;
 	max-width: 100%;
@@ -780,6 +853,11 @@ body.between.bg-light .moves {
 }
 
 .mv .who .ic svg { width: 1.625rem; height: 1.625rem; }
+
+/* The best guess is somebody's: the seat they were shot in goes in front of their name, in
+   the colour of the part they played. The sheriff and the don are named by their badge
+   instead - their seat is already on the card. */
+.mv .who .seat { width: 1.75rem; height: 1.75rem; font-size: 0.8125rem; }
 .mv .who .ic.t svg { color: var(--red); }
 .mv .who .ic.s svg { color: var(--gold); }
 .mv .who .ic.d svg { color: var(--ink); }
@@ -795,16 +873,33 @@ body.between.bg-light .moves {
 	border-radius: 50%;
 	display: grid;
 	place-items: center;
-	font-family: 'Unbounded', sans-serif;
-	font-weight: 700;
-	font-size: 1.25rem;
+	font-weight: 800;
+	font-size: 1.375rem;
 	color: #fff;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0.5rem 1.125rem rgba(0, 0, 0, 0.25);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0.375rem 0.875rem rgba(0, 0, 0, 0.3);
 }
 
-.chip.b { background: #0B0608; border: 2.5px solid #000; }
-.chip.r { background: linear-gradient(160deg, var(--red-hi), var(--red-lo)); border: 2.5px solid #A30F24; }
-.chip.g { background: var(--gold); color: #2A1A00; border: 2.5px solid #B88A1E; }
+/*  The one set of colours the whole broadcast counts in: the town red, the mafia's charcoal,
+    the sheriff's gold, and the flat grey of a seat whose part nobody knows yet. No rings
+    around any of them - the fill is the whole of the signal. */
+.chip.r,
+.seat.r { background: linear-gradient(160deg, #F04A5C, #C41A30); }
+
+.chip.b,
+.seat.b { background: #3B3640; }
+
+.chip.g,
+.seat.g {
+	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
+	text-shadow: 0 1px 2px rgba(70, 38, 0, 0.6);
+}
+
+.seat.n {
+	background: rgba(255, 255, 255, 0.2);
+	color: rgba(255, 255, 255, 0.85);
+	backdrop-filter: blur(0.375rem);
+	box-shadow: none;
+}
 
 .perfect {
 	grid-row: 4;
@@ -831,7 +926,7 @@ body.between.bg-light .perfect { color: #B07A00; }
 	gap: 2rem;
 }
 
-.col { display: flex; flex-direction: column; gap: 0.5rem; }
+.col { display: flex; flex-direction: column; gap: 0.25rem; }
 
 .sth,
 .str {
@@ -854,25 +949,36 @@ body.between.bg-light .perfect { color: #B07A00; }
 
 .sth div { text-align: center; }
 .sth .on { color: var(--ink); }
+.sth div:not(.on) { color: rgba(255, 255, 255, 0.4); }
+body.between.bg-light .sth div:not(.on) { color: rgba(26, 14, 18, 0.45); }
 
+/*  Twenty rows and no twenty boxes. A box around every line made the table heavier than
+    everything else on the screen; every other line is shaded instead, which is enough to
+    follow a row across to its points and nothing more. */
 .str {
 	height: 4rem;
 	padding: 0 0.875rem 0 1rem;
-	border-radius: 1.3125rem;
+	border-radius: 0.875rem;
 }
+
+.col .str:nth-of-type(odd) { background: rgba(255, 255, 255, 0.045); }
+body.between.bg-light .col .str:nth-of-type(odd) { background: rgba(26, 14, 18, 0.04); }
 
 .str .rk {
 	text-align: center;
-	font-family: 'Unbounded', sans-serif;
-	font-weight: 700;
+	font-weight: 800;
 	font-size: 1.375rem;
 	color: var(--ink2);
 }
 
-/* The first three places are gold, silver and bronze. */
+/* The first three places are gold, silver and bronze. On a pale page the three of them are
+   drawn deeper - the dark theme's silver is all but white against it. */
 .str .rk.p1 { color: #F5C451; }
 .str .rk.p2 { color: #C9CFDB; }
 .str .rk.p3 { color: #E39A63; }
+body.between.bg-light .str .rk.p1 { color: #C08A08; }
+body.between.bg-light .str .rk.p2 { color: #7C838F; }
+body.between.bg-light .str .rk.p3 { color: #A8622E; }
 
 /* One ground for every face in the frame, so that a row of them reads as a list rather than
    as twenty different photographs. */
@@ -946,25 +1052,33 @@ body.between.bg-light .perfect { color: #B07A00; }
 	font-variant-numeric: tabular-nums;
 }
 
+/* Games and wins are what the points are made of rather than what the table is read for, so
+   they step back and leave the points and the average to be read across the row. */
 .str .n {
 	text-align: center;
-	font-weight: 700;
+	font-weight: 600;
 	font-size: 1.625rem;
-	color: var(--ink2);
+	color: rgba(255, 255, 255, 0.5);
 	font-variant-numeric: tabular-nums;
 }
 
 .str .avg {
 	text-align: center;
-	font-weight: 800;
+	font-weight: 700;
 	font-size: 1.75rem;
+	color: rgba(255, 255, 255, 0.72);
 	font-variant-numeric: tabular-nums;
 }
 
+body.between.bg-light .str .n { color: rgba(26, 14, 18, 0.5); }
+body.between.bg-light .str .avg { color: rgba(26, 14, 18, 0.72); }
+
+/* What the green dot beside a name means, on the line the judge stands on at the other end. */
 .note {
 	position: absolute;
 	left: 4.5rem;
-	bottom: 2.375rem;
+	top: 61.6875rem;
+	transform: translateY(-50%);
 	display: flex;
 	align-items: center;
 	gap: 0.75rem;
@@ -1052,7 +1166,7 @@ body.between:not(.bg-light) .side.t .pc { text-shadow: 0 0 3.125rem rgba(255, 59
 }
 
 .lg div { display: flex; align-items: center; gap: 0.625rem; }
-.lg b { font-family: 'Unbounded', sans-serif; font-size: 1.5rem; color: var(--ink); margin-left: 0.25rem; }
+.lg b { font-weight: 800; font-size: 1.5rem; color: var(--ink); margin-left: 0.25rem; }
 .lg .sw { width: 1.125rem; height: 1.125rem; border-radius: 0.375rem; }
 .lg .mg { display: flex; gap: 2.125rem; }
 

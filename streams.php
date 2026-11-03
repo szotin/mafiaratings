@@ -273,8 +273,8 @@ class Page extends StreamsPageBase
 		if ($table != VIEW_ALL_TABLES)
 		{
 			$this->show_url(get_label('Glyphs and info full screen'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope, '1920 x 1080');
-			$this->show_url(get_label('Glyphs only'), 'url-players', $site . '/plugins/obs/players.php?' . $scope, '1920 x 260');
-			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope, '1920 x 100');
+			$this->show_url(get_label('Glyphs only'), 'url-players', $site . '/plugins/obs/players.php?' . $scope, '1920 x 360');
+			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope, '1920 x 200');
 		}
 
 		// Nothing stands in glyphs-detail at the moment - the roles, which used to, belong to

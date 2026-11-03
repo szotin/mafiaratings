@@ -43,8 +43,6 @@ echo '<!DOCTYPE HTML>';
 echo '<html><head>';
 echo '<meta content="text/html; charset=utf-8" http-equiv="Content-Type">';
 echo '<title>' . get_label('OBS Studio integration') . '</title>';
-echo '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700">';
-echo '<link rel="stylesheet" href="https://fonts.cdnfonts.com/css/gagalin">';
 echo '<link rel="stylesheet" href="' . obs_file('between.css') . '">';
 echo '<script src="' . obs_file('between.js') . '"></script>';
 // Changes the OBS scene from inside the source. Outside OBS it does nothing.

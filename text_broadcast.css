@@ -4,8 +4,8 @@
     The page is the window, whatever shape the window is, exactly as a browser source in OBS is
     whatever size it was given. Every length is in rem and the rem is a share of the window, so
     this is one drawing scaled to it rather than a layout that rearranges itself - the same rem
-    as plugins/obs/obs.css, worked out the same way, so the words land between the info bar and
-    the row of players without either page measuring the other. */
+    as plugins/obs/obs.css, worked out the same way, so the words land clear of what the cards
+    put over them without either page measuring the other. */
 
 html {
 	/*  120 by 67.5 is the drawing both pages are made in: 1920 by 1080 at the 16px they were
@@ -33,7 +33,7 @@ html, body {
 	padding: 0;
 	height: 100%;
 	overflow: hidden;
-	background-color: #2c313a;
+	background-color: #DCD6D8;
 	font-family: 'Roboto Slab', serif;
 }
 
@@ -56,31 +56,47 @@ body {
 	width: 120rem;
 	height: 67.5rem;
 	overflow: hidden;
-	background-color: #4d545f;
+	background-color: #F5F1F2;
 }
 
-/*  Where the picture would be: between the info bar at the top, which is 6.25rem tall, and the
-    row of players at the bottom, which with the gap above it comes to 16.875rem. Both are read
-    off obs.css, and both hold whatever the window is doing because the rem does.
+/*  Where the picture would be, in a frame of its own so that the words are a panel of the
+    drawing rather than writing loose on the ground: the telling scrolls inside it and its edges
+    say where it begins and ends even when there is only a line in it.
 
-    As wide as the drawing and no wider: on a window wider than the drawing the cards stand in
-    the middle of it rather than stretching, and the words keep them company. */
+    It begins below the nominees rather than straight under the top bar: they hang out of the
+    top left corner of the cards and down over the words all through a vote, which is when
+    there is most to read - 11.4375rem at their tallest, read off .nom in obs.css. It ends above
+    the row of players, which with the gap above it comes to 16.875rem, and stands between their
+    ends on either side, so the frame and the cards under it are one column. All of it holds
+    whatever the window is doing, because the rem does. */
 .tb-text {
 	position: absolute;
-	left: 0;
-	right: 0;
-	top: 6.25rem;
+	left: 5rem;
+	right: 5rem;
+	top: 11.75rem;
 	bottom: 16.875rem;
-	width: 120rem;
+	width: 110rem;
 	max-width: 100%;
 	margin: 0 auto;
 	overflow-y: auto;
-	padding: 1.25rem 4.8rem;
-	color: #e8e8e8;
+	padding: 1.5rem 2.5rem;
+	/*  The dark glass of the pills at the top of the picture - the same tone, taken a little
+	    deeper, with the same shadow under the panel and under the letters - so that the band of
+	    words is one more panel of the overlay standing on the light ground rather than a thing
+	    of its own. Deeper because a page of words is read and a pill is only glanced at, and
+	    white letters want more ground under them to be read off than to be seen. The pills
+	    carry no outline; this keeps one, because a page of words wants to say where it ends.
+	    There is nothing behind it here to blur. */
+	border: 0.125rem solid rgba(255, 255, 255, 0.2);
+	border-radius: 1.375rem;
+	background-color: rgba(14, 8, 11, 0.55);
+	box-shadow: 0 0.625rem 1.75rem rgba(0, 0, 0, 0.35);
+	color: #fff;
+	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.45);
 	font-size: 1.6rem;
 	line-height: 1.45;
 	scrollbar-width: thin;
-	scrollbar-color: #555 transparent;
+	scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
 }
 
 /*  On a small screen the whole drawing is small, and the cards can be read at any size because
@@ -90,25 +106,25 @@ body {
     only a line or two further down. */
 @media (max-width: 1000px) {
 	.tb-text {
-		padding: 0.8rem 2.4rem;
+		padding: 1rem 1.5rem;
 		font-size: 2.4rem;
 	}
 }
 
 .tb-text::-webkit-scrollbar { width: 0.5rem; }
-.tb-text::-webkit-scrollbar-thumb { background-color: #555; border-radius: 0.25rem; }
+.tb-text::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.45); border-radius: 0.25rem; }
 
 /*  A day or a night, and under it what happened in it. The heading repeats as the game goes
     on, which is how a reader coming in halfway knows where the table is. */
 .tb-part + .tb-part { margin-top: 1em; }
 
 .tb-part-head {
-	color: #ffcc66;
+	color: #FFCC66;
 	font-weight: 700;
 	letter-spacing: 0.04em;
 }
 
-.tb-part.night .tb-part-head { color: #8ab4ff; }
+.tb-part.night .tb-part-head { color: #8AB4FF; }
 
 .tb-line {
 	margin-left: 1.2em;
@@ -118,7 +134,7 @@ body {
 
 .tb-line::before {
 	content: '— ';
-	color: #888;
+	color: rgba(255, 255, 255, 0.55);
 }
 
 /*  A line that has just arrived, so that the eye is taken to it rather than having to find it. */
@@ -129,47 +145,6 @@ body {
 
 .tb-line.new {
 	animation: tb-arrive 2.5s ease-out;
-}
-
-/*  Where the table is standing: the step of the game, in a frame in the top right corner of
-    the words. It stands in the drawing rather than in the band of words, so the band scrolls
-    under it and it stays where it is - a reader who has gone back up the game is still told
-    where the game is now. The frame is written in the two colours the headings of a day and
-    of a night are written in, so it says which of them it is twice over. */
-.tb-step {
-	position: absolute;
-	right: 4.8rem;
-	top: 8.75rem;
-	/*  Over the words, and over the cards as well - the corner it stands in is empty on them.
-	    What a stream shows between games is above it in turn, at 2, and covers it. */
-	z-index: 1;
-	padding: 0.4rem 1.2rem;
-	border: 0.125rem solid rgba(255, 204, 102, 0.6);
-	border-radius: 0.4rem;
-	/*  Dark enough that a line passing behind it goes out of sight rather than showing
-	    through half-read. */
-	background-color: rgba(30, 34, 41, 0.92);
-	color: #ffcc66;
-	font-size: 1.7rem;
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	white-space: nowrap;
-	/*  Nothing here is to be touched: a tap on it is a tap on the words behind it. */
-	pointer-events: none;
-}
-
-.tb-step.night {
-	border-color: rgba(138, 180, 255, 0.6);
-	color: #8ab4ff;
-}
-
-/*  On a small screen, where the words are written larger for the same reason - see .tb-text.
-    This is read beside them, so it grows with them and keeps to the margin they keep to. */
-@media (max-width: 1000px) {
-	.tb-step {
-		right: 2.4rem;
-		font-size: 2.2rem;
-	}
 }
 
 /*  The cards, which are the OBS pages themselves rather than a copy of them: one page, shown

@@ -90,6 +90,10 @@ class ApiPage extends GetApiPageBase
 			$speaker = $g->time->speaker - 1;
 		}
 		
+		// The numbers that voted a player out, which stay over their card for the rest of the
+		// game rather than coming down with the day - see game_log_voted_out_by().
+		$voted_out_by = game_log_voted_out_by($this->game);
+
 		$game->players = array();
 		for ($i = 0; $i < count($g->players); ++$i)
 		{
@@ -128,7 +132,6 @@ class ApiPage extends GetApiPageBase
 				{
 					$player->gender = 'female';
 				}
-				
 				if (!is_null($user_club_id))
 				{
 					$this->club_pic->set($user_club_id, $user_club_name, $user_club_flags);
@@ -262,6 +265,10 @@ class ApiPage extends GetApiPageBase
 					break;
 				case DEATH_TYPE_DAY:
 					$player->deathType = 'voting';
+					if (isset($voted_out_by[$player->number]))
+					{
+						$player->votedOutBy = $voted_out_by[$player->number];
+					}
 					break;
 				}
 			}
@@ -480,14 +487,6 @@ class ApiPage extends GetApiPageBase
 			// recording are counted from as well - see include/game.php.
 			$game->live = (isset($g->time) && $g->time->time != GAMETIME_END);
 
-			// Where the table is standing, for a broadcast to show beside the telling - a thing
-			// the words themselves do not say. See game_log_step().
-			$step = game_log_step($this->game);
-			if (!is_null($step))
-			{
-				$game->step = $step;
-			}
-
 			$options = new stdClass();
 			$options->hide_roles = !$show_roles;
 			$game->log = array();
@@ -667,6 +666,7 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('state', 'Player state - "dead" or "alive".');
 				$players->sub_param('deathRound', 'If player state is "dead" it is set to the round number when they died.');
 				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "techFouls", "giveUp", or "kickOut".');
+				$players->sub_param('votedOutBy', 'When deathType is "voting", the numbers of the players counted for them in the vote that put them out, in the order they sit - the whole table where the day ended in killing all the tied players. It stays for the rest of the game, and is left out while the moderator is still taking the count that is putting the player out.');
 				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when hideRoles is not set.');
 				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened. It is set only when hideRoles is not set.');
 			$moderator = $param->sub_param('moderator', 'Moderator.');
@@ -695,7 +695,6 @@ class ApiPage extends GetApiPageBase
  			$param->sub_param('votes', 'Array of the hands counted in the current round, each {nominee, voters}, where voters is an array of player numbers in the order they sit. Only the count being taken: when a table splits every hand comes down, so this is empty again until the new count begins. A count the moderator is still taking is not here at all - it shows up when they move on from it. The last name of a count is the exception: it holds everybody who was not counted for anybody else, so it is here as soon as the counting reaches it. It is set only in the day phase.');
  			$param->sub_param('live', 'True while there is a game to follow at the table: from the moment the roles start being handed out to the moment the game is played out. It is set only when log is asked for.');
  			$param->sub_param('log', 'The game told in words, as an array of {night, round, lines} - the same words the site shows under a game that has been played, in the order they happened and grouped by the day or the night each belongs to. A step the moderator is still standing in is held back until they move on from it. It is set only when log is asked for.');
- 			$param->sub_param('step', 'Where the table is standing right now, in a few words and in the language of the request - "Role distribution", "Day 1 voting", "Night 2 checks". It is set only when log is asked for, and only while there is a game under way.');
 				
 		return $help;
 	}

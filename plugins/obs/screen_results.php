@@ -158,7 +158,7 @@ case GAME_RESULT_MAFIA:
 	$tint = 'mw';
 	if ($g->maf_alive > 0 && !$g->team_kick_out)
 	{
-		$extra = get_label('Mafia [0] on [1]', $g->maf_alive, $g->civ_alive);
+		$extra = get_label('[0] vs [1]', $g->maf_alive, $g->civ_alive);
 	}
 	break;
 case GAME_RESULT_TOWN:
@@ -175,7 +175,9 @@ if ($g->team_kick_out)
 	$extra = get_label('Mod team kills');
 }
 
-$moderator = isset($players[$g->moderator_id]) ? $players[$g->moderator_id]->name : '';
+// The referee of the game being shown rather than whoever is at the table now: this frame is
+// about a game that is over, and it was run by them.
+$judge = isset($players[$g->moderator_id]) ? $players[$g->moderator_id] : NULL;
 
 // What each seat has to say for itself: the role it played, and how it left the game.
 //
@@ -302,7 +304,7 @@ function obs_results_chip($number, $roles, $gold_sheriff = false)
 // that took them out in the first night, the sheriff's star, the don's hat. The line under
 // them says what the chips are. A game can end without any of the three, and then the sign
 // stands on its own with nothing to follow it.
-function obs_results_moves_column($icon, $class, $label, $seat, $players_by_seat, $roles, $numbers, $gold_sheriff, $perfect)
+function obs_results_moves_column($icon, $class, $label, $seat, $players_by_seat, $roles, $numbers, $gold_sheriff, $perfect, $show_seat = false)
 {
 	echo '<div class="mv">';
 	echo '<div class="tx">';
@@ -310,6 +312,12 @@ function obs_results_moves_column($icon, $class, $label, $seat, $players_by_seat
 	echo '<span class="ic ' . $class . '">' . obs_icon($icon) . '</span>';
 	if ($seat > 0)
 	{
+		// Only the best guess names a seat: whoever was shot in the first night is one of the
+		// ten and could be anybody. The sheriff and the don are already named by their badge.
+		if ($show_seat)
+		{
+			echo '<span class="seat ' . obs_seat_class(isset($roles[$seat]) ? $roles[$seat] : '') . '">' . $seat . '</span>';
+		}
 		echo '<b>' . (isset($players_by_seat[$seat]) ? htmlspecialchars($players_by_seat[$seat]) : '') . '</b>';
 	}
 	echo '</div>';
@@ -386,8 +394,8 @@ function obs_results_cards($seats, $players, $log, $roles)
 }
 
 obs_frame_start('f1 ' . $tint);
-obs_head($c->tournament_name, $title, obs_head_sub($g->event_name, $c->table_num, $g->game_num, $extra),
-	$moderator == '' ? '' : obs_head_judge($moderator));
+obs_head($c, $title, $g->event_name, $extra, obs_head_game($g->game_num, obs_round_games($g->event_id, $c->table_num)));
+obs_foot($c->table_num, $judge);
 
 echo '<div class="f1rows">';
 for ($row = 0; $row < 2; ++$row)
@@ -406,7 +414,7 @@ for ($row = 0; $row < 2; ++$row)
 	obs_results_cards($black, $players, $g->log, $roles);
 	echo '</div>';
 	echo '<div class="moves"><div class="mvl">';
-	obs_results_moves_column('target', 't', get_label('Best guess'), $best_by, $by_seat, $roles, $best, false, $perfect);
+	obs_results_moves_column('target', 't', get_label('Best guess'), $best_by, $by_seat, $roles, $best, false, $perfect, true);
 	obs_results_moves_column('star', 's', get_label('Checks'), $sheriff_seat, $by_seat, $roles, array_keys($sheriff), false, false);
 	obs_results_moves_column('hat', 'd', get_label('Checks'), $don_seat, $by_seat, $roles, array_keys($don), true, false);
 	echo '</div></div>';

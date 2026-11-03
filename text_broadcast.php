@@ -82,9 +82,6 @@ echo '</head><body>';
 
 echo '<div class="tb-stage">';
 echo '<div class="tb-text" id="tb-text"></div>';
-// Where the table is standing, over the words rather than among them: the telling scrolls and
-// this does not, so a reader who has gone back up the game is still told where it is now.
-echo '<div class="tb-step tb-hidden" id="tb-step"></div>';
 // viewer=1 says that these are being watched rather than run. They are the same pages a stream
 // puts over its picture, but nothing here is standing beside the table, so nothing they ask for
 // is to be taken as word from it - see api/get/stream.php.
@@ -108,33 +105,89 @@ echo '</button>';
 	var text = document.getElementById('tb-text');
 	var between = document.getElementById('tb-between');
 	var overlay = document.getElementById('tb-overlay');
-	var step = document.getElementById('tb-step');
 
 	// What is on the page now, a line to an entry, each one the day or night it belongs to and
 	// the line itself. It is held as flat text so that what came back can be compared with it
 	// without walking the page.
 	var shown = [];
 	var head = null; // the heading the next line goes under, as it stands on the page
+	var wasLive = null; // whether a game was being played the last time we heard, if we have
+	var waiting = false; // true while the screens are getting ready to be shown - see hold()
 
-	// Between games - and while the roles are being handed out, and while the referee is
-	// entering the bonus points at the end - a stream shows the between-games screens over the
-	// whole picture. So does this.
-	function setLive(live)
+	// Which of the two the page is showing: the game, or the screens that stand between games.
+	function faces(live)
 	{
 		between.className = 'tb-between' + (live ? ' tb-hidden' : '');
 		overlay.className = 'tb-overlay' + (live ? '' : ' tb-hidden');
 		text.className = 'tb-text' + (live ? '' : ' tb-hidden');
 	}
 
-	// Where the table is standing, which the site says in so many words - see
-	// game_log_step(). The frame is written in the colour of the day or the night it
-	// belongs to, which is the colour its heading in the telling is written in.
-	function setStep(game)
+	// Between games - and while the roles are being handed out, and while the referee is
+	// entering the bonus points at the end - a stream shows the between-games screens over the
+	// whole picture. So does this.
+	function setLive(live)
 	{
-		var words = (game && game.step) ? game.step : '';
-		step.textContent = words;
-		step.className = 'tb-step' + (words == '' ? ' tb-hidden' : '') +
-			((game && game.phase == 'night') ? ' night' : '');
+		// A game has just ended. The screens are held back for the moment it takes them to put
+		// up the first one of their round - see hold() - and show themselves when they have.
+		if (wasLive === true && !live)
+		{
+			wasLive = false;
+			if (hold())
+			{
+				return;
+			}
+		}
+		wasLive = live;
+
+		// Still being got ready. They are not shown halfway there, and a game beginning again
+		// in the meantime calls the whole thing off.
+		if (!live && waiting)
+		{
+			return;
+		}
+		waiting = false;
+		faces(live);
+	}
+
+	// The screens are a page of their own and have been turning over all the while behind the
+	// game, so the one they are standing on when a game ends is whichever their clock had
+	// reached - the tournament table as like as not. Telling them to begin their round again
+	// is only half of it: the first screen has to be fetched before it can be up, and in that
+	// moment the screens would be shown still standing on the old one. So the game is left on
+	// the page until they say the first screen is up, which is the word restart() gives back.
+	//
+	// Returns false where there is nobody to ask - the frame is a page like any other and may
+	// not have got that far yet - and then the screens are simply shown, as they were before.
+	function hold()
+	{
+		var inside = null;
+		try
+		{
+			inside = between.contentWindow;
+		}
+		catch (error) { }
+
+		if (!inside || !inside.obs || !inside.obs.restart)
+		{
+			return false;
+		}
+
+		waiting = true;
+		var show = function()
+		{
+			if (!waiting)
+			{
+				return; // shown already, or a game began again while we waited
+			}
+			waiting = false;
+			faces(false);
+		};
+		inside.obs.restart(show);
+
+		// The screens are fetched from the site like everything else, and the site can be slow
+		// or not answer at all. The page is not held on them longer than it takes to notice.
+		setTimeout(show, 2000);
+		return true;
 	}
 
 	function flatten(parts)
@@ -238,7 +291,6 @@ echo '</button>';
 				var game = answer.game ? answer.game : null;
 				var live = !!(game && game.live);
 				setLive(live);
-				setStep(live ? game : null);
 				if (live)
 				{
 					render(game.log ? game.log : []);

@@ -554,49 +554,87 @@ function game_log_votes($game)
 }
 
 
-// Where the table is standing right now, in the few words a text broadcast shows beside the
-// telling: the step of the game, and which day or night it belongs to. The day and the night
-// are numbered as the headings of the telling number them - the round the game keeps, where
-// the first night is 0.
+// Who put each player out of the game, for as long as the game goes on. The hands of a count
+// are shown as they are counted and come down with the day - see game_log_votes() - but the
+// numbers that voted a player out stay over their card to the end of the game, so this says,
+// for every player who has left by vote, who was counted for them.
 //
-// It is made here, and not in the page, because the words are labels and labels belong in PHP;
-// and it is a thing of its own rather than the phase and the state an overlay is given, because
-// those cannot tell the whole story: the handing out of the roles and the beginning of the
-// first night are both "night, starting, round 0", and a reader wants to know which it is.
+// The count that decided a day is the last one it took: a day that splits puts every hand down
+// and takes the whole count again, so only the last of them put anybody out. A day that ended
+// in killing all the tied players was decided by the hands counted for killing them, and every
+// one of them was put out by the same hands.
 //
-// Returns NULL where there is no step to name: a game whose screen has only been opened, and a
-// game that has been played out.
-function game_log_step($game)
+// What the moderator is still standing in is held back, by the same rule the telling goes by -
+// see game_log_told_filter() - so the numbers appear over a card with the line that says the
+// player is leaving, and not before.
+//
+// Returns an array of player number => the numbers that voted them out, in the order they sit.
+// A game nobody has been voted out of comes back empty.
+function game_log_voted_out_by($game)
 {
-	$g = $game->data;
-	if (!isset($g->time) || !isset($g->time->time) || $g->time->time == GAMETIME_END)
+	$told = game_log_told_filter($game);
+	$actions = $game->get_actions();
+
+	// The count each day was decided by, which is the last one it took.
+	$last = array();
+	foreach ($actions as $action)
 	{
-		return NULL;
+		if ($action->action == GAME_ACTION_VOTING && isset($action->round))
+		{
+			$round = (int)$action->round;
+			$voting_round = isset($action->votingRound) ? (int)$action->votingRound : 0;
+			if (!isset($last[$round]) || $last[$round] < $voting_round)
+			{
+				$last[$round] = $voting_round;
+			}
+		}
 	}
 
-	$round = isset($g->time->round) ? (int)$g->time->round : 0;
-	switch ($g->time->time)
+	$by_nominee = array();
+	foreach ($actions as $action)
 	{
-		case GAMETIME_START:
-			return get_label('Role distribution');
-		case GAMETIME_ARRANGEMENT:
-			return get_label('Arrangement');
-		case GAMETIME_RELAXED_SITTING:
-			return get_label('Relaxed sitting');
-		case GAMETIME_SHOOTING:
-			return get_label('Night [0] shooting', $round);
-		case GAMETIME_DON:
-		case GAMETIME_SHERIFF:
-			return get_label('Night [0] checks', $round);
-		case GAMETIME_VOTING_START:
-		case GAMETIME_VOTING:
-		case GAMETIME_VOTING_KILL_ALL:
-			// The thirty seconds a tied player speaks for is part of the counting it belongs to,
-			// so the table is still standing in the voting while it is being given.
-			return get_label('Day [0] voting', $round);
+		if (!isset($action->votes) || !is_array($action->votes) || !call_user_func($told, $action))
+		{
+			continue;
+		}
+
+		$voters = array();
+		foreach ($action->votes as $vote)
+		{
+			$voters[] = (int)$vote;
+		}
+		sort($voters); // a row of hands stands in the order of the seats
+
+		if ($action->action == GAME_ACTION_VOTING)
+		{
+			$round = isset($action->round) ? (int)$action->round : 0;
+			$voting_round = isset($action->votingRound) ? (int)$action->votingRound : 0;
+			if (!isset($action->nominee) || !isset($last[$round]) || $last[$round] != $voting_round)
+			{
+				continue;
+			}
+			$by_nominee[(int)$action->nominee] = $voters;
+		}
+		else if ($action->action == GAME_ACTION_KILL_ALL && isset($action->nominees) && is_array($action->nominees))
+		{
+			foreach ($action->nominees as $nominee)
+			{
+				$by_nominee[(int)$nominee] = $voters;
+			}
+		}
 	}
 
-	// Whatever is left is the day or the night itself: a night beginning or ending, the speeches,
-	// the last speech of somebody who has been shot or voted out.
-	return Game::is_night($g->time) ? get_label('Night [0]', $round) : get_label('Day [0]', $round);
+	// Only the players the vote actually put out: the rest were named and stayed at the table.
+	$voted_out_by = array();
+	for ($i = 0; $i < count($game->data->players); ++$i)
+	{
+		$number = $i + 1;
+		$p = $game->data->players[$i];
+		if (isset($p->death) && isset($p->death->type) && $p->death->type == DEATH_TYPE_DAY &&
+			isset($by_nominee[$number]))
+		{
+			$voted_out_by[$number] = $by_nominee[$number];
+		}
+	}
+	return $voted_out_by;
 }

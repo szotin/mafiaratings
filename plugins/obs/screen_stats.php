@@ -129,26 +129,27 @@ $sheriff = obs_stats_fact_games($scope, $scope_id, SCORING_FLAG_SHERIFF_KILLED_F
 if ($sheriff > 0)
 {
 	$fact = new stdClass();
-	$fact->name = get_label('Sheriff killed first night');
+	$fact->name = get_label('Sheriff killed on night 1');
 	$fact->value = $sheriff;
-	$fact->of = get_label('out of [0]', $total);
+	$fact->of = get_label('of [0]', $total);
 	$fact->sub = get_label('[0]% of games', (int)round(100 * $sheriff / $total));
 	$facts[] = $fact;
 }
 
 obs_frame_start('f4');
-obs_head($c->tournament_name, get_label('Wins'),
-	get_label('all tables') . ' &middot; ' . get_label('finished games'),
-	'<span class="mu">' . get_label('Games [0]', $total) . '</span>');
+obs_head($c, get_label('Wins'),
+	get_label('all tables') . ' · ' . get_label('finished games'), '',
+	obs_count($total, 'game|games|games'));
+obs_foot($c->table_num, obs_judge($c));
 
 echo '<div class="f4main glass">';
 echo '<div class="sides">';
 echo '<div class="side t"><div class="k">' . get_label('Town') . '</div>' .
 	'<div class="pc">' . $town_share . '%</div>' .
-	'<div class="ct">' . get_label('wins: [0]', $town) . '</div></div>';
+	'<div class="ct">' . obs_count($town, 'win|wins|wins') . '</div></div>';
 echo '<div class="side m"><div class="k">' . get_label('Mafia') . '</div>' .
 	'<div class="pc">' . (100 - $town_share) . '%</div>' .
-	'<div class="ct">' . get_label('wins: [0]', $mafia) . '</div></div>';
+	'<div class="ct">' . obs_count($mafia, 'win|wins|wins') . '</div></div>';
 echo '</div>';
 
 // The one bar the two sides share. A kind nobody has played is left out of it altogether, and
@@ -156,9 +157,9 @@ echo '</div>';
 $bar = array(
 	array($town, 'c-t', get_label('Town')),
 	array($maf[0], 'c-0', get_label('Mafia win')),
-	array($maf[1], 'c-1', get_label('Mafia [0] on [1]', 1, 1)),
-	array($maf[2], 'c-2', get_label('Mafia [0] on [1]', 2, 2)),
-	array($maf[3], 'c-3', get_label('Mafia [0] on [1]', 3, 3)));
+	array($maf[1], 'c-1', get_label('[0] vs [1]', 1, 1)),
+	array($maf[2], 'c-2', get_label('[0] vs [1]', 2, 2)),
+	array($maf[3], 'c-3', get_label('[0] vs [1]', 3, 3)));
 
 echo '<div class="split">';
 foreach ($bar as $part)

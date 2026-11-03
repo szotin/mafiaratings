@@ -28,23 +28,10 @@ if (empty($seating))
 
 $players = obs_players($seating, $c->event_id, $c->tournament_id, $c->club_id);
 
-// The referee, where there is one to name: the game under way is run by them, and that is the
-// game this frame is showing. A table between games has nobody at it yet.
-$judge = '';
-if (!is_null($c->playing) && isset($c->playing->log->moderator->id))
-{
-	$moderator = obs_players(array((int)$c->playing->log->moderator->id), $c->event_id, $c->tournament_id, $c->club_id);
-	$moderator = reset($moderator);
-	if ($moderator !== false)
-	{
-		$judge = '<span class="dv"></span>' . obs_head_judge($moderator->name);
-	}
-}
-
 obs_frame_start('f3');
-obs_head($c->tournament_name, get_label('Next game'),
-	obs_head_sub($c->event_name, $c->table_num, $c->next_game_num),
-	'<span class="mu">' . get_label('Table') . '</span>' . $c->table_num . $judge);
+obs_head($c, get_label('Next game'), $c->event_name, '',
+	obs_head_game($c->next_game_num, obs_round_games($c->event_id, $c->table_num)));
+obs_foot($c->table_num, obs_judge($c));
 
 echo '<div class="lineup">';
 $seat = 1;

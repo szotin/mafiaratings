@@ -2136,16 +2136,27 @@ $labelMenu = array (
 '[0]% of games' => '[0]% ігор', // plugins/obs/screens
 'Full screen' => 'На весь екран', // text_broadcast.php
 'Leave full screen' => 'Вийти з повноекранного режиму', // text_broadcast.php
-'Role distribution' => 'Роздача ролей', // include/game_log.php
-'Arrangement' => 'Домовленість', // include/game_log.php
-'Relaxed sitting' => 'Вільна посадка', // include/game_log.php
-'Night [0] shooting' => 'Ніч [0] стрільба', // include/game_log.php
-'Night [0] checks' => 'Ніч [0] перевірки', // include/game_log.php
 'The game is not saved: game [0] at table [1] has already been played (#[2]). Do not close this page - free the number and save again.' => 'Гру не збережено: гра [0] за столом [1] вже зіграна (#[2]). Не закривайте сторінку — звільніть номер і збережіть ще раз.', // include/game.php
 'A game is on' => 'Іде гра', // include/broadcast.php
 'Live and upcoming' => 'Поточні та майбутні', // include/broadcast.php
 'Nothing is on the air right now.' => 'Зараз нічого не транслюється.', // include/broadcast.php
 'Broadcasts from various events.' => 'Трансляції з різних заходів', // include/general_page_base.php
+'Nominees' => 'Виставлені', // plugins/obs/obs.php
+'No voting this round' => 'У цьому колі голосування немає', // plugins/obs/obs.php
+'Dealing roles' => 'Роздача ролей', // plugins/obs/obs.php
+'Mafia arranging' => 'Домовленість мафії', // plugins/obs/obs.php
+'Tie speeches' => 'Промови за рівності', // plugins/obs/obs.php
+'Don checking' => 'Дон перевіряє', // plugins/obs/obs.php
+'Sheriff checking' => 'Шериф перевіряє', // plugins/obs/obs.php
+'Game over' => 'Гру завершено', // plugins/obs/obs.php
+'Not started' => 'Гра не почалася', // plugins/obs/obs.php
+'vote|votes|votes' => 'голос|голоси|голосів', // plugins/obs/obs.php
+'Game [0] of [1]' => 'Гра [0] з [1]', // plugins/obs/screens
+'game|games|games' => 'гра|гри|ігор', // plugins/obs/screens
+'win|wins|wins' => 'перемога|перемоги|перемог', // plugins/obs/screens
+'[0] vs [1]' => '[0] на [1]', // plugins/obs/screens
+'Sheriff killed on night 1' => 'Шерифа вбито в першу ніч', // plugins/obs/screens
+'of [0]' => 'з [0]', // plugins/obs/screens
 );
 
 return $labelMenu;

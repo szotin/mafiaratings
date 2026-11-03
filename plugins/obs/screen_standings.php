@@ -176,9 +176,10 @@ $live = obs_standings_live($c);
 $shown_count = min(count($players), $rows * $columns);
 
 obs_frame_start('f2');
-obs_head($c->tournament_name, get_label('Standings'),
-	get_label('all tables') . ' &middot; ' . get_label('finished games'),
-	'<span class="mu">' . get_label('Places [0]-[1]', 1, $shown_count) . '</span>');
+obs_head($c, get_label('Standings'),
+	get_label('all tables') . ' · ' . get_label('finished games'), '',
+	get_label('Places [0]-[1]', 1, $shown_count));
+obs_foot($c->table_num, obs_judge($c));
 
 $pic = new Picture(USER_TOURNAMENT_PICTURE, new Picture(USER_CLUB_PICTURE, new Picture(USER_PICTURE)));
 
@@ -208,7 +209,7 @@ for ($col = 0; $col < $columns && $shown < count($players); ++$col)
 			set($player->id, $player->name, $player->flags);
 
 		$games = (int)$player->games_count;
-		echo '<div class="str glass">';
+		echo '<div class="str">';
 		// The first three places are gold, silver and bronze; the rest are told by their number.
 		echo '<div class="rk' . ($player->place <= 3 ? ' p' . $player->place : '') . '">' . $player->place . '</div>';
 		// One ground for every face, so that twenty photographs read as one list.
