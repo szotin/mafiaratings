@@ -82,41 +82,18 @@ class Page extends GeneralPageBase
 					htmlspecialchars(get_label('Impossible with one table: these players are forced to share at least [0] games. That is why the optimization level stays at 0%.', $forced_meetings)) .
 					'">(!)</b>';
 			}
-			$players_max_score = SeatingDef::worst_acceptable_players_score($seating->players, $seating->tables, $seating->games);
-			$numbers_max_score = SeatingDef::worst_acceptable_numbers_score($seating->players, $seating->tables, $seating->games);
-			$tables_max_score = SeatingDef::worst_acceptable_tables_score($seating->players, $seating->tables, $seating->games);
-			if ($seating->players == 10)
+			// Same one place as every other page: seating_quality() in include/seating.php.
+			// This page used to repeat the formula, and so kept hiding the tables column for
+			// two-table seatings after they started being scored. A measure that says nothing
+			// for a configuration comes back null, and shows as an empty cell here.
+			$quality = seating_quality($hash, $players_score, $numbers_score, $tables_score);
+			$pct = function($value)
 			{
-				$seating->players_opt_level = '';
-			}
-			else if ($players_max_score == 0)
-			{
-				$seating->players_opt_level = '100%';
-			}
-			else
-			{
-				$seating->players_opt_level = number_format((1 - min(max($players_score/$players_max_score, 0), 1)) * 100, 0) . '%';
-			}
-			if ($numbers_max_score == 0)
-			{
-				$seating->numbers_opt_level = '100%';
-			}
-			else
-			{
-				$seating->numbers_opt_level = number_format((1 - min(max($numbers_score/$numbers_max_score, 0), 1)) * 100, 0) . '%';
-			}
-			if ($seating->tables < 3)
-			{
-				$seating->tables_opt_level = '';
-			}
-			else if ($tables_max_score == 0)
-			{
-				$seating->tables_opt_level = '100%';
-			}
-			else
-			{
-				$seating->tables_opt_level = number_format((1 - min(max($tables_score/$tables_max_score, 0), 1)) * 100, 0) . '%';
-			}
+				return is_null($value) ? '' : number_format($value, 0) . '%';
+			};
+			$seating->players_opt_level = $pct($quality->players);
+			$seating->numbers_opt_level = $pct($quality->numbers);
+			$seating->tables_opt_level  = $pct($quality->tables);
 			$seatings[] = $seating;
 		}
 

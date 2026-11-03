@@ -598,18 +598,13 @@ class Page extends GeneralPageBase
 			}
 		}
 
-		// Pre-compute optimization level percentages (same formula as seatings.php).
-		$calc_pct = function($score, $max_score) {
-			if ($max_score <= 0) return 100.0;
-			return (1 - min(max($score / $max_score, 0), 1)) * 100;
-		};
-		$this->players_pct = ($players > 10)
-			? $calc_pct($players_score, SeatingDef::worst_acceptable_players_score($players, $tables, $games))
-			: null;
-		$this->numbers_pct = $calc_pct($numbers_score, SeatingDef::worst_acceptable_numbers_score($players, $tables, $games));
-		$this->tables_pct  = ($tables >= 3)
-			? $calc_pct($tables_score, SeatingDef::worst_acceptable_tables_score($players, $tables, $games))
-			: null;
+		// One place computes these - seating_quality() in include/seating.php - so the pages
+		// cannot drift apart on which measures are shown. This page had its own copy of the
+		// formula, and when two-table seatings started being scored it kept hiding them.
+		$quality = seating_quality($this->hash, $players_score, $numbers_score, $tables_score);
+		$this->players_pct = $quality->players;
+		$this->numbers_pct = $quality->numbers;
+		$this->tables_pct  = $quality->tables;
 
 		// Highlight selector.
 		$hlt = $this->highlight;
