@@ -2227,7 +2227,13 @@ class SeatingDef
 			for ($j = 0; $j < $this->tables; ++$j)
 			{
 				$diff = $expected - $tables[$offset++];
-				$score += $diff * $diff;
+				// Squared before the test, the way the players and numbers scorers do it. Comparing
+				// the raw difference only noticed a player short of a table by a whole game, never
+				// one sitting at the same table too often - and with fewer games than tables the
+				// shortfall can never reach 1, so every such seating was declared perfect however
+				// badly it was spread.
+				$diff *= $diff;
+				$score += $diff;
 				if ($diff >= 1)
 				{
 					$perfect = false;

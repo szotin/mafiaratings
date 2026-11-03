@@ -93,7 +93,12 @@ class RescoreSeatingTables extends Updater
 			$def = new SeatingDef($hash);
 			$score = $def->calculateTablesScore(reindex_seating($seating));
 			$stored = (float)$stored;
-			if (abs($score - $stored) < 0.0001)
+
+			// tables_score is a 4-byte float and MySQL hands it back as a six-digit decimal, so
+			// a value like 464/3 never reads back as what was written: 154.667 against
+			// 154.666666... Compared absolutely those rows would be rewritten on every run, so
+			// the tolerance is relative to the value, which is how the column's precision works.
+			if (abs($score - $stored) <= max(0.0001, abs($score) * 1e-5))
 			{
 				continue;
 			}
