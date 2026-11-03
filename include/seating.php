@@ -406,7 +406,7 @@ function seating_quality($hash, $players_score, $numbers_score, $tables_score)
 		? $percent($players_score, SeatingDef::worst_acceptable_players_score($parts->players, $parts->tables, $parts->games))
 		: null;
 	$result->numbers = $percent($numbers_score, SeatingDef::worst_acceptable_numbers_score($parts->players, $parts->tables, $parts->games));
-	$result->tables = ($parts->tables >= 3)
+	$result->tables = ($parts->tables >= 2)
 		? $percent($tables_score, SeatingDef::worst_acceptable_tables_score($parts->players, $parts->tables, $parts->games))
 		: null;
 	return $result;
@@ -2198,7 +2198,10 @@ class SeatingDef
 	// returning 0 means we have found a perfect tables. There is no need to optimize it any more
 	public function calculateTablesScore($seating)
 	{
-		if ($this->tables < 3)
+		// One table balances nothing: every player sits at the only one there is, so the
+		// formula below returns 0 of its own accord - this only saves the work. Two tables do
+		// have something to balance, and used to be excluded here by mistake.
+		if ($this->tables < 2)
 		{
 			return 0;
 		}
