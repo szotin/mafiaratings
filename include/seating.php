@@ -2218,7 +2218,6 @@ class SeatingDef
 			}
 		}
 		
-		$perfect = true;
 		$score = 0;
 		$expected = $this->games / $this->tables;
 		$offset = 0;
@@ -2227,25 +2226,34 @@ class SeatingDef
 			for ($j = 0; $j < $this->tables; ++$j)
 			{
 				$diff = $expected - $tables[$offset++];
-				// Squared before the test, the way the players and numbers scorers do it. Comparing
-				// the raw difference only noticed a player short of a table by a whole game, never
-				// one sitting at the same table too often - and with fewer games than tables the
-				// shortfall can never reach 1, so every such seating was declared perfect however
-				// badly it was spread.
-				$diff *= $diff;
-				$score += $diff;
-				if ($diff >= 1)
-				{
-					$perfect = false;
-				}
+				$score += $diff * $diff;
 			}
 		}
 		
-		if ($perfect)
+		// As even as the arithmetic allows is what counts as perfect here, and that is not
+		// always a score of nothing: a player with two games and three tables can occupy at
+		// most two of them. tables_perfect_score() says what the best possible total is, and
+		// reaching it returns 0 - both so the percentage reads 100% and so the optimizer,
+		// which looks for tables_score > 0, knows to leave it alone.
+		if ($score <= SeatingDef::tables_perfect_score($this->players, $this->tables, $this->games) + 0.0001)
 		{
 			$score = 0;
 		}
 		return $score;
+	}
+	
+	// The smallest tables score any seating of this shape can have. Spread g games over t
+	// tables and the best a player can do is (g mod t) tables holding one game more than the
+	// rest, which costs (g mod t)(t - g mod t)/t whatever the arrangement. Zero whenever the
+	// games divide evenly among the tables.
+	static function tables_perfect_score($players, $tables, $games)
+	{
+		if ($tables < 2)
+		{
+			return 0;
+		}
+		$r = $games % $tables;
+		return $players * $r * ($tables - $r) / $tables;
 	}
 	
 	static function worst_players_score($players, $tables, $games)
@@ -2281,9 +2289,15 @@ class SeatingDef
 		return $players * 60;
 	}
 
+	// Scaled by the number of games, the same shape worst_acceptable_players_score() uses. A
+	// flat fifth of the worst case was far out of reach when there are only a few games: with
+	// two games over two tables a player either splits them or does not, so half the field
+	// repeating a table already scores two and a half times that threshold and the bar read 0%
+	// however well the seating was arranged. Dividing by (games + 2) / 4 instead widens the
+	// band exactly where the measure is coarse and leaves it as it was where games are many.
 	static function worst_acceptable_tables_score($players, $tables, $games)
 	{
-		return SeatingDef::worst_tables_score($players, $tables, $games) / 5;
+		return SeatingDef::worst_tables_score($players, $tables, $games) * 4 / ($games + 2);
 	}
 
 	// With a single table everybody seated in a round meets everybody else, so two players who
