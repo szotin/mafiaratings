@@ -20,9 +20,16 @@ var obsScenes = new function()
 	var settingsUrl;   // where to ask what scene this table should be showing
 	var params;        // which table that is
 	var interval;      // how long between one asking and the next
-	var applied;       // the last scene we asked OBS for
 	var lastAuto;      // the last scene the game asked for, carried out or not
 	var lastManual;    // when the last order from a person was given
+
+	// The scene the table should be on, and whether OBS has been seen on it. Asking is one
+	// thing and OBS carrying it out is another - see press(), which is where they are told
+	// apart.
+	var wanted;        // the scene last decided on, or null where none has been
+	var wantedAt;      // when it was decided, so that it is not asked for for ever
+	var settled;       // whether OBS has been on it since it was decided
+	var current;       // the scene OBS says it is on, or null where it has not said
 
 	// What was last told to the settings page, so that it has the scenes of this OBS to offer
 	// and can say when a source is not allowed to switch. Asked again every time round: a
@@ -58,19 +65,41 @@ var obsScenes = new function()
 		settingsUrl = url;
 		params = tableParams;
 		interval = delay;
-		applied = null;
 		lastAuto = null;
 		lastManual = 0;
+		wanted = null;
+		wantedAt = 0;
+		settled = false;
+		current = null;
 
 		report();
 		sampleStream();
+		sampleScene();
 		poll();
-		setInterval(function() { report(); sampleStream(); poll(); }, interval);
+		setInterval(function()
+		{
+			report();
+			sampleStream();
+			sampleScene();
+			poll();
+			press();
+		}, interval);
 
 		// OBS says so itself the moment it happens, which is closer than the next time round -
 		// and it is proof that the stream has only just begun, which polling alone never is.
 		window.addEventListener('obsStreamingStarted', function() { startedAt = Date.now(); note(true); });
 		window.addEventListener('obsStreamingStopped', function() { note(false); });
+
+		// And it says so when the scene changes, however it was changed - by us, by somebody at
+		// the machine, by anything else. That is how an order is seen to have been carried out,
+		// and how one that came to nothing is seen to have come to nothing.
+		window.addEventListener('obsSceneChanged', function(event)
+		{
+			if (event && event.detail && typeof event.detail.name === 'string')
+			{
+				onScene(event.detail.name);
+			}
+		});
 	}
 
 	// Whether OBS is streaming at this moment. Asked every time round rather than relied upon
@@ -187,25 +216,108 @@ var obsScenes = new function()
 		{
 			lastManual = scene.manualTime;
 			lastAuto = scene.auto;
-			switchTo(scene.manual);
+			want(scene.manual);
 			return;
 		}
 
 		if (scene.auto != lastAuto)
 		{
 			lastAuto = scene.auto;
-			switchTo(scene.auto);
+			want(scene.auto);
 		}
 	}
 
-	function switchTo(name)
+	// Which scene OBS is on. It is asked for every time round as well as listened for: an event
+	// that never arrives - a source still loading when it was sent, an OBS that does not send it
+	// at all - would otherwise leave us certain of something that was never so.
+	function sampleScene()
 	{
-		if (!name || name == applied || !window.obsstudio.setCurrentScene)
+		if (!window.obsstudio.getCurrentScene)
+		{
+			return; // an OBS too old to say; see press()
+		}
+		window.obsstudio.getCurrentScene(function(scene)
+		{
+			if (scene && typeof scene.name === 'string')
+			{
+				onScene(scene.name);
+			}
+		});
+	}
+
+	function onScene(name)
+	{
+		current = name;
+		if (wanted !== null && name === wanted)
+		{
+			settled = true;
+		}
+	}
+
+	// The scene the table is to be put on from here. Nothing is taken as done by saying it.
+	function want(name)
+	{
+		if (!name)
+		{
+			wanted = null; // the table has not been given a scene for this; leave it alone
+			return;
+		}
+		wanted = name;
+		wantedAt = Date.now();
+		settled = false;
+		press();
+	}
+
+	// How long a scene goes on being asked for before it is let be. An order that is carried out
+	// is seen to have been within a moment, because OBS says so itself, so this is only ever
+	// reached by one that cannot be carried out at all - a scene renamed or taken away, or a
+	// source that is not allowed to switch.
+	var PRESS_LIMIT = 15000;
+
+	// Asks OBS for the scene the table should be on, and goes on asking until OBS is on it.
+	//
+	// It used to be asked once and written down as done. But the asking can come to nothing: a
+	// source that is still starting up may not be allowed to switch yet, and then the call is
+	// simply dropped. From that moment the source was certain the scene was up when it was not,
+	// and would never ask for that scene again - it only ever asked for a scene that differed
+	// from the last one it had asked for. That is what left the first game of a tournament
+	// playing under the break scene: the game scene had been asked for while the source was
+	// starting, the asking went nowhere, and when the game began there was nothing to tell that
+	// scene apart from one already showing. Every phase after it asked for a different scene and
+	// so came up as it should, which is why only the first switch of all went wrong.
+	//
+	// A scene that OBS reaches by any other means - somebody switching by hand at the machine -
+	// settles this just the same, so a hand switch is still not fought over: by the time anybody
+	// can make one, the scene we asked for has long since been seen.
+	//
+	// An OBS too old to say which scene it is on cannot be checked at all, and there the single
+	// ask stands as it always did.
+	function press()
+	{
+		if (wanted === null || settled || !window.obsstudio.setCurrentScene)
 		{
 			return;
 		}
-		applied = name;
-		window.obsstudio.setCurrentScene(name);
+
+		if (!window.obsstudio.getCurrentScene)
+		{
+			settled = true; // nothing here can tell whether it worked, so it is asked once
+			window.obsstudio.setCurrentScene(wanted);
+			return;
+		}
+
+		if (current === wanted)
+		{
+			settled = true; // already there; asking again would be asking for nothing
+			return;
+		}
+
+		if (Date.now() - wantedAt > PRESS_LIMIT)
+		{
+			return; // it cannot be done, so leave the scene alone rather than ask for ever
+		}
+
+		window.obsstudio.setCurrentScene(wanted);
 	}
 
 	// What OBS this source is running in, as far as the settings page needs to know: the scenes

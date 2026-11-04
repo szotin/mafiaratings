@@ -17,6 +17,7 @@ var obs = new function()
 	var hideRoles; // true when the game being played keeps its roles off the overlays
 	var dealt;     // how far the roles have been handed out - see dealtTo()
 	var shown;     // the voters already on the screen, so that only a new one flies in
+	var stacks;    // the nominees whose vote card is already up, so that only a new one rises
 
 	this.start = function(pageOptions)
 	{
@@ -103,8 +104,12 @@ var obs = new function()
 		gavel: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.2 2.6l6.2 6.2-2.1 2.1-6.2-6.2zM8.3 7.5l6.2 6.2-2.1 2.1-6.2-6.2zM11.3 5.9l4.8 4.8-1.8 1.8-4.8-4.8zM10.4 13l1.4 1.4-7.3 7.3L3 20.3zM13 20h9v2h-9z"/></svg>'
 	};
 
-	// Nobody in particular, for a seat whose player never uploaded a photograph.
-	var SILHOUETTE = '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMax meet"><circle cx="50" cy="33" r="19" fill="rgba(0,0,0,.32)"/><path d="M10 100c2-26 19-40 40-40s38 14 40 40z" fill="rgba(0,0,0,.32)"/></svg>';
+	// Nobody in particular, for a seat whose player never uploaded a photograph. It is framed the
+	// way a real photograph is - filling the card and cut off at the sides rather than fitted
+	// inside it, with the head high up where a face falls in a portrait. Fitted, the square
+	// drawing could only be as big as the card is wide, which left a small figure crouching along
+	// the bottom of a tall card.
+	var SILHOUETTE = '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMin slice"><circle cx="50" cy="33" r="19" fill="rgba(0,0,0,.32)"/><path d="M10 100c2-26 19-40 40-40s38 14 40 40z" fill="rgba(0,0,0,.32)"/></svg>';
 
 	//--------------------------------------------------------------------------------------
 	// what a player is
@@ -241,7 +246,14 @@ var obs = new function()
 	function topLeft(g)
 	{
 		var night = (g.phase == 'night');
-		var name = (night ? options.labels.night : options.labels.day).replace('[0]', g.round);
+		// The round as a table counts it. Night 0 is the one the game opens with, where the mafia
+		// meet and nobody is shot, and it is called that at the table too - so a night is the round
+		// itself. A day is the round after it, the game counting its rounds from zero and the first
+		// circle of speeches being day 1, so a day is the round and one. That makes the order on
+		// the screen night 0, day 1, night 1, day 2 - and it is the same count the players wear
+		// when they leave the game, see deathRound in api/get/current_game.php.
+		var name = (night ? options.labels.night : options.labels.day).
+			replace('[0]', night ? g.round : g.round + 1);
 		var state = stateLabel(g);
 
 		var html = '<div class="phase gl ' + (night ? 'night' : 'day') + '">' +
@@ -477,6 +489,7 @@ var obs = new function()
 
 		fitNames(div);
 		flyVotes(div);
+		riseStacks(div);
 	}
 
 	// The few things a card cannot work out on its own: who was shot first, what the voting looks
@@ -521,13 +534,15 @@ var obs = new function()
 		return context;
 	}
 
-	// Whoever was voted out this round, once the game has written it down.
+	// Whoever was voted out this round, once the game has written it down. A day is the round
+	// after the one it is written down in - see the phase above - so the day this is matches
+	// deathRound at the round and one.
 	function votedOut(g)
 	{
 		for (var i = 0; i < g.players.length; ++i)
 		{
 			var p = g.players[i];
-			if (p.state == 'dead' && p.deathType == 'voting' && p.deathRound == g.round && g.phase == 'day')
+			if (p.state == 'dead' && p.deathType == 'voting' && p.deathRound == g.round + 1 && g.phase == 'day')
 			{
 				return p;
 			}
@@ -713,7 +728,7 @@ var obs = new function()
 				'" data-from="' + voters[i] + '">' + voters[i] + '</div>';
 		}
 
-		return '<div class="' + classes + '">' +
+		return '<div class="' + classes + '" data-seat="' + player.number + '">' +
 			'<div class="stk-n"><b>' + voters.length + '</b><small>' + escapeHtml(votesWord(voters.length)) + '</small>' +
 			((context.tie && lead) ? '<span class="stk-tag">' + escapeHtml(options.labels.tieTag) + '</span>' : '') +
 			'</div>' +
@@ -721,8 +736,8 @@ var obs = new function()
 	}
 
 	// The pill above a dropped card: who voted that player out. It is exactly as wide as the card,
-	// and with six voters or more the chips take two rows and the card drops a little further, so
-	// that the pill and the card together never rise above the cards beside them.
+	// and with six voters or more the chips take two rows and the pill grows upward - the card
+	// below it keeps the height every other dead card has, so that the row of the dead stays even.
 	function votedOutPill(g, voters)
 	{
 		var chips = '';
@@ -837,6 +852,26 @@ var obs = new function()
 			}
 		}
 		shown = seen;
+	}
+
+	// The vote card itself. The chips fly in one by one, but the glass they land on simply
+	// appeared, which on a stream is a panel snapping into being. It rises into place instead -
+	// and only the first time, the tick the nominee's first vote arrives: the cell is written
+	// again on every count, so an animation left on the card would play on every hand raised.
+	function riseStacks(div)
+	{
+		var cards = div.querySelectorAll('.stk[data-seat]');
+		var seen = {};
+		for (var i = 0; i < cards.length; ++i)
+		{
+			var seat = cards[i].getAttribute('data-seat');
+			seen[seat] = true;
+			if (!stacks || !stacks[seat])
+			{
+				cards[i].classList.add('rise');
+			}
+		}
+		stacks = seen;
 	}
 
 	function seatOf(div, number)

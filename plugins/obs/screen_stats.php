@@ -10,6 +10,13 @@ require_once '../../include/scoring.php'; // the flags a game writes down about 
 // 1, a 2 on 2 or a 3 on 3 - which is the thing players argue about. The two sides stand at
 // either end of the panel with their share between them, cut into those kinds.
 //
+// A game handed over by a team kick out was not won at the table at all, and has no count of
+// mafiosi left to say how close it was. On the mafia's side it is a kind of its own beside the
+// three, which is where it belongs - the side already reads as a run of kinds, and a win nobody
+// played out is the one worth telling apart. The town's share is not cut into anything, so a
+// kind there would be the only one and would read as the whole of what the town's wins are made
+// of; its kick outs stay in with the rest.
+//
 // Under it, the things worth saying about the tournament as a whole. A card nobody has earned
 // yet is left out and the rest share the row, so the frame is never half empty.
 
@@ -23,6 +30,7 @@ if (is_null($c))
 
 $town = 0;
 $maf = array(0, 0, 0, 0); // by the mafia left at the table; [0] is the games that never said
+$maf_kick = 0;            // handed to the mafia by a team kick out, never played out at the table
 // The brackets round the mask are not decoration: & binds looser than <> in MySQL, so without
 // them the server compares 8 with 0 first and ands the flags with the 1 that comes out.
 $scope = $c->is_tournament ? 'tournament_id' : 'event_id';
@@ -42,21 +50,28 @@ while ($row = $query->next())
 	case GAME_RESULT_TOWN:
 		// A game given away by a team kick out was not won at the table, but a win is a win
 		// when the question is who has been winning, so it is counted for the side it was
-		// handed to - it simply has no score to be counted by.
+		// handed to - it simply has no score to be counted by. The town's wins are not cut into
+		// kinds, so this is where it ends: in with the rest of them.
 		$town += $count;
 		break;
 	case GAME_RESULT_MAFIA:
+		if ($team_kick_out)
+		{
+			// Handed over rather than played out, and so with no count of mafiosi to say how
+			// close it was. It stands beside the three kinds as one of its own.
+			$maf_kick += $count;
+			break;
+		}
 		// Three mafiosi is as many as there are, so anything else is a game whose counts were
-		// never written down, and a game given away never drew level at all: both belong with
-		// the wins of no particular kind.
-		$alive = ($team_kick_out || is_null($maf_alive)) ? 0 : (int)$maf_alive;
+		// never written down: it belongs with the wins of no particular kind.
+		$alive = is_null($maf_alive) ? 0 : (int)$maf_alive;
 		$maf[($alive >= 1 && $alive <= 3) ? $alive : 0] += $count;
 		break;
 	}
 	// A tie belongs to neither side and is left out of the question altogether.
 }
 
-$mafia = array_sum($maf);
+$mafia = array_sum($maf) + $maf_kick;
 $total = $town + $mafia;
 if ($total <= 0)
 {
@@ -159,7 +174,8 @@ $bar = array(
 	array($maf[0], 'c-0', get_label('Mafia win')),
 	array($maf[1], 'c-1', get_label('[0] vs [1]', 1, 1)),
 	array($maf[2], 'c-2', get_label('[0] vs [1]', 2, 2)),
-	array($maf[3], 'c-3', get_label('[0] vs [1]', 3, 3)));
+	array($maf[3], 'c-3', get_label('[0] vs [1]', 3, 3)),
+	array($maf_kick, 'c-k', get_label('Mod team kills')));
 
 echo '<div class="split">';
 foreach ($bar as $part)

@@ -213,8 +213,22 @@ for ($col = 0; $col < $columns && $shown < count($players); ++$col)
 		// The first three places are gold, silver and bronze; the rest are told by their number.
 		echo '<div class="rk' . ($player->place <= 3 ? ' p' . $player->place : '') . '">' . $player->place . '</div>';
 		// One ground for every face, so that twenty photographs read as one list.
+		//
+		// The icon rather than the thumbnail, which is the size this round frame wants. Both are
+		// made with the background taken out, but the thumbnail is the wide one cut for a card -
+		// a figure standing in the middle of a landscape picture - and putting that in a circle
+		// of three rem left the person a speck in the middle of it with the ground showing all
+		// round. The icon is square and filled by the head and shoulders, which is what a face in
+		// a list is for.
+		//
+		// The address of a picture is worked out from what the record says rather than from the
+		// files, so a player whose icon was never made would hang a broken picture in the list -
+		// a handful of the oldest records are like that. One that does not arrive takes itself
+		// out and leaves the seat to the figure of nobody in particular, which is what a player
+		// with no picture at all is shown as.
 		echo '<div class="av' . ($pic->has_image() ? '' : ' none') . '">' .
-			($pic->has_image() ? '<img src="' . $pic->url(TNAILS_DIR) . '" alt="">' : '') . '</div>';
+			($pic->has_image() ? '<img src="' . $pic->url(ICONS_DIR) . '" alt="" ' .
+				'onerror="this.parentNode.classList.add(\'none\');this.remove();">' : '') . '</div>';
 		echo '<div class="nm"><b>' . htmlspecialchars($player->name) . '</b>' .
 			(isset($live[$player->id]) ? '<i class="live"></i>' : '') . '</div>';
 		echo '<div class="pts">' . format_score($player->points) . '</div>';

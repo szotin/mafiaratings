@@ -225,14 +225,26 @@ class ApiPage extends GetApiPageBase
 			else
 			{
 				$player->state = 'dead';
-				// todo: remove this logic. Set round to what it is.
+				// The night and the day a player left the game on, counted the way a table counts
+				// them: night 0 is the one the game opens with, where the mafia meet and nobody is
+				// shot, so the first shot belongs to night 1 - and the first circle of speeches is
+				// day 1, which is the round after it, because the game counts its rounds from zero.
+				// The order on the screen is night 0, day 1, night 1, day 2, night 2, and so on.
+				//
+				// Both used to be handed out one lower than that. The first player shot wore a 0,
+				// and so did the first player voted out, which disagreed with the phase the overlay
+				// was showing at the time and with the results screen between games - that one has
+				// always counted them this way, see obs_results_elim() in
+				// plugins/obs/screen_results.php. The night also broke the search for the player
+				// shot first in obs.js, which looks for the one whose night is 1 to hang the best
+				// guess above their card.
 				if (isset($p->death->time) && Game::is_night($p->death->time))
 				{
-					$player->deathRound = $p->death->round - 1;
+					$player->deathRound = max((int)$p->death->round, 1);
 				}
 				else
 				{
-					$player->deathRound = $p->death->round;
+					$player->deathRound = (int)$p->death->round + 1;
 				}
 				switch ($p->death->type)
 				{
@@ -243,14 +255,14 @@ class ApiPage extends GetApiPageBase
 					$player->deathType = 'warnings';
 					if (isset($player->warnings) && is_array($player->warnings) && count($player->warnings) > 0 && Game::is_night($player->warnings[count($player->warnings) - 1]))
 					{
-						$player->deathRound = $p->death->round - 1;
+						$player->deathRound = max((int)$p->death->round, 1);
 					}
 					break;
 				case DEATH_TYPE_TECH_FOULS:
 					$player->deathType = 'techFouls';
 					if (isset($player->techFouls) && is_array($player->techFouls) && count($player->techFouls) > 0 && Game::is_night($player->techFouls[count($player->techFouls) - 1]))
 					{
-						$player->deathRound = $p->death->round - 1;
+						$player->deathRound = max((int)$p->death->round, 1);
 					}
 					break;
 				case DEATH_TYPE_KICK_OUT:
@@ -261,7 +273,7 @@ class ApiPage extends GetApiPageBase
 					break;
 				case DEATH_TYPE_NIGHT:
 					$player->deathType = 'shooting';
-					$player->deathRound = $p->death->round - 1;
+					$player->deathRound = max((int)$p->death->round, 1);
 					break;
 				case DEATH_TYPE_DAY:
 					$player->deathType = 'voting';
@@ -664,7 +676,7 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('techFouls', 'Number of technical fouls.');
 				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');
 				$players->sub_param('state', 'Player state - "dead" or "alive".');
-				$players->sub_param('deathRound', 'If player state is "dead" it is set to the round number when they died.');
+				$players->sub_param('deathRound', 'If player state is "dead" it is set to the night or the day they left the game on, counted the way a table counts them rather than the way the game counts its rounds: the game opens with night 0, where nobody is shot, so the first shot is night 1 and the first circle of speeches is day 1. A death at night is the round it is written down in, counted from 1; a death by day is that round plus one.');
 				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "techFouls", "giveUp", or "kickOut".');
 				$players->sub_param('votedOutBy', 'When deathType is "voting", the numbers of the players counted for them in the vote that put them out, in the order they sit - the whole table where the day ended in killing all the tied players. It stays for the rest of the game, and is left out while the moderator is still taking the count that is putting the player out.');
 				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when hideRoles is not set.');

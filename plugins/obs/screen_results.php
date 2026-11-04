@@ -312,8 +312,10 @@ function obs_results_moves_column($icon, $class, $label, $seat, $players_by_seat
 	echo '<span class="ic ' . $class . '">' . obs_icon($icon) . '</span>';
 	if ($seat > 0)
 	{
-		// Only the best guess names a seat: whoever was shot in the first night is one of the
-		// ten and could be anybody. The sheriff and the don are already named by their badge.
+		// Nobody in the panel wears a seat chip: the three of them are named, and the name is
+		// what the table argues about afterwards. The best guess carried one for a while, on the
+		// grounds that the player shot in the first night could be any of the ten - but next to
+		// a sheriff and a don without one it only read as something left behind.
 		if ($show_seat)
 		{
 			echo '<span class="seat ' . obs_seat_class(isset($roles[$seat]) ? $roles[$seat] : '') . '">' . $seat . '</span>';
@@ -414,7 +416,7 @@ for ($row = 0; $row < 2; ++$row)
 	obs_results_cards($black, $players, $g->log, $roles);
 	echo '</div>';
 	echo '<div class="moves"><div class="mvl">';
-	obs_results_moves_column('target', 't', get_label('Best guess'), $best_by, $by_seat, $roles, $best, false, $perfect, true);
+	obs_results_moves_column('target', 't', get_label('Best guess'), $best_by, $by_seat, $roles, $best, false, $perfect, false);
 	obs_results_moves_column('star', 's', get_label('Checks'), $sheriff_seat, $by_seat, $roles, array_keys($sheriff), false, false);
 	obs_results_moves_column('hat', 'd', get_label('Checks'), $don_seat, $by_seat, $roles, array_keys($don), true, false);
 	echo '</div></div>';

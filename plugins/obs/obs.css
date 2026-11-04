@@ -191,9 +191,13 @@ html.no-scrim .ov::after {
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.18), 0 0.125rem 0.375rem rgba(0, 0, 0, 0.4);
 }
 
+/*  The one chip whose digit is dark. White on gold had to be held up by a brown shadow to read
+    at all, and the shadow was the only thing anybody saw; the gold is bright enough to carry a
+    dark digit on its own. */
 .chip.g {
 	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
-	text-shadow: 0 0.0625rem 0.125rem rgba(70, 38, 0, 0.6);
+	color: #231300;
+	text-shadow: none;
 }
 
 /*  A seat nobody has a role for yet - while the roles are being handed out, and on the cards of
@@ -268,9 +272,13 @@ html.no-scrim .ov::after {
 
 .phase .dv { height: 1.625rem; }
 
+/*  Set in capitals like the number beside it, so that the two halves of the pill read as one
+    line rather than as a heading with a caption after it. */
 .phase .st {
-	font-size: 1.125rem;
-	font-weight: 700;
+	font-size: 1rem;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
 	color: var(--ink2);
 	white-space: nowrap;
 }
@@ -325,16 +333,19 @@ html.no-scrim .ov::after {
 	gap: 0.5rem;
 }
 
+/*  Set in capitals and in the full ink: at label size and three quarters of the way to the
+    ground, the word was there but nobody read it. */
 .nom .lb {
 	display: flex;
 	align-items: center;
 	gap: 0.5rem;
 	padding: 0 0.125rem;
-	font-size: 0.875rem;
+	font-size: 1rem;
 	font-weight: 800;
 	letter-spacing: 0.16em;
 	line-height: 1;
-	color: var(--ink3);
+	text-transform: uppercase;
+	color: #fff;
 }
 
 .nom .lb svg {
@@ -522,14 +533,13 @@ html.no-scrim .ov::after {
 	display: block;
 }
 
-/*  Nobody in particular: the figure the site uses for a player with no photograph. */
+/*  Nobody in particular: the figure the site uses for a player with no photograph. It is given
+    the whole card, like a photograph, and the drawing covers it - see SILHOUETTE in obs.js. */
 .pc .ph svg {
 	position: absolute;
-	left: 12%;
-	right: 12%;
-	bottom: 0;
-	width: 76%;
-	height: 82%;
+	inset: 0;
+	width: 100%;
+	height: 100%;
 }
 
 /*  The fade the name is read against. */
@@ -575,7 +585,8 @@ html.no-scrim .ov::after {
 
 .pc.sher .seat {
 	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
-	text-shadow: 0 0.0625rem 0.125rem rgba(70, 38, 0, 0.6);
+	color: #231300;
+	text-shadow: none;
 }
 
 .pc.maf .seat, .pc.don .seat {
@@ -762,11 +773,11 @@ html.no-scrim .ov::after {
 /*  Who is speaking. A frame on the card, no pulse: the card never moves or resizes, because ten
     cards that breathe are ten things moving on a stream nobody is looking at.
 
-    It is built to be seen on whatever the card happens to stand on. A white ring alone is lost
-    on a bright hall or on the light ground of a text broadcast, and a dark one is lost against
-    the card itself, which is dark to begin with - so the ring is white and is given a dark
-    keyline outside it. One of the two always reads: on a dark picture the white ring and its
-    glow, on a light one the keyline, and on anything in between both of them. */
+    One thin white line and the glow it throws, and nothing else. It was given a dark keyline
+    outside it as well, so that it would still read on a bright hall - but two rings and a
+    shadow around a card that is dark to begin with came out as a heavy black border, which is
+    not what a speaker's card is for. The glow carries it instead: it is white against a dark
+    picture and still separates the card from a light one. */
 .pc.speak::before {
 	content: "";
 	position: absolute;
@@ -775,10 +786,8 @@ html.no-scrim .ov::after {
 	border-radius: inherit;
 	pointer-events: none;
 	box-shadow:
-		inset 0 0 0 0.09375rem rgba(255, 255, 255, 0.7),
-		0 0 0 0.125rem rgba(255, 255, 255, 0.85),
-		0 0 0 0.25rem rgba(0, 0, 0, 0.5),
-		0 0 0.875rem 0.25rem rgba(255, 255, 255, 0.28);
+		0 0 0 0.09375rem rgba(255, 255, 255, 0.9),
+		0 0 1rem 0.1875rem rgba(255, 255, 255, 0.32);
 }
 
 /*  The winners stay bright and the losers are muted, once the game is over. */
@@ -810,7 +819,6 @@ html.no-scrim .ov::after {
 .bm .chip {
 	width: 2.5rem;
 	height: 2.5rem;
-	font-size: 1.25rem;
 	color: #fff;
 	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.6);
 }
@@ -859,12 +867,14 @@ html.no-scrim .ov::after {
 
 .stk-n b { font-size: 1.75rem; font-weight: 700; }
 
+/*  The word under the count. It was set at two thirds of a label and at six tenths of the ink,
+    which on a camera picture came to nothing at all. */
 .stk-n small {
-	font-size: 0.625rem;
-	font-weight: 700;
+	font-size: 0.8125rem;
+	font-weight: 800;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
-	color: rgba(255, 255, 255, 0.6);
+	color: rgba(255, 199, 206, 0.95);
 }
 
 /*  The voters, five to a row at the most, in rows that are kept even - seven votes are four and
@@ -879,6 +889,15 @@ html.no-scrim .ov::after {
 
 .stk-c:empty { display: none; }
 
+/*  The card rises into place the tick the first vote for that seat arrives - see riseStacks()
+    in obs.js, which puts the class on only then. */
+.stk.rise { animation: rise 0.28s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+@keyframes rise {
+	0% { opacity: 0; transform: translateY(0.625rem) scale(0.94); }
+	100% { opacity: 1; transform: none; }
+}
+
 /*  A vote arrives as a copy of the voter's seat chip and flies from their card to this one. */
 .stk-c .chip.fly {
 	animation: fly 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
@@ -891,6 +910,7 @@ html.no-scrim .ov::after {
 
 @media (prefers-reduced-motion: reduce) {
 	.stk-c .chip.fly { animation: none; }
+	.stk.rise { animation: none; }
 }
 
 /*  A tie, said in the corner so that the count stays in the middle. */
@@ -920,8 +940,9 @@ html.no-scrim .ov::after {
 
 /*  Once the vote is over the card drops like any other, and the space above it says who voted
     them out. The pill is exactly as wide as the card, and with six or more voters it takes two
-    rows and the card drops a little further, so that the two together never rise above the
-    cards beside them. */
+    rows. The card keeps the height every other dead card has: it used to be shortened to make
+    room for the second row, which left it sitting lower than the dead card beside it - plain to
+    see as soon as a neighbour was dead or taken out. The pill rises instead. */
 .vby {
 	width: 100%;
 	height: 2.75rem;
@@ -959,7 +980,6 @@ html.no-scrim .ov::after {
 
 .cell.vbo { gap: 0.375rem; }
 .cell.vbo.r2 .vby { height: 3.625rem; }
-.cell.vbo.r2 .pc.dead { height: 8.75rem; }
 
 /*--------------------------------------------------------------------------------------
     the game is over

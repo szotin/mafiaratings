@@ -69,11 +69,20 @@ var obs = new function()
 	// through a round and halfway through a screen's time. So it starts afresh: the table is
 	// shown what the round begins with, for as long as a screen is meant to stand.
 	//
-	// What was up is taken down at once rather than faded away. It belongs to a round that is
-	// over, and the first screen cannot be up before it has been fetched: left there it would
-	// be the first thing the scene shows, which is the one thing this is here to prevent. The
-	// ground it leaves is the ground the screens stand on anyway, and the first screen comes up
-	// out of it the way the first screen of all does.
+	// What was up is left standing until the first screen of the round has been fetched, and then
+	// gives way to it in the ordinary manner - the new frame goes in underneath and the one on
+	// top fades off it, see put(). It belongs to a round that is over, which is why it used to be
+	// taken down the moment the word came; but inside OBS the source is on the air by then, and
+	// a screen cannot be up before it has been fetched, so that left the page bare for as long as
+	// the fetch took and the first screen then eased in out of nothing over another second and a
+	// half. On a stream that reads as the picture going black - it is the page's own dark ground,
+	// #0A0608, and a recording of one tournament was measured doing it five times. A screen of
+	// this table whose turn had passed, fading away as the one that belongs here comes up under
+	// it, is the lesser of the two by a long way.
+	//
+	// A caller that asks to be told when the first screen is up keeps its frame out of sight until
+	// the word comes back - see text_broadcast.php - so there nothing is on the screen to protect
+	// and what was standing there is dropped at once.
 	//
 	// Whatever was on its way is dropped rather than waited for: a screen fetched for the round
 	// that has just been abandoned would arrive on top of the new one and set a second clock
@@ -95,10 +104,13 @@ var obs = new function()
 		walk += 1;
 		ready = (typeof done == 'function') ? done : null;
 
-		var screen = document.getElementById('screen');
-		while (screen.firstChild)
+		if (ready !== null)
 		{
-			screen.removeChild(screen.firstChild);
+			var screen = document.getElementById('screen');
+			while (screen.firstChild)
+			{
+				screen.removeChild(screen.firstChild);
+			}
 		}
 
 		next();
