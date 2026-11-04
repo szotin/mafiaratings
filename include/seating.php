@@ -2896,6 +2896,249 @@ function restrictions_in_indexes($pairs_by_user, $user_to_index)
 	return $result;
 }
 
+
+// Which slot each user holds in a seating's mapping. A mapping names a player either by id or by
+// an object carrying one, and both forms occur in misc.
+function seating_slots_by_user($mapping)
+{
+	$by_user = array();
+	foreach ((array)$mapping as $slot => $entry)
+	{
+		$uid = is_object($entry) ? (isset($entry->id) ? (int)$entry->id : 0) : (int)$entry;
+		if ($uid > 0)
+		{
+			$by_user[$uid] = (int)$slot;
+		}
+	}
+	return $by_user;
+}
+
+// Names of the given users, keyed by id, for the language asked for. Used where a dialog has to
+// name the players a plan would move about.
+function seating_user_names($user_ids, $lang)
+{
+	$names = array();
+	$ids = array();
+	foreach ($user_ids as $id)
+	{
+		$id = (int)$id;
+		if ($id > 0)
+		{
+			$ids[$id] = true;
+		}
+	}
+	if (empty($ids))
+	{
+		return $names;
+	}
+	$query = new DbQuery(
+		'SELECT u.id, n.name FROM users u'.
+		' JOIN names n ON n.id = u.name_id AND (n.langs & ?) <> 0'.
+		' WHERE u.id IN (' . implode(',', array_keys($ids)) . ')', $lang);
+	while ($row = $query->next())
+	{
+		$names[(int)$row[0]] = $row[1];
+	}
+	return $names;
+}
+// Where everybody sits in every game: pos[game][slot] = array(table, seat), games from 1.
+function seating_seat_positions($rounds)
+{
+	$pos = array();
+	if (!is_array($rounds))
+	{
+		return $pos;
+	}
+	foreach ($rounds as $r => $round)
+	{
+		if (!is_array($round))
+		{
+			continue;
+		}
+		$g = $r + 1;
+		$pos[$g] = array();
+		foreach ($round as $t => $table)
+		{
+			if (!is_array($table))
+			{
+				continue;
+			}
+			foreach ($table as $s => $slot)
+			{
+				$pos[$g][(int)$slot] = array('table' => (int)$t, 'seat' => (int)$s);
+			}
+		}
+	}
+	return $pos;
+}
+
+// Ways to undo what swapping two players in one game does to the statistics.
+//
+// Both cases turn out to be the same search. Write "X owes" for a player whose counts the primary
+// swap moved and who needs them moved back; then a further swap between X and Y, picked so that it
+// gives X exactly what X owes, always hands the same debt on to Y. So a compensation is a chain
+// from the first player to the second, each link settling one and passing the debt along, and the
+// last link paying it to the second player - who was left owing the exact opposite by the primary
+// swap. Finding one is finding a path.
+//
+// What a link is depends on what was damaged:
+//
+//   seat numbers - the swap moved slot1 from seat i to seat j and slot2 the other way. A link
+//                  X -> Y is a game where X sits on j and Y on i: swapping them there returns X
+//                  to i and leaves Y owing i for j. No seat other than i or j can appear, because
+//                  any count a swap adds has to be a count the primary swap took away.
+//
+//   a whole game - one of them sits the game out, so it is a substitution: one loses a game and
+//                  the seat, the other gains both. A link X -> Y is a game Y plays on that same
+//                  seat and X does not play at all, which hands X the game and takes Y's.
+//
+// Paths up to $max_depth links are looked for, using each game and each player at most once.
+//
+// Returns a list of options, each a list of array('game', 'slot1', 'slot2') to apply after the
+// swap that was asked for. An empty list means nothing was found.
+function find_seating_swap_compensations($rounds, $game, $slot1, $slot2, $limit = 4, $max_depth = 3)
+{
+	$pos = seating_seat_positions($rounds);
+	if (!isset($pos[$game]))
+	{
+		return array();
+	}
+
+	$here1 = isset($pos[$game][$slot1]) ? $pos[$game][$slot1]['seat'] : null;
+	$here2 = isset($pos[$game][$slot2]) ? $pos[$game][$slot2]['seat'] : null;
+	if (is_null($here1) && is_null($here2))
+	{
+		return array();
+	}
+
+	// Same seat number at different tables: the statistic counts seat numbers, not tables.
+	if (!is_null($here1) && !is_null($here2) && $here1 === $here2)
+	{
+		return array();
+	}
+
+	// edges[from][] = array('to' => slot, 'game' => g)
+	$edges = array();
+	if (is_null($here1) || is_null($here2))
+	{
+		$start = is_null($here2) ? $slot1 : $slot2;   // loses the game
+		$end   = is_null($here2) ? $slot2 : $slot1;   // gains it
+		$seat  = is_null($here2) ? $here1 : $here2;
+		foreach ($pos as $g => $byslot)
+		{
+			if ($g == $game)
+			{
+				continue;
+			}
+			foreach ($byslot as $y => $at)
+			{
+				if ($at['seat'] !== $seat)
+				{
+					continue;
+				}
+				// Anybody sitting this game out can step into that seat and take the game.
+				foreach ($pos[$game] as $x => $ignored)
+				{
+					if (!isset($byslot[$x]))
+					{
+						$edges[$x][] = array('to' => $y, 'game' => $g);
+					}
+				}
+				// And so can the one who is about to lose a game, who is in this game by
+				// definition but may well be absent from $g.
+				if (!isset($byslot[$start]) && !isset($pos[$game][$start]))
+				{
+					$edges[$start][] = array('to' => $y, 'game' => $g);
+				}
+			}
+		}
+	}
+	else
+	{
+		$start = $slot1;
+		$end = $slot2;
+		$i = $here1;
+		$j = $here2;
+		foreach ($pos as $g => $byslot)
+		{
+			if ($g == $game)
+			{
+				continue;
+			}
+			$on_j = array();
+			$on_i = array();
+			foreach ($byslot as $slot => $at)
+			{
+				if ($at['seat'] === $j) { $on_j[] = $slot; }
+				else if ($at['seat'] === $i) { $on_i[] = $slot; }
+			}
+			foreach ($on_j as $x)
+			{
+				foreach ($on_i as $y)
+				{
+					$edges[$x][] = array('to' => $y, 'game' => $g);
+				}
+			}
+		}
+	}
+
+	// Depth-first, shortest first, so the simplest compensations are offered before the long ones.
+	$options = array();
+	for ($depth = 1; $depth <= $max_depth && count($options) < $limit; ++$depth)
+	{
+		_find_compensation_paths($edges, $start, $end, $depth, array($start => true), array(), $options, $limit);
+	}
+	return $options;
+}
+
+// Walks the links looking for a path of exactly $depth of them. $seen holds the players already on
+// the path and $path the links taken, each link remembering the game so no game is used twice.
+function _find_compensation_paths($edges, $from, $to, $depth, $seen, $path, &$options, $limit)
+{
+	if (count($options) >= $limit)
+	{
+		return;
+	}
+	if (!isset($edges[$from]))
+	{
+		return;
+	}
+	foreach ($edges[$from] as $edge)
+	{
+		if (count($options) >= $limit)
+		{
+			return;
+		}
+		$next = $edge['to'];
+		foreach ($path as $taken)
+		{
+			if ($taken['game'] == $edge['game'])
+			{
+				continue 2;
+			}
+		}
+		$step = array('game' => $edge['game'], 'slot1' => $from, 'slot2' => $next);
+		if ($depth == 1)
+		{
+			if ($next === $to)
+			{
+				$options[] = array_merge($path, array($step));
+			}
+			continue;
+		}
+		// A player in the middle of the chain has to be somebody new: the one who settles at the
+		// end is the player the primary swap left owing the opposite, and nobody may be visited
+		// twice or the debts stop cancelling.
+		if ($next === $to || isset($seen[$next]))
+		{
+			continue;
+		}
+		$seen[$next] = true;
+		_find_compensation_paths($edges, $next, $to, $depth - 1, $seen, array_merge($path, array($step)), $options, $limit);
+		unset($seen[$next]);
+	}
+}
+
 // Says the teams in the player numbers of one particular seating. A team whose players are not
 // all in this seating is dropped: only whole teams can sit on the equal blocks the hash
 // describes, and SeatingDef falls back to an individual seating when they do not add up.

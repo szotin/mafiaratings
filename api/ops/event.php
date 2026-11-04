@@ -2479,11 +2479,16 @@ class ApiPage extends OpsApiPageBase
 					if ($uid === $user2_id) $slot2 = $slot;
 				}
 
-				if ($game > 0)
+				if ($game > 0 && $slot1 >= 0 && $slot2 >= 0)
 				{
-					$this->swap_players_in_one_game($misc, $game, $slot1, $slot2);
-					$misc->seating->manual = true;
-					Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+					$this->swap_in_one_game($misc, $event_id, $game, $slot1, $slot2);
+				}
+				else if ($game > 0)
+				{
+					// One of them is not in the seating at all, so there is no slot of theirs to move
+					// about in a single game - and the mapping, which says who a slot is, says it
+					// for the whole round. Taking somebody's place is therefore all or nothing.
+					throw new Exc(get_label('A player who is not in this round\'s seating can only take somebody\'s place in every game of the round. To change one game only, change the player in the game itself.'));
 				}
 				else if ($slot1 >= 0 || $slot2 >= 0)
 				{
@@ -2523,60 +2528,176 @@ class ApiPage extends OpsApiPageBase
 		Db::commit();
 	}
 
-	// Exchanges two players' seats in a single game, leaving every other game alone.
+
+	// Swaps two players inside one game of the round, optionally together with a plan of further
+	// swaps that puts the seat number statistics back where they were.
 	//
-	// The mapping stays as it is - both players keep their slots - and the slots themselves are
-	// exchanged where they sit in that one game. So each plays the same number of games as
-	// before, in a different seat.
+	// The plan comes from api/get/seating_swap_options.php, but nothing is taken on trust: the
+	// seating may have moved on since it was worked out, and a plan is only worth applying if it
+	// still does what it claims. So the tallies are taken before and after, and a plan that does
+	// not leave both of them untouched is refused rather than written.
 	//
-	// That only works when both of them are actually at a table in that game. If one sits it out
-	// and the other does not, the swap would hand one of them a game and take one from the other,
-	// which is not a swap of seats but a change of who plays how much - and the seating's whole
-	// promise is that everybody plays the same number of games. Refused rather than done quietly.
-	private function swap_players_in_one_game($misc, $game, $slot1, $slot2)
+	// Without a plan the swap is made as asked. That is allowed to cost the statistics - the
+	// dialog says so and the organizer has agreed - but never a game: swapping somebody who sits
+	// the game out with somebody who plays it would hand one of them a game and take one from the
+	// other, and the seating's whole promise is that everybody plays the same number.
+	private function swap_in_one_game($misc, $event_id, $game, $slot1, $slot2)
 	{
-		$rounds = isset($misc->seating->rounds) ? $misc->seating->rounds : null;
-		if (!is_array($rounds) || $game > count($rounds))
+		$rounds = json_decode(json_encode($misc->seating->rounds), true);
+		if (!is_array($rounds) || $game < 1 || $game > count($rounds))
 		{
 			throw new Exc(get_label('Game [0] is not in this seating.', $game));
 		}
 
-		// [table, seat] of each player in this game, or null when they do not play it.
-		$find = function($slot) use ($rounds, $game)
-		{
-			if ($slot < 0)
-			{
-				return null;
-			}
-			$round = $rounds[$game - 1];
-			if (!is_array($round))
-			{
-				return null;
-			}
-			for ($t = 0; $t < count($round); ++$t)
-			{
-				if (!is_array($round[$t])) { continue; }
-				for ($s = 0; $s < count($round[$t]); ++$s)
-				{
-					if ((int)$round[$t][$s] === (int)$slot)
-					{
-						return array($t, $s);
-					}
-				}
-			}
-			return null;
-		};
+		$players = count((array)$misc->seating->mapping);
+		$slot_of = seating_slots_by_user($misc->seating->mapping);
+		$plan = $this->read_swap_plan($slot_of);
 
-		$at1 = $find($slot1);
-		$at2 = $find($slot2);
-		if (is_null($at1) || is_null($at2))
+		list($seats_before, $games_before) = $this->seating_tallies($rounds, $players);
+
+		$pos = seating_seat_positions($rounds);
+		$present1 = isset($pos[$game][$slot1]);
+		$present2 = isset($pos[$game][$slot2]);
+		if (!$present1 && !$present2)
+		{
+			throw new Exc(get_label('Neither of these players is in the seating of this round.'));
+		}
+		if ((!$present1 || !$present2) && empty($plan))
 		{
 			throw new Exc(get_label('Both players must play game [0] to be swapped in it. Swapping a player who sits it out with one who does not would change how many games they each play.', $game));
 		}
 
-		$misc->seating->rounds[$game - 1][$at1[0]][$at1[1]] = $slot2;
-		$misc->seating->rounds[$game - 1][$at2[0]][$at2[1]] = $slot1;
+		if (!$this->swap_in_game($rounds, $game, $slot1, $slot2))
+		{
+			throw new Exc(get_label('Neither of these players is in the seating of this round.'));
+		}
+		foreach ($plan as $step)
+		{
+			if (!$this->swap_in_game($rounds, $step['game'], $step['slot1'], $step['slot2']))
+			{
+				throw new Exc(get_label('The seating has changed since these swaps were worked out. Please try again.'));
+			}
+		}
+
+		if (!empty($plan))
+		{
+			list($seats_after, $games_after) = $this->seating_tallies($rounds, $players);
+			if ($seats_after !== $seats_before || $games_after !== $games_before)
+			{
+				throw new Exc(get_label('The seating has changed since these swaps were worked out. Please try again.'));
+			}
+		}
+		else
+		{
+			// No plan, so the seat numbers are expected to move - but the games must not.
+			list(, $games_after) = $this->seating_tallies($rounds, $players);
+			if ($games_after !== $games_before)
+			{
+				throw new Exc(get_label('Both players must play game [0] to be swapped in it. Swapping a player who sits it out with one who does not would change how many games they each play.', $game));
+			}
+		}
+
+		$misc->seating->rounds = $rounds;
+		$misc->seating->manual = true;
+		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', json_encode($misc), $event_id);
+		register_seating_players($event_id, $misc->seating->mapping);
 	}
+
+	// The optional plan parameter: a JSON list of {game, user1_id, user2_id}, turned into slots.
+	private function read_swap_plan($slot_of)
+	{
+		$raw = get_optional_param('plan', '');
+		if (!is_string($raw) || trim($raw) === '')
+		{
+			return array();
+		}
+		$list = json_decode($raw, true);
+		if (!is_array($list))
+		{
+			throw new Exc(get_label('Unknown [0]', 'plan'));
+		}
+		$plan = array();
+		foreach ($list as $step)
+		{
+			if (!is_array($step) || !isset($step['game'], $step['user1_id'], $step['user2_id']))
+			{
+				throw new Exc(get_label('Unknown [0]', 'plan'));
+			}
+			$u1 = (int)$step['user1_id'];
+			$u2 = (int)$step['user2_id'];
+			if (!isset($slot_of[$u1]) || !isset($slot_of[$u2]))
+			{
+				throw new Exc(get_label('The seating has changed since these swaps were worked out. Please try again.'));
+			}
+			$plan[] = array(
+				'game' => (int)$step['game'],
+				'slot1' => $slot_of[$u1],
+				'slot2' => $slot_of[$u2]);
+		}
+		return $plan;
+	}
+
+	private function swap_in_game(&$rounds, $game, $slot1, $slot2)
+	{
+		$at1 = null;
+		$at2 = null;
+		$round = isset($rounds[$game - 1]) ? $rounds[$game - 1] : null;
+		if (!is_array($round))
+		{
+			return false;
+		}
+		foreach ($round as $t => $table)
+		{
+			if (!is_array($table)) { continue; }
+			foreach ($table as $s => $slot)
+			{
+				if ((int)$slot === $slot1) { $at1 = array($t, $s); }
+				if ((int)$slot === $slot2) { $at2 = array($t, $s); }
+			}
+		}
+		if (!is_null($at1) && !is_null($at2))
+		{
+			$rounds[$game - 1][$at1[0]][$at1[1]] = $slot2;
+			$rounds[$game - 1][$at2[0]][$at2[1]] = $slot1;
+			return true;
+		}
+		if (!is_null($at1))
+		{
+			$rounds[$game - 1][$at1[0]][$at1[1]] = $slot2;
+			return true;
+		}
+		if (!is_null($at2))
+		{
+			$rounds[$game - 1][$at2[0]][$at2[1]] = $slot1;
+			return true;
+		}
+		return false;
+	}
+
+	// One count per player per seat number, and one game count per player - the two things a
+	// compensated swap has to leave exactly as they were.
+	private function seating_tallies($rounds, $players)
+	{
+		$seats = array_fill(0, $players * 10, 0);
+		$games = array_fill(0, $players, 0);
+		foreach ($rounds as $round)
+		{
+			if (!is_array($round)) { continue; }
+			foreach ($round as $table)
+			{
+				if (!is_array($table)) { continue; }
+				foreach ($table as $s => $slot)
+				{
+					$slot = (int)$slot;
+					if ($slot < 0 || $slot >= $players) { continue; }
+					if ($s < 10) { ++$seats[$slot * 10 + $s]; }
+					++$games[$slot];
+				}
+			}
+		}
+		return array($seats, $games);
+	}
+
 
 	function swap_seating_players_op_help()
 	{

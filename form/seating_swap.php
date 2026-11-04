@@ -107,34 +107,155 @@ try
 	echo '</table>';
 ?>
 	<script>
+	// Options handed back by api/get/seating_swap_options.php, kept while the choice dialog is up
+	// so its buttons can say which one they apply.
+	var swapOptions = [];
+	var swapArgs = null;
+	var swapChoiceDlg = null;
+	var swapOnSuccess = null;
+
+	function swapApply(planIndex)
+	{
+		var params =
+		{
+			op: "swap_seating_players",
+			event_id: <?php echo $event_id; ?>,
+			user1_id: swapArgs.player1Id,
+			user2_id: swapArgs.player2Id,
+			game: swapArgs.game,
+		};
+		// -1 is the swap on its own, with the statistics left as they fall. Anything else is one
+		// of the plans that puts them back, sent as it came so the server can check it still does.
+		if (planIndex >= 0)
+		{
+			params.plan = JSON.stringify(swapOptions[planIndex]);
+		}
+		if (swapChoiceDlg)
+		{
+			swapChoiceDlg.dialog("close");
+			swapChoiceDlg = null;
+		}
+		json.post("api/ops/event.php", params, swapOnSuccess);
+	}
+
+	function swapPlanText(plan)
+	{
+		var parts = [];
+		for (var i = 0; i < plan.length; ++i)
+		{
+			parts.push(<?php echo json_encode(get_label('Game [0]', '%N%')); ?>.replace('%N%', plan[i].game) +
+				': ' + plan[i].user1 + ' &harr; ' + plan[i].user2);
+		}
+		return parts.join('; ');
+	}
+
+	function swapShowChoice(data)
+	{
+		swapOptions = data.options || [];
+
+		if (!swapOptions.length && data.kind == 'absent')
+		{
+			// Nothing can give the game back, so there is nothing to offer.
+			dlg.error(<?php echo json_encode(get_label('Both players must play game [0] to be swapped in it. Swapping a player who sits it out with one who does not would change how many games they each play.', '%N%')); ?>.replace('%N%', swapArgs.game));
+			return;
+		}
+
+		var html = '<p>';
+		if (data.kind == 'absent')
+		{
+			html += <?php echo json_encode(get_label('In game [0] one of these two does not play, so this is not an exchange of seats but a change of how many games they each play. That cannot simply be accepted - it needs swaps elsewhere to give the game back.', '%N%')); ?>.replace('%N%', swapArgs.game);
+		}
+		else
+		{
+			html += <?php echo json_encode(get_label('Swapping [0] and [1] in game [2] moves them between seats [3] and [4], which changes the seat number statistics.', '%U1%', '%U2%', '%N%', '%S1%', '%S2%')); ?>
+				.replace('%U1%', data.user1).replace('%U2%', data.user2)
+				.replace('%N%', swapArgs.game)
+				.replace('%S1%', data.seat1).replace('%S2%', data.seat2);
+		}
+		html += '</p><table class="bordered light" width="100%">';
+
+		if (data.kind != 'absent')
+		{
+			html += '<tr><td>' + <?php echo json_encode(get_label('Just this swap, and leave the statistics as they fall.')); ?> +
+				'</td><td width="90" align="center"><button onclick="swapApply(-1)">' +
+				<?php echo json_encode(get_label('Apply')); ?> + '</button></td></tr>';
+		}
+		if (swapOptions.length)
+		{
+			html += '<tr class="darker"><td colspan="2">' +
+				<?php echo json_encode(get_label('These further swaps put the seat numbers back exactly as they were:')); ?> + '</td></tr>';
+			for (var i = 0; i < swapOptions.length; ++i)
+			{
+				html += '<tr><td>' + swapPlanText(swapOptions[i]) +
+					'</td><td width="90" align="center"><button onclick="swapApply(' + i + ')">' +
+					<?php echo json_encode(get_label('Apply')); ?> + '</button></td></tr>';
+			}
+		}
+		else
+		{
+			html += '<tr><td colspan="2">' +
+				<?php echo json_encode(get_label('No way to put the seat numbers back was found.')); ?> + '</td></tr>';
+		}
+		html += '</table>';
+
+		// Close means do nothing, which leaves the swap dialog underneath still open.
+		swapChoiceDlg = dlg.custom(html, <?php echo json_encode(get_label('Swap players')); ?>, 620,
+			[{ text: <?php echo json_encode(get_label('Close')); ?>, click: function() { $(this).dialog("close"); swapChoiceDlg = null; } }]);
+	}
+
 	function commit(onSuccess)
 	{
 		var player1Id = parseInt($("#form-player1").val()) || 0;
 		var player2Id = parseInt($("#form-player2").val()) || 0;
+		var game = parseInt($("#form-game").val()) || 0;
 		if (player1Id <= 0)
 		{
-			dlg.error("<?php echo get_label('Please enter player [0].', 1); ?>");
+			dlg.error(<?php echo json_encode(get_label('Please enter player [0].', 1)); ?>);
+			return;
 		}
-		else if (player2Id <= 0)
+		if (player2Id <= 0)
 		{
-			dlg.error("<?php echo get_label('Please enter player [0].', 2); ?>");
+			dlg.error(<?php echo json_encode(get_label('Please enter player [0].', 2)); ?>);
+			return;
 		}
-		else if (player1Id == player2Id)
+		if (player1Id == player2Id)
 		{
-			dlg.error("<?php echo get_label('Players must be different.'); ?>");
+			dlg.error(<?php echo json_encode(get_label('Players must be different.')); ?>);
+			return;
 		}
-		else
+
+		swapArgs = { player1Id: player1Id, player2Id: player2Id, game: game };
+		swapOnSuccess = onSuccess;
+
+		// Swapping them in every game trades their whole seatings, so each seat number stays
+		// occupied exactly as often as before and there is nothing to warn about.
+		if (game <= 0)
 		{
-			json.post("api/ops/event.php",
+			swapApply(-1);
+			return;
+		}
+
+		json.get("api/get/seating_swap_options.php?event_id=<?php echo $event_id; ?>" +
+			"&user1_id=" + player1Id + "&user2_id=" + player2Id + "&game=" + game,
+			function(data)
 			{
-				op: "swap_seating_players",
-				event_id: <?php echo $event_id; ?>,
-				user1_id: player1Id,
-				user2_id: player2Id,
-				game: parseInt($("#form-game").val()) || 0,
-			},
-			onSuccess);
-		}
+				// The same seat number at another table, where the statistic counts numbers and
+				// not tables, so it cannot tell the difference.
+				if (!data || data.kind == 'harmless')
+				{
+					swapApply(-1);
+					return;
+				}
+				// Somebody the seating never named has no slot of their own, and the mapping that
+				// says who a slot is holds for the whole round - so they cannot stand in for one
+				// game. Said here rather than left to the server, which refuses it as well.
+				if (data.kind == 'substitute')
+				{
+					dlg.error(<?php echo json_encode(get_label('A player who is not in this round\'s seating can only take somebody\'s place in every game of the round. To change one game only, change the player in the game itself.')); ?>);
+					return;
+				}
+				swapShowChoice(data);
+			});
 	}
 	</script>
 <?php

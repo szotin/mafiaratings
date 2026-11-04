@@ -44,7 +44,11 @@ class Page extends TournamentPageBase
 			$this->highlight_id = (int)$_REQUEST['hlt'];
 		}
 		
+		// Whether the filters below are this page's own idea or the reader's. A default filter may
+		// be dropped again when it turns out to hide everything; one the reader set by clicking a
+		// checkbox is theirs to keep, however little it leaves.
 		$now = time();
+		$this->options_default = !isset($_REQUEST['ops']);
 		if (isset($_REQUEST['ops']))
 		{
 			$this->options = (int)$_REQUEST['ops'];
@@ -559,6 +563,7 @@ class Page extends TournamentPageBase
 		
 		if ($this->options & HIDE_PLAYED)
 		{
+			$played = array();
 			$query = new DbQuery('SELECT table_num, game_num FROM games WHERE event_id = ?', $this->round_id);
 			while ($row = $query->next())
 			{
@@ -568,7 +573,42 @@ class Page extends TournamentPageBase
 					$this->tables[$g-1] != NULL &&
 					!is_null($t) && $t > 0 && $t <= count($this->tables[$g-1]))
 				{
-					$this->tables[$g-1][$t-1] = NULL;
+					$played[($g-1) . '_' . ($t-1)] = true;
+				}
+			}
+
+			// Hiding the played games helps right up to the moment the last game of the round is
+			// over; from then on it empties the page, and the seating looks like it is simply not
+			// there. A round that is done with shows itself instead - the checkbox above goes back
+			// to unchecked, so the page and the filter still say the same thing.
+			$anything_left = false;
+			for ($i = 0; $i < count($this->tables) && !$anything_left; ++$i)
+			{
+				$table = $this->tables[$i];
+				if (is_null($table))
+				{
+					continue;
+				}
+				for ($j = 0; $j < count($table); ++$j)
+				{
+					if (!is_null($table[$j]) && !isset($played[$i . '_' . $j]))
+					{
+						$anything_left = true;
+						break;
+					}
+				}
+			}
+
+			if (!$anything_left && $this->options_default)
+			{
+				$this->options &= ~HIDE_PLAYED;
+			}
+			else
+			{
+				foreach ($played as $key => $dummy)
+				{
+					list($g, $t) = explode('_', $key);
+					$this->tables[(int)$g][(int)$t] = NULL;
 					$normalize = true;
 				}
 			}
@@ -697,10 +737,18 @@ class Page extends TournamentPageBase
 		echo '</td>';
 	}
 	
+	// Every game of the round filtered out. Without a word here the page is the checkboxes and an
+	// empty space below them, which reads as a seating that was never generated.
+	private function showAllHidden()
+	{
+		echo '<p>' . get_label('Every game of this round is hidden by the options above.') . '</p>';
+	}
+
 	private function showByTable()
 	{
 		$num_rounds = count($this->tables);
 		$num_tables = $num_rounds > 0 ? count($this->tables[0]) : 0;
+		$shown = 0;
 		for ($i = 0; $i < $num_tables; ++$i)
 		{
 			$has_data = false;
@@ -716,6 +764,7 @@ class Page extends TournamentPageBase
 			{
 				continue;
 			}
+			++$shown;
 			echo '<p><center><h2>' . get_label('Table [0]', $i + 1) . '</h2></center></p>';
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="dark"><td width="8%"></td>';
@@ -743,6 +792,10 @@ class Page extends TournamentPageBase
 				echo '</tr>';
 			}
 			echo '</table>';
+		}
+		if ($shown == 0)
+		{
+			$this->showAllHidden();
 		}
 	}
 	
@@ -1067,6 +1120,7 @@ class Page extends TournamentPageBase
 			}
 		}
 		
+		$shown = 0;
 		for ($i = 0; $i < count($by_game); ++$i)
 		{
 			$game = $by_game[$i];
@@ -1084,6 +1138,7 @@ class Page extends TournamentPageBase
 				continue;
 			}
 			
+			++$shown;
 			echo '<p><center><h2>' . get_label('Game [0]', $i + 1) . '</h2></center></p>';
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="dark"><td width="8%"></td>';
@@ -1165,6 +1220,10 @@ class Page extends TournamentPageBase
 				}
 			}
 			echo '</table>';
+		}
+		if ($shown == 0)
+		{
+			$this->showAllHidden();
 		}
 	}
 	
