@@ -159,11 +159,27 @@ html.no-scrim .ov::after {
     glass, and the number chips
   --------------------------------------------------------------------------------------*/
 /*  One dark glass for every pill and panel, with no edge or outline: an outline reads as a
-    light line along the bottom against the drop shadow. */
+    light line along the bottom against the drop shadow.
+
+    The glass is a flat wash and not a blur of what stands behind it. It was drawn as a blur,
+    and backdrop-filter is what draws one - but a browser source in OBS stands on nothing of
+    its own, and there are machines whose OBS answers an element that filters a backdrop which
+    is not there with a layer of its own, filled opaque black. What went out on the stream was
+    a black rectangle wherever one of these pages asked for the blur: the size of the panel and
+    the spread of its shadow in each corner of the picture, the same around every stack of
+    votes, and, because the badge of a role sits in the corner of a card and its rectangle is
+    the wider of the two, a black elbow poking out past the rounded corner of every card that
+    had a role to show. Nothing without the filter left a mark - the players' cards carry the
+    same shadow and are clean.
+
+    It is not every machine: the rehearsal the evening before went out from another one with
+    the same pages and not a mark on it, so this is something the machine in the hall does and
+    not something the page can see about itself. There is nothing here to ask, and a stream is
+    not the place to find out whose turn it is, so the blur is gone from these pages and the
+    wash is darker in its place - which is close to what a blurred camera came to anyway. The
+    between-games screens have a ground of their own for a filter to work on; see between.css. */
 .gl {
-	background: rgba(14, 8, 11, 0.42);
-	backdrop-filter: blur(0.5rem) saturate(1.4);
-	-webkit-backdrop-filter: blur(0.5rem) saturate(1.4);
+	background: rgba(14, 8, 11, 0.62);
 	box-shadow: 0 0.625rem 1.75rem rgba(0, 0, 0, 0.35);
 	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.45);
 }
@@ -204,8 +220,6 @@ html.no-scrim .ov::after {
     the next game. Hollow rather than dark, so that it never reads as a mafia chip. */
 .chip.n {
 	background: rgba(255, 255, 255, 0.2);
-	backdrop-filter: blur(0.375rem);
-	-webkit-backdrop-filter: blur(0.375rem);
 	color: rgba(255, 255, 255, 0.85);
 	box-shadow: none;
 }
@@ -596,8 +610,6 @@ html.no-scrim .ov::after {
 
 .pc.none .seat {
 	background: rgba(255, 255, 255, 0.2);
-	backdrop-filter: blur(0.375rem);
-	-webkit-backdrop-filter: blur(0.375rem);
 	color: rgba(255, 255, 255, 0.85);
 	box-shadow: none;
 }
@@ -636,9 +648,7 @@ html.no-scrim .ov::after {
 	display: grid;
 	place-items: center;
 	color: #fff;
-	background: radial-gradient(circle, rgba(10, 6, 8, 0.38) 0%, rgba(10, 6, 8, 0.26) 60%, rgba(10, 6, 8, 0.14) 100%);
-	backdrop-filter: blur(0.375rem);
-	-webkit-backdrop-filter: blur(0.375rem);
+	background: radial-gradient(circle, rgba(10, 6, 8, 0.52) 0%, rgba(10, 6, 8, 0.38) 60%, rgba(10, 6, 8, 0.22) 100%);
 	box-shadow: 0 0.125rem 0.625rem rgba(0, 0, 0, 0.18);
 }
 
@@ -673,9 +683,7 @@ html.no-scrim .ov::after {
 	display: flex;
 	align-items: center;
 	gap: 0.25rem;
-	background: rgba(10, 6, 8, 0.38);
-	backdrop-filter: blur(0.625rem) saturate(1.6);
-	-webkit-backdrop-filter: blur(0.625rem) saturate(1.6);
+	background: rgba(10, 6, 8, 0.52);
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.22), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.3);
 }
 
@@ -727,9 +735,7 @@ html.no-scrim .ov::after {
 	font-size: 1rem;
 	white-space: nowrap;
 	color: #fff;
-	background: rgba(10, 6, 8, 0.42);
-	backdrop-filter: blur(0.625rem) saturate(1.6);
-	-webkit-backdrop-filter: blur(0.625rem) saturate(1.6);
+	background: rgba(10, 6, 8, 0.56);
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.25), 0 0.25rem 0.625rem rgba(0, 0, 0, 0.3);
 }
 
@@ -763,9 +769,10 @@ html.no-scrim .ov::after {
 	position: absolute;
 	inset: 0;
 	z-index: 1;
+	/*  It took the colour out of the photograph as well, with a backdrop filter; see the glass
+	    above for why there is none left on these pages. The photograph is desaturated in its
+	    own right just above, so the dead card lost nothing with it. */
 	background: rgba(14, 9, 11, 0.6);
-	backdrop-filter: saturate(0.3);
-	-webkit-backdrop-filter: saturate(0.3);
 }
 
 .pc.dead .meta { opacity: 0.85; }
@@ -824,9 +831,7 @@ html.no-scrim .ov::after {
 }
 
 .bm .chip.b {
-	background: rgba(59, 54, 64, 0.9);
-	backdrop-filter: blur(0.625rem);
-	-webkit-backdrop-filter: blur(0.625rem);
+	background: rgba(59, 54, 64, 0.95);
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.2), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.45);
 }
 
@@ -847,9 +852,7 @@ html.no-scrim .ov::after {
 	gap: 0.375rem;
 	padding: 0.5rem 0.375rem 0.625rem;
 	border-radius: 1.25rem;
-	background: rgba(14, 8, 11, 0.42);
-	backdrop-filter: blur(0.625rem);
-	-webkit-backdrop-filter: blur(0.625rem);
+	background: rgba(14, 8, 11, 0.62);
 	box-shadow: 0 0.5rem 1.375rem rgba(0, 0, 0, 0.3);
 	transition: opacity 0.4s;
 }
@@ -925,9 +928,7 @@ html.no-scrim .ov::after {
 	letter-spacing: 0.12em;
 	line-height: 1;
 	color: #fff;
-	background: rgba(58, 54, 62, 0.72);
-	backdrop-filter: blur(0.625rem) saturate(1.4);
-	-webkit-backdrop-filter: blur(0.625rem) saturate(1.4);
+	background: rgba(58, 54, 62, 0.86);
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.28), inset 0 -0.0625rem 0.125rem rgba(0, 0, 0, 0.4), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.35);
 }
 
@@ -953,9 +954,7 @@ html.no-scrim .ov::after {
 	align-items: center;
 	justify-content: center;
 	gap: 0.3125rem;
-	background: rgba(14, 8, 11, 0.5);
-	backdrop-filter: blur(0.625rem);
-	-webkit-backdrop-filter: blur(0.625rem);
+	background: rgba(14, 8, 11, 0.65);
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.14), 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
 }
 
