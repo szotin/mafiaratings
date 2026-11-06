@@ -693,8 +693,10 @@ var obs = new function()
 		return row == '' ? '' : '<div class="marks"><div class="row">' + row + '</div></div>';
 	}
 
-	// The three seats named by the player shot on the first night. It steps back while the table
-	// is voting, because then the votes are what matters.
+	// The three seats named by the player shot on the first night. It stands at full strength
+	// for as long as it is up, the voting included: it is the one thing on the screen that says
+	// what the dead player left behind, and a table reads it most of all while the vote it
+	// pointed at is being taken.
 	function bestGuess(g, context)
 	{
 		var chips = '';
@@ -703,7 +705,7 @@ var obs = new function()
 			var number = context.legacy[i];
 			chips += chip(byNumber(g.players, number), number);
 		}
-		return '<div class="bmw' + (context.voting ? ' dim' : '') + '"><div class="bm">' + chips + '</div></div>';
+		return '<div class="bmw"><div class="bm">' + chips + '</div></div>';
 	}
 
 	// The vote card above a nominee: how many votes, and who gave them.

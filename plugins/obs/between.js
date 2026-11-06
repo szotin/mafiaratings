@@ -14,8 +14,10 @@ var obs = new function()
 	var at;         // which screen of the round we are on
 	var empty;      // how many screens in a row had nothing, so as not to spin forever
 	var timer;      // when the screen that is up gives way to the next one
-	var walk;       // which way round the screens is the one in play - see restart()
-	var restarted;  // when the round was last begun again, so that it is not begun twice over
+	var walk;       // which way round the screens is the one in play - see begin()
+	var onAir;      // the scene this source stands in is the one OBS is showing
+	var onStage;    // the source itself is switched on in that scene
+	var active;     // the two of them together: whether anybody can see this page
 	var ready;      // who to tell when the screen the round begins with is up, if anybody
 
 	this.start = function(pageOptions)
@@ -25,7 +27,9 @@ var obs = new function()
 		empty = 0;
 		timer = null;
 		walk = 0;
-		restarted = 0;
+		onAir = true;
+		onStage = true;
+		active = true;
 		ready = null;
 
 		// Nothing can be shown until we know what to show, so the first answer is waited for
@@ -33,86 +37,75 @@ var obs = new function()
 		settings().then(function() { next(); });
 		setInterval(settings, options.settingsInterval);
 
-		// OBS says when this source starts being shown: obsSourceActiveChanged when the scene it
-		// stands in becomes the one on the air, obsSourceVisibleChanged when the source itself is
-		// switched on in a scene already showing. Either way the round begins again - see
-		// restart(). Outside OBS neither of them is ever sent.
+		// What OBS says about this source: obsSourceActiveChanged when the scene it stands in
+		// becomes, or stops being, the one on the air, and obsSourceVisibleChanged when the
+		// source itself is switched on or off inside its scene. The two are different questions
+		// and either can change on its own, so both are kept and the page is being watched only
+		// when they agree. Outside OBS neither is ever sent and the page counts as watched.
 		window.addEventListener('obsSourceActiveChanged', function(event)
 		{
-			if (!event.detail || event.detail.active)
-			{
-				restart();
-			}
+			onAir = (!event.detail || event.detail.active !== false);
+			settle();
 		});
 		window.addEventListener('obsSourceVisibleChanged', function(event)
 		{
-			if (!event.detail || event.detail.visible)
-			{
-				restart();
-			}
+			onStage = (!event.detail || event.detail.visible !== false);
+			settle();
 		});
 	}
 
-	// The same thing asked for from outside, by a page that has these screens in a frame of its
-	// own: a browser source has OBS to tell it when it starts being shown, and a frame has only
-	// the page around it. See text_broadcast.php, which brings the screens up the moment a game
-	// is over - and which waits for the word given back here before it shows the frame at all,
-	// so that the first screen is what comes up and not what was standing there before.
-	this.restart = function(done)
+	// The same thing said from outside, by a page that has these screens in a frame of its own:
+	// a browser source has OBS to tell it when it is being watched, and a frame has only the
+	// page around it. See text_broadcast.php, which hides the frame while a game is on and
+	// brings it back when the game is over.
+	this.shown = function(on, done)
 	{
-		restart(done);
+		onAir = (on ? true : false);
+		onStage = onAir;
+		settle(done);
 	}
 
-	// Back to the first screen. A source nobody is looking at goes on turning its screens over
-	// all the while - OBS does not stop the page, it only stops drawing it - so by the time the
-	// scene comes up it would be standing on whichever screen its clock had reached, halfway
-	// through a round and halfway through a screen's time. So it starts afresh: the table is
-	// shown what the round begins with, for as long as a screen is meant to stand.
+	//-----------------------------------------------------------------------------------------
+	// being watched, and not
+	//-----------------------------------------------------------------------------------------
+	// A source nobody is looking at does not walk its screens. It stands on the one the round
+	// begins with and holds it, however long the scene stays off the air - OBS does not stop the
+	// page, it only stops drawing it, and a page left to its own clock would be standing on
+	// whichever screen that clock had reached by the time the scene came up. That is what made
+	// the end of a game show a screen out of the middle of the round for a moment before the
+	// first one took its place.
 	//
-	// What was up is left standing until the first screen of the round has been fetched, and then
-	// gives way to it in the ordinary manner - the new frame goes in underneath and the one on
-	// top fades off it, see put(). It belongs to a round that is over, which is why it used to be
-	// taken down the moment the word came; but inside OBS the source is on the air by then, and
-	// a screen cannot be up before it has been fetched, so that left the page bare for as long as
-	// the fetch took and the first screen then eased in out of nothing over another second and a
-	// half. On a stream that reads as the picture going black - it is the page's own dark ground,
-	// #0A0608, and a recording of one tournament was measured doing it five times. A screen of
-	// this table whose turn had passed, fading away as the one that belongs here comes up under
-	// it, is the lesser of the two by a long way.
-	//
-	// A caller that asks to be told when the first screen is up keeps its frame out of sight until
-	// the word comes back - see text_broadcast.php - so there nothing is on the screen to protect
-	// and what was standing there is dropped at once.
-	//
-	// Whatever was on its way is dropped rather than waited for: a screen fetched for the round
-	// that has just been abandoned would arrive on top of the new one and set a second clock
-	// going beside the first, and from then on the screens would turn over twice as fast.
-	//
-	// The two things OBS says - the scene becoming active and the source becoming visible -
-	// arrive together when a scene is switched to, and either of them alone is reason enough,
-	// so the second one to arrive is passed over.
-	function restart(done)
+	// So the round is begun the moment the source stands down, while nobody is watching and
+	// there is nothing to see. When it comes up again the first screen is already there; it is
+	// fetched afresh, because a game has been played since and it is the screen that tells how
+	// it ended, and the new one takes the old one's place where it stands rather than coming up
+	// out of a bare page. Then the clock starts: the first screen keeps its full time, and only
+	// after it does the round go on.
+	function settle(done)
 	{
-		var now = Date.now();
-		if (now - restarted < 1000)
+		var on = (onAir && onStage);
+		if (typeof done == 'function')
 		{
-			return;
+			ready = done;
 		}
-		restarted = now;
+		else if (on === active)
+		{
+			return; // the two events of a scene change arrive together; one of them is enough
+		}
+
+		active = on;
+		begin();
+	}
+
+	// The round from its beginning: the screen it begins with, fetched now. Whatever was on its
+	// way is dropped rather than waited for - a screen fetched for the round that has just been
+	// abandoned would arrive on top of the new one and set a second clock going beside the
+	// first, and from then on the screens would turn over twice as fast.
+	function begin()
+	{
 		at = -1;
 		empty = 0;
 		walk += 1;
-		ready = (typeof done == 'function') ? done : null;
-
-		if (ready !== null)
-		{
-			var screen = document.getElementById('screen');
-			while (screen.firstChild)
-			{
-				screen.removeChild(screen.firstChild);
-			}
-		}
-
 		next();
 	}
 
@@ -160,7 +153,7 @@ var obs = new function()
 	// a number and brought back inside the list rather than trusted to stay where it was.
 	//
 	// Every walk is numbered, and what comes back is put up only while the walk that asked for
-	// it is still the one in play: the round can be begun again from under it - see restart().
+	// it is still the one in play: the round can be begun again from under it - see begin().
 	function next()
 	{
 		if (timer !== null)
@@ -171,7 +164,9 @@ var obs = new function()
 
 		if (!stream || !stream.screens || stream.screens.length <= 0)
 		{
-			later(1000); // nothing to show yet; ask again shortly
+			// Nothing to show yet, watched or not: this clock is for finding out what to
+			// show, not for turning screens over, so it runs either way.
+			timer = setTimeout(next, 1000);
 			return;
 		}
 
@@ -192,14 +187,19 @@ var obs = new function()
 	}
 
 	// When the screen that is up gives way to the next one. There is only ever the one clock:
-	// a round begun again sets it afresh rather than running beside the one it found.
+	// a round begun again sets it afresh rather than running beside the one it found, and a
+	// source that is standing down has none at all - see settle().
 	function later(delay)
 	{
 		if (timer !== null)
 		{
 			clearTimeout(timer);
+			timer = null;
 		}
-		timer = setTimeout(next, delay);
+		if (active)
+		{
+			timer = setTimeout(next, delay);
+		}
 	}
 
 	function load(page)
@@ -251,9 +251,9 @@ var obs = new function()
 	// It is here so that the frame left behind is taken away when it is done with.
 	var FADE = 1800;
 
-	// Somebody was waiting for the round to be standing on its first screen again - see
-	// restart(). The screen is in the page by now and drawn in the same breath as this, so the
-	// word goes out as soon as it is there and is given only once.
+	// Somebody was waiting for the round to be standing on its first screen - see settle(). The
+	// screen is in the page by now and drawn in the same breath as this, so the word goes out as
+	// soon as it is there and is given only once.
 	function up()
 	{
 		if (ready === null)

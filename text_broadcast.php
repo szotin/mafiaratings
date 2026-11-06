@@ -85,7 +85,10 @@ echo '<div class="tb-text" id="tb-text"></div>';
 // viewer=1 says that these are being watched rather than run. They are the same pages a stream
 // puts over its picture, but nothing here is standing beside the table, so nothing they ask for
 // is to be taken as word from it - see api/get/stream.php.
-echo '<iframe class="tb-overlay" id="tb-overlay" scrolling="no" src="plugins/obs/overlay.php?' . $scope . '&viewer=1"></iframe>';
+//
+// bg=light says what they are laid on. The stage here is a pale sheet - see .tb-stage - and the
+// marks those pages make are made of light, which on a pale sheet is no mark at all.
+echo '<iframe class="tb-overlay" id="tb-overlay" scrolling="no" src="plugins/obs/overlay.php?' . $scope . '&viewer=1&bg=light"></iframe>';
 echo '<iframe class="tb-between" id="tb-between" scrolling="no" src="plugins/obs/between.php?' . $scope . '&viewer=1"></iframe>';
 echo '</div>';
 
@@ -125,40 +128,45 @@ echo '</button>';
 	// Between games - and while the roles are being handed out, and while the referee is
 	// entering the bonus points at the end - a stream shows the between-games screens over the
 	// whole picture. So does this.
+	//
+	// The screens are a page of their own, in a frame, and they are told whether anybody can
+	// see them - which is exactly what OBS tells them when it is a browser source. While a game
+	// is on they stand down: they stop turning over and wait on the screen their round begins
+	// with, so that when the game ends it is the first screen that is already there and not
+	// whichever one a clock had reached behind the game.
 	function setLive(live)
 	{
-		// A game has just ended. The screens are held back for the moment it takes them to put
-		// up the first one of their round - see hold() - and show themselves when they have.
-		if (wasLive === true && !live)
+		if (wasLive === live)
 		{
-			wasLive = false;
-			if (hold())
-			{
-				return;
-			}
+			return; // nothing has changed since we last heard
 		}
+		var first = (wasLive === null);
 		wasLive = live;
 
-		// Still being got ready. They are not shown halfway there, and a game beginning again
-		// in the meantime calls the whole thing off.
-		if (!live && waiting)
+		if (live)
+		{
+			waiting = false;
+			tell(false);
+			faces(true);
+			return;
+		}
+
+		// A game has just ended. The screens have been standing on the first one of their round
+		// all through it, and they fetch it afresh now - the game that has just been played is
+		// what it is about. That takes a moment, and the page waits it out with the game still
+		// on it rather than showing the screens halfway there - see hold().
+		if (!first && hold())
 		{
 			return;
 		}
 		waiting = false;
-		faces(live);
+		tell(true);
+		faces(false);
 	}
 
-	// The screens are a page of their own and have been turning over all the while behind the
-	// game, so the one they are standing on when a game ends is whichever their clock had
-	// reached - the tournament table as like as not. Telling them to begin their round again
-	// is only half of it: the first screen has to be fetched before it can be up, and in that
-	// moment the screens would be shown still standing on the old one. So the game is left on
-	// the page until they say the first screen is up, which is the word restart() gives back.
-	//
-	// Returns false where there is nobody to ask - the frame is a page like any other and may
-	// not have got that far yet - and then the screens are simply shown, as they were before.
-	function hold()
+	// Tells the screens whether they are being watched. Returns false where there is nobody to
+	// tell - the frame is a page like any other and may not have got that far yet.
+	function tell(on, done)
 	{
 		var inside = null;
 		try
@@ -167,11 +175,18 @@ echo '</button>';
 		}
 		catch (error) { }
 
-		if (!inside || !inside.obs || !inside.obs.restart)
+		if (!inside || !inside.obs || !inside.obs.shown)
 		{
 			return false;
 		}
+		inside.obs.shown(on, done);
+		return true;
+	}
 
+	// Holds the game on the page until the screens say the first one of their round is up.
+	// Returns false where there is nobody to ask, and then they are simply shown.
+	function hold()
+	{
 		waiting = true;
 		var show = function()
 		{
@@ -182,7 +197,12 @@ echo '</button>';
 			waiting = false;
 			faces(false);
 		};
-		inside.obs.restart(show);
+
+		if (!tell(true, show))
+		{
+			waiting = false;
+			return false;
+		}
 
 		// The screens are fetched from the site like everything else, and the site can be slow
 		// or not answer at all. The page is not held on them longer than it takes to notice.

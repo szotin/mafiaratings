@@ -777,14 +777,18 @@ html.no-scrim .ov::after {
 
 .pc.dead .meta { opacity: 0.85; }
 
-/*  Who is speaking. A frame on the card, no pulse: the card never moves or resizes, because ten
+/*  Who is speaking. A glow on the card, no pulse: the card never moves or resizes, because ten
     cards that breathe are ten things moving on a stream nobody is looking at.
 
-    One thin white line and the glow it throws, and nothing else. It was given a dark keyline
-    outside it as well, so that it would still read on a bright hall - but two rings and a
-    shadow around a card that is dark to begin with came out as a heavy black border, which is
-    not what a speaker's card is for. The glow carries it instead: it is white against a dark
-    picture and still separates the card from a light one. */
+    The glow alone, and nothing drawn. Under it there used to be a thin white line, and outside
+    that again a dark keyline; each was added so the mark would still read against a bright
+    hall, and each came out as a border ruled round the card, which is not what a speaker's card
+    is for.
+
+    It is held close rather than thrown wide. The cards stand three eighths of a rem apart - six
+    of the designer's pixels - so a glow with any spread to it lights the seats on either side
+    as much as the one speaking, and a mark that falls on three cards names none of them. Close
+    in, the same white says one card and says it at a glance. */
 .pc.speak::before {
 	content: "";
 	position: absolute;
@@ -793,8 +797,19 @@ html.no-scrim .ov::after {
 	border-radius: inherit;
 	pointer-events: none;
 	box-shadow:
-		0 0 0 0.09375rem rgba(255, 255, 255, 0.9),
-		0 0 1rem 0.1875rem rgba(255, 255, 255, 0.32);
+		0 0 0.625rem 0.0625rem rgba(255, 255, 255, 0.6),
+		0 0 1.375rem 0.25rem rgba(255, 255, 255, 0.28);
+}
+
+/*  The same glow on a pale ground, where white on white is nothing at all. A mark made of light
+    only works where there is a dark to make it against, so here it is made of the ground's
+    opposite instead and the card glows black - the same two layers, held just as close, so the
+    speaker is picked out the same way in both places. Which ground a page is on is said in its
+    address; see bg in obs.php. */
+html.bg-light .pc.speak::before {
+	box-shadow:
+		0 0 0.625rem 0.0625rem rgba(0, 0, 0, 0.55),
+		0 0 1.375rem 0.25rem rgba(0, 0, 0, 0.3);
 }
 
 /*  The winners stay bright and the losers are muted, once the game is over. */
@@ -809,10 +824,7 @@ html.no-scrim .ov::after {
 	flex-direction: column;
 	align-items: center;
 	gap: 0.25rem;
-	transition: opacity 0.4s;
 }
-
-.bmw.dim { opacity: 0.35; }
 
 .bm {
 	display: flex;

@@ -21,7 +21,12 @@ define('OBS_SETTINGS_DELAY', 10000);
 // The pages take the same request params as api/get/current_game.php plus:
 //   (whether the roles are shown is decided by the game itself, see EVENT_FLAG_HIDE_ROLES)
 //   hide_warnings - do not show warnings and the way the players died;
-//   retry_delay   - how often (in milliseconds) the page asks the site for the game state.
+//   retry_delay   - how often (in milliseconds) the page asks the site for the game state;
+//   bg            - the ground the page is laid on: 'light' where it is a pale one. A browser
+//                   source has no ground at all, and everything here is drawn to read against
+//                   the dark picture of a hall, so a pale page has to be told - the page cannot
+//                   see what is behind it. At present it turns the speaker's glow round; see
+//                   bg-light in obs.css.
 //
 // The language is not among them. It is what the table is set to show, under Management /
 // Stream settings, like everything else about the table - see stream_request_lang(). A locale
@@ -109,7 +114,12 @@ function show_obs_page($view)
 	// read over there, and on the light ground of a text broadcast they are a grey haze over
 	// the words. See viewer in text_broadcast.php.
 	$viewed = (isset($_REQUEST['viewer']) && (int)$_REQUEST['viewer'] != 0);
-	echo '<html class="view-' . $view . ($viewed ? ' no-scrim' : '') . '"><head>';
+	// And a page laid on a pale ground says that separately, because the two are not the same
+	// question: being watched says there is no camera under it, while this says what colour the
+	// thing under it is. A stream could one day be keyed over something pale, and the text
+	// broadcast is only the first page to need it - see bg above.
+	$light = (isset($_REQUEST['bg']) && $_REQUEST['bg'] == 'light');
+	echo '<html class="view-' . $view . ($viewed ? ' no-scrim' : '') . ($light ? ' bg-light' : '') . '"><head>';
 	echo '<meta content="text/html; charset=utf-8" http-equiv="Content-Type">';
 	echo '<title>' . get_label('OBS Studio integration') . '</title>';
 	echo '<link rel="stylesheet" href="' . obs_file('obs.css') . '">';
