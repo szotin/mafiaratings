@@ -507,14 +507,23 @@ function game_log_voting_round($game, $round, $actions = NULL)
 // split is called this comes back empty, and fills again as the new count is taken. By the end
 // of the day it is where the whole table stood when the day was decided.
 //
+// $which asks for a count of this day by its number instead of the one in play. It is how the
+// count a table split on is read back while the tied players speak again: those hands are down
+// and the day is not standing on them any more, but they are the reason the speeches are
+// happening and a broadcast has them to show.
+//
 // Returns an array of {nominee, voters[]}, the voters in the order they sit. A day nobody has
 // been counted for yet comes back empty.
-function game_log_votes($game)
+function game_log_votes($game, $which = NULL)
 {
 	$told = game_log_told_filter($game);
 	$round = (isset($game->data->time) && isset($game->data->time->round)) ? (int)$game->data->time->round : 0;
 	$actions = $game->get_actions();
-	$voting_round = game_log_voting_round($game, $round, $actions);
+	$voting_round = is_null($which) ? game_log_voting_round($game, $round, $actions) : (int)$which;
+	if ($voting_round < 0)
+	{
+		return array();
+	}
 
 	$voted_for = array(); // voter number => the nominee they are counted for
 	foreach ($actions as $action)

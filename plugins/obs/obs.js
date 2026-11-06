@@ -516,6 +516,33 @@ var obs = new function()
 		// A tie is told by the game sending the tied nominees back to speak.
 		context.tie = (g.state == 'nomineeSpeaking');
 
+		// The count the table split on. Those hands are down - that is what a split means - but
+		// they are the reason the speeches are happening, so they stay on the screen through
+		// them rather than leaving two seats standing there with nothing against either. The
+		// site sends them only while the new count is still empty, so the moment the moderator
+		// starts counting again these give way to what is being counted now.
+		if (context.max <= 0 && g.splitVotes)
+		{
+			for (var k = 0; k < g.splitVotes.length; ++k)
+			{
+				context.votes[g.splitVotes[k].nominee] = g.splitVotes[k].voters;
+				context.max = Math.max(context.max, g.splitVotes[k].voters.length);
+			}
+		}
+
+		// Everybody who has been named, whether a hand has gone up for them yet or not. A card
+		// stands over each of them from the moment the counting begins, empty if it must: an
+		// empty card says the table is being asked about this seat and the hands are still to
+		// come, where nothing at all says only that nothing is happening. It is also what makes
+		// the speeches of a split table readable - the game sends back only the seats that tied,
+		// so a card over each of them is the answer to who is being voted on.
+		context.named = {};
+		var named = g.nominees ? g.nominees : [];
+		for (var i = 0; i < named.length; ++i)
+		{
+			context.named[named[i]] = true;
+		}
+
 		// The best guess belongs above the card of the player shot on the first night.
 		context.legacy = (g.legacy && g.legacy.length > 0) ? g.legacy : null;
 		context.legacyOf = 0;
@@ -615,7 +642,7 @@ var obs = new function()
 			above = votedOutPill(g, voters);
 			cellClass += ' vbo' + (voters.length > 5 ? ' r2' : ' r1');
 		}
-		else if (context.voting && context.votes[player.number])
+		else if (context.voting && (context.votes[player.number] || context.named[player.number]))
 		{
 			above = voteCard(g, player, context);
 		}
@@ -711,14 +738,17 @@ var obs = new function()
 	// The vote card above a nominee: how many votes, and who gave them.
 	function voteCard(g, player, context)
 	{
-		var voters = context.votes[player.number];
+		var voters = context.votes[player.number] ? context.votes[player.number] : [];
 		var lead = (voters.length == context.max && context.max > 0);
+		// While a split table speaks again there are no hands up at all, and every card that is
+		// standing belongs to a seat that tied: each of them is told so rather than none.
+		var tied = (context.tie && (lead || context.max <= 0));
 		var classes = 'stk';
 		if (context.out)
 		{
 			classes += (context.out.number == player.number) ? ' out' : ' fade';
 		}
-		else if (context.tie && lead)
+		else if (tied)
 		{
 			classes += ' tie';
 		}
@@ -732,7 +762,7 @@ var obs = new function()
 
 		return '<div class="' + classes + '" data-seat="' + player.number + '">' +
 			'<div class="stk-n"><b>' + voters.length + '</b><small>' + escapeHtml(votesWord(voters.length)) + '</small>' +
-			((context.tie && lead) ? '<span class="stk-tag">' + escapeHtml(options.labels.tieTag) + '</span>' : '') +
+			(tied ? '<span class="stk-tag">' + escapeHtml(options.labels.tieTag) + '</span>' : '') +
 			'</div>' +
 			'<div class="stk-c" style="--per:' + perRow(voters.length) + '">' + chips + '</div></div>';
 	}

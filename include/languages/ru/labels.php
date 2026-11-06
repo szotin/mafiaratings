@@ -2162,7 +2162,7 @@ $labelMenu = array (
 'Game [0] of [1]' => 'Игра [0] из [1]', // plugins/obs/screens
 'game|games|games' => 'игра|игры|игр', // plugins/obs/screens
 'win|wins|wins' => 'победа|победы|побед', // plugins/obs/screens
-'[0] vs [1]' => '[0] на [1]', // plugins/obs/screens
+'[0] vs [1]' => '[0] в [1]', // plugins/obs/screens
 'Sheriff killed on night 1' => 'Шериф убит в первую ночь', // plugins/obs/screens
 'of [0]' => 'из [0]', // plugins/obs/screens
 );

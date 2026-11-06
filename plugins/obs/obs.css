@@ -214,13 +214,18 @@ html.no-scrim .ov::after {
 	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
 	color: #231300;
 	text-shadow: none;
+	/*  No dark shadow under it: the gold is bright and the ring of dark the other chips are
+	    given to lift them off the picture reads on this one as soot around the number. */
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.3);
 }
 
 /*  A seat nobody has a role for yet - while the roles are being handed out, and on the cards of
-    the next game. Hollow rather than dark, so that it never reads as a mafia chip. */
+    the next game. A plain pale grey: it must not read as a mafia chip, which is dark, nor as a
+    town one, which is red, and the thin white glass it used to be took the colour of whatever
+    it stood on - dark over a dark hall, and all but invisible over a bright one. */
 .chip.n {
-	background: rgba(255, 255, 255, 0.2);
-	color: rgba(255, 255, 255, 0.85);
+	background: rgba(188, 194, 204, 0.58);
+	color: #fff;
 	box-shadow: none;
 }
 
@@ -601,6 +606,7 @@ html.no-scrim .ov::after {
 	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
 	color: #231300;
 	text-shadow: none;
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.3);
 }
 
 .pc.maf .seat, .pc.don .seat {
@@ -609,8 +615,8 @@ html.no-scrim .ov::after {
 }
 
 .pc.none .seat {
-	background: rgba(255, 255, 255, 0.2);
-	color: rgba(255, 255, 255, 0.85);
+	background: rgba(188, 194, 204, 0.58);
+	color: #fff;
 	box-shadow: none;
 }
 
@@ -684,7 +690,10 @@ html.no-scrim .ov::after {
 	align-items: center;
 	gap: 0.25rem;
 	background: rgba(10, 6, 8, 0.52);
-	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.22), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.3);
+	/*  The glass is kept and the shadow under it is not. A drop shadow and a glow blur the
+	    little marks in these corners rather than lifting them: at this size the haze is as
+	    wide as the thing it is cast by. */
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.22);
 }
 
 .fouls i {
@@ -694,17 +703,11 @@ html.no-scrim .ov::after {
 	background: rgba(255, 255, 255, 0.22);
 }
 
-.fouls i.on {
-	background: var(--amber);
-	box-shadow: 0 0 0.375rem rgba(255, 181, 71, 0.7);
-}
+.fouls i.on { background: var(--amber); }
 
 /*  Three fouls is one away from leaving the game, so the dots stop being a count and become a
     warning. */
-.fouls.hot i.on {
-	background: #FF6A3D;
-	box-shadow: 0 0 0.375rem rgba(255, 106, 61, 0.8);
-}
+.fouls.hot i.on { background: #FF6A3D; }
 
 /*  A critical foul is its own mark rather than a fourth dot: it is counted apart and costs the
     player the game at two. */
@@ -719,7 +722,6 @@ html.no-scrim .ov::after {
 	width: 1rem;
 	height: 1rem;
 	color: #FF3B52;
-	filter: drop-shadow(0 0 0.1875rem rgba(255, 40, 65, 0.7));
 }
 
 /*  Why a player is out of the game: a crosshair and the night they were shot on, a thumb and the
@@ -780,15 +782,15 @@ html.no-scrim .ov::after {
 /*  Who is speaking. A glow on the card, no pulse: the card never moves or resizes, because ten
     cards that breathe are ten things moving on a stream nobody is looking at.
 
-    The glow alone, and nothing drawn. Under it there used to be a thin white line, and outside
-    that again a dark keyline; each was added so the mark would still read against a bright
-    hall, and each came out as a border ruled round the card, which is not what a speaker's card
-    is for.
+    It lies along the inside of the card's edge rather than being drawn round the outside of
+    it. Outside, it was a ring about the card, and a ring reads as a border - something the
+    card has, like its corners - rather than as a light on the one seat that is talking. Inside,
+    the light is on the player: it falls on the photograph and fades off into it, and the width
+    it takes is the card's own.
 
-    It is held close rather than thrown wide. The cards stand three eighths of a rem apart - six
-    of the designer's pixels - so a glow with any spread to it lights the seats on either side
-    as much as the one speaking, and a mark that falls on three cards names none of them. Close
-    in, the same white says one card and says it at a glance. */
+    What is left outside is only enough to lift the card off the picture. The cards stand three
+    eighths of a rem apart - six of the designer's pixels - and anything wider than that lights
+    the seats on either side as much as the one speaking. */
 .pc.speak::before {
 	content: "";
 	position: absolute;
@@ -797,19 +799,18 @@ html.no-scrim .ov::after {
 	border-radius: inherit;
 	pointer-events: none;
 	box-shadow:
-		0 0 0.625rem 0.0625rem rgba(255, 255, 255, 0.6),
-		0 0 1.375rem 0.25rem rgba(255, 255, 255, 0.28);
+		inset 0 0 1.5rem 0.1875rem rgba(255, 255, 255, 0.58),
+		0 0 0.625rem 0.0625rem rgba(255, 255, 255, 0.5);
 }
 
-/*  The same glow on a pale ground, where white on white is nothing at all. A mark made of light
-    only works where there is a dark to make it against, so here it is made of the ground's
-    opposite instead and the card glows black - the same two layers, held just as close, so the
-    speaker is picked out the same way in both places. Which ground a page is on is said in its
-    address; see bg in obs.php. */
+/*  The same mark on a pale ground. The light inside the card stays as it is - the card is dark
+    whatever it stands on - and what little is thrown outside is made of the ground's opposite
+    instead, so the card is edged with shade rather than with light. Which ground a page is on
+    is said in its address; see bg in obs.php. */
 html.bg-light .pc.speak::before {
 	box-shadow:
-		0 0 0.625rem 0.0625rem rgba(0, 0, 0, 0.55),
-		0 0 1.375rem 0.25rem rgba(0, 0, 0, 0.3);
+		inset 0 0 1.5rem 0.1875rem rgba(255, 255, 255, 0.58),
+		0 0 0.625rem 0.0625rem rgba(0, 0, 0, 0.5);
 }
 
 /*  The winners stay bright and the losers are muted, once the game is over. */
@@ -835,11 +836,16 @@ html.bg-light .pc.speak::before {
 
 /*  The chips are see-through here, because they stand on the camera picture rather than on a
     pill, and a solid charcoal circle over a bright hall reads as a hole. */
+/*  The same chip as the one on a card, at the same size and in the same colours - it names
+    the same seats, and a reader should not have to work out that the big circle up here and
+    the little one down there are the same number. The sheriff keeps the dark figure the gold
+    is given everywhere else; it used to be forced back to white here, on gold, with a dark
+    shadow under it, which came out muddy. */
 .bm .chip {
-	width: 2.5rem;
-	height: 2.5rem;
-	color: #fff;
-	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.6);
+	width: 1.875rem;
+	height: 1.875rem;
+	font-size: 0.8125rem;
+	font-weight: 700;
 }
 
 .bm .chip.b {

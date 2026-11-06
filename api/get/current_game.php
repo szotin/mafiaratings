@@ -479,6 +479,22 @@ class ApiPage extends GetApiPageBase
 			// table would read as voting against one person - and only the count in play, so
 			// that a table that has split puts its hands down. See game_log_votes().
 			$game->votes = game_log_votes($this->game);
+
+			// And the count the table split on, where it has split: those hands are down and
+			// the day is not standing on them any more, but they are the reason the tied
+			// players are speaking again, and without them a broadcast shows two seats with
+			// nothing against them and no way of telling how either got there. It goes out
+			// only while the new count has nothing in it yet - once the moderator starts
+			// counting again, what is being counted now is the only thing worth showing.
+			$voting_round = game_log_voting_round($this->game, (int)$g->time->round);
+			if ($voting_round > 0 && empty($game->votes))
+			{
+				$split = game_log_votes($this->game, $voting_round - 1);
+				if (!empty($split))
+				{
+					$game->splitVotes = $split;
+				}
+			}
 		}
 
 		// The game told in words, for a text broadcast - the same words view_game.php shows
@@ -705,6 +721,7 @@ class ApiPage extends GetApiPageBase
  			$param->sub_param('nominees', 'Array of players currently nominated, in the order the moderator calls them. When the table has split, only the players who tied are here. It is set only in the day phase.');
  			$param->sub_param('votingCanceled', 'Boolean which is true when votings were canceled (most likely because someone was mod-killed). It is set only in the day phase.');
  			$param->sub_param('votes', 'Array of the hands counted in the current round, each {nominee, voters}, where voters is an array of player numbers in the order they sit. Only the count being taken: when a table splits every hand comes down, so this is empty again until the new count begins. A count the moderator is still taking is not here at all - it shows up when they move on from it. The last name of a count is the exception: it holds everybody who was not counted for anybody else, so it is here as soon as the counting reaches it. It is set only in the day phase.');
+ 			$param->sub_param('splitVotes', 'The count a table split on, each {nominee, voters} as in votes. It is set while the tied players are speaking again and the new count has nothing in it yet: those hands are down, but they are the reason the speeches are happening. It is set only in the day phase.');
  			$param->sub_param('live', 'True while there is a game to follow at the table: from the moment the roles start being handed out to the moment the game is played out. It is set only when log is asked for.');
  			$param->sub_param('log', 'The game told in words, as an array of {night, round, lines} - the same words the site shows under a game that has been played, in the order they happened and grouped by the day or the night each belongs to. A step the moderator is still standing in is held back until they move on from it. It is set only when log is asked for.');
 				
