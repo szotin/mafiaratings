@@ -316,15 +316,17 @@ class Page extends StreamsPageBase
 		$this->show_setting(get_label('Language'), $html);
 		echo '</table>';
 
-		// The cards over the game itself. They are three sources rather than one so that a
-		// stream can put the players and the info bar wherever it likes.
+		// The cards over the game itself: one source, the whole screen, transparent where
+		// nothing is drawn. The halves of it - plugins/obs/players.php and gamestats.php, the
+		// same drawing with one half left out - are not offered here. They were, so that a
+		// stream could place the cards and the info bar apart, but nothing has been set up
+		// that way and they have not kept up with the overlay itself. The files stay where
+		// they are; an address somebody already has in OBS goes on working.
 		echo '<h3 class="stream-section">' . get_label('Glyphs') . '</h3>';
 		$this->open_settings_table();
 		if ($table != VIEW_ALL_TABLES)
 		{
-			$this->show_url(get_label('Glyphs and info full screen'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope, '1920 x 1080');
-			$this->show_url(get_label('Glyphs only'), 'url-players', $site . '/plugins/obs/players.php?' . $scope, '1920 x 360');
-			$this->show_url(get_label('Info only'), 'url-gamestats', $site . '/plugins/obs/gamestats.php?' . $scope, '1920 x 200');
+			$this->show_url(get_label('URL'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope, '1920 x 1080');
 		}
 
 		// Nothing stands in glyphs-detail at the moment - the roles, which used to, belong to
