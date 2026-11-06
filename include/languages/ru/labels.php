@@ -2146,6 +2146,7 @@ $labelMenu = array (
 'Leave full screen' => 'Выйти из полноэкранного режима', // text_broadcast.php
 'The game is not saved: game [0] at table [1] has already been played (#[2]). Do not close this page - free the number and save again.' => 'Игра не сохранена: игра [0] за столом [1] уже сыграна (#[2]). Не закрывайте страницу — освободите номер и сохраните ещё раз.', // include/game.php
 'A game is on' => 'Идёт игра', // include/broadcast.php
+'No games yet' => 'Игр ещё не было', // include/broadcast.php
 'Live and upcoming' => 'Текущие и будущие', // include/broadcast.php
 'Nothing is on the air right now.' => 'Сейчас ничего не транслируется.', // include/broadcast.php
 'Broadcasts from various events.' => 'Трансляции с различных мероприятий', // include/general_page_base.php

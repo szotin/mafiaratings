@@ -1278,11 +1278,17 @@ function broadcast_started_expr($now)
 
 // What the light says of itself, in one place: it is written into the page when the page is
 // drawn and into the script that keeps it up to date, and the two must say the same thing.
+//
+// Three things, not two. A table with no game on it is either between games or has not started
+// playing yet, and those are not the same answer to somebody deciding whether to open it: one
+// is a table that has been playing all evening and is changing over, the other a camera
+// pointed at an empty hall. Green, amber and red, in that order.
 function broadcast_light_labels()
 {
 	$labels = new stdClass();
 	$labels->on = get_label('A game is on');
-	$labels->off = get_label('Between games');
+	$labels->idle = get_label('Between games');
+	$labels->off = get_label('No games yet');
 	return $labels;
 }
 
@@ -1290,11 +1296,13 @@ function broadcast_light_labels()
 // the script can find it again without being told the order the squares came out in - and that
 // name carries the competition as well as the number, because the page of a club has the tables
 // of several of them on it. See stream_live_key().
-function broadcast_light_html($key, $on)
+function broadcast_light_html($key, $on, $played)
 {
 	$labels = broadcast_light_labels();
-	return '<span class="bc-light ' . ($on ? 'on' : 'off') . '" data-live="' . htmlspecialchars($key) .
-		'" title="' . htmlspecialchars($on ? $labels->on : $labels->off) . '"></span>';
+	$state = $on ? 'on' : ($played ? 'idle' : 'off');
+	$title = $on ? $labels->on : ($played ? $labels->idle : $labels->off);
+	return '<span class="bc-light ' . $state . '" data-live="' . htmlspecialchars($key) .
+		'" title="' . htmlspecialchars($title) . '"></span>';
 }
 
 // The lights, kept up to date while the page is open. Somebody picking a table to follow is
@@ -1310,6 +1318,7 @@ function show_broadcast_lights_script($scope)
 	$options->url = 'api/get/live_tables.php' . ($scope->param == '' ? '' : ('?' . $scope->param));
 	$options->delay = BROADCAST_LIGHT_DELAY;
 	$options->onLabel = $labels->on;
+	$options->idleLabel = $labels->idle;
 	$options->offLabel = $labels->off;
 
 	$script = <<<'SCRIPT'
@@ -1338,11 +1347,24 @@ $(function()
 			{
 				on[answer.playing[i]] = true;
 			}
+
+			// And which of them have played at all today. A table whose first game ends while
+			// somebody has this page open goes from red to amber there and then, which is the
+			// one change on the page worth watching for: that is the table coming to life.
+			var had = {};
+			var played = answer.played || [];
+			for (var i = 0; i < played.length; ++i)
+			{
+				had[played[i]] = true;
+			}
+
 			lights.each(function()
 			{
-				var live = (on[$(this).attr('data-live')] === true);
-				$(this).attr('class', 'bc-light ' + (live ? 'on' : 'off'));
-				$(this).attr('title', live ? broadcastLights.onLabel : broadcastLights.offLabel);
+				var key = $(this).attr('data-live');
+				var state = (on[key] === true) ? 'on' : ((had[key] === true) ? 'idle' : 'off');
+				$(this).attr('class', 'bc-light ' + state);
+				$(this).attr('title', (state == 'on') ? broadcastLights.onLabel :
+					((state == 'idle') ? broadcastLights.idleLabel : broadcastLights.offLabel));
 			});
 		});
 	}
@@ -1409,7 +1431,7 @@ function show_broadcast_tile($tile)
 	// not begun, carries none: there is nothing for it to be saying.
 	if (isset($tile->key) && isset($tile->on))
 	{
-		echo broadcast_light_html($tile->key, $tile->on);
+		echo broadcast_light_html($tile->key, $tile->on, isset($tile->played) && $tile->played);
 	}
 	echo $tile->kind . '</td></tr>';
 	echo '</table>';
@@ -1795,10 +1817,11 @@ function show_broadcasts($scope)
 		}
 		$live = array_merge($live, $text);
 
-		// Which of those tables are playing right now, asked once for the whole page. The ones
-		// with a game on come first: a table between games is still worth opening, but a table
-		// with a game at it is what somebody came for, and on a page that lists a whole league
-		// there can be rows of squares before the first of them.
+		// Which of those tables are playing right now and which have played at all, asked once
+		// each for the whole page. They come out in that order: a table with a game on is what
+		// somebody came for, a table between games is worth opening and waiting at, and a table
+		// that has not begun is worth neither yet. On a page that lists a whole league there can
+		// be rows of squares before the first of them.
 		//
 		// Sorted by hand rather than with usort(), which does not promise to leave equals where it
 		// found them on every PHP we run on - and the order they are already in is the order the
@@ -1806,21 +1829,28 @@ function show_broadcasts($scope)
 		if (!empty($live))
 		{
 			$playing = stream_live_keys($scope->condition);
+			$played = stream_played_keys($scope->condition, $now);
 			$on = array();
+			$idle = array();
 			$off = array();
 			foreach ($live as $tile)
 			{
 				$tile->on = isset($playing[$tile->key]);
+				$tile->played = isset($played[$tile->key]);
 				if ($tile->on)
 				{
 					$on[] = $tile;
+				}
+				else if ($tile->played)
+				{
+					$idle[] = $tile;
 				}
 				else
 				{
 					$off[] = $tile;
 				}
 			}
-			$live = array_merge($on, $off);
+			$live = array_merge($on, $idle, $off);
 		}
 
 		if (empty($live) && empty($future))

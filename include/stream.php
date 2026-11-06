@@ -25,6 +25,11 @@ define('STREAM_DEFAULT_DELAY', 15); // seconds a screen stays up
 define('STREAM_MIN_DELAY', 1);
 define('STREAM_MAX_DELAY', 600);
 
+// How long ago a game may have ended and still count as "this table has been playing" - see
+// stream_played_keys(). Half a day: long enough to cover an evening that runs past midnight,
+// short enough that yesterday says nothing about tonight.
+define('STREAM_PLAYED_SINCE', 12 * 60 * 60);
+
 // Whether this thing can be followed in words right now: it has begun, and nobody has marked
 // it over or called it off. A text broadcast of a tournament that is finished would show the
 // standings and nothing else, which the tournament's own pages say better, and one of a
@@ -190,6 +195,44 @@ function stream_live_keys($condition)
 		$playing[stream_live_key($tournament_id, $event_id, $table_num)] = true;
 	}
 	return $playing;
+}
+
+// And the tables that have been playing this evening. Between the two of them a light can say
+// three things rather than two: a game is on, the table is between games, or nothing has
+// happened there yet. The middle one is what somebody wants to know - a table that has been
+// playing all evening and is changing over is worth waiting at, and one that has not begun is
+// not.
+//
+// A game in games is a finished game: a game being played is in current_games until it is
+// written down. The table is asked about what it has played in this round or this tournament -
+// whichever the page is about, which is what the condition carries - because that is what the
+// light beside it is of.
+//
+// What settles it is when the game ended, and nothing else. A game of the last half-day says
+// this table has been playing; one from yesterday says nothing about this evening, however the
+// round it belongs to stands. Anything taken from the round instead would get both ends of it
+// wrong: a tournament whose first round has been marked over would go dark between rounds,
+// the second day of one would come up already lit, and an online league entered as a single
+// round running for a month would never light at all.
+//
+// That is what keeps the question cheap enough to ask every few seconds, too. Games are
+// indexed by the time they ended, and the games of the last half-day are a handful across the
+// whole site however many have ever been played; the rounds they belong to are then looked up
+// one by one by their keys.
+function stream_played_keys($condition, $now)
+{
+	$played = array();
+	$query = new DbQuery(
+		'SELECT DISTINCT e.tournament_id, g.event_id, g.table_num FROM games g' .
+		' JOIN events e ON e.id = g.event_id' .
+		' WHERE g.table_num IS NOT NULL AND g.end_time >= ' . ((int)$now - STREAM_PLAYED_SINCE) .
+		' AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0 AND ', $condition);
+	while ($row = $query->next())
+	{
+		list ($tournament_id, $event_id, $table_num) = $row;
+		$played[stream_live_key($tournament_id, $event_id, $table_num)] = true;
+	}
+	return $played;
 }
 
 // The language a page standing at a table is to be shown in, worked out from the address it
@@ -406,13 +449,14 @@ function stream_event_tables($event_id)
 		return $tables;
 	}
 
-	// Games count their tables from zero, so the highest of them is one short of how many
-	// there are. Both the games that are over and the ones being played right now.
+	// Games count their tables from one, as everything but event_broadcasts does, so the
+	// highest of them is how many there are. Both the games that are over and the ones being
+	// played right now.
 	list ($played) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM games WHERE event_id = ?', $event_id);
 	list ($playing) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM current_games WHERE event_id = ?', $event_id);
 	if (!is_null($played) || !is_null($playing))
 	{
-		return max((int)$played, (int)$playing) + 1;
+		return max((int)$played, (int)$playing);
 	}
 	return (int)$scheme;
 }
