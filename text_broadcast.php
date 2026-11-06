@@ -20,6 +20,10 @@ require_once 'include/stream.php'; // the language this table is set to show
 // stream of that table uses, and reaches this page without anybody retyping a link.
 
 define('TB_DELAY', 2000); // how often (in milliseconds) the page asks what is happening
+// And how often it asks whether the table has been set up differently since. Only the language
+// matters to this page, and a language is changed by hand once in a while, so it is asked for
+// far more rarely than the game itself.
+define('TB_SETTINGS_DELAY', 10000);
 
 // In the language the table is set to show, the same as the stream of it - see
 // stream_request_lang(). Nothing about this page is in its address but the table.
@@ -62,6 +66,21 @@ $locale = get_lang_code($_lang);
 $options = new stdClass();
 $options->gameUrl = 'api/get/current_game.php?' . $scope . '&log=1&lang=' . $locale;
 $options->delay = TB_DELAY;
+// The language a table is shown in can be changed on the site while it is being broadcast. The
+// plates inside the two frames watch for that and load themselves again; this is the page around
+// them doing the same for its own words - the headings between the lines, the button, and the
+// log itself, which the site writes in the language this page asks it for. None of it can be put
+// into another language where it stands, so the page is loaded again instead.
+//
+// A table with no language of its own is left out of it: the page then follows the reader - the
+// address or their session - and the answer would say English against a page they are reading in
+// their own language. See stream_request_lang(), which is what both sides of this read.
+$stream_lang = stream_request_lang();
+$options->locale = ($stream_lang > 0) ? get_lang_code($stream_lang) : NULL;
+// viewer=1: a reader is not the table, and nothing they ask for is word from it - see
+// api/get/stream.php.
+$options->settingsUrl = 'api/get/stream.php?op=settings&' . $scope . '&viewer=1';
+$options->settingsInterval = TB_SETTINGS_DELAY;
 // The headings between which the lines are grouped. They are made here so that they are in the
 // language the rest of the page is in, rather than built out of pieces in the script.
 $options->dayLabel = get_label('Day [0]', '[0]');
@@ -293,6 +312,28 @@ echo '</button>';
 		}
 	}
 
+	// Whether this table is still shown in the language this page was written in. See the
+	// options above, and settings() in plugins/obs/obs.js, which is the same watch kept by the
+	// pages inside the frames.
+	function settings()
+	{
+		fetch(options.settingsUrl).
+			then(function(response) { return response.ok ? response.json() : Promise.reject(response.status); }).
+			then(function(answer)
+			{
+				if (!answer || !answer.stream || !answer.stream.locale)
+				{
+					return;
+				}
+				if (answer.stream.locale != options.locale)
+				{
+					options.locale = answer.stream.locale; // so that one change asks for one reload
+					window.location.reload();
+				}
+			}).
+			catch(function(error) { /* the site is not answering: leave the page as it stands */ });
+	}
+
 	function ask()
 	{
 		fetch(options.gameUrl).
@@ -404,6 +445,10 @@ echo '</button>';
 	setLive(false);
 	ask();
 	setInterval(ask, options.delay);
+	if (options.locale)
+	{
+		setInterval(settings, options.settingsInterval);
+	}
 })();
 </script>
 </body></html>

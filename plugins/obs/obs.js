@@ -473,6 +473,9 @@ var obs = new function()
 		}
 
 		var context = playersContext(g);
+		// Measured before the cells are written again: a vote that is about to go is measured where
+		// it still stands, because a moment later the card it stood on no longer holds it.
+		var going = snapVotes(div);
 		for (var i = 0; i < count; ++i)
 		{
 			var player = players[i] ? players[i] : { number: i + 1 };
@@ -489,6 +492,7 @@ var obs = new function()
 
 		fitNames(div);
 		flyVotes(div);
+		flyBack(div, going);
 		riseStacks(div);
 	}
 
@@ -501,6 +505,15 @@ var obs = new function()
 		context.over = isOver(g);
 		context.winners = g.state == 'townWon' ? 'town' : (g.state == 'mafiaWon' ? 'maf' : '');
 		context.out = votedOut(g);
+
+		// How long the hands stay up: all through the counting, and then through the last word
+		// of whoever they put out. A table listening to that speech is still looking at the vote
+		// that caused it - who was against them, and how close it was - and the speech is where
+		// that is talked about. When it ends the whole thing goes, and nothing is left over the
+		// card: a player who left the game is told by the mark in the corner of their own card,
+		// not by numbers standing above it.
+
+		context.counting = (context.voting || (context.out !== null && context.out.isSpeaking));
 		// The hands as the game has them now, and nothing the overlay is holding of its own: the
 		// count the moderator is taking is the only one that stands, and when it is taken away -
 		// a table that splits puts every hand down, and a moderator who steps the game back
@@ -518,10 +531,11 @@ var obs = new function()
 
 		// The count the table split on. Those hands are down - that is what a split means - but
 		// they are the reason the speeches are happening, so they stay on the screen through
-		// them rather than leaving two seats standing there with nothing against either. The
-		// site sends them only while the new count is still empty, so the moment the moderator
-		// starts counting again these give way to what is being counted now.
-		if (context.max <= 0 && g.splitVotes)
+		// them rather than leaving two seats standing there with nothing against either. Through
+		// the speeches and no further: when the last of them ends and the table is asked again,
+		// the cards over those same seats are where the new hands are about to land, and an old
+		// count sitting in them would be read as the new one.
+		if (context.tie && context.max <= 0 && g.splitVotes)
 		{
 			for (var k = 0; k < g.splitVotes.length; ++k)
 			{
@@ -580,7 +594,6 @@ var obs = new function()
 	function cellHtml(g, player, context)
 	{
 		var role = roleOf(player);
-		var known = (player.id > 0);
 		var dead = (player.state == 'dead');
 		var classes = ['pc'];
 
@@ -592,7 +605,7 @@ var obs = new function()
 		}
 		else if (role == '')
 		{
-			classes.push(known ? 'none' : 'none');
+			classes.push('none');
 		}
 		else
 		{
@@ -627,30 +640,23 @@ var obs = new function()
 			'<span class="nick">' + escapeHtml(player.name ? player.name : '') + '</span></div>' +
 			'</div>';
 
-		// What stands above the card: the best guess, the votes being cast, or the pill saying who
-		// voted this player out. Never two of them at once - they are all the same space.
-		//
-		// The pill is the game's own word rather than the hands the overlay is holding: those are
-		// the count being taken and they come down with the day, while the numbers that put a
-		// player out stay over their card to the end of the game - see votedOutBy in
-		// api/get/current_game.php.
+		// What stands above the card: the hands being counted, or the best guess of the player
+		// shot on the first night. Never both at once - they are the same space.
 		var above = '';
-		var cellClass = 'cell';
-		if (player.votedOutBy && player.votedOutBy.length > 0)
-		{
-			var voters = player.votedOutBy;
-			above = votedOutPill(g, voters);
-			cellClass += ' vbo' + (voters.length > 5 ? ' r2' : ' r1');
-		}
-		else if (context.voting && (context.votes[player.number] || context.named[player.number]))
+		var held = false;
+		if (context.counting && (context.votes[player.number] || context.named[player.number]))
 		{
 			above = voteCard(g, player, context);
+			// And whether the count has to be held where it is. The card under it is the card of a
+			// player who has just been voted out, which is shorter than a living one, and the count
+			// is still up because they are speaking their last word. See .cell.held in obs.css.
+			held = (player.state == 'dead');
 		}
 		else if (context.legacy && context.legacyOf == player.number)
 		{
 			above = bestGuess(g, context);
 		}
-		return '<div class="' + cellClass + '">' + above + card + '</div>';
+		return '<div class="cell' + (held ? ' held' : '') + '">' + above + card + '</div>';
 	}
 
 	function roleIcon(role)
@@ -767,20 +773,6 @@ var obs = new function()
 			'<div class="stk-c" style="--per:' + perRow(voters.length) + '">' + chips + '</div></div>';
 	}
 
-	// The pill above a dropped card: who voted that player out. It is exactly as wide as the card,
-	// and with six voters or more the chips take two rows and the pill grows upward - the card
-	// below it keeps the height every other dead card has, so that the row of the dead stays even.
-	function votedOutPill(g, voters)
-	{
-		var chips = '';
-		for (var i = 0; i < voters.length; ++i)
-		{
-			chips += '<div class="chip xs ' + chipClass(byNumber(g.players, voters[i])) + '">' + voters[i] + '</div>';
-		}
-		return '<div class="vby"><span class="vbi">' + IC.thumb + '</span>' +
-			'<div class="vbc" style="--per:' + perRow(voters.length) + '">' + chips + '</div></div>';
-	}
-
 	// How many chips go in a row, so that two rows come out even: seven votes are four and three
 	// rather than five and two.
 	function perRow(count)
@@ -880,6 +872,7 @@ var obs = new function()
 				var at = seat.getBoundingClientRect();
 				chip.style.setProperty('--dx', (at.left - to.left) + 'px');
 				chip.style.setProperty('--dy', (at.top - to.top) + 'px');
+				chip.style.setProperty('--lift', lift(at.left - to.left, to.height) + 'px');
 				chip.classList.add('fly');
 			}
 		}
@@ -904,6 +897,139 @@ var obs = new function()
 			}
 		}
 		stacks = seen;
+	}
+
+	// How high above the straight line the throw goes. A vote from the next seat is tossed a
+	// little way up, one from across the table a good deal higher, and nothing is thrown higher
+	// than about two and a half chips: the lift is measured in the chip's own size so that it
+	// comes out the same at every source size, the whole drawing being in rem.
+	function lift(dx, size)
+	{
+		return Math.min(Math.abs(dx) * 0.14 + size * 0.8, size * 2.6);
+	}
+
+	// What the vote cards hold right now, taken before the cells are written again. Whatever is
+	// not on the screen afterwards is seen leaving from where this says it stood.
+	function snapVotes(div)
+	{
+		var snap = { chips: [], cards: [] };
+		if (noMotion())
+		{
+			return snap;
+		}
+		var cards = div.querySelectorAll('.stk[data-seat]');
+		for (var i = 0; i < cards.length; ++i)
+		{
+			var card = cards[i];
+			// The card of a nominee who was not voted out stands at a third of its ink, so a copy
+			// of it has to start there too rather than at full strength. It is read off the class
+			// rather than asked of the browser: a card that is still rising answers nothing useful,
+			// and this is the only thing that dims one - see .stk.fade in obs.css.
+			var dim = card.classList.contains('fade') ? '0.35' : '1';
+			// The card itself, not a copy of it: writing the cell again takes this one out of the
+			// page but leaves it whole in hand, which is all a thing that is leaving needs.
+			snap.cards.push({ seat: card.getAttribute('data-seat'), dim: dim,
+				rect: card.getBoundingClientRect(), node: card });
+			var chips = card.querySelectorAll('.stk-c .chip[data-from]');
+			for (var k = 0; k < chips.length; ++k)
+			{
+				snap.chips.push({ from: chips[k].getAttribute('data-from'), cls: chips[k].className,
+					dim: dim, rect: chips[k].getBoundingClientRect() });
+			}
+		}
+		return snap;
+	}
+
+	// A count that is taken down does not simply go out. Every vote goes back to the player who
+	// gave it, thrown along the same curve it arrived by and settling into their seat number; and
+	// when the whole card goes - the hands are down, or the last word of whoever they put out is
+	// over - the glass stays where it was for a moment longer, emptied, and fades behind them.
+	//
+	// The cells have already been written again without any of this, so what moves is laid over
+	// the page at the place it stood in: a fresh chip for each vote, and the card itself, which
+	// writing the cell again left detached and whole.
+	function flyBack(div, was)
+	{
+		var i;
+		var here = {};
+		var chips = div.querySelectorAll('.stk-c .chip[data-from]');
+		for (i = 0; i < chips.length; ++i)
+		{
+			here[chips[i].getAttribute('data-from')] = true;
+		}
+		for (i = 0; i < was.chips.length; ++i)
+		{
+			var vote = was.chips[i];
+			if (here[vote.from])
+			{
+				continue;
+			}
+			var seat = seatOf(div, vote.from);
+			var at = seat ? seat.getBoundingClientRect() : null;
+			// Into the middle of the seat number, which is smaller than the chip in the air.
+			var dx = at ? at.left + (at.width - vote.rect.width) / 2 - vote.rect.left : 0;
+			var dy = at ? at.top + (at.height - vote.rect.height) / 2 - vote.rect.top : 0;
+			var ghost = document.createElement('div');
+			// Without the class that flew it in: it is going the other way now.
+			ghost.className = vote.cls.replace(' fly', '') + ' ghost';
+			ghost.textContent = vote.from;
+			ghost.style.setProperty('--dx', dx + 'px');
+			ghost.style.setProperty('--dy', dy + 'px');
+			ghost.style.setProperty('--lift', lift(dx, vote.rect.height) + 'px');
+			layOver(ghost, vote.rect, vote.dim);
+		}
+
+		here = {};
+		var cards = div.querySelectorAll('.stk[data-seat]');
+		for (i = 0; i < cards.length; ++i)
+		{
+			here[cards[i].getAttribute('data-seat')] = true;
+		}
+		for (i = 0; i < was.cards.length; ++i)
+		{
+			var card = was.cards[i];
+			if (here[card.seat])
+			{
+				continue;
+			}
+			var copy = card.node;
+			var votes = copy.querySelector('.stk-c');
+			if (votes)
+			{
+				// The chips are in the air on their way home; the copy keeps only the glass and the
+				// count, and the height it is given holds its shape without them.
+				votes.parentNode.removeChild(votes);
+			}
+			copy.classList.remove('rise');
+			copy.classList.add('ghost');
+			layOver(copy, card.rect, card.dim);
+		}
+	}
+
+	// Puts a copy where the thing it is a copy of stood, on top of everything, and takes it away
+	// when its animation is over. The timer is only in case the animation never reports itself.
+	function layOver(ghost, rect, dim)
+	{
+		ghost.style.left = rect.left + 'px';
+		ghost.style.top = rect.top + 'px';
+		ghost.style.width = rect.width + 'px';
+		ghost.style.height = rect.height + 'px';
+		ghost.style.setProperty('--go', dim);
+		document.body.appendChild(ghost);
+		var done = function()
+		{
+			if (ghost.parentNode)
+			{
+				ghost.parentNode.removeChild(ghost);
+			}
+		};
+		ghost.addEventListener('animationend', done);
+		setTimeout(done, 2000);
+	}
+
+	function noMotion()
+	{
+		return window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
 	}
 
 	function seatOf(div, number)

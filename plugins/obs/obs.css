@@ -100,6 +100,10 @@ body.hidden-source > * {
 	--amber: #FFB547;
 	--moon: #C9D4FF;
 	--card-sh: 0 0.625rem 1.625rem rgba(0, 0, 0, 0.4);
+	/*  How tall a player's card is, and how tall it is once they have left the game. The two are
+	    named because the difference between them is used as well - see .cell.held. */
+	--card: 12.75rem;
+	--card-dead: 9.625rem;
 }
 
 /*  The players view is the strip and what stands above it; the info bar view is the pills. Both
@@ -220,13 +224,14 @@ html.no-scrim .ov::after {
 }
 
 /*  A seat nobody has a role for yet - while the roles are being handed out, and on the cards of
-    the next game. A plain pale grey: it must not read as a mafia chip, which is dark, nor as a
-    town one, which is red, and the thin white glass it used to be took the colour of whatever
-    it stood on - dark over a dark hall, and all but invisible over a bright one. */
+    the next game. Near-white with a dark digit, the way the sheriff's gold carries one: a pale
+    translucent grey still came out middling over a dark hall, close enough to the mafia chip to
+    be taken for one, and a solid fill cannot take the colour of whatever it stands on. */
 .chip.n {
-	background: rgba(188, 194, 204, 0.58);
-	color: #fff;
-	box-shadow: none;
+	background: #DBDFE6;
+	color: #23202A;
+	text-shadow: none;
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.45);
 }
 
 .chip.sm { width: 1.6875rem; height: 1.6875rem; font-size: 0.75rem; }
@@ -504,7 +509,7 @@ html.no-scrim .ov::after {
 
 .pc {
 	position: relative;
-	height: 12.75rem;
+	height: var(--card);
 	border-radius: 1.25rem;
 	box-shadow: var(--card-sh);
 	transition: height 0.4s ease, filter 0.35s ease;
@@ -521,10 +526,13 @@ html.no-scrim .ov::after {
 }
 
 /*  A seat whose role nobody has been shown yet. The sheriff and the don wear the card of their
-    own side: only the icon and the seat chip tell them apart. */
+    own side: only the icon and the seat chip tell them apart.
+    A plain grey, about as light as the town's red is bright. The dark grey it used to be stood a
+    dozen levels off the mafia's near-black and read as the same card, and a card of no side has
+    to be told from both at a glance. */
 .pc.none {
-	background: radial-gradient(120% 70% at 50% 18%, #5A4E54 0%, rgba(90, 78, 84, 0) 70%),
-		linear-gradient(180deg, #3A3236 0%, #211B1E 60%, #120E10 100%);
+	background: radial-gradient(120% 70% at 50% 18%, #ADA4AD 0%, rgba(173, 164, 173, 0) 70%),
+		linear-gradient(180deg, #8A828B 0%, #615A63 60%, #353036 100%);
 }
 
 .pc .clip {
@@ -615,9 +623,10 @@ html.no-scrim .ov::after {
 }
 
 .pc.none .seat {
-	background: rgba(188, 194, 204, 0.58);
-	color: #fff;
-	box-shadow: none;
+	background: #DBDFE6;
+	color: #23202A;
+	text-shadow: none;
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.45);
 }
 
 /*  The nickname lies across the whole card and keeps clear of the chip, so that a short name
@@ -763,7 +772,7 @@ html.no-scrim .ov::after {
 
 /*  A player who is out. The card drops, the photograph goes grey under a dark wash, and the name
     dims - but the card never moves sideways and the ones beside it stay where they are. */
-.pc.dead { height: 9.625rem; }
+.pc.dead { height: var(--card-dead); }
 .pc.dead .ph { filter: saturate(0.25) brightness(0.75); }
 
 .pc.dead .clip::before {
@@ -919,20 +928,87 @@ html.bg-light .pc.speak::before {
 	100% { opacity: 1; transform: none; }
 }
 
-/*  A vote arrives as a copy of the voter's seat chip and flies from their card to this one. */
+/*  A vote arrives as a copy of the voter's seat chip, thrown from their card up onto this one,
+    and goes back the same way when the count is taken down. Not along the straight line between
+    the two: it is lifted above that line and comes down onto its place, the way anything tossed
+    across a table travels.
+    The curve is written out as keyframes rather than left to the easing, because a parabola is a
+    path and an easing curve only says how fast a point moves along one. --dx and --dy are where
+    the chip starts and --lift how high the throw goes, all three measured by flyVotes() in
+    obs.js; the sideways part falls off evenly and the up-and-down part carries 4t(1-t) of the
+    lift on top of it, which is the parabola. It is cut into eight steps rather than four, so
+    that the straight lines between them are short enough to read as a curve, and the steps are
+    spaced wide at the start and close at the end, so the chip is quick to leave and slow to
+    arrive. */
 .stk-c .chip.fly {
-	animation: fly 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+	animation: fly 0.62s linear both;
 }
 
 @keyframes fly {
-	0% { transform: translate(var(--dx, 0), var(--dy, 5rem)); }
+	0% { transform: translate(var(--dx, 0px), var(--dy, 5rem)); }
+	12.5% { transform: translate(calc(var(--dx, 0px) * 0.7656), calc(var(--dy, 5rem) * 0.7656 - var(--lift, 2rem) * 0.7178)); }
+	25% { transform: translate(calc(var(--dx, 0px) * 0.5625), calc(var(--dy, 5rem) * 0.5625 - var(--lift, 2rem) * 0.9844)); }
+	37.5% { transform: translate(calc(var(--dx, 0px) * 0.3906), calc(var(--dy, 5rem) * 0.3906 - var(--lift, 2rem) * 0.9521)); }
+	50% { transform: translate(calc(var(--dx, 0px) * 0.25), calc(var(--dy, 5rem) * 0.25 - var(--lift, 2rem) * 0.75)); }
+	62.5% { transform: translate(calc(var(--dx, 0px) * 0.1406), calc(var(--dy, 5rem) * 0.1406 - var(--lift, 2rem) * 0.4834)); }
+	75% { transform: translate(calc(var(--dx, 0px) * 0.0625), calc(var(--dy, 5rem) * 0.0625 - var(--lift, 2rem) * 0.2344)); }
+	87.5% { transform: translate(calc(var(--dx, 0px) * 0.0156), calc(var(--dy, 5rem) * 0.0156 - var(--lift, 2rem) * 0.0615)); }
 	100% { transform: none; }
+}
+
+/*  The way back: the same curve read the other way, into the seat the vote came from, where the
+    chip shrinks into the seat number and is gone. What flies is a copy laid over the page - the
+    card it stood on has already been written again without it - see flyBack() in obs.js. */
+.chip.ghost {
+	position: fixed;
+	z-index: 90;
+	margin: 0;
+	box-sizing: border-box;
+	pointer-events: none;
+	animation: fly-home 0.62s linear both;
+}
+
+@keyframes fly-home {
+	0% { transform: none; opacity: var(--go, 1); }
+	12.5% { transform: translate(calc(var(--dx, 0px) * 0.2344), calc(var(--dy, 0px) * 0.2344 - var(--lift, 2rem) * 0.7178)); }
+	25% { transform: translate(calc(var(--dx, 0px) * 0.4375), calc(var(--dy, 0px) * 0.4375 - var(--lift, 2rem) * 0.9844)); }
+	37.5% { transform: translate(calc(var(--dx, 0px) * 0.6094), calc(var(--dy, 0px) * 0.6094 - var(--lift, 2rem) * 0.9521)); }
+	50% { transform: translate(calc(var(--dx, 0px) * 0.75), calc(var(--dy, 0px) * 0.75 - var(--lift, 2rem) * 0.75)); }
+	62.5% { transform: translate(calc(var(--dx, 0px) * 0.8594), calc(var(--dy, 0px) * 0.8594 - var(--lift, 2rem) * 0.4834)); }
+	75% { transform: translate(calc(var(--dx, 0px) * 0.9375), calc(var(--dy, 0px) * 0.9375 - var(--lift, 2rem) * 0.2344)); opacity: var(--go, 1); }
+	87.5% { transform: translate(calc(var(--dx, 0px) * 0.9844), calc(var(--dy, 0px) * 0.9844 - var(--lift, 2rem) * 0.0615)) scale(0.88); }
+	100% { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.66); opacity: 0; }
+}
+
+/*  The glass the votes stood on, when the whole count goes rather than only its chips. It holds
+    its place and its size while the votes it held are still in the air, and fades behind them. */
+.stk.ghost {
+	position: fixed;
+	z-index: 89;
+	box-sizing: border-box;
+	pointer-events: none;
+	transition: none;
+	animation: stk-go 0.44s ease-out both;
+}
+
+@keyframes stk-go {
+	0% { opacity: var(--go, 1); transform: none; }
+	100% { opacity: 0; transform: translateY(0.375rem) scale(0.96); }
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.stk-c .chip.fly { animation: none; }
 	.stk.rise { animation: none; }
+	.chip.ghost, .stk.ghost { display: none; }
 }
+
+/*  A seat that has lost its card's height while the count above it is still being read: the
+    player was voted out and this is their last word. The card goes down to its dead height as
+    soon as the game writes the death down, and everything standing above it would come down
+    with it - the hands would drop three rem in the middle of the very speech they caused, and
+    sit lower than the hands over the nominee beside them. The height the card gave up is given
+    back under the count instead, so that only the card changes and the vote stands still. */
+.cell.held .stk { margin-bottom: calc(var(--card) - var(--card-dead)); }
 
 /*  A tie, said in the corner so that the count stays in the middle. */
 .stk-tag {
@@ -956,47 +1032,6 @@ html.bg-light .pc.speak::before {
 }
 
 .stk.fade { opacity: 0.35; }
-
-/*  Once the vote is over the card drops like any other, and the space above it says who voted
-    them out. The pill is exactly as wide as the card, and with six or more voters it takes two
-    rows. The card keeps the height every other dead card has: it used to be shortened to make
-    room for the second row, which left it sitting lower than the dead card beside it - plain to
-    see as soon as a neighbour was dead or taken out. The pill rises instead. */
-.vby {
-	width: 100%;
-	height: 2.75rem;
-	box-sizing: border-box;
-	padding: 0 0.5rem 0 0.5625rem;
-	border-radius: 1rem;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.3125rem;
-	background: rgba(14, 8, 11, 0.65);
-	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.14), 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
-}
-
-.vby .vbi {
-	display: grid;
-	place-items: center;
-	width: 1rem;
-	height: 1rem;
-	flex: none;
-	color: rgba(255, 255, 255, 0.75);
-}
-
-.vby .vbi svg { width: 0.9375rem; height: 0.9375rem; filter: drop-shadow(0 0.0625rem 0.125rem rgba(0, 0, 0, 0.6)); }
-
-.vby .vbc {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 0.25rem;
-	max-width: calc(var(--per, 5) * 1.3125rem + (var(--per, 5) - 1) * 0.25rem);
-}
-
-.cell.vbo { gap: 0.375rem; }
-.cell.vbo.r2 .vby { height: 3.625rem; }
 
 /*--------------------------------------------------------------------------------------
     the game is over
