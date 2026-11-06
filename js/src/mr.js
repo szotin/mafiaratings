@@ -602,9 +602,45 @@ var mr = new function()
 		}
 	}
 	
-	this.eventCreateBroadcast = function(eventId)
+	// Adding a recording to a round. Where the page showing this is the page of one table -
+	// the stream settings - that table is handed over, and the dialog fills it in and locks
+	// it: the question has already been answered by the tab the button stands on.
+	this.eventCreateBroadcast = function(eventId, tableNum)
 	{
-		dlg.form("form/event_add_broadcast.php?event_id=" + eventId, refr, 400);
+		var url = "form/event_add_broadcast.php?event_id=" + eventId;
+		if (tableNum > 0)
+		{
+			url += "&table=" + tableNum + "&fixed=1";
+		}
+		dlg.form(url, refr, 400);
+	}
+
+	// Puts a piece of text - an address, as a rule - in the clipboard. The modern way where the
+	// browser allows it, which it does not on a page served over plain http from anywhere but
+	// the machine it is read on; the old way behind that, which works everywhere and is why a
+	// box is put on the page for the length of the copying and taken away again.
+	this.copyText = function(text)
+	{
+		if (navigator.clipboard && window.isSecureContext)
+		{
+			navigator.clipboard.writeText(text);
+			return;
+		}
+
+		var box = document.createElement("textarea");
+		box.value = text;
+		box.style.position = "fixed";
+		box.style.left = "-1000px";
+		document.body.appendChild(box);
+		box.select();
+		try
+		{
+			document.execCommand("copy");
+		}
+		catch (error)
+		{
+		}
+		document.body.removeChild(box);
 	}
 	
 	this.eventEditBroadcast = function(eventId, day, table, part)

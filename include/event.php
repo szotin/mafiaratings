@@ -570,9 +570,11 @@ class EventPageBase extends PageBase
 				: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->tournament_id))
 			{
 				$manager_menu[] = new MenuItem(null, null, null);
+				// Called by what it is about rather than by what the page is called - see the
+				// same entry in include/tournament.php. The page keeps its own title.
 				$manager_menu[] = new MenuItem(
 					is_null($this->tournament_id) ? ('streams.php?event_id=' . $this->id) : ('streams.php?tournament_id=' . $this->tournament_id),
-					get_label('Stream settings'),
+					get_label('Broadcasts'),
 					get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.'));
 			}
 			

@@ -232,7 +232,11 @@ class TournamentPageBase extends PageBase
 				new MenuItem('tournament_imafia.php?id=' . $this->id, get_label('[0] integration', 'iMafia'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'iMafia')),
 				new MenuItem('tournament_emo.php?id=' . $this->id, get_label('[0] integration', 'Emotion.games'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'emotion.games')),
 				new MenuItem(null, null, null),
-				new MenuItem('streams.php?tournament_id=' . $this->id, get_label('Stream settings'), get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.')),
+				// Called by what it is about rather than by what the page is called: the menu is
+				// a list of things, and 'Stream settings' as an entry in it says the word
+				// Management twice over - it already stands under Management. The page keeps
+				// its own title.
+				new MenuItem('streams.php?tournament_id=' . $this->id, get_label('Broadcasts'), get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.')),
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}

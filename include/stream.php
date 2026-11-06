@@ -378,6 +378,45 @@ function stream_seated_tables($owner)
 	return $tables;
 }
 
+// How many tables one round is played at, or 0 where nothing says so.
+//
+// The seating settles it where there is one: that is somebody stating how many tables this
+// round has, and a final played at one table has nothing to do with the second. Failing that
+// the games are the evidence - they were played somewhere - and failing those the scheme the
+// round was prepared with. Where all three are silent the answer is 0, which means "no
+// telling" rather than "none", and whoever asked should offer every table rather than hide a
+// round nobody has got round to arranging yet.
+function stream_event_tables($event_id)
+{
+	list ($misc, $scheme) = Db::record(get_label('event'), 'SELECT misc, tables FROM events WHERE id = ?', $event_id);
+	$misc = is_null($misc) ? NULL : json_decode($misc);
+	$tables = 0;
+	if (!is_null($misc) && isset($misc->seating->rounds) && is_array($misc->seating->rounds))
+	{
+		foreach ($misc->seating->rounds as $round)
+		{
+			if (is_array($round))
+			{
+				$tables = max($tables, count($round));
+			}
+		}
+	}
+	if ($tables > 0)
+	{
+		return $tables;
+	}
+
+	// Games count their tables from zero, so the highest of them is one short of how many
+	// there are. Both the games that are over and the ones being played right now.
+	list ($played) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM games WHERE event_id = ?', $event_id);
+	list ($playing) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM current_games WHERE event_id = ?', $event_id);
+	if (!is_null($played) || !is_null($playing))
+	{
+		return max((int)$played, (int)$playing) + 1;
+	}
+	return (int)$scheme;
+}
+
 // How many tables are played at, which is what the settings page has a tab for each of.
 //
 // The scheme is what says so, where it has been filled in: that is somebody stating how many

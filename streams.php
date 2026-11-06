@@ -4,6 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/tournament.php';
 require_once 'include/event.php';
 require_once 'include/stream.php';
+require_once 'include/broadcast_table.php';
 
 // How the sources for a stream are set up, a tab per table: the addresses to point OBS at, and
 // everything the between-games screens do. The source is pointed at a table and nothing else,
@@ -41,6 +42,7 @@ class Page extends StreamsPageBase
 	private $view;   // which tab is open: a table, or every table at once
 	private $tables; // how many tables are played at, as far as anything says so
 	private $spare;  // whether a tab is kept past them for a table nobody has counted yet
+	private $rounds; // the rounds whose broadcasts are set up at the bottom of a tab
 
 	protected function prepare()
 	{
@@ -57,6 +59,37 @@ class Page extends StreamsPageBase
 		// the end so that a table can be set up before anybody has played at it.
 		$this->spare = (stream_seated_tables($this->owner) <= 0);
 		$last = $this->tables + ($this->spare ? 1 : 0);
+
+		// The rounds whose recordings are listed under everything else. A tournament has its
+		// rounds, in the order they are played - the main ones first and the finals after them,
+		// nearest last, which is the order the preparation page walks them in. An event standing
+		// on its own is the one round there is. Each carries how many tables it is played at, so
+		// that a round played at one table is not offered on the tab of the second.
+		$this->rounds = array();
+		$query = STREAMS_UNDER_EVENT
+			? new DbQuery('SELECT id, name, round FROM events WHERE id = ?', $this->id)
+			: new DbQuery('SELECT id, name, round FROM events WHERE tournament_id = ? ORDER BY round, start_time, id', $this->id);
+		$finals = array();
+		while ($row = $query->next())
+		{
+			list ($event_id, $name, $round_num) = $row;
+			$event = new stdClass();
+			$event->id = (int)$event_id;
+			$event->name = ($name == '') ? get_round_name((int)$round_num) : $name;
+			$event->tables = stream_event_tables((int)$event_id);
+			if ((int)$round_num == 0)
+			{
+				$this->rounds[] = $event;
+			}
+			else
+			{
+				$finals[] = $event;
+			}
+		}
+		for ($i = count($finals) - 1; $i >= 0; --$i)
+		{
+			$this->rounds[] = $finals[$i];
+		}
 
 		$this->view = VIEW_ALL_TABLES;
 		if (isset($_REQUEST['view']))
@@ -172,6 +205,23 @@ class Page extends StreamsPageBase
 			'<span class="stream-url"><input id="' . $id . '" type="text" readonly value="' . htmlspecialchars($url) . '">' .
 			'<button title="' . get_label('Copy') . '" onclick="copyUrl(\'' . $id . '\')"><img src="images/copy.png"></button></span> ' .
 			$size);
+	}
+
+	// Whether a round has anything to do with the table whose tab is open. A seating says how
+	// many tables a round is played at, so a final played at one has nothing to say on the tab
+	// of the second; where nothing says - no seating, no games, no scheme - every table is
+	// offered, because there is no telling. And a table that already has a broadcast of this
+	// round against it is always offered, whatever the count says: what is written down has to
+	// be there to be corrected.
+	private function round_on_table($round, $table)
+	{
+		if ($round->tables <= 0 || $table <= $round->tables)
+		{
+			return true;
+		}
+		list ($written) = Db::record(get_label('broadcast'),
+			'SELECT count(*) FROM event_broadcasts WHERE event_id = ? AND table_num = ?', $round->id, $table - 1);
+		return (int)$written > 0;
 	}
 
 	protected function show_body()
@@ -349,6 +399,35 @@ class Page extends StreamsPageBase
 				'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
 			echo '</table>';
 			echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
+		}
+
+		// The other end of a broadcast: not what OBS puts on the screen but where what it put
+		// there can be watched afterwards, and what the games of this table are linked into. It
+		// stands last because it is the one thing on the page that is not about how the stream
+		// looks, and because it is filled in after the tournament rather than before it.
+		//
+		// The same rows the preparation page shows, written by the same operations - see
+		// include/broadcast_table.php. On the tab of one table only that table is listed, and
+		// only the rounds that are played at it.
+		echo '<h3 class="stream-section">' . get_label('Broadcasts') . '</h3>';
+		$listed = 0;
+		foreach ($this->rounds as $round)
+		{
+			if ($table != VIEW_ALL_TABLES && !$this->round_on_table($round, $table))
+			{
+				continue;
+			}
+			++$listed;
+			if (count($this->rounds) > 1)
+			{
+				echo '<h4 class="stream-round">' . htmlspecialchars($round->name) . '</h4>';
+			}
+			show_broadcast_table($this->owner, $round->id, $round->name,
+				$table == VIEW_ALL_TABLES ? 0 : $table);
+		}
+		if ($listed == 0)
+		{
+			echo '<p>' . get_label('No broadcasts yet.') . '</p>';
 		}
 
 		echo '<p id="stream-saved" style="visibility: hidden"><b>' . get_label('Saved.') . '</b></p>';

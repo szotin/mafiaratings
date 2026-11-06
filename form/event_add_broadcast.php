@@ -30,9 +30,19 @@ try
 		$tables = max((int)$played, (int)$playing) + 1;
 	}
 
+	// Asked from the page of one table - the stream settings - the table is settled before the
+	// dialog opens: it is the table whose tab the button stands on. It is still shown, because a
+	// dialog that does not say which table it is adding to says half of what it is doing, but
+	// there is nothing there to choose. A table past the ones anybody has counted is taken as it
+	// is given rather than pulled back to the last one that was: the tab it came from is a table
+	// somebody is setting up before it has been played at.
+	$table = isset($_REQUEST['table']) ? max(1, (int)$_REQUEST['table']) : 1;
+	$fixed = isset($_REQUEST['fixed']) && (int)$_REQUEST['fixed'] != 0;
+	$tables = max($tables, $table);
+
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="80">' . get_label('Day') . '</td><td><input type="number" min="1" style="width: 45px;" id="form-day" value="1"></td></tr>';
-	echo '<tr><td>' . get_label('Table') . ':</td><td><input type="number" min="1" max="' . $tables . '" style="width: 45px;" id="form-table" value="1"></td></tr>';
+	echo '<tr><td>' . get_label('Table') . ':</td><td><input type="number" min="1" max="' . $tables . '" style="width: 45px;" id="form-table" value="' . $table . '"' . ($fixed ? ' disabled' : '') . '></td></tr>';
 	echo '<tr><td>' . get_label('URL') . ':</td><td><input type="url" id="form-url"></td></tr>';
 	echo '</table>';
 
@@ -49,7 +59,7 @@ try
 			// Tables are counted from one on the screen and from zero in event_broadcasts. A
 			// number field takes whatever is typed into it whatever its min and max say, so
 			// what is typed is brought back inside them here.
-			, table: Math.min(Math.max(parseInt($("#form-table").val(), 10) || 1, 1), <?php echo $tables; ?>) - 1
+			, table: Math.min(Math.max(parseInt($("#form-table").val(), 10) || <?php echo $table; ?>, 1), <?php echo $tables; ?>) - 1
 			, url: $("#form-url").val()
 		},
 		onSuccess);

@@ -257,6 +257,32 @@ span.stream-url button img { display: block; width: 16px; height: 16px; }
 h3.stream-section { margin: 20px 0 6px; }
 h3.stream-section:first-child { margin-top: 10px; }
 
+/* The name of a round over its broadcasts, where those stand under the settings rather than
+   on a page of their own - streams.php. It is inside a section rather than being one, so it is
+   given less room than the sections are. */
+h4.stream-round { margin: 14px 0 4px; }
+
+/* The button that takes a broadcast address to the clipboard - include/broadcast_table.php. It
+   sits in the line of the address rather than in the column of square .icon buttons, so it is
+   no taller than the text beside it, and the picture on it is told its size: the one it wears
+   is drawn larger than the button.
+
+   The room for the border is there from the start and only its colour is lit when the mouse is
+   over it. The buttons elsewhere trade a pixel of padding for a pixel of border instead, which
+   comes to the same width in theory; in practice a border snaps to whole device pixels and
+   padding does not, so at a display scale of 125% the box changes size by half a pixel and the
+   picture and the address beside it twitch as the mouse passes. */
+button.copy-url { flex: none; align-self: center; margin: 0; padding: 0; border: 1px solid transparent; background-color: transparent; line-height: 0; cursor: pointer; }
+button.copy-url:hover { border-style: outset; border-color: #ccccc0; }
+button.copy-url:active { border-style: inset; border-color: #ccccc0; }
+button.copy-url img { display: block; width: 16px; height: 16px; border: 0; }
+
+/* The address and that button, side by side across the column: the address takes what it needs
+   from the left and the button is held against the right edge, halfway down whatever height the
+   address comes to. A long address is broken anywhere rather than pushing the column wider. */
+span.broadcast-url { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+span.broadcast-url a { min-width: 0; overflow-wrap: anywhere; }
+
 /* The sections themselves - streams.php. Rows are put away and brought back while the page
    stands there, so the columns are nailed down instead of being measured against whatever
    rows happen to be showing; otherwise the whole section shifts every time one goes. */
