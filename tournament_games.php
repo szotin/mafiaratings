@@ -233,7 +233,7 @@ class Page extends TournamentPageBase
 			
 			if ($is_manager || is_permitted(PERMISSION_OWNER, $game_user_id))
 			{
-				echo '<td class="dark" width="90">';
+				echo '<td class="dark" width="116" align="left">';
 				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editGame(' . $game_id . ')" title="' . get_label('Edit game [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
 				if ($video_id == NULL)
