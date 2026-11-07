@@ -93,7 +93,15 @@ body {
 	box-shadow: 0 0.625rem 1.75rem rgba(0, 0, 0, 0.35);
 	color: #fff;
 	text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.45);
-	font-size: 1.6rem;
+	/*  The size the cards write a player's name at - see .pc .nick in obs.css, and the pill above
+	    them, which is a sixteenth of a rem larger. The words in the middle are the one thing on
+	    this page that is read rather than glanced at, so they were set larger than anything the
+	    cards carry; but the cards are around them on every side, and at half a rem above the
+	    biggest of them the band of words read as a different drawing laid on top of the overlay
+	    rather than as a panel of it. Whatever room a reader needs comes from the window, which
+	    the rem follows, and not from this line standing out of the set the rest of the page is
+	    in. */
+	font-size: 1.3125rem;
 	line-height: 1.45;
 	scrollbar-width: thin;
 	scrollbar-color: rgba(255, 255, 255, 0.45) transparent;
