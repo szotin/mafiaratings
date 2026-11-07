@@ -308,9 +308,10 @@ class Page extends StreamsPageBase
 		//
 		// Only on the tab of one table: a scene belongs to the OBS standing beside it, and
 		// there is no sense in asking every table to show the same one. And only once that
-		// OBS has said what scenes it has, which a browser source of ours does as soon as it
-		// is opened - until then there is nothing to choose from, so the row is not there at
-		// all, and neither is the automatic switching at the bottom of the tab.
+		// OBS has said what scenes it has - until then there is nothing to choose from, so
+		// the row is not there at all. What to do about that is said at the bottom of the
+		// tab, under the automatic switching, which is where somebody looking for the scenes
+		// goes.
 		$stored = ($table == VIEW_ALL_TABLES) ? NULL : stream_settings($this->owner, $table);
 		if (!is_null($stored) && !empty($stored->scenes))
 		{
@@ -450,22 +451,48 @@ class Page extends StreamsPageBase
 		//
 		// Last on the tab, and the longest thing on it: it is set up once for a tournament and
 		// then left alone, while everything above it is looked at again every time somebody
-		// opens this page. The same two questions as the scene showing now - one table, and
-		// an OBS that has said what scenes it has - so it is there on the same tabs.
-		if (!is_null($stored) && !empty($stored->scenes))
+		// opens this page.
+		//
+		// On the tab of one table, as the scene showing now is: a scene belongs to the OBS
+		// standing beside one table, and the collection beside one table is not the collection
+		// beside the next, so there is nothing here to set for all of them at once.
+		//
+		// But on that tab it is there whatever the OBS has reported. It used to appear only
+		// where there was something to choose from, and the one line that could have explained
+		// why there was nothing - the one about Page permissions - stood inside it, so it was
+		// never shown when it was needed. An empty place where the scenes were set up last time
+		// says nothing at all; this says what is missing.
+		if (!is_null($stored))
 		{
 			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';
-
-			// Turned off at a table that is switched by hand. The rows stay where they are -
-			// they are just not acted on - so turning it back on brings back what was set up.
-			// It is stored the other way round, as "do not switch", so that a table nobody has
-			// said anything about goes on switching as it always did.
-			$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
-			$this->open_settings_table();
-			$this->show_setting(get_label('Turn on'),
-				'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
-			echo '</table>';
-			echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
+			if (empty($stored->scenes))
+			{
+				// Two silences, and they are not the same. A source that has told us about
+				// itself and not about the scenes was not allowed to; one that has told us
+				// nothing at all either is not running there or is a page from before this was
+				// built, which is the one case a refresh puts right.
+				if ($stored->control_level >= 0 && $stored->control_level < STREAM_CONTROL_ADVANCED)
+				{
+					echo '<p><b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b></p>';
+				}
+				else
+				{
+					echo '<p>' . get_label('The OBS Studio at this table has not said what scenes it has. A browser source of ours says it by itself, once its Page permissions are set to Advanced in its properties in OBS Studio - and a source that was already open when that was set has to be refreshed once. Until then there is nothing here to point a phase of the game at.') . '</p>';
+				}
+			}
+			else
+			{
+				// Turned off at a table that is switched by hand. The rows stay where they are
+				// - they are just not acted on - so turning it back on brings back what was set
+				// up. It is stored the other way round, as "do not switch", so that a table
+				// nobody has said anything about goes on switching as it always did.
+				$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
+				$this->open_settings_table();
+				$this->show_setting(get_label('Turn on'),
+					'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
+				echo '</table>';
+				echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
+			}
 		}
 
 		// The other end of a broadcast: not what OBS puts on the screen but where what it put

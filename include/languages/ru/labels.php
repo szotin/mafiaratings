@@ -2075,6 +2075,7 @@ $labelMenu = array (
 'When' => 'Когда включать', // streams.php
 'Assign scenes automatically' => 'Автоматически назначить сцены', // streams.php
 'Automatic scene switching' => 'Автоматическое переключение сцен', // streams.php
+'The OBS Studio at this table has not said what scenes it has. A browser source of ours says it by itself, once its Page permissions are set to Advanced in its properties in OBS Studio - and a source that was already open when that was set has to be refreshed once. Until then there is nothing here to point a phase of the game at.' => 'OBS Studio этого стола ещё не сообщил, какие у него сцены. Наш браузерный источник сообщает это сам, как только в его свойствах в OBS Studio выставлено Page permissions: Advanced - а источник, который был открыт до этого, надо один раз обновить. До тех пор назначать сцену фазе игры не из чего.', // streams.php
 'Night' => 'Ночь', // streams.php
 'Break' => 'Перерыв', // streams.php
 'There is nothing among the scenes of this table that looks like [0]. Set it by hand, or rename the scenes in OBS Studio and try again.' => 'Среди сцен этого стола нет ничего похожего на: [0]. Задайте вручную или переименуйте сцены в OBS Studio и попробуйте снова.', // streams.php
