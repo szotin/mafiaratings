@@ -90,6 +90,16 @@ var obs = new function()
 					options.locale = answer.stream.locale; // so that one change asks for one reload
 					window.location.reload();
 				}
+
+				// And whether this page is still made of what the site is made of. OBS holds on
+				// to the page a source first loaded, so a deployed script would otherwise never
+				// reach a source that is already running - see stream_plugin_build() in
+				// include/stream.php, which is where both numbers come from.
+				if (answer.stream.build && options.build && answer.stream.build != options.build)
+				{
+					options.build = answer.stream.build; // so that one change asks for one reload
+					window.location.reload();
+				}
 			}).
 			catch(function(error) { /* the site is not answering: leave the page as it stands */ });
 	}

@@ -57,6 +57,10 @@ function show_obs_page($view)
 	$options->settingsUrl = '../../api/get/stream.php?op=settings';
 	$options->settingsInterval = OBS_SETTINGS_DELAY;
 
+	// What this page is made of, so that the script can tell when the site has been given
+	// something newer and load itself again - see stream_plugin_build().
+	$options->build = stream_plugin_build();
+
 	// The language this page was drawn in. Its words - the referee, the round, OFFLINE - are
 	// written into it here and cannot be changed after the fact, so the script watches the
 	// settings for a different language and loads the page again when it finds one. That is

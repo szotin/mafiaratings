@@ -38,6 +38,9 @@ $options->params = $params;
 // as a screen stays up, so a change on the site shows within a screen or two.
 $options->settingsUrl = '../../api/get/stream.php?op=settings';
 $options->settingsInterval = OBS_SETTINGS_DELAY;
+// What this page is made of, so that the script can tell when the site has been given something
+// newer and load itself again - see stream_plugin_build().
+$options->build = stream_plugin_build();
 
 echo '<!DOCTYPE HTML>';
 echo '<html><head>';

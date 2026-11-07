@@ -92,6 +92,10 @@ class ApiPage extends GetApiPageBase
 		// brought back without anybody going to the machine OBS is running on.
 		$stream->hideGlyphs = ($settings->flags & STREAM_FLAG_HIDE_GLYPHS) ? 1 : 0;
 		$stream->hideBetween = ($settings->flags & STREAM_FLAG_HIDE_BETWEEN) ? 1 : 0;
+		// What the sources are made of as the site has them now. A page carrying an older one
+		// is running a script that has since been replaced and loads itself again - see
+		// stream_plugin_build().
+		$stream->build = stream_plugin_build();
 
 		// And which parts of the cards source are drawn - see stream_glyph_parts(). Sent as
 		// what to show rather than what to hide, because that is what the source asks itself
@@ -138,6 +142,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('delay', 'How long one screen stays up, in milliseconds.');
 			$param->sub_param('locale', 'The language the screens are shown in.');
 			$param->sub_param('background', 'The ground they stand on: "dark" or "light".');
+			$param->sub_param('build', 'When the newest of the files a browser source is made of was last changed. A source carrying an older one is running a script that has since been replaced, and loads itself again.');
 			$param->sub_param('transparent', '1 when nothing is painted behind them, 0 otherwise.');
 			$param->sub_param('hideGlyphs', '1 when the sources carrying the cards over the game are to show nothing at all, 0 otherwise.');
 			$param->sub_param('hideBetween', '1 when the source filling the time between games is to show nothing at all, 0 otherwise.');

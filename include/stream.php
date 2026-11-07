@@ -337,6 +337,36 @@ function stream_owner($tournament_id, $event_id)
 	return NULL;
 }
 
+// What the browser sources are made of, named by the newest of them. OBS keeps a source open for
+// a whole tournament and holds on to the page it first loaded: obs_file() names each file by the
+// time it was changed, which is enough for a source opened after a deploy, but a page already up
+// never asks for its own address a second time and would go on running yesterday's script until
+// somebody walked over to the machine and refreshed it by hand.
+//
+// So the pages carry this number, the settings they ask the site for every few seconds carry it
+// too, and a page whose number is no longer the site's loads itself again. It is one number for
+// the whole folder rather than one per page: a change to any of these is a deploy, deploys are
+// rare, and a reload costs a source less than a second of drawing. Both sides read it from here
+// on purpose - two lists that drifted apart would never agree again, and the sources would
+// reload themselves for ever.
+function stream_plugin_build()
+{
+	static $build = NULL;
+	if (is_null($build))
+	{
+		$build = 0;
+		foreach (array('obs.css', 'obs.js', 'between.css', 'between.js', 'scenes.js') as $name)
+		{
+			$time = @filemtime(__DIR__ . '/../plugins/obs/' . $name);
+			if ($time !== false && $time > $build)
+			{
+				$build = (int)$time;
+			}
+		}
+	}
+	return $build;
+}
+
 // The screens between.js can be told to show, in the order they are shown when nobody has said
 // otherwise. The short name is what is stored and what appears in the settings; the file is
 // where between.js fetches the screen from.
