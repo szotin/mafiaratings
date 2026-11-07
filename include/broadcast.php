@@ -990,6 +990,16 @@ function broadcast_shift_following($video_id, $delta)
 	return count($shift);
 }
 
+// How many games of a round have no recording against them. That is what the binding has to
+// work on - see broadcast_bind_event() - and so also what says whether there is any point in
+// offering it: with none of these the pass reads every game, ties nothing, and says so.
+function broadcast_unlinked_games($event_id)
+{
+	list ($count) = Db::record(get_label('game'),
+		'SELECT COUNT(*) FROM games WHERE event_id = ? AND video_id IS NULL', $event_id);
+	return (int)$count;
+}
+
 // Ties the games of a round that have none to the broadcasts of their table. This is the way
 // in for everything played before any of this existed: the games are long written down, the
 // addresses of the recordings go in afterwards, and the times are worked out from what is
@@ -1096,9 +1106,7 @@ function broadcast_bind_event($event_id, $refresh = true)
 
 	// Games at a table nobody is broadcasting are not a failure of the binding, but they are
 	// still games left without a link, and that is what the page has to show.
-	list ($left) = Db::record(get_label('game'),
-		'SELECT COUNT(*) FROM games WHERE event_id = ? AND video_id IS NULL', $event_id);
-	$result->unplaced = max((int)$left - $result->untimed - $result->untabled, 0);
+	$result->unplaced = max(broadcast_unlinked_games($event_id) - $result->untimed - $result->untabled, 0);
 	return $result;
 }
 

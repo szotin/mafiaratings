@@ -390,7 +390,11 @@ trait PreparationTabs
 			// a round that was played before the addresses went in - an old tournament, or one
 			// where somebody added the links afterwards. Nothing that already has a video is
 			// touched, so it can be pressed twice without harm.
-			if ($rows > 0)
+			//
+			// It is offered only where there is something for it to do: addresses to tie games
+			// to, and games not tied to one yet. Otherwise pressing it reads every game of the
+			// round to report that it tied none of them, which is a button that does nothing.
+			if ($rows > 0 && broadcast_unlinked_games($event_id) > 0)
 			{
 				echo '<p align="right"><button onclick="bindBroadcastGames(' . $event_id . ')">' .
 					get_label('Tie the games to the broadcasts') . '</button></p>';
