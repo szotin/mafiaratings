@@ -956,7 +956,38 @@ body.between.bg-light .perfect { color: #B07A00; }
 	gap: 2rem;
 }
 
-.col { display: flex; flex-direction: column; gap: 0.25rem; }
+/*  The ground the table is read off. The other three frames each stand on a panel of their own
+    and this one stood on the page itself, which is nothing at all when the table is set to a
+    see-through source: a club that puts these screens over a scene of its own - a photograph of
+    the city, where this came from - had twenty rows of figures lying straight on it.
+
+    Dark, where .glass is a pale wash. A pale wash is laid over our own dark ground and lifts a
+    panel off it; laid over a lit photograph it lifts that too, and what a table of twenty rows
+    wants is the picture under it put down. The number is the one the overlay settled on for a
+    panel standing over a camera - see .gl in obs.css. It reaches the width of the header above
+    it exactly, the rows carrying their own padding inside that, and it is not a blur: see the
+    note over .glass for the machines that answer backdrop-filter with a black rectangle. */
+.st::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: -1.25rem;
+	bottom: -1.25rem;
+	border-radius: 1.75rem;
+	background: rgba(14, 8, 11, 0.62);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--gl-sh);
+}
+
+/*  On a pale page the picture behind is put down by white instead. */
+body.between.bg-light .st::before {
+	background: rgba(255, 255, 255, 0.78);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--gl-sh);
+}
+
+/*  Positioned, so that the columns are painted after the panel rather than under it: a child
+    that stands in the flow is painted below a positioned one whatever the order of the two. */
+.col { position: relative; display: flex; flex-direction: column; gap: 0.25rem; }
 
 .sth,
 .str {
