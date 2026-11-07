@@ -296,14 +296,16 @@ var obs = new function()
 	function topLeft(g)
 	{
 		var night = (g.phase == 'night');
-		// The round as a table counts it. Night 0 is the one the game opens with, where the mafia
-		// meet and nobody is shot, and it is called that at the table too - so a night is the round
-		// itself. A day is the round after it, the game counting its rounds from zero and the first
-		// circle of speeches being day 1, so a day is the round and one. That makes the order on
-		// the screen night 0, day 1, night 1, day 2 - and it is the same count the players wear
-		// when they leave the game, see deathRound in api/get/current_game.php.
+		// The round as a table counts it, which is the round the game writes down. A game opens
+		// with night 0, where the mafia meet and nobody is shot, and then day 0, the one circle
+		// of speeches with all ten still at the table and nobody usually voted out; night 1 is
+		// the first shot and day 1 the day after it, with nine. So a day and the night before it
+		// wear the same number and the order on the screen is night 0, day 0, night 1, day 1 -
+		// which is the count the site puts over the log of a game that has been played, see
+		// view_game.php, and the one the players wear when they leave the game, see deathRound
+		// in api/get/current_game.php.
 		var name = (night ? options.labels.night : options.labels.day).
-			replace('[0]', night ? g.round : g.round + 1);
+			replace('[0]', g.round);
 		var state = stateLabel(g);
 
 		var html = '';
@@ -642,15 +644,15 @@ var obs = new function()
 		return context;
 	}
 
-	// Whoever was voted out this round, once the game has written it down. A day is the round
-	// after the one it is written down in - see the phase above - so the day this is matches
-	// deathRound at the round and one.
+	// Whoever was voted out this round, once the game has written it down. A day wears the number
+	// of the round it is written down in - see the phase above - so the day this is and the tag on
+	// their card are the same number.
 	function votedOut(g)
 	{
 		for (var i = 0; i < g.players.length; ++i)
 		{
 			var p = g.players[i];
-			if (p.state == 'dead' && p.deathType == 'voting' && p.deathRound == g.round + 1 && g.phase == 'day')
+			if (p.state == 'dead' && p.deathType == 'voting' && p.deathRound == g.round && g.phase == 'day')
 			{
 				return p;
 			}

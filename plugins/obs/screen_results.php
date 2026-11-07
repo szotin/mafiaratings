@@ -181,9 +181,10 @@ $judge = isset($players[$g->moderator_id]) ? $players[$g->moderator_id] : NULL;
 
 // What each seat has to say for itself: the role it played, and how it left the game.
 //
-// A night belongs to the round it is written down in, a day to the round after it - the game
-// counts its rounds from zero and the table counts its nights and its days from one, which is
-// also what the overlays showed while the game was being played.
+// A night and the day after it both belong to the round they are written down in: the game opens
+// with night 0, where nobody is shot, and day 0, the circle of speeches with all ten at the
+// table, so the first shot is night 1 and the day that follows it is day 1. That is the count the
+// overlay shows while the game is being played and the one the site puts over the log afterwards.
 function obs_results_elim($p)
 {
 	if (is_null($p) || !isset($p->death))
@@ -198,13 +199,13 @@ function obs_results_elim($p)
 	if ($type == DEATH_TYPE_NIGHT)
 	{
 		$elim->night = true;
-		$elim->number = max($round, 1);
+		$elim->number = $round;
 		return $elim;
 	}
 	if ($type == DEATH_TYPE_DAY)
 	{
 		$elim->night = false;
-		$elim->number = $round + 1;
+		$elim->number = $round;
 		return $elim;
 	}
 	return NULL; // sent away by the referee, or gave up: the cards say nothing about it

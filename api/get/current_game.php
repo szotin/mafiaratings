@@ -225,27 +225,24 @@ class ApiPage extends GetApiPageBase
 			else
 			{
 				$player->state = 'dead';
-				// The night and the day a player left the game on, counted the way a table counts
-				// them: night 0 is the one the game opens with, where the mafia meet and nobody is
-				// shot, so the first shot belongs to night 1 - and the first circle of speeches is
-				// day 1, which is the round after it, because the game counts its rounds from zero.
-				// The order on the screen is night 0, day 1, night 1, day 2, night 2, and so on.
+				// The night and the day a player left the game on, which is the round the game
+				// writes it down in. A game opens with night 0, where the mafia meet and nobody is
+				// shot, and then day 0, the one circle of speeches with all ten still at the table;
+				// night 1 is the first shot and day 1 the day after it, with nine. So a day and the
+				// night before it wear the same number, and the order is night 0, day 0, night 1,
+				// day 1, and so on - the count the site puts over the log of a game that has been
+				// played, see view_game.php, and the one the results screen between games uses, see
+				// obs_results_elim() in plugins/obs/screen_results.php. So the round is the whole
+				// of it, and whether it was the night or the day of that round is deathType's to
+				// say, not this number's.
 				//
-				// Both used to be handed out one lower than that. The first player shot wore a 0,
-				// and so did the first player voted out, which disagreed with the phase the overlay
-				// was showing at the time and with the results screen between games - that one has
-				// always counted them this way, see obs_results_elim() in
-				// plugins/obs/screen_results.php. The night also broke the search for the player
-				// shot first in obs.js, which looks for the one whose night is 1 to hang the best
-				// guess above their card.
-				if (isset($p->death->time) && Game::is_night($p->death->time))
-				{
-					$player->deathRound = max((int)$p->death->round, 1);
-				}
-				else
-				{
-					$player->deathRound = (int)$p->death->round + 1;
-				}
+				// A day used to be handed out one higher than the round, which made the first
+				// circle of speeches day 1 and left the tag on a card a day ahead of the phase the
+				// overlay was showing at the time, and a night used to be floored at 1, which
+				// called night 0 night 1 for a player the referee took out of the arrangement.
+				// Nothing is shot in night 0, so a shooting is never written down there and obs.js
+				// can still find the player whose night is 1 to hang the best guess above.
+				$player->deathRound = (int)$p->death->round;
 				switch ($p->death->type)
 				{
 				case DEATH_TYPE_GIVE_UP:
@@ -253,17 +250,9 @@ class ApiPage extends GetApiPageBase
 					break;
 				case DEATH_TYPE_WARNINGS:
 					$player->deathType = 'warnings';
-					if (isset($player->warnings) && is_array($player->warnings) && count($player->warnings) > 0 && Game::is_night($player->warnings[count($player->warnings) - 1]))
-					{
-						$player->deathRound = max((int)$p->death->round, 1);
-					}
 					break;
 				case DEATH_TYPE_TECH_FOULS:
 					$player->deathType = 'techFouls';
-					if (isset($player->techFouls) && is_array($player->techFouls) && count($player->techFouls) > 0 && Game::is_night($player->techFouls[count($player->techFouls) - 1]))
-					{
-						$player->deathRound = max((int)$p->death->round, 1);
-					}
 					break;
 				case DEATH_TYPE_KICK_OUT:
 					$player->deathType = 'kickOut';
@@ -273,7 +262,6 @@ class ApiPage extends GetApiPageBase
 					break;
 				case DEATH_TYPE_NIGHT:
 					$player->deathType = 'shooting';
-					$player->deathRound = max((int)$p->death->round, 1);
 					break;
 				case DEATH_TYPE_DAY:
 					$player->deathType = 'voting';
@@ -692,7 +680,7 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('techFouls', 'Number of technical fouls.');
 				$players->sub_param('isSpeaking', 'A boolean which is true when the player is speaking.');
 				$players->sub_param('state', 'Player state - "dead" or "alive".');
-				$players->sub_param('deathRound', 'If player state is "dead" it is set to the night or the day they left the game on, counted the way a table counts them rather than the way the game counts its rounds: the game opens with night 0, where nobody is shot, so the first shot is night 1 and the first circle of speeches is day 1. A death at night is the round it is written down in, counted from 1; a death by day is that round plus one.');
+				$players->sub_param('deathRound', 'If player state is "dead" it is set to the night or the day they left the game on, which is the round it is written down in: the game opens with night 0, where nobody is shot, and then day 0, the circle of speeches with all ten still at the table, so the first shot is night 1 and the day after it is day 1. The number does not say which of the two it was - deathType does.');
 				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "techFouls", "giveUp", or "kickOut".');
 				$players->sub_param('votedOutBy', 'When deathType is "voting", the numbers of the players counted for them in the vote that put them out, in the order they sit - the whole table where the day ended in killing all the tied players. It stays for the rest of the game, and is left out while the moderator is still taking the count that is putting the player out.');
 				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when hideRoles is not set.');
@@ -717,7 +705,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('hideRoles', 'True when the roles are kept off the overlays. The players then have no role, and nobody has a checkedByDon or a checkedBySheriff. It is the event\'s answer: a club manager turns it over from the stream settings, and every table of the event follows at once.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
  			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
- 			$param->sub_param('round', 'Current round number. Game starts with night-0; then day-0; then night-1; day-1; etc.');
+ 			$param->sub_param('round', 'Current round number, which is also the number a table calls the night or the day by. A game starts with night-0, where nobody is shot; then day-0, with all ten at the table; then night-1, the first shot; then day-1; and so on.');
  			$param->sub_param('nominees', 'Array of players currently nominated, in the order the moderator calls them. When the table has split, only the players who tied are here. It is set only in the day phase.');
  			$param->sub_param('votingCanceled', 'Boolean which is true when votings were canceled (most likely because someone was mod-killed). It is set only in the day phase.');
  			$param->sub_param('votes', 'Array of the hands counted in the current round, each {nominee, voters}, where voters is an array of player numbers in the order they sit. Only the count being taken: when a table splits every hand comes down, so this is empty again until the new count begins. A count the moderator is still taking is not here at all - it shows up when they move on from it. The last name of a count is the exception: it holds everybody who was not counted for anybody else, so it is here as soon as the counting reaches it. It is set only in the day phase.');
