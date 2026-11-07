@@ -142,12 +142,16 @@ class Page extends TournamentPageBase
 		}
 
 		$sel =
-			'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, ni.name, u.club_id, c.name, c.flags FROM tournament_regs tr' .
+			'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, cr.flags, ni.name, u.club_id, c.name, c.flags FROM tournament_regs tr' .
 			' JOIN users u ON u.id = tr.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
 			' JOIN cities i ON i.id = u.city_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
 			' LEFT JOIN clubs c ON c.id = u.club_id' .
+			// The club holding the tournament can keep a photo of a player of its own, and that
+			// is the row it is marked in. Without it the list falls back to the account picture
+			// and so says something different from the photo dialog, which reads all three.
+			' LEFT JOIN club_regs cr ON cr.user_id = u.id AND cr.club_id = ' . (int)$this->club_id .
 			' WHERE tr.tournament_id = ?';
 		$accepted = ' AND (tr.flags & ' . USER_TOURNAMENT_FLAG_NOT_ACCEPTED . ') = 0';
 
@@ -163,12 +167,13 @@ class Page extends TournamentPageBase
 		if ($this->team_size > 1)
 		{
 			$sel_team =
-				'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, ni.name, u.club_id, c.name, c.flags, tr.team_id, t.name FROM tournament_regs tr' .
+				'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, cr.flags, ni.name, u.club_id, c.name, c.flags, tr.team_id, t.name FROM tournament_regs tr' .
 				' JOIN users u ON u.id = tr.user_id' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
 				' JOIN cities i ON i.id = u.city_id' .
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
 				' LEFT JOIN clubs c ON c.id = u.club_id' .
+				' LEFT JOIN club_regs cr ON cr.user_id = u.id AND cr.club_id = ' . (int)$this->club_id .
 				' LEFT JOIN tournament_teams t ON t.id = tr.team_id' .
 				' WHERE tr.tournament_id = ?';
 			$query = new DbQuery($sel_team . ' AND (tr.flags & ' . USER_PERM_PLAYER . ') <> 0' . $accepted . ' ORDER BY tr.reg_order ASC, nu.name', $this->id);
@@ -199,7 +204,9 @@ class Page extends TournamentPageBase
 
 		if (!empty($unconfirmed))
 		{
-			$pic = new Picture(USER_TOURNAMENT_PICTURE, $this->user_pic);
+			$pic = new Picture(USER_TOURNAMENT_PICTURE,
+				new Picture(USER_CLUB_PICTURE,
+				new Picture(USER_PICTURE)));
 			echo '<p><b>' . get_label('Not confirmed') . '</b></p>';
 			echo '<p><table class="bordered light" width="100%">';
 			echo '<tr class="th darker">';
@@ -211,13 +218,13 @@ class Page extends TournamentPageBase
 			echo '</tr>';
 			foreach ($unconfirmed as $i => $row)
 			{
-				list($user_id, $name, $email, $user_flags, $tr_flags, $city, $club_id, $club_name, $club_flags) = $row;
+				list($user_id, $name, $email, $user_flags, $tr_flags, $club_reg_flags, $city, $club_id, $club_name, $club_flags) = $row;
 				echo '<tr class="light">';
 				echo '<td class="dark" align="center" nowrap>';
 				echo '<button onclick="mr.acceptTournamentReg(' . $this->id . ',' . $user_id . ')">' . get_label('Accept application') . '</button>';
 				echo '</td>';
 				echo '<td align="center">' . ($i + 1) . '</td>';
-				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
 				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 				echo '</tr>';
@@ -226,12 +233,16 @@ class Page extends TournamentPageBase
 		}
 	}
 
-	private function personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city)
+	private function personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city)
 	{
 		ob_start();
 		echo '<table class="transp"><tr>';
 		echo '<td width="54" align="center" valign="middle">';
-		$pic->set($user_id, $name, $tr_flags, 't' . $this->id)->set($user_id, $name, $user_flags);
+		// The tournament's own photo of the player first, then the club's, then the account one
+		// - the same order as everywhere else the player is drawn, and as the photo dialog.
+		$pic->set($user_id, $name, $tr_flags, 't' . $this->id)->
+			set($user_id, $name, $club_reg_flags, 'c' . $this->club_id)->
+			set($user_id, $name, $user_flags);
 		$pic->show(ICONS_DIR, true, 50);
 		echo '</td>';
 		echo '<td valign="middle"><a href="user_info.php?id=' . $user_id . '&bck=1"><b>' . $name . '</b></a><br>' . $city . '</td>';
@@ -266,7 +277,9 @@ class Page extends TournamentPageBase
 
 	private function showRegTable($title, $regs, $scheme_count, $default_flags, $person_label, $with_rollback = false)
 	{
-		$pic = new Picture(USER_TOURNAMENT_PICTURE, $this->user_pic);
+		$pic = new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE)));
 		$reg_count = count($regs);
 		$row_count = max($scheme_count, $reg_count);
 		$btn_width = $with_rollback ? 120 : 90;
@@ -288,7 +301,7 @@ class Page extends TournamentPageBase
 			echo '<tr class="' . ($overflow ? 'darker' : 'light') . '">';
 			if ($i < $reg_count)
 			{
-				list($user_id, $name, $email, $user_flags, $tr_flags, $city, $club_id, $club_name, $club_flags) = $regs[$i];
+				list($user_id, $name, $email, $user_flags, $tr_flags, $club_reg_flags, $city, $club_id, $club_name, $club_flags) = $regs[$i];
 				echo '<td align="center" nowrap>';
 				echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
 				$new_flags = ($tr_flags & USER_PERM_MASK) & ~$default_flags;
@@ -300,7 +313,7 @@ class Page extends TournamentPageBase
 				}
 				echo '</td>';
 				echo '<td align="center">' . ($i + 1) . '</td>';
-				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
 				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 				$up_style = ($i == 0) ? ' style="visibility:hidden"' : '';
@@ -323,7 +336,9 @@ class Page extends TournamentPageBase
 
 	private function showTeamPlayerTable($regs, $scheme_count)
 	{
-		$pic = new Picture(USER_TOURNAMENT_PICTURE, $this->user_pic);
+		$pic = new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE)));
 		$default_flags = USER_PERM_PLAYER;
 
 		// Group players by team, preserving reg_order-based sequence
@@ -331,11 +346,11 @@ class Page extends TournamentPageBase
 		$group_keys = array();
 		foreach ($regs as $row)
 		{
-			$team_id = $row[9];
+			$team_id = $row[10];
 			$key = ($team_id !== null && (int)$team_id > 0) ? 'team_' . (int)$team_id : 'solo_' . $row[0];
 			if (!array_key_exists($key, $groups))
 			{
-				$groups[$key] = array('team_id' => ($team_id !== null ? (int)$team_id : null), 'team_name' => $row[10], 'players' => array());
+				$groups[$key] = array('team_id' => ($team_id !== null ? (int)$team_id : null), 'team_name' => $row[11], 'players' => array());
 				$group_keys[] = $key;
 			}
 			$groups[$key]['players'][] = $row;
@@ -367,7 +382,7 @@ class Page extends TournamentPageBase
 			for ($j = 0; $j < $group_size; ++$j)
 			{
 				$row = $group['players'][$j];
-				list($user_id, $name, $email, $user_flags, $tr_flags, $city, $club_id, $club_name, $club_flags) = $row;
+				list($user_id, $name, $email, $user_flags, $tr_flags, $club_reg_flags, $city, $club_id, $club_name, $club_flags) = $row;
 
 				$overflow = ($scheme_count > 0 && $row_num >= $scheme_count);
 				echo '<tr class="' . ($overflow ? 'darker' : 'light') . '">';
@@ -394,7 +409,7 @@ class Page extends TournamentPageBase
 					}
 				}
 
-				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $city) . '</td>';
+				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
 				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
 				echo '<td>' . $email . '</td>';
 

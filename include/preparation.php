@@ -282,9 +282,12 @@ trait PreparationTabs
 		{
 			$ids_sql = implode(',', array_keys($user_ids));
 			$q = new DbQuery(
-				'SELECT u.id, nu.name, tr.flags, u.flags FROM users u' .
+				'SELECT u.id, nu.name, tr.flags, u.flags, cr.flags FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ?) <> 0' .
 				' LEFT JOIN tournament_regs tr ON tr.user_id = u.id AND tr.tournament_id = ?' .
+				// The club running this can have a photo of the player of its own, between the
+				// tournament's and the account's - see form/user_custom_photo.php.
+				' LEFT JOIN club_regs cr ON cr.user_id = u.id AND cr.club_id = ' . (int)$this->club_id .
 				' WHERE u.id IN (' . $ids_sql . ')',
 				$_lang, $this->prep_tournament_id
 			);
@@ -294,11 +297,14 @@ trait PreparationTabs
 				$u->name = $row[1];
 				$u->tr_flags = (int)$row[2];
 				$u->flags = (int)$row[3];
+				$u->cr_flags = (int)$row[4];
 				$users[(int)$row[0]] = $u;
 			}
 		}
 
-		$pic = new Picture(USER_TOURNAMENT_PICTURE, $this->user_pic);
+		$pic = new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			new Picture(USER_PICTURE)));
 
 		$num_rounds = count($tables_data);
 		$num_tables = $num_rounds > 0 ? count($tables_data[0]) : 0;
@@ -325,7 +331,9 @@ trait PreparationTabs
 						echo '<td align="center" style="cursor:pointer" onclick="swapPlayers(' . $event_id . ', ' . $uid . ')">';
 						echo '<table class="transp" width="100%">';
 						echo '<tr><td align="center">';
-						$pic->set($uid, $u->name, $u->tr_flags, 't' . $this->prep_tournament_id)->set($uid, $u->name, $u->flags);
+						$pic->set($uid, $u->name, $u->tr_flags, 't' . $this->prep_tournament_id)->
+							set($uid, $u->name, $u->cr_flags, 'c' . $this->club_id)->
+							set($uid, $u->name, $u->flags);
 						$pic->show(ICONS_DIR, false, 48);
 						echo '</td></tr>';
 						echo '<tr><td align="center">' . htmlspecialchars($u->name) . '</td></tr>';
