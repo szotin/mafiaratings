@@ -215,9 +215,12 @@ html.no-scrim .ov::after {
 
 /*  The one chip whose digit is dark. White on gold had to be held up by a brown shadow to read
     at all, and the shadow was the only thing anybody saw; the gold is bright enough to carry a
-    dark digit on its own. */
+    dark digit on its own - and the sheen runs across the chip, the way it does on the town's
+    red one, rather than out from the middle: the gold was a radial gradient from brown at the
+    centre to pale at the rim, which put the one dark patch of the whole chip directly under
+    the number, where it read as dirt. */
 .chip.g {
-	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
+	background: linear-gradient(160deg, #FFDF7B, #E8AE33);
 	color: #231300;
 	text-shadow: none;
 	/*  No dark shadow under it: the gold is bright and the ring of dark the other chips are
@@ -613,7 +616,7 @@ html.no-scrim .ov::after {
 .pc.town .seat, .pc.sher .seat { background: linear-gradient(160deg, #F04A5C, #C41A30); }
 
 .pc.sher .seat {
-	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
+	background: linear-gradient(160deg, #FFDF7B, #E8AE33);
 	color: #231300;
 	text-shadow: none;
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.3);

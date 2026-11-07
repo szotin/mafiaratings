@@ -909,10 +909,18 @@ body.between.bg-light .moves {
 .chip.b,
 .seat.b { background: #3B3640; }
 
+/*  The sheriff's chip carries a dark digit, which is what the overlay draws on the table all
+    game: white on gold has to be held up by a brown shadow to read at all, and then the shadow
+    is the only thing anybody sees. A number means the same seat on every frame of a broadcast,
+    so it is drawn the same way on all of them. The sheen runs across the chip as it does on the
+    town's red one, rather than out from the middle: the gold was a radial gradient from brown
+    at the centre to pale at the rim, which put the one dark patch of the whole chip directly
+    under the number, where it read as dirt. */
 .chip.g,
 .seat.g {
-	background: radial-gradient(circle at 50% 50%, #8F5604 0%, #B47512 18%, #E2A93A 42%, #FBCF5C 68%, #FFE07A 100%);
-	text-shadow: 0 1px 2px rgba(70, 38, 0, 0.6);
+	background: linear-gradient(160deg, #FFDF7B, #E8AE33);
+	color: #231300;
+	text-shadow: none;
 }
 
 .seat.n {
