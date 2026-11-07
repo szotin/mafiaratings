@@ -917,6 +917,14 @@ var obs = new function()
 	// The nickname sits in the middle of the card and never over the seat chip, so where it
 	// starts depends on how wide it is. A name too long for the room is set smaller, down to the
 	// size the designer stopped at, and one too long even for that is cut off.
+	//
+	// Two widths come into it, and they are not the same one. The name lies in .meta, which
+	// starts a little in from the left edge of the card - see .pc .meta in obs.css - so the room
+	// it has is .meta's and not the card's. Measuring the card gave every name a few pixels it
+	// did not have, and a name that came out within those few pixels was left at a size it did
+	// not fit at and cut off instead of being set one step smaller. But the middle a short name
+	// is meant to sit in is the middle of the card, which is what a reader sees, so the offset
+	// between the two is taken off again when the name is placed.
 	function fitNames(div)
 	{
 		var scale = parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
@@ -924,8 +932,10 @@ var obs = new function()
 		for (var i = 0; i < nicks.length; ++i)
 		{
 			var nick = nicks[i];
-			var card = nick.parentNode.parentNode;
-			var width = card.clientWidth;
+			var box = nick.parentNode;
+			var card = box.parentNode;
+			var width = box.clientWidth;
+			var inset = card.clientWidth - width; // how far .meta starts in from the card
 			if (width <= 0)
 			{
 				continue;
@@ -941,7 +951,8 @@ var obs = new function()
 				textWidth = measure(text, size * scale);
 			}
 			nick.style.fontSize = (size * scale) + 'px';
-			nick.style.setProperty('--nl', Math.max(reserved, (width - textWidth) / 2) + 'px');
+			nick.style.setProperty('--nl',
+				Math.max(reserved, (card.clientWidth - textWidth) / 2 - inset) + 'px');
 		}
 	}
 
