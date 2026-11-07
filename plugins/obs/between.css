@@ -318,6 +318,21 @@ body.between.bg-clear .glow {
 	box-shadow: inset 0 1px 0 var(--gl-hi), var(--gl-sh);
 }
 
+/*  Over a scene of the club's own the pale wash is the wrong way round. It is there to lift the
+    panel off our own dark ground, and a lit photograph it lifts just as readily: the figures on
+    the panel then stand on a picture that has been brightened rather than quietened, which is
+    what the stats frame came out as over a night city. Where the source is see-through the
+    panel is dark instead - the fill the standings table stands on, and the one the overlay
+    settled on for a panel over a camera, see .gl in obs.css. A pale page puts the picture down
+    with white, which does the same work from the other side. */
+body.between.bg-clear .glass {
+	background: rgba(14, 8, 11, 0.62);
+}
+
+body.between.bg-clear.bg-light .glass {
+	background: rgba(255, 255, 255, 0.78);
+}
+
 /*--------------------------------------------------------------------------------------
     the header, the same on all four frames
   --------------------------------------------------------------------------------------*/
