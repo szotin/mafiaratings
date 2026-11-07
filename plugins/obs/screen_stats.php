@@ -28,23 +28,10 @@ if (is_null($c))
 	return;
 }
 
-$town = 0;
-$maf = array(0, 0, 0, 0); // by the mafia left at the table; [0] is the games that never said
-$maf_kick = 0;            // handed to the mafia by a team kick out, never played out at the table
-// The brackets round the mask are not decoration: & binds looser than <> in MySQL, so without
-// them the server compares 8 with 0 first and ands the flags with the 1 that comes out.
-$scope = $c->is_tournament ? 'tournament_id' : 'event_id';
-$scope_id = $c->is_tournament ? $c->tournament_id : $c->event_id;
-$query = new DbQuery(
-	'SELECT result, maf_alive, (flags & ' . GAME_FLAG_TEAM_KICK_OUT . ') <> 0, COUNT(*) FROM games'.
-	' WHERE ' . $scope . ' = ? AND (flags & ' . GAME_FLAG_CANCELED . ') = 0'.
-	' GROUP BY result, maf_alive, (flags & ' . GAME_FLAG_TEAM_KICK_OUT . ') <> 0',
-	$scope_id);
-while ($row = $query->next())
+// One game, or a group of games that came out the same way, added to the counts the panel is
+// drawn from.
+function obs_stats_add(&$town, &$maf, &$maf_kick, $result, $maf_alive, $team_kick_out, $count)
 {
-	list ($result, $maf_alive, $team_kick_out, $count) = $row;
-	$count = (int)$count;
-
 	switch ((int)$result)
 	{
 	case GAME_RESULT_TOWN:
@@ -69,6 +56,150 @@ while ($row = $query->next())
 		break;
 	}
 	// A tie belongs to neither side and is left out of the question altogether.
+}
+
+// The games that have been played but not written down yet. The referee is on the last screen
+// of the game handing out the bonus points, and until they leave it the game is nowhere in the
+// games table - see GAMETIME_END, and the create op in api/ops/game.php, which is what moves it
+// there and takes the row away from here, so nothing is ever counted in both places.
+//
+// This screen counts them. Who has been winning is settled the moment a table is done, and a
+// tournament that waits for the paperwork shows the room a count it watched being overtaken.
+// The standings do not count them, and must not: the bonus points are part of what a place in
+// that table is made of, so a game counted before they are handed out would move players up and
+// then move them down again.
+//
+// Each game is read the way Game::update() reads one it is writing down, and the flags the two
+// facts go by are worked out by the class that works them out on the way in - the same code, so
+// a game counts here for exactly what it will count for once it is written down. Constructing
+// GamePlayersStats touches nothing: the writing is in its save(), which is not called.
+function obs_stats_unrecorded($c)
+{
+	$games = array();
+	$query = $c->is_tournament
+		? new DbQuery('SELECT g.game FROM current_games g JOIN events e ON e.id = g.event_id'.
+			' WHERE e.tournament_id = ?', $c->tournament_id)
+		: new DbQuery('SELECT game FROM current_games WHERE event_id = ?', $c->event_id);
+	while ($row = $query->next())
+	{
+		list ($json) = $row;
+		$data = json_decode($json);
+		// A game still being played has no result to count, and one that never reached a result
+		// at all - a table that gave up on it - has none either.
+		if (!is_object($data) || !isset($data->time->time) || $data->time->time != GAMETIME_END ||
+			!isset($data->winner))
+		{
+			continue;
+		}
+
+		$g = new stdClass();
+		$g->result = GAME_RESULT_TIE;
+		if ($data->winner == 'maf')
+		{
+			$g->result = GAME_RESULT_MAFIA;
+		}
+		else if ($data->winner == 'civ')
+		{
+			$g->result = GAME_RESULT_TOWN;
+		}
+
+		// Who was still at the table when it ended, and whether it was handed over by a team
+		// kick out - the same reckoning as in Game::update().
+		$g->maf_alive = 0;
+		$g->team_kick_out = false;
+		$players = (isset($data->players) && is_array($data->players)) ? $data->players : array();
+		foreach ($players as $p)
+		{
+			if (!is_object($p))
+			{
+				continue;
+			}
+			if (isset($p->death))
+			{
+				$death = $p->death;
+				$death_type = is_string($death) ? $death : (isset($death->type) ? $death->type : '');
+				if ($death_type == DEATH_TYPE_TEAM_KICK_OUT)
+				{
+					$g->team_kick_out = true;
+				}
+				continue;
+			}
+			if (isset($p->role) && ($p->role == 'maf' || $p->role == 'don'))
+			{
+				++$g->maf_alive;
+			}
+		}
+
+		// What each seat earned, in the flags the facts below are counted by. A game this
+		// cannot be worked out for still counts for the win it was: half of it on the screen is
+		// better than none of it, and a screen between games is no place to stop over one.
+		$g->flags = array();
+		$g->nicks = array();
+		try
+		{
+			$stats = new GamePlayersStats(new Game($data));
+			foreach ($stats->players as $i => $p)
+			{
+				$g->flags[] = isset($p->scoring_flags) ? (int)$p->scoring_flags : 0;
+				$g->nicks[] = (isset($players[$i]) && isset($players[$i]->name)) ? $players[$i]->name : '';
+			}
+		}
+		catch (Throwable $e)
+		{
+			$g->flags = array();
+			$g->nicks = array();
+		}
+		$games[] = $g;
+	}
+	return $games;
+}
+
+// How many of the unrecorded games carry a flag against any seat, and which seats those were.
+function obs_stats_unrecorded_flag($unrecorded, $flag, &$nicks)
+{
+	$count = 0;
+	foreach ($unrecorded as $g)
+	{
+		$hit = false;
+		foreach ($g->flags as $i => $flags)
+		{
+			if (($flags & $flag) != 0)
+			{
+				$hit = true;
+				$nicks[] = isset($g->nicks[$i]) ? $g->nicks[$i] : '';
+			}
+		}
+		if ($hit)
+		{
+			++$count;
+		}
+	}
+	return $count;
+}
+
+$town = 0;
+$maf = array(0, 0, 0, 0); // by the mafia left at the table; [0] is the games that never said
+$maf_kick = 0;            // handed to the mafia by a team kick out, never played out at the table
+// The brackets round the mask are not decoration: & binds looser than <> in MySQL, so without
+// them the server compares 8 with 0 first and ands the flags with the 1 that comes out.
+$scope = $c->is_tournament ? 'tournament_id' : 'event_id';
+$scope_id = $c->is_tournament ? $c->tournament_id : $c->event_id;
+$query = new DbQuery(
+	'SELECT result, maf_alive, (flags & ' . GAME_FLAG_TEAM_KICK_OUT . ') <> 0, COUNT(*) FROM games'.
+	' WHERE ' . $scope . ' = ? AND (flags & ' . GAME_FLAG_CANCELED . ') = 0'.
+	' GROUP BY result, maf_alive, (flags & ' . GAME_FLAG_TEAM_KICK_OUT . ') <> 0',
+	$scope_id);
+while ($row = $query->next())
+{
+	list ($result, $maf_alive, $team_kick_out, $count) = $row;
+	obs_stats_add($town, $maf, $maf_kick, $result, $maf_alive, $team_kick_out, (int)$count);
+}
+
+// And the games the room has watched but the paperwork has not caught up with.
+$unrecorded = obs_stats_unrecorded($c);
+foreach ($unrecorded as $u)
+{
+	obs_stats_add($town, $maf, $maf_kick, $u->result, $u->maf_alive, $u->team_kick_out, 1);
 }
 
 $mafia = array_sum($maf) + $maf_kick;
@@ -101,6 +232,17 @@ $facts = array();
 // without it the whole list fits on a line.
 $done = 0;
 $names = array();
+// The ones not written down yet stand first: they are the latest, which is the order the rest
+// come in.
+$fresh = array();
+$done += obs_stats_unrecorded_flag($unrecorded, SCORING_FLAG_FIRST_LEGACY_3, $fresh);
+foreach ($fresh as $nick)
+{
+	if ($nick != '')
+	{
+		$names[$nick] = isset($names[$nick]) ? $names[$nick] + 1 : 1;
+	}
+}
 $query = new DbQuery(
 	'SELECT p.nick_name FROM players p JOIN games g ON g.id = p.game_id'.
 	' WHERE g.' . $scope . ' = ? AND (g.flags & ' . GAME_FLAG_CANCELED . ') = 0 AND (p.flags & ' . SCORING_FLAG_FIRST_LEGACY_3 . ') <> 0'.
@@ -140,7 +282,9 @@ if ($done > 0)
 
 // How often the mafia found the sheriff straight away, which is the other thing a tournament
 // is talked about by.
-$sheriff = obs_stats_fact_games($scope, $scope_id, SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT);
+$none = array();
+$sheriff = obs_stats_fact_games($scope, $scope_id, SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT) +
+	obs_stats_unrecorded_flag($unrecorded, SCORING_FLAG_SHERIFF_KILLED_FIRST_NIGHT, $none);
 if ($sheriff > 0)
 {
 	$fact = new stdClass();
