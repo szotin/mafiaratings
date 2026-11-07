@@ -230,11 +230,15 @@ body.between.bg-clear .glow {
 }
 
 /* One screen gives way to the next. Every frame is a sheet of its own, laid in the same place
-   as the one before it, and a new one always goes under what is already up: the one on top
-   fades away and the one underneath is there behind it, whole and still, the whole time. So
-   nothing is ever taken off the screen before something stands in its place, the ground is
-   never seen between two frames, and nothing moves on the way through - only the light
-   changes. The old frame is taken away once it has gone - see put() in between.js. */
+   as the one before it, and the two never stand together: the one that is up fades away to
+   nothing, is taken off the screen, and only then does the next one begin to come up. Nothing
+   moves on the way through - only the light changes.
+
+   They used to cross, the new frame lying whole and still underneath the one fading off it, so
+   that the ground was never seen between two screens. That reads as one picture dissolving into
+   another, and over a scene of the club's own it read as both at once. Each half is given half
+   of what the crossing took, so the change-over is as long as it ever was. See put() in
+   between.js, which is what holds the new frame back until the old one is gone. */
 .screen > .fr {
 	position: absolute;
 	left: 0;
@@ -248,28 +252,37 @@ body.between.bg-clear .glow {
 	z-index: 0;
 }
 
-/*  The first frame of all has nothing to leave: it simply arrives. */
-@keyframes fr-first {
+/*  A frame whose turn has not come. It is in the page, drawn and measured, with the one before
+    it still on the screen above it; it is held at nothing until that one is gone. */
+.screen > .fr.wait {
+	opacity: 0;
+}
+
+/*  Coming up, onto an empty screen. The first frame of all has nothing to wait for and arrives
+    the same way. */
+@keyframes fr-enter {
 	from { opacity: 0; }
 	to   { opacity: 1; }
 }
 
-.screen > .fr.first {
-	animation: fr-first 1.4s ease both;
+.screen > .fr.enter {
+	animation: fr-enter 0.9s cubic-bezier(0.37, 0, 0.63, 1) both;
+	will-change: opacity;
 }
 
-/*  The frame on top going out. Near two seconds, eased in and out, and on a layer of its own:
-    a fade at an even pace shows its beginning and its end as two small steps, a short one
-    reads as a blink rather than as a change, and a layer that is composed rather than painted
-    again every frame is what keeps the gradients and the photographs from stepping as they
-    go. The screens stand for ten seconds apiece, so eight of them are still perfectly still. */
+/*  The frame going out. Eased in and out, and on a layer of its own: a fade at an even pace
+    shows its beginning and its end as two small steps, a short one reads as a blink rather than
+    as a change, and a layer that is composed rather than painted again every frame is what
+    keeps the gradients and the photographs from stepping as they go. Nine tenths of a second
+    out and the same again in: the screens stand for ten seconds apiece, so eight of them are
+    still perfectly still. */
 @keyframes fr-leave {
 	from { opacity: 1; }
 	to   { opacity: 0; }
 }
 
 .screen > .fr.leave {
-	animation: fr-leave 1.8s cubic-bezier(0.37, 0, 0.63, 1) forwards;
+	animation: fr-leave 0.9s cubic-bezier(0.37, 0, 0.63, 1) forwards;
 	will-change: opacity;
 }
 

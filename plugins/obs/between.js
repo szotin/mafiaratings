@@ -258,9 +258,10 @@ var obs = new function()
 		});
 	}
 
-	// How long one screen takes to give way to the next, as it is written into between.css.
-	// It is here so that the frame left behind is taken away when it is done with.
-	var FADE = 1800;
+	// How long a screen takes to fade off, as it is written into between.css. It is here so
+	// that the frame left behind is taken away when it is done with - and, now that the two
+	// never stand together, so that the next one knows when it may begin.
+	var FADE = 900;
 
 	// Somebody was waiting for the round to be standing on its first screen - see settle(). The
 	// screen is in the page by now and drawn in the same breath as this, so the word goes out as
@@ -276,9 +277,10 @@ var obs = new function()
 		tell();
 	}
 
-	// One screen gives way to the next by fading: the new frame goes in underneath, whole and
-	// still, and the one on top goes slowly out until it is not there. So there is never a
-	// moment with nothing on the screen, and nothing moves but the light.
+	// One screen gives way to the next by fading, one at a time: the frame that is up goes out
+	// until it is not there, it is taken off the screen, and only then does the new one begin
+	// to come up. The new frame is in the page the whole while - drawn, measured and held at
+	// nothing - so that when its turn comes there is nothing left to do but show it.
 	function put(html)
 	{
 		var screen = document.getElementById('screen');
@@ -305,19 +307,27 @@ var obs = new function()
 		later(stream.delay);
 		up();
 
-		// The first frame of all has nothing to give way: it comes up out of the ground. The
-		// class comes off again once it has - left on, its animation would be the one still
-		// standing when this frame is the one going out, and the frame would sit there at full
-		// strength instead of fading.
-		if (old.length <= 0)
+		// Coming up onto an empty screen. The class comes off again once it has - left on, its
+		// animation would be the one still standing when this frame is the one going out, and
+		// the frame would sit there at full strength instead of fading.
+		function arrive()
 		{
-			frame.classList.add('first');
-			var drop = function() { frame.classList.remove('first'); };
+			frame.classList.remove('wait');
+			frame.classList.add('enter');
+			var drop = function() { frame.classList.remove('enter'); };
 			frame.addEventListener('animationend', drop);
 			setTimeout(drop, 2000);
+		}
+
+		// The first frame of all has nothing to wait for.
+		if (old.length <= 0)
+		{
+			arrive();
 			return;
 		}
 
+		// Held at nothing until the one before it has gone.
+		frame.classList.add('wait');
 		for (var j = 0; j < old.length; ++j)
 		{
 			old[j].classList.add('leave');
@@ -341,6 +351,8 @@ var obs = new function()
 					old[i].parentNode.removeChild(old[i]);
 				}
 			}
+			// The screen is empty now, which is what the new frame has been waiting for.
+			arrive();
 		}
 
 		// Only the frame's own fade ending counts. The event rises from whatever is inside the
