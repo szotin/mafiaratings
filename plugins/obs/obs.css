@@ -200,7 +200,12 @@ html.no-scrim .ov::after {
 	display: grid;
 	place-items: center;
 	font-weight: 800;
-	font-size: 1.0625rem;
+	/*  A seat number is the one thing on the overlay a viewer has to read at a glance, from
+	    across a room and through whatever the stream did to the picture, and it was being
+	    drawn at about two fifths of the circle it sits in. It is half of it now - the circles
+	    themselves are unchanged, so nothing around them moves, and fitNames() in obs.js goes on
+	    reserving the same width for the chip on a card. */
+	font-size: 1.3125rem;
 	font-variant-numeric: tabular-nums;
 	color: #fff;
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.2), 0 0.1875rem 0.375rem rgba(0, 0, 0, 0.35);
@@ -239,8 +244,8 @@ html.no-scrim .ov::after {
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.45);
 }
 
-.chip.sm { width: 1.6875rem; height: 1.6875rem; font-size: 0.75rem; }
-.chip.xs { width: 1.3125rem; height: 1.3125rem; font-size: 0.625rem; }
+.chip.sm { width: 1.6875rem; height: 1.6875rem; font-size: 0.875rem; }
+.chip.xs { width: 1.3125rem; height: 1.3125rem; font-size: 0.6875rem; }
 
 /*  Every icon that stands on the picture rather than inside a chip is given the same shadow, so
     that a white pistol on a white shirt still reads. */
@@ -428,7 +433,11 @@ html.no-scrim .ov::after {
 	gap: 0.75rem;
 	max-width: 50rem;
 	white-space: nowrap;
-	font-size: 1.0625rem;
+	/*  The left corner is set in capitals, where a letter stands the full height of the line; this
+	    is not, and at the same number it came out looking half the size from across a room. So it
+	    is set larger than the left rather than equal to it, which is what makes the two corners
+	    read as one pair. */
+	font-size: 1.375rem;
 	font-weight: 700;
 	/*  Everything in these two pills is the same shade: the tournament, the table, the game and
 	    the judge are one line of information rather than a heading and its small print. */
@@ -438,7 +447,8 @@ html.no-scrim .ov::after {
 .pill.game { padding-left: 0.875rem; }
 .pill .nm { overflow: hidden; text-overflow: ellipsis; }
 .pill .dv { height: 1.5rem; }
-.pill svg { flex: none; width: 1.1875rem; height: 1.1875rem; }
+/*  Kept a shade above the lettering beside it, which is the proportion it was drawn at. */
+.pill svg { flex: none; width: 1.5rem; height: 1.5rem; }
 
 /*  The tournament's logo on a light tile, which is how a logo drawn for paper reads on a dark
     pill at this size. */
@@ -607,7 +617,7 @@ html.no-scrim .ov::after {
 	display: grid;
 	place-items: center;
 	font-weight: 700;
-	font-size: 0.8125rem;
+	font-size: 1rem;
 	font-variant-numeric: tabular-nums;
 	color: #fff;
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.2), 0 0.1875rem 0.375rem rgba(0, 0, 0, 0.35);
@@ -858,7 +868,7 @@ html.bg-light .pc.speak::before {
 .bm .chip {
 	width: 1.875rem;
 	height: 1.875rem;
-	font-size: 0.8125rem;
+	font-size: 1rem;
 	font-weight: 700;
 }
 
@@ -974,13 +984,13 @@ html.bg-light .pc.speak::before {
 }
 
 @keyframes fly-home {
-	0% { transform: none; opacity: var(--go, 1); }
+	0% { transform: none; opacity: 1; }
 	12.5% { transform: translate(calc(var(--dx, 0px) * 0.2344), calc(var(--dy, 0px) * 0.2344 - var(--lift, 2rem) * 0.7178)); }
 	25% { transform: translate(calc(var(--dx, 0px) * 0.4375), calc(var(--dy, 0px) * 0.4375 - var(--lift, 2rem) * 0.9844)); }
 	37.5% { transform: translate(calc(var(--dx, 0px) * 0.6094), calc(var(--dy, 0px) * 0.6094 - var(--lift, 2rem) * 0.9521)); }
 	50% { transform: translate(calc(var(--dx, 0px) * 0.75), calc(var(--dy, 0px) * 0.75 - var(--lift, 2rem) * 0.75)); }
 	62.5% { transform: translate(calc(var(--dx, 0px) * 0.8594), calc(var(--dy, 0px) * 0.8594 - var(--lift, 2rem) * 0.4834)); }
-	75% { transform: translate(calc(var(--dx, 0px) * 0.9375), calc(var(--dy, 0px) * 0.9375 - var(--lift, 2rem) * 0.2344)); opacity: var(--go, 1); }
+	75% { transform: translate(calc(var(--dx, 0px) * 0.9375), calc(var(--dy, 0px) * 0.9375 - var(--lift, 2rem) * 0.2344)); opacity: 1; }
 	87.5% { transform: translate(calc(var(--dx, 0px) * 0.9844), calc(var(--dy, 0px) * 0.9844 - var(--lift, 2rem) * 0.0615)) scale(0.88); }
 	100% { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.66); opacity: 0; }
 }
@@ -997,7 +1007,7 @@ html.bg-light .pc.speak::before {
 }
 
 @keyframes stk-go {
-	0% { opacity: var(--go, 1); transform: none; }
+	0% { opacity: 1; transform: none; }
 	100% { opacity: 0; transform: translateY(0.375rem) scale(0.96); }
 }
 
@@ -1031,12 +1041,12 @@ html.bg-light .pc.speak::before {
 	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.28), inset 0 -0.0625rem 0.125rem rgba(0, 0, 0, 0.4), 0 0.1875rem 0.5rem rgba(0, 0, 0, 0.35);
 }
 
-/*  The one who was voted out, and the ones who were not. */
+/*  The one who was voted out. The others are not marked at all: they used to be taken down to a
+    third of their ink while this one spoke, which put the table's reading of the day out of
+    sight exactly while it was being talked about. */
 .stk.out {
 	box-shadow: 0 0 0 0.125rem rgba(255, 77, 94, 0.55), 0 0 1.625rem rgba(255, 77, 94, 0.45), 0 0.5rem 1.375rem rgba(0, 0, 0, 0.3);
 }
-
-.stk.fade { opacity: 0.35; }
 
 /*--------------------------------------------------------------------------------------
     the game is over

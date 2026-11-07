@@ -859,9 +859,13 @@ var obs = new function()
 		// standing belongs to a seat that tied: each of them is told so rather than none.
 		var tied = (context.tie && (lead || context.max <= 0));
 		var classes = 'stk';
-		if (context.out)
+		// While the player who was voted out says their last word their own count is ringed.
+		// The other counts used to be taken down to a third of their ink at the same moment,
+		// which took the table's reading of the day off the screen exactly while it was being
+		// talked about. They stand as they stood.
+		if (context.out && context.out.number == player.number)
 		{
-			classes += (context.out.number == player.number) ? ' out' : ' fade';
+			classes += ' out';
 		}
 		else if (tied)
 		{
@@ -1041,20 +1045,15 @@ var obs = new function()
 		for (var i = 0; i < cards.length; ++i)
 		{
 			var card = cards[i];
-			// The card of a nominee who was not voted out stands at a third of its ink, so a copy
-			// of it has to start there too rather than at full strength. It is read off the class
-			// rather than asked of the browser: a card that is still rising answers nothing useful,
-			// and this is the only thing that dims one - see .stk.fade in obs.css.
-			var dim = card.classList.contains('fade') ? '0.35' : '1';
 			// The card itself, not a copy of it: writing the cell again takes this one out of the
 			// page but leaves it whole in hand, which is all a thing that is leaving needs.
-			snap.cards.push({ seat: card.getAttribute('data-seat'), dim: dim,
+			snap.cards.push({ seat: card.getAttribute('data-seat'),
 				rect: card.getBoundingClientRect(), node: card });
 			var chips = card.querySelectorAll('.stk-c .chip[data-from]');
 			for (var k = 0; k < chips.length; ++k)
 			{
 				snap.chips.push({ from: chips[k].getAttribute('data-from'), cls: chips[k].className,
-					dim: dim, rect: chips[k].getBoundingClientRect() });
+					rect: chips[k].getBoundingClientRect() });
 			}
 		}
 		return snap;
@@ -1096,7 +1095,7 @@ var obs = new function()
 			ghost.style.setProperty('--dx', dx + 'px');
 			ghost.style.setProperty('--dy', dy + 'px');
 			ghost.style.setProperty('--lift', lift(dx, vote.rect.height) + 'px');
-			layOver(ghost, vote.rect, vote.dim);
+			layOver(ghost, vote.rect);
 		}
 
 		here = {};
@@ -1122,19 +1121,18 @@ var obs = new function()
 			}
 			copy.classList.remove('rise');
 			copy.classList.add('ghost');
-			layOver(copy, card.rect, card.dim);
+			layOver(copy, card.rect);
 		}
 	}
 
 	// Puts a copy where the thing it is a copy of stood, on top of everything, and takes it away
 	// when its animation is over. The timer is only in case the animation never reports itself.
-	function layOver(ghost, rect, dim)
+	function layOver(ghost, rect)
 	{
 		ghost.style.left = rect.left + 'px';
 		ghost.style.top = rect.top + 'px';
 		ghost.style.width = rect.width + 'px';
 		ghost.style.height = rect.height + 'px';
-		ghost.style.setProperty('--go', dim);
 		document.body.appendChild(ghost);
 		var done = function()
 		{
