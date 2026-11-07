@@ -335,15 +335,23 @@ body.between.bg-clear .glow {
     panel off our own dark ground, and a lit photograph it lifts just as readily: the figures on
     the panel then stand on a picture that has been brightened rather than quietened, which is
     what the stats frame came out as over a night city. Where the source is see-through the
-    panel is dark instead - the fill the standings table stands on, and the one the overlay
-    settled on for a panel over a camera, see .gl in obs.css. A pale page puts the picture down
-    with white, which does the same work from the other side. */
+    panel is dark instead - the same fill the standings table stands on, see .st::before. A pale
+    page puts the picture down with white, which does the same work from the other side.
+
+    Nine tenths of the way to solid, which is to say hardly a glass at all. A club chooses its
+    own scene and may choose anything: the one this was asked for is a photograph of Los Angeles
+    at night, which is little but headlights and lit windows. Light of that order comes through
+    any thinner fill - not as a wash under the figures, which is what a glass is for, but as
+    bright spots among them, and nothing short of this puts them out. So over a scene of the
+    club's own the panel gives up being a window and simply stands on it. The overlay keeps the
+    lighter fill - see .gl in obs.css - because what it stands over is a camera pointed at a
+    table: one lit room, which holds still and holds its brightness. */
 body.between.bg-clear .glass {
-	background: rgba(14, 8, 11, 0.62);
+	background: rgba(14, 8, 11, 0.9);
 }
 
 body.between.bg-clear.bg-light .glass {
-	background: rgba(255, 255, 255, 0.78);
+	background: rgba(255, 255, 255, 0.9);
 }
 
 /*--------------------------------------------------------------------------------------
@@ -1037,10 +1045,10 @@ body.between.bg-light .perfect { color: #B07A00; }
 
     Dark, where .glass is a pale wash. A pale wash is laid over our own dark ground and lifts a
     panel off it; laid over a lit photograph it lifts that too, and what a table of twenty rows
-    wants is the picture under it put down. The number is the one the overlay settled on for a
-    panel standing over a camera - see .gl in obs.css. It reaches the width of the header above
-    it exactly, the rows carrying their own padding inside that, and it is not a blur: see the
-    note over .glass for the machines that answer backdrop-filter with a black rectangle. */
+    wants is the picture under it put down. It is put down nearly all the way, for the reason
+    given over .glass, whose fill this is. It reaches the width of the header above it exactly,
+    the rows carrying their own padding inside that, and it is not a blur: see the note over
+    .glass for the machines that answer backdrop-filter with a black rectangle. */
 .st::before {
 	content: '';
 	position: absolute;
@@ -1049,13 +1057,13 @@ body.between.bg-light .perfect { color: #B07A00; }
 	top: -1.25rem;
 	bottom: -1.25rem;
 	border-radius: 1.75rem;
-	background: rgba(14, 8, 11, 0.62);
+	background: rgba(14, 8, 11, 0.9);
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--gl-sh);
 }
 
 /*  On a pale page the picture behind is put down by white instead. */
 body.between.bg-light .st::before {
-	background: rgba(255, 255, 255, 0.78);
+	background: rgba(255, 255, 255, 0.9);
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--gl-sh);
 }
 
