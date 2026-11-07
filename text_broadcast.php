@@ -449,6 +449,29 @@ echo '</button>';
 	{
 		setInterval(settings, options.settingsInterval);
 	}
+
+	// A page nobody is looking at is slowed down by the browser and can be stopped outright:
+	// a tab behind another one, or a window behind another window, is held to one turn a
+	// minute and after a few minutes of that is frozen where it stands. So a reader who comes
+	// back to this page finds it as old as the last turn the browser allowed, and without this
+	// it stays that old until the next one - which is how a table that had finished its
+	// voting was still being voted at here. Coming back into view is itself the moment to
+	// ask. The frames do the same for the half of the page they draw; see obs.js.
+	document.addEventListener('visibilitychange', function()
+	{
+		if (!document.hidden)
+		{
+			ask();
+			if (options.locale)
+			{
+				settings();
+			}
+		}
+	});
+
+	// And a page the browser put away whole when the reader followed a link, to hand back
+	// when they pressed Back, comes back without ever having been hidden.
+	window.addEventListener('pageshow', function(event) { if (event.persisted) { ask(); } });
 })();
 </script>
 </body></html>

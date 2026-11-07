@@ -14,6 +14,7 @@ var obs = new function()
 	var options;   // the options passed by obs.php
 	var game;      // the last game state we got from the site
 	var offline;   // true when the site did not answer the last request
+	var pending;   // the next turn, already booked, so that waking the page does not book a second
 	var hideRoles; // true when the game being played keeps its roles off the overlays
 	var dealt;     // how far the roles have been handed out - see dealtTo()
 	var shows;     // which parts of the drawing this table is set to show - see settings()
@@ -34,6 +35,7 @@ var obs = new function()
 		settings();
 		setInterval(settings, options.settingsInterval);
 		refresh();
+		document.addEventListener('visibilitychange', wake);
 
 		// The nicknames are placed by measuring them, and a measurement taken before the font has
 		// arrived is a measurement of a different font. The first drawing happens either way, so
@@ -127,14 +129,38 @@ var obs = new function()
 			shows.sheriffChecks || shows.nominees);
 	}
 
+	// Asking what is happening at the table, and booking the next ask. The booking is cleared
+	// first wherever it is made, so that refresh() can be called from outside the chain - see
+	// the waking below - without leaving two chains running side by side.
 	function refresh()
 	{
+		clearTimeout(pending);
 		// The game state is taken from our own site, so the page works the same way everywhere it is deployed.
 		fetch('../../api/get/current_game.php?' + new URLSearchParams(options.params)).
 			then(function(response) { return response.ok ? response.json() : Promise.reject(response.status); }).
 			then(function(data) { game = data.game; offline = false; }).
 			catch(function(error) { offline = true; }).
-			then(function() { show(); setTimeout(refresh, options.retryDelay); });
+			then(function()
+			{
+				show();
+				clearTimeout(pending);
+				pending = setTimeout(refresh, options.retryDelay);
+			});
+	}
+
+	// A page nobody is looking at is slowed down by the browser and can be stopped outright: a
+	// tab behind another one is held to one turn a minute and after a few minutes of that is
+	// frozen where it stands. A browser source in OBS is never behind anything, so this is for
+	// the frames of text_broadcast.php, where a reader can leave the page and come back to a
+	// picture as old as the last turn the browser allowed - and for a source OBS itself puts
+	// to sleep while its scene is off the air. Coming back into view is the moment to ask.
+	function wake()
+	{
+		if (!document.hidden)
+		{
+			refresh();
+			settings();
+		}
 	}
 
 	//--------------------------------------------------------------------------------------
