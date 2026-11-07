@@ -14,6 +14,16 @@ var _gameOnChange; // this function is called every time game changes. Parameter
 
 const DEFAULT_FEATURES = 'agsdutclhvknwro';
 
+// How long one save may be out before it is given up on and made again. A save is attempted
+// every second and the one in flight holds the rest back - see gameSave() - so a request that
+// never comes back, which is what a machine waking from sleep or a network changing under it
+// leaves behind, would stop the game being written down for the rest of the evening. Half a
+// minute is far longer than a save has ever taken and short enough that nothing of a round
+// happens inside it. Making the same save again is safe: the whole game goes up every time,
+// and the tail of the log goes up with the place it belongs at - see update_game_log() in
+// api/ops/game.php.
+const SAVE_TIMEOUT = 30000;
+
 var statusWaiter = new function()
 {
 	function setState(state)
@@ -60,6 +70,17 @@ var statusWaiter = new function()
 	{
 		setState(http.connected() ? 0 : 2);
 	}
+
+	// Told when the site starts answering, or stops. Nothing is done with it - success() and
+	// error() are called straight after and they settle the state between them - but it has to
+	// be here: http.connected() hands the news to the waiter the request was made with, and a
+	// waiter without this threw where it was called from. That is inside the handlers in
+	// http.post(), above the line that ends the request, so the saving was left at state 1 for
+	// good: the disk stayed on the screen, and the guard in gameSave() against two requests at
+	// once turned into a guard against any request at all. The game went on being played and
+	// nothing more of it was written down. It took the first failed save to do it, which is why
+	// it looked like it happened out of nowhere and why the connection was fine afterwards.
+	this.connected = function(c) {}
 } // statusWaiter
 
 function _gameCutArray(arr)
@@ -182,7 +203,8 @@ function gameSave(onSuccess)
 					localStorage['game'] = gameStr;
 				}
 				_errorListener(1, message);
-			});
+			},
+			SAVE_TIMEOUT);
 			http.waiter(w);
 		}
 	}

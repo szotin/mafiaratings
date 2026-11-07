@@ -366,10 +366,16 @@ var http = new function()
 		if (isBool(c) && _connected != c)
 		{
 			_connected = c;
-			if (isObject(w))
-				w.connected(c)
-			else
-				_waiter.connected(c);
+			// A waiter that does not care to be told is not made to listen. This is called from
+			// inside the handlers of post() and upload(), above the line that ends the request,
+			// so a waiter without the method used to throw there and leave the request looking
+			// as though it had never come back - see statusWaiter in game.js, which is the one
+			// it happened to.
+			let told = isObject(w) ? w : _waiter;
+			if (isFunction(told.connected))
+			{
+				told.connected(c);
+			}
 		}
 		return _c;
 	}
@@ -409,14 +415,26 @@ var http = new function()
 		return l('URLNotFound', page);
 	}
 
-	this.post = function(page, params, onSuccess, onError)
+	// timeout, where it is given, is how long the request may be out before it is given up on,
+	// in milliseconds. Without one a request that never comes back never comes back: the two
+	// handlers below are the only thing that ends it, and nothing else is watching. A caller
+	// that counts the requests it has out - see statusWaiter in game.js, which will not begin a
+	// second save while the first is still gone - then waits for ever. jQuery breaks a request
+	// off when its time is up and calls the error handler, so the count comes back down and the
+	// next request goes out.
+	this.post = function(page, params, onSuccess, onError, timeout)
 	{
 		let w = _waiter;
 		page = _host + page;
 		if (w.start())
 		{
 			//setTimeout(function() {
-			$.post(page, params).success(function(data, textStatus, response)
+			let request = { url: page, type: 'POST', data: params };
+			if (timeout > 0)
+			{
+				request.timeout = timeout;
+			}
+			$.ajax(request).success(function(data, textStatus, response)
 			{
 				http.connected(true, w);
 				let error = onSuccess(response.responseText);
@@ -668,12 +686,12 @@ var json = new function()
 		return result;
 	}
 	
-	this.post = function(page, params, onSuccess, onError)
+	this.post = function(page, params, onSuccess, onError, timeout)
 	{
 		http.post(page, params, function(text)
 		{
-			return _success(text, onSuccess, onError, function() { json.post(page, params, onSuccess, onError); });
-		}, onError);
+			return _success(text, onSuccess, onError, function() { json.post(page, params, onSuccess, onError, timeout); });
+		}, onError, timeout);
 	}
 	
 	this.upload = function(page, params, maxSize, onSuccess, onError, onProgress)
