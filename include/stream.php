@@ -235,6 +235,30 @@ function stream_played_keys($condition, $now)
 	return $played;
 }
 
+// The parts of the cards source that can be turned off one at a time: the name they are asked
+// about by, the flag they are kept in, and what they are called in the answer the sources read.
+//
+// One list, because three places walk it - the page that sets them, and both ends of the api -
+// and a part missing from one of them would be a switch that saves nothing or a setting nothing
+// obeys. The names are the way round a person thinks: show_phase yes is a phase that is drawn.
+// The flags are the other way round, so that a table nobody has ever set up shows everything.
+function stream_glyph_parts()
+{
+	return array(
+		'top' => array('flag' => STREAM_FLAG_HIDE_TOP, 'js' => 'top'),
+		'phase' => array('flag' => STREAM_FLAG_HIDE_PHASE, 'js' => 'phase'),
+		'game' => array('flag' => STREAM_FLAG_HIDE_GAME, 'js' => 'game'),
+		'judge' => array('flag' => STREAM_FLAG_HIDE_JUDGE, 'js' => 'judge'),
+		'don_checks' => array('flag' => STREAM_FLAG_HIDE_DON_CHECKS, 'js' => 'donChecks'),
+		'sheriff_checks' => array('flag' => STREAM_FLAG_HIDE_SHERIFF_CHECKS, 'js' => 'sheriffChecks'),
+		'nominees' => array('flag' => STREAM_FLAG_HIDE_NOMINEES, 'js' => 'nominees'),
+		'cards' => array('flag' => STREAM_FLAG_HIDE_CARDS, 'js' => 'cards'),
+		'votes' => array('flag' => STREAM_FLAG_HIDE_VOTES, 'js' => 'votes'),
+		'warnings' => array('flag' => STREAM_FLAG_HIDE_WARNINGS, 'js' => 'warnings'),
+		'best_move' => array('flag' => STREAM_FLAG_HIDE_BEST_MOVE, 'js' => 'bestMove'),
+		'speaker' => array('flag' => STREAM_FLAG_HIDE_SPEAKER, 'js' => 'speaker'));
+}
+
 // The language a page standing at a table is to be shown in, worked out from the address it
 // was opened by: the address names the table, and what the table is set to show is on the
 // site - see stream_settings(). That is the whole point of it being there. A source set up in

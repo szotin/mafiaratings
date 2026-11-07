@@ -261,6 +261,28 @@ define('STREAM_FLAG_NO_AUTO_SCENE', 0x4);
 define('STREAM_FLAG_HIDE_GLYPHS', 0x8);
 define('STREAM_FLAG_HIDE_BETWEEN', 0x10);
 
+// And the parts of the cards source, one by one. Stored the other way round from the way they
+// are asked about - a set bit hides - so that a table nobody has said anything about shows
+// everything, which is what it did before any of these existed.
+//
+// The source draws two things: the strip along the top and the cards along the bottom. Each has
+// a flag of its own and a flag for every part of it. The two answer different questions - the
+// first whether that half of the picture is there at all, the second what is in it - and a
+// half that is turned off stays set up underneath, so that turning it back on brings back what
+// was there rather than an empty strip somebody has to fill in again.
+define('STREAM_FLAG_HIDE_TOP', 0x4000);
+define('STREAM_FLAG_HIDE_PHASE', 0x20);
+define('STREAM_FLAG_HIDE_GAME', 0x40);
+define('STREAM_FLAG_HIDE_JUDGE', 0x80);
+define('STREAM_FLAG_HIDE_DON_CHECKS', 0x100);
+define('STREAM_FLAG_HIDE_SHERIFF_CHECKS', 0x200);
+define('STREAM_FLAG_HIDE_NOMINEES', 0x2000);
+define('STREAM_FLAG_HIDE_CARDS', 0x8000);
+define('STREAM_FLAG_HIDE_VOTES', 0x400);
+define('STREAM_FLAG_HIDE_WARNINGS', 0x800);
+define('STREAM_FLAG_HIDE_BEST_MOVE', 0x1000);
+define('STREAM_FLAG_HIDE_SPEAKER', 0x10000);
+
 
 // event flags
 //  1  - 0x0001 -      1 - event should not be shown in the event list before the end of the event

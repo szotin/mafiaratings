@@ -283,6 +283,17 @@ button.copy-url img { display: block; width: 16px; height: 16px; border: 0; }
 span.broadcast-url { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 span.broadcast-url a { min-width: 0; overflow-wrap: anywhere; }
 
+/* The hierarchy of the switches in a section - streams.php - shown where it is read, at the
+   switches themselves: whether the source shows anything at all, then the two halves of the
+   drawing, then what each half is made of. Each level stands further in than the one over it.
+   The names beside them are right-aligned against the column of switches and so cannot be
+   indented - that is the edge they are not at - which is why the switches carry it. */
+table.stream-settings td.stream-lvl1 { padding-left: 26px; }
+table.stream-settings td.stream-lvl2 { padding-left: 50px; }
+
+/* A switch that has others under it, with a little air over it to set the group apart. */
+table.stream-settings td.stream-group { padding-top: 9px; }
+
 /* The sections themselves - streams.php. Rows are put away and brought back while the page
    stands there, so the columns are nailed down instead of being measured against whatever
    rows happen to be showing; otherwise the whole section shifts every time one goes. */

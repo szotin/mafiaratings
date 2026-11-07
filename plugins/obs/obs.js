@@ -16,6 +16,7 @@ var obs = new function()
 	var offline;   // true when the site did not answer the last request
 	var hideRoles; // true when the game being played keeps its roles off the overlays
 	var dealt;     // how far the roles have been handed out - see dealtTo()
+	var shows;     // which parts of the drawing this table is set to show - see settings()
 	var shown;     // the voters already on the screen, so that only a new one flies in
 	var stacks;    // the nominees whose vote card is already up, so that only a new one rises
 
@@ -25,6 +26,11 @@ var obs = new function()
 		game = null;
 		offline = false;
 		shown = {};
+		// Everything, until the site says otherwise a moment from now. A source that comes up
+		// while the site is unreachable draws the whole thing rather than half of it.
+		shows = { top: true, phase: true, game: true, judge: true, donChecks: true,
+			sheriffChecks: true, nominees: true, cards: true, votes: true, warnings: true,
+			bestMove: true, speaker: true };
 		settings();
 		setInterval(settings, options.settingsInterval);
 		refresh();
@@ -68,6 +74,15 @@ var obs = new function()
 					return;
 				}
 				document.body.classList.toggle('hidden-source', answer.stream.hideGlyphs ? true : false);
+
+				// And which parts of the drawing this table shows. Unlike the language, these
+				// need no reload: nothing of them was written into the page by the server, so
+				// the picture is simply drawn again. Only when something has actually changed,
+				// so that the cards are not rewritten every ten seconds for nothing.
+				if (readShows(answer.stream.show))
+				{
+					show();
+				}
 				if (answer.stream.locale && options.locale && answer.stream.locale != options.locale)
 				{
 					options.locale = answer.stream.locale; // so that one change asks for one reload
@@ -75,6 +90,41 @@ var obs = new function()
 				}
 			}).
 			catch(function(error) { /* the site is not answering: leave the page as it stands */ });
+	}
+
+	// Takes what the site says about each part and answers whether any of it is news. A part the
+	// answer says nothing about is left standing as it is, which is what an older site - one
+	// that knows nothing of these - leaves: everything drawn, as at a table nobody has set up.
+	function readShows(said)
+	{
+		if (!said)
+		{
+			return false;
+		}
+		var changed = false;
+		for (var name in shows)
+		{
+			if (said[name] === undefined)
+			{
+				continue;
+			}
+			var on = (said[name] ? true : false);
+			if (shows[name] !== on)
+			{
+				shows[name] = on;
+				changed = true;
+			}
+		}
+		return changed;
+	}
+
+	// Whether there is a strip along the top of the overlay to put anything in: the strip is
+	// switched on, and something in it is - a strip with all six of its parts turned off is an
+	// empty one. See STREAM_FLAG_HIDE_TOP in include/constants.php.
+	function topShown()
+	{
+		return shows.top && (shows.phase || shows.game || shows.judge || shows.donChecks ||
+			shows.sheriffChecks || shows.nominees);
 	}
 
 	function refresh()
@@ -256,25 +306,29 @@ var obs = new function()
 			replace('[0]', night ? g.round : g.round + 1);
 		var state = stateLabel(g);
 
-		var html = '<div class="phase gl ' + (night ? 'night' : 'day') + '">' +
-			'<span class="ic">' + (night ? IC.moon : IC.sun) + '</span>' +
-			'<span class="pn">' + escapeHtml(name) + '</span>';
-		if (state != '')
+		var html = '';
+		if (shows.top && shows.phase)
 		{
-			html += '<span class="dv"></span><span class="st">' + escapeHtml(state) + '</span>';
+			html = '<div class="phase gl ' + (night ? 'night' : 'day') + '">' +
+				'<span class="ic">' + (night ? IC.moon : IC.sun) + '</span>' +
+				'<span class="pn">' + escapeHtml(name) + '</span>';
+			if (state != '')
+			{
+				html += '<span class="dv"></span><span class="st">' + escapeHtml(state) + '</span>';
+			}
+			html += '</div>';
 		}
-		html += '</div>';
 
 		// A pill of checks appears only once there is a check in it. The don's checks come first,
 		// because the don checks first.
 		var don = checkedBy(g.players, 'checkedByDon');
 		var sheriff = checkedBy(g.players, 'checkedBySheriff');
 		var checks = '';
-		if (don.length > 0)
+		if (don.length > 0 && shows.top && shows.donChecks)
 		{
 			checks += '<div class="ck d gl"><span class="ic">' + IC.hat + '</span>' + checkChips(don, true) + '</div>';
 		}
-		if (sheriff.length > 0)
+		if (sheriff.length > 0 && shows.top && shows.sheriffChecks)
 		{
 			checks += '<div class="ck s gl"><span class="ic">' + IC.star + '</span>' + checkChips(sheriff, false) + '</div>';
 		}
@@ -282,7 +336,9 @@ var obs = new function()
 
 		// The site is not answering. The cards stay as they were - what is on the screen is the
 		// last thing we knew - but whoever is running the stream has to be told that it is old.
-		if (offline)
+		// Only where there is a strip to say it in: a table that has turned the strip off has
+		// said it wants nothing up there, and this is no exception to that.
+		if (offline && topShown())
 		{
 			html += '<div class="off gl">' + escapeHtml(options.labels.offline) + '</div>';
 		}
@@ -336,7 +392,7 @@ var obs = new function()
 	// voting, and goes as soon as the voted-out card has dropped.
 	function nominated(g)
 	{
-		if (g.phase != 'day' || isOver(g))
+		if (!shows.top || !shows.nominees || g.phase != 'day' || isOver(g))
 		{
 			return '';
 		}
@@ -385,7 +441,7 @@ var obs = new function()
 		{
 			parts.push('<span>' + escapeHtml(options.labels.game.replace('[0]', g.tour)) + '</span>');
 		}
-		if (parts.length > 0)
+		if (parts.length > 0 && shows.top && shows.game)
 		{
 			html += '<div class="pill game gl">' +
 				(logo ? '<span class="tlogo"><img src="' + escapeHtml(logo) + '" alt=""></span>' : '') +
@@ -395,7 +451,7 @@ var obs = new function()
 		// The judge, with the gavel after the name: the photograph says who, the gavel says what
 		// they are doing there.
 		var judge = g.moderator;
-		if (judge && judge.name)
+		if (judge && judge.name && shows.top && shows.judge)
 		{
 			html += '<div class="pill judge gl"><span class="av">' + photo(judge) + '</span>' +
 				'<span class="nm">' + escapeHtml(judge.name) + '</span>' + IC.gavel + '</div>';
@@ -455,6 +511,17 @@ var obs = new function()
 		var div = document.getElementById('players');
 		if (!div)
 		{
+			return;
+		}
+
+		// A table that has turned the cards off keeps the row of them empty. The game is still
+		// followed underneath, so turning them back on puts up what is happening then.
+		if (!shows.cards)
+		{
+			while (div.firstChild)
+			{
+				div.removeChild(div.firstChild);
+			}
 			return;
 		}
 
@@ -623,7 +690,7 @@ var obs = new function()
 		{
 			classes.push('dead');
 		}
-		if (player.isSpeaking)
+		if (player.isSpeaking && shows.speaker)
 		{
 			classes.push('speak');
 		}
@@ -644,7 +711,8 @@ var obs = new function()
 		// shot on the first night. Never both at once - they are the same space.
 		var above = '';
 		var held = false;
-		if (context.counting && (context.votes[player.number] || context.named[player.number]))
+		if (shows.votes && context.counting &&
+			(context.votes[player.number] || context.named[player.number]))
 		{
 			above = voteCard(g, player, context);
 			// And whether the count has to be held where it is. The card under it is the card of a
@@ -652,7 +720,7 @@ var obs = new function()
 			// is still up because they are speaking their last word. See .cell.held in obs.css.
 			held = (player.state == 'dead');
 		}
-		else if (context.legacy && context.legacyOf == player.number)
+		else if (shows.bestMove && context.legacy && context.legacyOf == player.number)
 		{
 			above = bestGuess(g, context);
 		}
@@ -684,7 +752,10 @@ var obs = new function()
 	// one who is not left it.
 	function marks(player)
 	{
-		if (options.hideWarnings)
+		// Either the address of the source or the table's own settings can keep these off. The
+		// address was the only way before the settings existed, and a source set up that way
+		// goes on working.
+		if (options.hideWarnings || !shows.warnings)
 		{
 			return '';
 		}

@@ -265,13 +265,38 @@ class ApiPage extends OpsApiPageBase
 			{
 				$flags = ((int)$_REQUEST['transparent'] != 0) ? ($flags | STREAM_FLAG_TRANSPARENT) : ($flags & ~STREAM_FLAG_TRANSPARENT);
 			}
+			// Each of these two can be asked either way round. They are kept as a thing to
+			// hide, so that a table nobody has set up shows its sources; the page asks as a
+			// thing to show, so that every switch on it means the same by yes.
 			if (isset($_REQUEST['hide_glyphs']))
 			{
 				$flags = ((int)$_REQUEST['hide_glyphs'] != 0) ? ($flags | STREAM_FLAG_HIDE_GLYPHS) : ($flags & ~STREAM_FLAG_HIDE_GLYPHS);
 			}
+			if (isset($_REQUEST['show_glyphs']))
+			{
+				$flags = ((int)$_REQUEST['show_glyphs'] != 0) ? ($flags & ~STREAM_FLAG_HIDE_GLYPHS) : ($flags | STREAM_FLAG_HIDE_GLYPHS);
+			}
 			if (isset($_REQUEST['hide_between']))
 			{
 				$flags = ((int)$_REQUEST['hide_between'] != 0) ? ($flags | STREAM_FLAG_HIDE_BETWEEN) : ($flags & ~STREAM_FLAG_HIDE_BETWEEN);
+			}
+			if (isset($_REQUEST['show_between']))
+			{
+				$flags = ((int)$_REQUEST['show_between'] != 0) ? ($flags & ~STREAM_FLAG_HIDE_BETWEEN) : ($flags | STREAM_FLAG_HIDE_BETWEEN);
+			}
+			// The parts of the cards source, each asked about as a thing to show and kept as a
+			// thing to hide - see stream_glyph_parts(), which is the only place that says what
+			// there is. Nothing is worked out from the others here: the strip along the top goes
+			// when its last part does, and that is settled where it is drawn rather than stored
+			// as a ninth answer that could come to disagree with the eight.
+			foreach (stream_glyph_parts() as $name => $part)
+			{
+				$asked = 'show_' . $name;
+				if (isset($_REQUEST[$asked]))
+				{
+					$flags = ((int)$_REQUEST[$asked] != 0)
+						? ($flags & ~$part['flag']) : ($flags | $part['flag']);
+				}
 			}
 			// Asked for the right way round and stored the other, so that a table nobody has
 			// said anything about switches by itself, which is what it did before there was
@@ -303,6 +328,20 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('transparent', '1 paints no ground at all, so the scene behind the browser source shows through.', 'left as it is.');
 		$help->request_param('hide_glyphs', '1 shows nothing at all on the sources that carry the cards over the game. They go on following the game behind it, so 0 puts up what is happening then rather than what was happening when they were switched off.', 'left as it is.');
 		$help->request_param('hide_between', '1 shows nothing at all on the source that fills the time between games.', 'left as it is.');
+		$help->request_param('show_glyphs', 'The same as hide_glyphs the other way round: 1 shows the sources carrying the cards over the game, 0 shows nothing at all on them.', 'left as it is.');
+		$help->request_param('show_between', 'The same as hide_between the other way round: 1 shows the source filling the time between games, 0 shows nothing at all on it.', 'left as it is.');
+		$help->request_param('show_top', '1 draws the strip along the top of the overlay, 0 leaves the whole of it out. What is set about its parts is kept either way.', 'left as it is.');
+		$help->request_param('show_phase', '1 draws the pill saying which day or night the game is in and what is happening, 0 leaves it out.', 'left as it is.');
+		$help->request_param('show_game', '1 draws the pill naming the tournament, the table and the game, 0 leaves it out.', 'left as it is.');
+		$help->request_param('show_judge', '1 draws the referee, 0 leaves them out.', 'left as it is.');
+		$help->request_param('show_don_checks', '1 draws what the don has checked, 0 leaves it out.', 'left as it is.');
+		$help->request_param('show_sheriff_checks', '1 draws what the sheriff has checked, 0 leaves it out.', 'left as it is.');
+		$help->request_param('show_nominees', '1 draws who has been put up for the vote, 0 leaves them out.', 'left as it is.');
+		$help->request_param('show_cards', '1 draws the cards of the players along the bottom, 0 leaves the whole of them out. What is set about what is on them is kept either way.', 'left as it is.');
+		$help->request_param('show_votes', '1 draws the hands counted against a nominee over their card, 0 leaves them out.', 'left as it is.');
+		$help->request_param('show_warnings', '1 draws the fouls in the corner of a card, 0 leaves them out. The way a player left the game goes with them.', 'left as it is.');
+		$help->request_param('show_best_move', '1 draws the best move of the player shot on the first night, 0 leaves it out.', 'left as it is.');
+		$help->request_param('show_speaker', '1 lights the card of whoever is speaking, 0 leaves every card alike.', 'left as it is.');
 		$help->request_param('auto_scenes', '1 switches the OBS scenes at this table by the phase of the game being played, 0 leaves them to be switched by hand. What is set up against the phases is kept either way.', 'left as it is.');
 		$help->request_param('hide_roles', '1 keeps the roles off the overlays. It belongs to the tournament rather than to one table, so it is set for the whole of it and every round follows.', 'left as it is.');
 		return $help;

@@ -116,8 +116,19 @@ class Page extends StreamsPageBase
 		$form->screens = $settings->screens;
 		$form->dark = ($settings->flags & STREAM_FLAG_DARK) ? 1 : 0;
 		$form->transparent = ($settings->flags & STREAM_FLAG_TRANSPARENT) ? 1 : 0;
-		$form->hide_glyphs = ($settings->flags & STREAM_FLAG_HIDE_GLYPHS) ? 1 : 0;
-		$form->hide_between = ($settings->flags & STREAM_FLAG_HIDE_BETWEEN) ? 1 : 0;
+		// Asked the way every other switch on the page is asked - as a thing to show - though
+		// they are kept the other way round, so that a table nobody has set up shows its
+		// sources rather than hiding them.
+		$form->show_glyphs = ($settings->flags & STREAM_FLAG_HIDE_GLYPHS) ? 0 : 1;
+		$form->show_between = ($settings->flags & STREAM_FLAG_HIDE_BETWEEN) ? 0 : 1;
+
+		// The parts of the cards source, asked about the way round the page asks and stored the
+		// other - see STREAM_FLAG_HIDE_PHASE. A switch standing at yes is a part that is drawn.
+		foreach (stream_glyph_parts() as $name => $part)
+		{
+			$key = 'show_' . $name;
+			$form->$key = ($settings->flags & $part['flag']) ? 0 : 1;
+		}
 		return $form;
 	}
 
@@ -139,7 +150,12 @@ class Page extends StreamsPageBase
 
 			// NULL is "the tables do not agree", which the form shows as nothing chosen rather
 			// than as some table's answer standing in for the rest.
-			foreach (array('lang', 'delay', 'screens', 'dark', 'transparent', 'hide_glyphs', 'hide_between') as $name)
+			$named = array('lang', 'delay', 'screens', 'dark', 'transparent', 'show_glyphs', 'show_between');
+			foreach (array_keys(stream_glyph_parts()) as $part)
+			{
+				$named[] = 'show_' . $part;
+			}
+			foreach ($named as $name)
 			{
 				if (!is_null($all->$name) && $all->$name !== $form->$name)
 				{
@@ -161,26 +177,43 @@ class Page extends StreamsPageBase
 	}
 
 	// $group names a set of rows that stand or fall together - see toggle(), which can put
-	// one away when there is no longer anything for it to say.
-	private function show_setting($name, $content, $group = NULL)
+	// one away when there is no longer anything for it to say. $level is how deep this row
+	// stands under the switches above it, which is said by setting it in - see stream-lvl1
+	// in common.css.
+	private function show_setting($name, $content, $group = NULL, $level = 0)
 	{
 		echo '<tr' . (is_null($group) ? '' : ' class="' . $group . '"') . '>' .
-			'<td class="dark" align="right">' . $name . ':</td><td>' . $content . '</td></tr>';
+			'<td class="dark" align="right">' . $name . ':</td>' .
+			'<td' . ($level > 0 ? ' class="stream-lvl' . $level . '"' : '') . '>' . $content . '</td></tr>';
+	}
+
+	// A switch that stands over the rows under it and puts them away when it is off. It is
+	// written as an ordinary row so that the two columns go on lining up, and its name is set
+	// in bold, which is the second thing - after where its switch stands - saying that the
+	// rows below belong to it.
+	private function show_group($name, $content, $group = NULL, $level = 0)
+	{
+		echo '<tr' . (is_null($group) ? '' : ' class="' . $group . '"') . '>' .
+			'<td class="dark stream-group" align="right"><b>' . $name . '</b>:</td>' .
+			'<td class="stream-group' . ($level > 0 ? ' stream-lvl' . $level : '') . '">' .
+			$content . '</td></tr>';
 	}
 
 	// A yes or no that takes effect the moment it is touched. On the tab of all the tables it
 	// may be neither, because they do not agree; the browser has a state for exactly that and
 	// is put into it on load, and the first touch settles the question for every table.
 	//
-	// $hides names a group of rows that this switch puts away when it is on. It is for the
-	// switch that turns a source off altogether: what is left of the section is how that
-	// source would look, and there is nothing to be gained by setting it while there is
+	// $hides names a group of rows that this switch puts away when it is on, and $shows a group
+	// it puts away when it is off - which of the two depends on which way round the switch is
+	// asked. Either way the point is the same: what is left of a part that is turned off is how
+	// that part would look, and there is nothing to be gained by setting it while there is
 	// nothing to look at. What was set stays set and comes back with the rows.
-	private function toggle($name, $value, $hides = NULL)
+	private function toggle($name, $value, $hides = NULL, $shows = NULL)
 	{
 		return '<input type="checkbox" class="toggle" id="' . $name . '"' .
 			($value === 1 ? ' checked' : '') . (is_null($value) ? ' data-mixed="1"' : '') .
 			(is_null($hides) ? '' : ' data-hides="' . $hides . '"') .
+			(is_null($shows) ? '' : ' data-shows="' . $shows . '"') .
 			' onchange="streamToggled(\'' . $name . '\')">';
 	}
 
@@ -329,12 +362,42 @@ class Page extends StreamsPageBase
 			$this->show_url(get_label('URL'), 'url-overlay', $site . '/plugins/obs/overlay.php?' . $scope, '1920 x 1080');
 		}
 
-		// Nothing stands in glyphs-detail at the moment - the roles, which used to, belong to
-		// the broadcast rather than to this source - but the group stays named here, because
-		// the settings of the glyphs themselves are to go into it, and they are the rows that
-		// have nothing to say while the glyphs are off.
-		$this->show_setting(get_label('Show nothing'),
-			$this->toggle('hide_glyphs', $settings->hide_glyphs, 'glyphs-detail'));
+		// The switches of this source, as a tree: whether it shows anything at all, then the two
+		// halves of the drawing, then what each half is made of. Where a switch stands says what
+		// it belongs to, and a switch that is off puts the rows under it away - there is nothing
+		// to set about a part that is not drawn, and what was set stays set until it comes back.
+		//
+		// A switch also goes off by itself when the last thing under it does; the script says
+		// which - see follow(). The cards are the exception: with all three of their extras off
+		// they still show who is sitting where, so they never go off on their own.
+		$this->show_group(get_label('Show'),
+			$this->toggle('show_glyphs', $settings->show_glyphs, NULL, 'glyphs-detail'));
+
+		$this->show_group(get_label('Top bar'),
+			$this->toggle('show_top', $settings->show_top, NULL, 'top-detail'), 'glyphs-detail', 1);
+		$this->show_setting(get_label('Game stage'),
+			$this->toggle('show_phase', $settings->show_phase), 'glyphs-detail top-detail', 2);
+		$this->show_setting(get_label('Tournament, table and game'),
+			$this->toggle('show_game', $settings->show_game), 'glyphs-detail top-detail', 2);
+		$this->show_setting(get_label('Referee'),
+			$this->toggle('show_judge', $settings->show_judge), 'glyphs-detail top-detail', 2);
+		$this->show_setting(get_label('Don\'s checks'),
+			$this->toggle('show_don_checks', $settings->show_don_checks), 'glyphs-detail top-detail', 2);
+		$this->show_setting(get_label('Sheriff\'s checks'),
+			$this->toggle('show_sheriff_checks', $settings->show_sheriff_checks), 'glyphs-detail top-detail', 2);
+		$this->show_setting(get_label('Nominees'),
+			$this->toggle('show_nominees', $settings->show_nominees), 'glyphs-detail top-detail', 2);
+
+		$this->show_group(get_label('Player glyphs'),
+			$this->toggle('show_cards', $settings->show_cards, NULL, 'cards-detail'), 'glyphs-detail', 1);
+		$this->show_setting(get_label('Voting'),
+			$this->toggle('show_votes', $settings->show_votes), 'glyphs-detail cards-detail', 2);
+		$this->show_setting(get_label('Warnings'),
+			$this->toggle('show_warnings', $settings->show_warnings), 'glyphs-detail cards-detail', 2);
+		$this->show_setting(get_label('Best move'),
+			$this->toggle('show_best_move', $settings->show_best_move), 'glyphs-detail cards-detail', 2);
+		$this->show_setting(get_label('Highlight the speaker'),
+			$this->toggle('show_speaker', $settings->show_speaker), 'glyphs-detail cards-detail', 2);
 		echo '</table>';
 
 		// One source for everything shown between games: the game just played, who sits down
@@ -346,13 +409,15 @@ class Page extends StreamsPageBase
 			$this->show_url(get_label('URL'), 'url-between', $site . '/plugins/obs/between.php?' . $scope, '1920 x 1080');
 		}
 
-		$this->show_setting(get_label('Show nothing'),
-			$this->toggle('hide_between', $settings->hide_between, 'between-detail'));
+		// Asked the same way round as the switches of the cards above, so that the page reads
+		// one way throughout: a switch standing at yes is a thing that is shown.
+		$this->show_group(get_label('Show'),
+			$this->toggle('show_between', $settings->show_between, NULL, 'between-detail'));
 
 		$html = '<input id="delay" type="number" min="' . STREAM_MIN_DELAY . '" max="' . STREAM_MAX_DELAY . '"' .
 			(is_null($settings->delay) ? '' : ' value="' . $settings->delay . '"') .
 			' style="width: 70px" onchange="streamChanged(\'delay\')"> ' . get_label('sec');
-		$this->show_setting(get_label('Delay'), $html, 'between-detail');
+		$this->show_setting(get_label('Delay'), $html, 'between-detail', 1);
 
 		// In the order they are shown, since that is what the arrows are for. The ones switched
 		// off keep a place in the list too - they have to stand somewhere, and where they stand
@@ -369,12 +434,12 @@ class Page extends StreamsPageBase
 			$html .= '</span>';
 		}
 		$html .= '</div>';
-		$this->show_setting(get_label('Screens'), $html, 'between-detail');
+		$this->show_setting(get_label('Screens'), $html, 'between-detail', 1);
 
 		$this->show_setting(get_label('Theme'),
-			$this->choice('dark', $settings->dark, get_label('Light'), get_label('Dark')), 'between-detail');
+			$this->choice('dark', $settings->dark, get_label('Light'), get_label('Dark')), 'between-detail', 1);
 		$this->show_setting(get_label('Transparent background'),
-			$this->toggle('transparent', $settings->transparent), 'between-detail');
+			$this->toggle('transparent', $settings->transparent), 'between-detail', 1);
 
 		echo '</table>';
 
@@ -771,29 +836,118 @@ class Page extends StreamsPageBase
 		// the tab of all the tables one of these can start off neither - that is what the
 		// browser's third state is for - and touching it is what settles it; from then on it
 		// is an ordinary switch.
+		// What hangs under what, among the switches of the cards source. Only the ones that
+		// answer for others are in here, and only where the answer really follows: a half with
+		// nothing left in it draws nothing, and a source with both halves off is a source
+		// showing nothing. The cards are a parent of nothing - with all three of their extras
+		// off they still show who is sitting where - which is why they are not in this list.
+		const settingTree = [
+			{ parent: 'show_glyphs', children: ['show_top', 'show_cards'] },
+			{ parent: 'show_top', children: ['show_phase', 'show_game', 'show_judge',
+				'show_don_checks', 'show_sheriff_checks', 'show_nominees'] }];
+
 		function streamToggled(setting)
 		{
 			let box = document.getElementById(setting);
 			box.indeterminate = false;
-			showDetail(box);
+			let changed = {};
+			changed[setting] = box.checked ? 1 : 0;
+			follow(setting, changed);
+			showDetails();
 			json.post("api/ops/stream.php",
-				Object.assign({ op: "set", table_num: tableNum, [setting]: box.checked ? 1 : 0 }, owner),
+				Object.assign({ op: "set", table_num: tableNum }, changed, owner),
 				saved);
 		}
 
-		// A source that shows nothing has no look to set, so the rest of its section is put
-		// away rather than left standing there to no purpose. Nothing is forgotten by it: the
-		// rows come back with whatever was in them.
-		function showDetail(box)
+		// Everything else that the switch just touched settles, gathered into the one request
+		// with it so that the page and the table never stand at different things.
+		//
+		// Upwards: the last thing inside a part going off takes the part with it. Downwards: a
+		// part switched back on with nothing inside it brings all of it back - it would draw
+		// nothing otherwise, and there would be no way to fill it again, since the rows inside
+		// a part only stand while that part is on.
+		//
+		// A switch standing at neither - the tab of all the tables, where they do not agree -
+		// counts as on. Some table has that part, and nothing here may turn it off behind
+		// their back.
+		function follow(setting, changed)
 		{
-			if (box.dataset.hides)
-				$('.' + box.dataset.hides).toggle(!box.checked);
+			for (const group of settingTree)
+			{
+				if (group.parent == setting)
+				{
+					if (document.getElementById(setting).checked && allOff(group))
+					{
+						for (const child of group.children)
+						{
+							setSwitch(child, true, changed);
+							follow(child, changed);
+						}
+					}
+				}
+				else if (group.children.indexOf(setting) >= 0 && allOff(group) && isOn(group.parent))
+				{
+					setSwitch(group.parent, false, changed);
+					follow(group.parent, changed);
+				}
+			}
+		}
+
+		function isOn(name)
+		{
+			let box = document.getElementById(name);
+			return box.checked || box.indeterminate;
+		}
+
+		function allOff(group)
+		{
+			for (const child of group.children)
+			{
+				if (isOn(child))
+					return false;
+			}
+			return true;
+		}
+
+		function setSwitch(name, on, changed)
+		{
+			let box = document.getElementById(name);
+			box.indeterminate = false;
+			box.checked = on;
+			changed[name] = on ? 1 : 0;
+		}
+
+		// A part that is turned off has no look to set, so the rows belonging to it are put away
+		// rather than left standing there to no purpose. Nothing is forgotten by it: the rows
+		// come back with whatever was in them.
+		//
+		// Every such switch is applied together, and the rows of a group are shown before any
+		// group is put away. Taken one switch at a time, a group inside a group would bring back
+		// rows that the group around it had just put away - the parts of the top bar would stand
+		// there after the whole source had been switched off.
+		//
+		// A switch standing at neither - the tab of all the tables, where they do not agree -
+		// leaves the rows where they are. Some table has that part on, and its rows are what
+		// somebody opened the tab to set.
+		function showDetails()
+		{
+			let off = [];
+			$('input[data-hides], input[data-shows]').each(function()
+			{
+				let group = this.dataset.hides ? this.dataset.hides : this.dataset.shows;
+				let on = this.indeterminate || (this.dataset.hides ? !this.checked : this.checked);
+				$('tr.' + group).show();
+				if (!on)
+					off.push(group);
+			});
+			for (const group of off)
+				$('tr.' + group).hide();
 		}
 
 		$(function()
 		{
 			$('input[data-mixed]').prop('indeterminate', true);
-			$('input[data-hides]').each(function() { showDetail(this); });
+			showDetails();
 		});
 
 		function saved()

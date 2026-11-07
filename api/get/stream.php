@@ -93,6 +93,17 @@ class ApiPage extends GetApiPageBase
 		$stream->hideGlyphs = ($settings->flags & STREAM_FLAG_HIDE_GLYPHS) ? 1 : 0;
 		$stream->hideBetween = ($settings->flags & STREAM_FLAG_HIDE_BETWEEN) ? 1 : 0;
 
+		// And which parts of the cards source are drawn - see stream_glyph_parts(). Sent as
+		// what to show rather than what to hide, because that is what the source asks itself
+		// about each part as it draws it. The two halves of the picture are in here as well -
+		// top and cards - each standing over the parts that belong to it.
+		$stream->show = new stdClass();
+		foreach (stream_glyph_parts() as $part)
+		{
+			$key = $part['js'];
+			$stream->show->$key = ($settings->flags & $part['flag']) ? 0 : 1;
+		}
+
 		// Which OBS scene this table should be showing. A browser source can change the scene
 		// itself, so these are what it needs to know: what the game is asking for as it is
 		// played, and what somebody has asked for by hand. The order from a person carries the
@@ -130,6 +141,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('transparent', '1 when nothing is painted behind them, 0 otherwise.');
 			$param->sub_param('hideGlyphs', '1 when the sources carrying the cards over the game are to show nothing at all, 0 otherwise.');
 			$param->sub_param('hideBetween', '1 when the source filling the time between games is to show nothing at all, 0 otherwise.');
+			$param->sub_param('show', 'Which parts of the overlay are drawn, each 1 or 0. "top" is the strip along the top and "cards" the players along the bottom; under top stand phase, game, judge, donChecks, sheriffChecks and nominees, and under cards stand votes, warnings, bestMove and speaker. A half that is off takes its parts with it whatever they say.');
 			$param->sub_param('scene', 'Which OBS scene the table should be showing. "auto" is what the game being played is asking for, "manual" what somebody asked for by hand, and "manualTime" when they asked. A browser source follows the manual one when its time is newer than the last it carried out, and the automatic one whenever that changes. "names" are all the scenes the OBS at this table reported, and "switching" is 1 when the scenes are changed by the phase of the game and 0 when they are left to be changed by hand.');
 		return $help;
 	}
