@@ -36,11 +36,15 @@ function show_broadcast_table($owner, $event_id, $named, $only_table = 0)
 	echo '<td width="46" align="center">' . get_label('Day') . '</td>';
 	echo '<td width="52" align="center">' . get_label('Table') . '</td>';
 	echo '<td width="46" align="center">' . get_label('Part') . '</td>';
+	// The address takes whatever the others leave, and the four columns of figures are given
+	// only what their figures need. They are read now and then; the address is read, copied
+	// and compared every time somebody opens this, and it is the one thing here long enough
+	// to be cut off.
 	echo '<td>' . get_label('URL') . '</td>';
-	echo '<td width="150">' . get_label('On the air') . '</td>';
-	echo '<td width="110">' . get_label('Interruptions') . '</td>';
-	echo '<td width="110">' . get_label('Out by') . '</td>';
-	echo '<td width="100">' . get_label('Correction') . '</td></tr>';
+	echo '<td width="115">' . get_label('On the air') . '</td>';
+	echo '<td width="70">' . get_label('Interruptions') . '</td>';
+	echo '<td width="80">' . get_label('Out by') . '</td>';
+	echo '<td width="70">' . get_label('Correction') . '</td></tr>';
 
 	// Which tables to walk. One of them where this is the page of one table; otherwise every
 	// table that has a broadcast written down against it, because a table with none has nothing
@@ -91,7 +95,13 @@ function show_broadcast_table($owner, $event_id, $named, $only_table = 0)
 				echo '<td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>';
 				continue;
 			}
-			echo '<td>' . date('Y-m-d H:i', $b->start) . '</td>';
+			// In the time zone of whoever is reading, not of the hall the tournament was
+			// played in. The other times on the site are of an event and belong where it was
+			// played; this one is of a recording, and what it is for is to be held against
+			// the clock of the person looking at it - did this broadcast start when we think
+			// it did, is the one that is running now the one these games are going onto.
+			date_default_timezone_set(get_timezone());
+			echo '<td class="bc-when">' . date('Y-m-d H:i', $b->start) . '</td>';
 
 			// How long this table was reported to be off the air. Only what OBS said is in here
 			// - see include/broadcast.php - so it is a floor rather than a total, and the column

@@ -476,7 +476,7 @@ class Page extends StreamsPageBase
 		// The same rows the preparation page shows, written by the same operations - see
 		// include/broadcast_table.php. On the tab of one table only that table is listed, and
 		// only the rounds that are played at it.
-		echo '<h3 class="stream-section">' . get_label('Broadcasts') . '</h3>';
+		echo '<h3 class="stream-section">' . get_label('YouTube streams') . '</h3>';
 		$listed = 0;
 		foreach ($this->rounds as $round)
 		{

@@ -304,6 +304,11 @@ table.stream-settings col.stream-label { width: 220px; }
    links into the recording can be trusted - tournament_preparation.php. */
 b.stream-out-by { color: #a03030; }
 
+/* When a broadcast went on the air - include/broadcast_table.php. Kept on one line: the column
+   is as narrow as the moment itself so that the address beside it has the room, and a date
+   broken across two lines in a narrow column reads as two of them. */
+td.bc-when { white-space: nowrap; }
+
 /*  A switch rather than a box, for a setting that takes effect the moment it is touched
     rather than when a form is sent. Underneath it is the ordinary checkbox it always was -
     the browser is told not to draw its own box, and the track and the knob are drawn in its

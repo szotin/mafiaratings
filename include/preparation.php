@@ -355,6 +355,24 @@ trait PreparationTabs
 		$this->nextButton();
 		echo '</p>';
 
+		// What this tab is not. Here are the recordings - where to find afterwards what was
+		// broadcast - while everything about the broadcast as it happens belongs to a table
+		// rather than to a round, and is set up on a page of its own. Somebody getting a
+		// tournament ready has to go there too, and until now nothing said so.
+		//
+		// A round of a tournament is streamed at the tournament's tables, so the link goes to
+		// the tournament wherever there is one; that is the pairing stream_owner() makes, and
+		// the same one the Management menu uses.
+		//
+		// bck=1 so that the page it leads to carries a way back here. Getting ready is a walk
+		// through tabs in an order, and this is a step out of it.
+		$url = ($this->prep_tournament_id > 0)
+			? ('streams.php?bck=1&tournament_id=' . $this->prep_tournament_id)
+			: ('streams.php?bck=1&event_id=' . $this->id);
+		echo '<p>' . get_label(
+			'Everything else about a stream - the addresses to point OBS Studio at, the language, the scenes and what the cards show - is set up table by table on the [0] page.',
+			'<a href="' . $url . '">' . get_label('Stream settings') . '</a>') . '</p>';
+
 		foreach ($this->rounds as $round_row)
 		{
 			list ($event_id, $round_num) = $round_row;
