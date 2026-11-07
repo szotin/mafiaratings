@@ -1615,6 +1615,7 @@ $labelMenu = array (
 'Please ented [0] ID of this tournament' => 'Пожалуйста введите ID этого турнира на сайте [0]', // tournament_emo.php, tournament_imafia.php, tournament_mwt.php
 'Done' => 'Сделано', // tournament_mwt.php
 'Players mapping' => 'Соответствие игроков', // tournament_mwt.php
+'TD' => 'ППК', // plugins/obs/obs.php, plugins/obs/screens.php
 'Table [0]' => 'Стол [0]', // event_games.php, game.php, seating.php, seating.php, seating.php, streams.php, text_broadcast.php, tournament_mwt.php, tournament_seating.php, tournament_seating.php, tournament_seating.php, include/broadcast.php, include/broadcast.php, include/preparation.php, plugins/obs/screen_title.php
 'Round [0]' => 'Игра [0]', // tournament_mwt.php
 'Please login to the MWT site' => 'Пожалуйста войдите на сайт MWT', // tournament_mwt.php

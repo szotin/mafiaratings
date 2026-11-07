@@ -428,6 +428,9 @@ function obs_icon($name)
 			'<path d="M12 1.8v4.4M12 17.8v4.4M1.8 12h4.4M17.8 12h4.4"/></svg>';
 	case 'thumb': // voted out - a hand put up
 		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 10h3.4a.6.6 0 0 1 .6.6v9.8a.6.6 0 0 1-.6.6H3a.6.6 0 0 1-.6-.6v-9.8A.6.6 0 0 1 3 10zm6 11V10.6l3.9-6.4a1.6 1.6 0 0 1 2.9 1.2l-.9 3.6h4.6a2.2 2.2 0 0 1 2.1 2.8l-2 7.3a2.6 2.6 0 0 1-2.5 1.9z"/></svg>';
+	case 'cross': // taken out of the game by the judge - the mark the overlay draws for it too
+		return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" ' .
+			'stroke-linecap="round"><path d="M5.5 5.5l13 13M18.5 5.5l-13 13"/></svg>';
 	case 'gavel': // the referee
 		return '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13.2 2.6l6.2 6.2-2.1 2.1-6.2-6.2zM8.3 7.5l6.2 6.2-2.1 2.1-6.2-6.2zM11.3 5.9l4.8 4.8-1.8 1.8-4.8-4.8zM10.4 13l1.4 1.4-7.3 7.3L3 20.3zM13 20h9v2h-9z"/></svg>';
 	}
@@ -592,14 +595,17 @@ function obs_seat_class($role, $unknown = false)
 // about. $o may carry:
 //   role  - 'sheriff', 'don', 'maf' or '' - the ground the card stands on and the badge in its
 //           corner. Left out before a game, when nobody knows them, and the card is neutral.
-//   elim  - how the player left the game: ->night or ->vote, and ->number.
+//   elims - how the player left the game, as an array of marks, each with ->kind and, where
+//           there is one to name, ->number. The kinds are 'night', 'vote', 'out' for a player
+//           the judge took out of the game, and 'td' where their own side lost because of them.
+//           Two of them where the mafia took a player and the judge took them out afterwards.
 //   badge - false to leave the role badge off while still colouring the card by it.
 function obs_card($seat, $player, $o = NULL)
 {
 	$role = (is_object($o) && isset($o->role)) ? $o->role : '';
 	$neutral = (is_object($o) && isset($o->neutral) && $o->neutral);
 	$badge = !(is_object($o) && isset($o->badge) && !$o->badge);
-	$elim = (is_object($o) && isset($o->elim)) ? $o->elim : NULL;
+	$elims = (is_object($o) && isset($o->elims)) ? $o->elims : array();
 
 	$class = 'card ' . ($neutral ? 'neutral' : (($role == 'maf' || $role == 'don') ? 'maf' : 'town'));
 	if (!$neutral && $role == 'sheriff')
@@ -641,11 +647,28 @@ function obs_card($seat, $player, $o = NULL)
 		}
 	}
 
-	if (!is_null($elim))
+	if (!empty($elims))
 	{
-		$night = isset($elim->night) && $elim->night;
-		echo '<div class="elim ' . ($night ? 'night' : 'vote') . '">' .
-			obs_icon($night ? 'target' : 'thumb') . (isset($elim->number) ? (int)$elim->number : '') . '</div>';
+		echo '<div class="elims">';
+		foreach ($elims as $mark)
+		{
+			$kind = isset($mark->kind) ? $mark->kind : '';
+			if ($kind == 'td')
+			{
+				echo '<div class="elim td">' . get_label('TD') . '</div>';
+			}
+			else if ($kind == 'out')
+			{
+				echo '<div class="elim out">' . obs_icon('cross') . '</div>';
+			}
+			else
+			{
+				echo '<div class="elim ' . ($kind == 'night' ? 'night' : 'vote') . '">' .
+					obs_icon($kind == 'night' ? 'target' : 'thumb') .
+					(isset($mark->number) ? (int)$mark->number : '') . '</div>';
+			}
+		}
+		echo '</div>';
 	}
 
 	echo '<div class="meta">';

@@ -38,6 +38,25 @@ function obs_results_game($log, $event_id, $event_name, $game_num)
 	}
 
 	$g->log = isset($log->players) && is_array($log->players) ? $log->players : array();
+
+	// Whom the mafia took, and in which night. A player they took and the judge afterwards took
+	// out of the game keeps only the judge's word in their own record, so the mafia's own record
+	// is the only place the night is left - see night_kill() in include/game.php, and shotRound
+	// in api/get/current_game.php, which reads it the same way for the overlay. Ten rounds is
+	// more than a table of ten ever plays.
+	$g->shot = array();
+	$game = new Game($log);
+	if (isset($game->data))
+	{
+		for ($round = 1; $round <= 10; ++$round)
+		{
+			$number = $game->night_kill($round);
+			if ($number > 0)
+			{
+				$g->shot[$number] = $round;
+			}
+		}
+	}
 	$g->seats = array();
 	// Who was still at the table at the end, and whether the game was given away by a team kick
 	// out. The same reckoning the game itself is saved by, see Game::update() - a player with a
@@ -185,30 +204,56 @@ $judge = isset($players[$g->moderator_id]) ? $players[$g->moderator_id] : NULL;
 // with night 0, where nobody is shot, and day 0, the circle of speeches with all ten at the
 // table, so the first shot is night 1 and the day that follows it is day 1. That is the count the
 // overlay shows while the game is being played and the one the site puts over the log afterwards.
-function obs_results_elim($p)
+// Two of them where both things happened to a seat: the mafia took the player in the night and
+// the judge took them out of the game afterwards. Their own record then holds the judge's word
+// and nothing of the night, so the night comes in from $shot - see obs_results_game(). The
+// overlay tells the same pair over the picture while the game is on, see marks() in obs.js.
+function obs_results_elims($p, $shot)
 {
+	$marks = array();
 	if (is_null($p) || !isset($p->death))
 	{
-		return NULL;
+		return $marks;
 	}
 	$death = $p->death;
 	$type = is_string($death) ? $death : (isset($death->type) ? $death->type : '');
 	$round = (is_object($death) && isset($death->round)) ? (int)$death->round : 0;
 
-	$elim = new stdClass();
 	if ($type == DEATH_TYPE_NIGHT)
 	{
-		$elim->night = true;
-		$elim->number = $round;
-		return $elim;
+		$marks[] = obs_results_mark('night', $round);
+		return $marks;
 	}
 	if ($type == DEATH_TYPE_DAY)
 	{
-		$elim->night = false;
-		$elim->number = $round;
-		return $elim;
+		$marks[] = obs_results_mark('vote', $round);
+		return $marks;
 	}
-	return NULL; // sent away by the referee, or gave up: the cards say nothing about it
+
+	// Taken out of the game. Where the mafia had already taken them, that stands first: it is
+	// what happened first, and the judge's word is the last thing that happened to them rather
+	// than the whole of it.
+	if ($shot > 0)
+	{
+		$marks[] = obs_results_mark('night', $shot);
+	}
+	// A side that lost the game because one of its own was taken out is told in words: there is
+	// no night and no vote to name, and it is not one player being sent away - every seat on
+	// that side wears it. See .elim.td in between.css.
+	$marks[] = obs_results_mark($type == DEATH_TYPE_TEAM_KICK_OUT ? 'td' : 'out', 0);
+	return $marks;
+}
+
+// One mark: what it says, and the night or the vote it names where it names one.
+function obs_results_mark($kind, $number)
+{
+	$mark = new stdClass();
+	$mark->kind = $kind;
+	if ($number > 0)
+	{
+		$mark->number = $number;
+	}
+	return $mark;
 }
 
 // The role as the cards and the chips spell it.
@@ -385,13 +430,15 @@ function obs_results_player($p, $players)
 }
 
 // A row of cards, and the row that carries the panel beside the three black ones.
-function obs_results_cards($seats, $players, $log, $roles)
+function obs_results_cards($seats, $players, $log, $roles, $shot)
 {
 	foreach ($seats as $p)
 	{
+		$number = (int)$p->number;
 		$o = new stdClass();
-		$o->role = isset($roles[(int)$p->number]) ? $roles[(int)$p->number] : '';
-		$o->elim = obs_results_elim(isset($log[$p->number - 1]) ? $log[$p->number - 1] : NULL);
+		$o->role = isset($roles[$number]) ? $roles[$number] : '';
+		$o->elims = obs_results_elims(isset($log[$number - 1]) ? $log[$number - 1] : NULL,
+			isset($shot[$number]) ? $shot[$number] : 0);
 		obs_card($p->number, obs_results_player($p, $players), $o);
 	}
 }
@@ -408,13 +455,13 @@ for ($row = 0; $row < 2; ++$row)
 	if ($town_row)
 	{
 		echo '<div class="r7">';
-		obs_results_cards($red, $players, $g->log, $roles);
+		obs_results_cards($red, $players, $g->log, $roles, $g->shot);
 		echo '</div>';
 		continue;
 	}
 
 	echo '<div class="r3"><div class="three">';
-	obs_results_cards($black, $players, $g->log, $roles);
+	obs_results_cards($black, $players, $g->log, $roles, $g->shot);
 	echo '</div>';
 	echo '<div class="moves"><div class="mvl">';
 	obs_results_moves_column('target', 't', get_label('Best guess'), $best_by, $by_seat, $roles, $best, false, $perfect, false);

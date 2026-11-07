@@ -810,7 +810,25 @@ var obs = new function()
 			}
 			// Four fouls, two critical fouls, kicked out, gave up, or taken down with their side:
 			// all of them are the judge taking a player out of the game.
-			return '<div class="marks"><div class="elim out">' + IC.cross + '</div></div>';
+			// The opposite team winning is told in words rather than by the cross: it is not the
+			// judge sending one player away but a whole side going down with them, and the table
+			// calls it by its three letters.
+			var out = (type == 'oppositeTeamWins')
+				? '<div class="elim out td">' + escapeHtml(options.labels.teamDefeat) + '</div>'
+				: '<div class="elim out">' + IC.cross + '</div>';
+			// And a player the mafia had already taken that night wears that as well. The judge's
+			// word is the last thing that happened to them, not the whole of it, and the table
+			// watched both - see shotRound in api/get/current_game.php, which is where the night
+			// is read from once their own death no longer holds it. Side by side rather than one
+			// above the other: this corner is small, and a second row would reach down over the
+			// picture - the same reason the fouls stand in a row.
+			if (player.shotRound)
+			{
+				return '<div class="marks"><div class="row">' +
+					'<div class="elim when shooting">' + IC.target +
+					'<span>' + player.shotRound + '</span></div>' + out + '</div></div>';
+			}
+			return '<div class="marks">' + out + '</div>';
 		}
 
 		var row = '';

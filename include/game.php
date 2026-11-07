@@ -1750,6 +1750,17 @@ class Game
 		return $result;
 	}
 	
+	// Whom the mafia took in a night, as a seat number, or 0 where the shot missed or there was
+	// none. It is the mafia's own record that says it - every one of them still at the table
+	// naming the same seat - and that is the only place it is left when a player who was shot is
+	// afterwards taken out by the judge: their own death then holds the judge's word and nothing
+	// of the night. See api/get/current_game.php, which reads it back out of here.
+	function night_kill($round)
+	{
+		$index = $this->get_night_kill($round);
+		return ($index >= 0) ? $index + 1 : 0;
+	}
+
 	private function get_night_kill($round)
 	{
 		$killed_index = -1;

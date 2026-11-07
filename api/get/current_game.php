@@ -271,6 +271,23 @@ class ApiPage extends GetApiPageBase
 					}
 					break;
 				}
+
+				// A player the judge took out of the game keeps only the judge's word in their
+				// death. If the mafia had already taken them that night, nothing of it is left
+				// there - and the table saw both happen, so a card showing only the last of the
+				// two is telling half the story. The mafia's own record still holds the shot, so
+				// it is read back out of there and sent on its own.
+				if ($player->deathType != 'shooting' && $player->deathType != 'voting')
+				{
+					for ($round = 1; $round <= $player->deathRound; ++$round)
+					{
+						if ($this->game->night_kill($round) == $player->number)
+						{
+							$player->shotRound = $round;
+							break;
+						}
+					}
+				}
 			}
 			
 			if (isset($p->legacy))
@@ -682,6 +699,7 @@ class ApiPage extends GetApiPageBase
 				$players->sub_param('state', 'Player state - "dead" or "alive".');
 				$players->sub_param('deathRound', 'If player state is "dead" it is set to the night or the day they left the game on, which is the round it is written down in: the game opens with night 0, where nobody is shot, and then day 0, the circle of speeches with all ten still at the table, so the first shot is night 1 and the day after it is day 1. The number does not say which of the two it was - deathType does.');
 				$players->sub_param('deathType', 'If player state is "dead" it is set to the type of their death. One of: "voting", "shooting", "warnings", "techFouls", "giveUp", or "kickOut".');
+				$players->sub_param('shotRound', 'The night the mafia took this player, where that is not what deathType says. A player who was shot and then taken out of the game by the judge keeps only the judge\'s word in their death, so the night is read back out of the mafia\'s own record and sent here. It is left out for everybody else.');
 				$players->sub_param('votedOutBy', 'When deathType is "voting", the numbers of the players counted for them in the vote that put them out, in the order they sit - the whole table where the day ended in killing all the tied players. It stays for the rest of the game, and is left out while the moderator is still taking the count that is putting the player out.');
 				$players->sub_param('checkedByDon', 'If a player was checked by the don it contains the round number when it happened. It is set only when hideRoles is not set.');
 				$players->sub_param('checkedBySheriff', 'If a player was checked by the sheriff it contains the round number when it happened. It is set only when hideRoles is not set.');

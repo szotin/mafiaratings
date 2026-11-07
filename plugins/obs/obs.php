@@ -89,6 +89,9 @@ function show_obs_page($view)
 	$options->labels->tie = get_label('Tie');
 	$options->labels->gameOver = get_label('Game over');
 	$options->labels->offline = get_label('OFFLINE');
+	// What a card says when a player's own side lost the game because of them. Three letters in
+	// every language we draw in, which is what a table calls it by - see .elim.td in obs.css.
+	$options->labels->teamDefeat = get_label('TD');
 	// One for a single vote, one for a few of them and one for many: Russian and Ukrainian need
 	// all three, English uses the last two. The script picks by the count - see votesWord().
 	$options->labels->votes = explode('|', get_label('vote|votes|votes'));

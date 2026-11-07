@@ -671,13 +671,22 @@ body.between.bg-clear.bg-light .glass {
 
 .role.sher { color: var(--gold); }
 
-/* How the player left the game, top right: the mark and the number of the night or the vote,
-   and no words. */
-.elim {
+/* How the player left the game, in the top right corner of the card. One mark, or two of them
+   side by side where both things happened: the mafia took the player in the night and the judge
+   took them out of the game afterwards. The overlay sets the same pair the same way - see
+   .pc .marks .row in obs.css. */
+.elims {
 	position: absolute;
 	z-index: 3;
 	right: 1.125rem;
 	top: 1.125rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+/* One mark: the sign and the number of the night or the vote, and no words. */
+.elim {
 	height: 2.5rem;
 	padding: 0 0.8125rem 0 0.5625rem;
 	border-radius: 1.25rem;
@@ -697,6 +706,23 @@ body.between.bg-clear.bg-light .glass {
 .elim svg { width: 1.375rem; height: 1.375rem; }
 .elim.night svg { color: var(--red); }
 .elim.vote svg { color: #fff; }
+
+/* The judge taking a player out of the game: a cross standing alone, so the badge is given the
+   same room on both sides of it. */
+.elim.out { padding: 0 0.6875rem; }
+
+.elim.out svg {
+	color: #FF3B52;
+	filter: drop-shadow(0 0 0.1875rem rgba(255, 40, 65, 0.7));
+}
+
+/*  The opposite team winning: the three letters a table calls it by, in the badge the night and
+    the vote use, and no number - it takes a whole side at once. White, like the numbers beside
+    it: in red they sat on a card that is itself red when the player was of the town. */
+.elim.td {
+	padding: 0 0.8125rem;
+	letter-spacing: 0.04em;
+}
 
 /* The seat, the name and the club along the bottom. */
 .meta {
