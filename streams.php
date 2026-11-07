@@ -467,9 +467,10 @@ class Page extends StreamsPageBase
 			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';
 			if (empty($stored->scenes))
 			{
-				// In the settings table all the same, in the place the switch would have
-				// stood, so that the section reads as the sections above it do rather than as
-				// a loose paragraph under a heading.
+				// In the settings table all the same, under the name the switch stands under
+				// and with the sentence where the switch would have been, so that the section
+				// reads as it does when there is something to switch rather than as a loose
+				// paragraph under a heading.
 				//
 				// Two silences, and they are not the same. A source that has told us about
 				// itself and not about the scenes was not allowed to; one that has told us
@@ -478,11 +479,11 @@ class Page extends StreamsPageBase
 				$this->open_settings_table();
 				if ($stored->control_level >= 0 && $stored->control_level < STREAM_CONTROL_ADVANCED)
 				{
-					$this->show_setting('', '<b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b>');
+					$this->show_setting(get_label('Turn on'), '<b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b>');
 				}
 				else
 				{
-					$this->show_setting('', get_label('The OBS Studio at this table has not said what scenes it has. A browser source of ours says it by itself, once its Page permissions are set to Advanced in its properties in OBS Studio - and a source that was already open when that was set has to be refreshed once. Until then there is nothing here to point a phase of the game at.'));
+					$this->show_setting(get_label('Turn on'), get_label('The OBS Studio at this table has not said what scenes it has. A browser source of ours says it by itself, once its Page permissions are set to Advanced in its properties in OBS Studio - and a source that was already open when that was set has to be refreshed once. Until then there is nothing here to point a phase of the game at.'));
 				}
 				echo '</table>';
 			}
