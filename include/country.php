@@ -19,11 +19,20 @@ function country_flag_url($code)
 	{
 		return '';
 	}
-	if (!file_exists(__DIR__ . '/../' . FLAGS_DIR . $code . '.png'))
+	$file = __DIR__ . '/../' . FLAGS_DIR . $code . '.png';
+	if (!file_exists($file))
 	{
 		return '';
 	}
-	return get_server_url(false) . '/' . FLAGS_DIR . $code . '.png';
+	// Stamped with the day the file was last changed, the same way the stylesheets and the scripts
+	// are. The name of a flag never changes, so a browser that has one keeps it - and keeps it for
+	// a long time, because nothing here says how long it may: with no Cache-Control a browser is
+	// free to guess, and it guesses from how old the file already is. In front of the site there
+	// is a CDN doing the same. So when the whole set was redrawn, pages went on showing the old
+	// drawing - and a browser source in OBS, which holds a page for a whole tournament and has
+	// nobody to press reload, would have gone on showing it until the tournament ended.
+	$stamp = filemtime($file);
+	return get_server_url(false) . '/' . FLAGS_DIR . $code . '.png' . ($stamp ? '?' . $stamp : '');
 }
 
 function retrieve_country_id($country)
