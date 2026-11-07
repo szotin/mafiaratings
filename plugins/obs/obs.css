@@ -181,7 +181,9 @@ html.no-scrim .ov::after {
     not something the page can see about itself. There is nothing here to ask, and a stream is
     not the place to find out whose turn it is, so the blur is gone from these pages and the
     wash is darker in its place - which is close to what a blurred camera came to anyway. The
-    between-games screens have a ground of their own for a filter to work on; see between.css. */
+    between-games screens were left as they were, on the grounds that they have a ground of
+    their own for a filter to work on - and lost theirs two days later, when the same hall put
+    them on the air over a break scene with nothing behind them at all; see between.css. */
 .gl {
 	background: rgba(14, 8, 11, 0.62);
 	box-shadow: 0 0.625rem 1.75rem rgba(0, 0, 0, 0.35);

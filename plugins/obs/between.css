@@ -293,11 +293,28 @@ body.between.bg-clear .glow {
 	background: radial-gradient(ellipse at center, transparent 55%, var(--vig) 100%);
 }
 
-/*  Frosted glass, which every panel on every frame is made of. */
+/*  Frosted glass, which every panel on every frame is made of.
+
+    It was drawn as a blur of what stands behind it, and backdrop-filter is what draws one. It
+    is a flat wash now, because there are machines whose OBS answers an element asking for that
+    filter with a layer of its own, filled opaque black - the size of the element and the
+    spread of its drop shadow. On 2026-11-06 the hall in Los Angeles put these screens on the
+    air between the games of a tournament and that is what went out: a black rectangle over the
+    break scene around this panel on every frame that has one, another around the stack of
+    moves, and a black elbow past the corner of every card carrying a role badge or an
+    elimination tag. The overlay lost the same filters two days before for the same reason, and
+    the whole of what is known about it is written over .gl in obs.css.
+
+    These screens were left alone then, on the grounds that they have a ground of their own for
+    a filter to work on. They have one only when the table is not set to a transparent
+    background, and a table that shows them over a break scene - which is what they are for -
+    is set to exactly that, so there was nothing behind them either. And where the ground is
+    painted the blur was doing little: it is a smooth gradient under smooth glows, and blurring
+    that returns it nearly unchanged. Only the fills that stood on a photograph are raised to
+    make up for it; see .role and .elim. */
 .glass {
 	border: 1px solid var(--gl-edge);
 	background: linear-gradient(165deg, var(--gl-top), var(--gl-bot));
-	backdrop-filter: blur(1.875rem) saturate(165%);
 	box-shadow: inset 0 1px 0 var(--gl-hi), var(--gl-sh);
 }
 
@@ -623,8 +640,10 @@ body.between.bg-clear .glow {
 	border-radius: 50%;
 	display: grid;
 	place-items: center;
-	background: radial-gradient(circle, rgba(10, 6, 8, 0.38) 0%, rgba(10, 6, 8, 0.26) 60%, rgba(10, 6, 8, 0.14) 100%);
-	backdrop-filter: blur(0.375rem);
+	/*  Raised from 0.38, 0.26 and 0.14 with the blur gone, to the numbers the same badge
+	    carries in obs.css: this one stands on the photograph, where the blur was the half of
+	    the shade that calmed a busy picture under the mark. */
+	background: radial-gradient(circle, rgba(10, 6, 8, 0.52) 0%, rgba(10, 6, 8, 0.38) 60%, rgba(10, 6, 8, 0.22) 100%);
 	box-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.18);
 	color: #fff;
 }
@@ -650,8 +669,9 @@ body.between.bg-clear .glow {
 	display: flex;
 	align-items: center;
 	gap: 0.4375rem;
-	background: rgba(10, 6, 8, 0.42);
-	backdrop-filter: blur(0.625rem);
+	/*  0.42 with a blur under it, 0.56 without - again on the photograph, and again the
+	    number the overlay settled on. */
+	background: rgba(10, 6, 8, 0.56);
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0.25rem 0.625rem rgba(0, 0, 0, 0.3);
 	color: #fff;
 	font-weight: 800;
@@ -769,8 +789,10 @@ body.between.bg-clear .glow {
 	border-radius: 1.625rem;
 	display: flex;
 	padding: 1.5rem 0.5rem;
-	background: rgba(22, 12, 15, 0.55);
-	backdrop-filter: blur(5rem) saturate(110%);
+	/*  A little darker than the 0.55 it was drawn at: the blur that stood behind it was five
+	    rem wide, enough to carry the edge of a glow across the whole panel as one tone, and
+	    the fill is what has to do that now. */
+	background: rgba(22, 12, 15, 0.66);
 	border: 1px solid rgba(255, 255, 255, 0.12);
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--gl-sh);
 }
@@ -779,8 +801,7 @@ body.between.bg-clear .glow {
    is nearly solid; on a pale page the same panel has to be frosted glass instead of a white
    block. */
 body.between.bg-light .moves {
-	background: rgba(255, 255, 255, 0.34);
-	backdrop-filter: blur(2.5rem) saturate(140%);
+	background: rgba(255, 255, 255, 0.5);
 	border-color: rgba(255, 255, 255, 0.55);
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), var(--gl-sh);
 }
@@ -895,9 +916,10 @@ body.between.bg-light .moves {
 }
 
 .seat.n {
+	/*  Left at the fifth of white it was drawn at: it sits on the shade at the foot of a
+	    card, which is smooth, so the blur had nothing to calm. */
 	background: rgba(255, 255, 255, 0.2);
 	color: rgba(255, 255, 255, 0.85);
-	backdrop-filter: blur(0.375rem);
 	box-shadow: none;
 }
 
