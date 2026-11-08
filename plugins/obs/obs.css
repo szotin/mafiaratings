@@ -1080,7 +1080,21 @@ html.bg-light .pc.speak::before {
 	font-weight: 700;
 	font-size: 4.5rem;
 	line-height: 1.1;
-	letter-spacing: 0.01em;
+	/*  Capitals. The word stands alone in the middle of the picture for the length of a
+	    whole game ending, and a title that size is read as a shape before it is read as
+	    words - the shape of capitals is the steadier of the two, and it is the one the rest
+	    of the overlay already names things in: the phase, what the game is doing, the heading
+	    over the nominees. A little more air between the letters than the mixed case wanted,
+	    because capitals set at the tracking of lower case close up. */
+	text-transform: uppercase;
+	letter-spacing: 0.035em;
+	/*  And on one line, however long the word is in the language the overlay is drawn in:
+	    capitals are wider than the mixed case was, and the box is centred by its own width
+	    rather than given one, so "ПОБЕДА МАФИИ" broke in two where "Победа мафии" had not. The
+	    longest of them is under half the width of the picture. The same line stands over the
+	    title of the frames between games, which is set this way for the same reason - see
+	    .ttl h1 in between.css. */
+	white-space: nowrap;
 	color: #FFEDEF;
 	text-shadow: 0 0 2.75rem rgba(255, 59, 78, 0.6);
 }
