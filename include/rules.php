@@ -317,7 +317,15 @@ function is_rule_allowed($rules_filter, $rule_num, $rule_value)
 	}
 	
 	$allowed_rules = $rules_filter->$rule_name;
-	if (count($allowed_rules) <= 0)
+	// A rule either names the one option it allows or lists the options it allows, and a list
+	// that names none of them allows all of them. Only the list can be counted. PHP 7 counted a
+	// single value as one and said so in a warning that nobody was reading; PHP 8 throws, and
+	// since a TypeError is not an Exception nothing on the way out caught it - so the rulebook
+	// of a league or a series whose filter names single values broke off at the first rule that
+	// asked this question, taking the footer of the page with it. The footer is where the dialog
+	// lives, which is why the editor button on those pages did nothing either.
+	// are_rules_configurable() below asks the same thing the same way.
+	if (is_array($allowed_rules) && count($allowed_rules) <= 0)
 	{
 		return true;
 	}
