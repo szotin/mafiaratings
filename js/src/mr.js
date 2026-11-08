@@ -837,6 +837,11 @@ var mr = new function()
 		dlg.form("form/series_edit.php?id=" + id, refr);
 	}
 
+	this.editSeriesRules = function(seriesId)
+	{
+		dlg.form("form/series_rules_edit.php?series_id=" + seriesId, refr);
+	}
+
 	this.transferSeries = function(seriesId)
 	{
 		dlg.form("form/series_transfer.php?series_id=" + seriesId, refr, 600);

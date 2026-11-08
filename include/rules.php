@@ -708,4 +708,236 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	return $rules;
 }
 
+/*  A rules filter as an editor sends it, turned back into what is stored. The dialog posts the
+    filter as form parameters, so what arrives is an array of strings where the filter holds
+    true and false, and those two have to be read back as themselves before the whole thing is
+    written down again. A filter that arrives already written down is left alone. */
+function rules_filter_to_json($rules)
+{
+	if (is_string($rules))
+	{
+		return $rules;
+	}
+	
+	foreach ($rules as $rule => $values)
+	{
+		if (is_string($values))
+		{
+			switch (strtolower($values))
+			{
+				case 'true':
+					$rules[$rule] = true;
+					break;
+				case 'false':
+					$rules[$rule] = false;
+					break;
+			}
+		}
+		else
+		{
+			for ($i = 0; $i < count($values); ++$i)
+			{
+				switch (strtolower($values[$i]))
+				{
+					case 'true':
+						$values[$i] = true;
+						break;
+					case 'false':
+						$values[$i] = false;
+						break;
+				}
+			}
+		}
+	}
+	
+	return json_encode($rules);
+}
+
+/*  The editor of a rules filter: which of the options of each rule the games under a league or
+    a series may be played by. The two keep the same thing in the same shape, so one form edits
+    both - what differs is only where the filter is read from and where it is sent, and that is
+    handed in rather than written here. A club keeps a rules code instead of a filter, and a
+    code is picked rather than filtered, so this is not the form for one - see form/rules_edit.php.
+
+    $rules is the filter as it stands in the database, which is already JSON and goes to the
+    page as it is. $api and $params say where the dialog posts what it has: the filter itself is
+    added to the parameters under the name every one of those operations calls it by. */
+function show_rules_filter_form($rules, $api, $params)
+{
+	global $_lang, $_rules_options;
+?>
+	<script>
+	var rules = <?php echo $rules; ?>;
+	function commit(onSuccess)
+	{
+		var params = <?php echo json_encode($params); ?>;
+		params.rules = rules;
+		json.post(<?php echo json_encode($api); ?>, params, onSuccess);
+	}
+	</script>
+<?php
+	echo '<table class="transp" width="100%"><tr><td><span id="form-rules"></span></td></tr>';
+	
+	echo '</table><script>';
+	
+	$labels = include __DIR__ . '/languages/' . get_lang_code($_lang) . '/rules.php';
+	$rules_array = array();
+	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	{
+		$option = $_rules_options[$i];
+		$paragraph = $option[RULE_OPTION_PARAGRAPH];
+		$item = $option[RULE_OPTION_ITEM];
+		$rule = $labels[$paragraph][RULE_PARAGRAPH_ITEMS][$item];
+		$rules_array[] = array($rule[RULE_ITEM_NAME], ($paragraph + 1) . '.' . ($item + 1), $rule[RULE_ITEM_OPTIONS], $rule[RULE_ITEM_OPTIONS_SHORT], $option[RULE_OPTION_NAME], $option[RULE_OPTION_VALUES]);
+	}
+	echo "\nvar rulesOptions = " . json_encode($rules_array) . ";\n";
+	
+?>	
+
+	function isRuleAllowed(ruleNum, value)
+	{
+		var ruleName = rulesOptions[ruleNum][4];
+		var ruleValue = rulesOptions[ruleNum][5][value];
+		var rule = rules[ruleName];
+		if (typeof rule == "object")
+		{
+			for (var i = 0; i < rule.length; ++i)
+				if (rule[i] == ruleValue)
+					return true;
+			return rule.length <= 0;
+		}
+		return typeof rule == "undefined" || rule == ruleValue;
+	}
+	
+	function setRule(ruleNum, value)
+	{
+		var ruleName = rulesOptions[ruleNum][4];
+		var allValues = rulesOptions[ruleNum][5];
+		var ruleValue = allValues[value];
+		var rule = rules[ruleName];
+		if ($("#option" + value).attr("checked"))
+		{
+			if (typeof rule == "string" || typeof rule == "boolean")
+			{
+				if (rule != ruleValue)
+				{
+					rule = [rule, ruleValue];
+				}
+			}
+			else if (typeof rule != "undefined")
+			{
+				for (var i = 0; i < rule.length; ++i)
+				{
+					if (rule[i] == ruleValue)
+					{
+						showRule(ruleNum);
+						return;
+					}
+				}
+				rule.push(ruleValue);
+			}
+			
+			if (rule.length == allValues.length)
+			{
+				rule = null;
+			}
+		}
+		else if (typeof rule != "string" && typeof rule != "boolean")
+		{
+			if (typeof rule == "undefined")
+			{
+				rule = [];
+				for (var i = 0; i < allValues.length; ++i)
+				{
+					if (i != value)
+					{
+						rule.push(allValues[i]);
+					}
+				}
+			}
+			else
+			{
+				if (rule.length == 0)
+				{
+					for (var i = 0; i < allValues.length; ++i)
+					{
+						if (i != value)
+						{
+							rule.push(allValues[i]);
+						}
+					}
+				}
+				else for (var i = 0; i < rule.length; ++i)
+				{
+					if (rule[i] == ruleValue)
+					{
+						rule.splice(i, 1);
+						break;
+					}
+				}
+			}
+			
+			if (rule.length == 1)
+			{
+				rule = rule[0];
+			}
+		}
+		
+		if (rule != null)
+		{
+			rules[ruleName] = rule;
+		}
+		else
+		{
+			delete rules[ruleName];
+		}
+		showRule(ruleNum);
+	}
+		
+	function showRule(ruleNum)
+	{
+		var op = rulesOptions[ruleNum];
+		var ops = op[3];
+		var html = '<table class="bordered" width="100%"><tr class="bordered"><td class="bordered" width="300" valign="top">';
+		for (i = 0; i < rulesOptions.length; ++i)
+		{
+			if (i == ruleNum)
+			{
+				html += '<p><strong>' + rulesOptions[i][1] + ". " + rulesOptions[i][0] + "</strong></p>";
+			}
+			else
+			{
+				html += '<p><a href="javascript:showRule(' + i + ')"> ' + rulesOptions[i][1] + ". " + rulesOptions[i][0] + "</a></p>";
+			}
+		}
+		
+		html += '</td><td valign="top"><table height="100%" width="100%"><tr><td align="left" width="32">';
+		if (ruleNum > 0)
+		{
+			html += '<button class="icon" onclick="showRule(' + (ruleNum - 1) + ')"><img src="images/prev.png" border="0"></button>';
+		}
+		html += '</td><td><b>' + op[1] + ". " + op[0] + '</b></td><td align="right">';
+		if (ruleNum < rulesOptions.length - 1)
+		{
+			html += '<button class="icon" onclick="showRule(' + (ruleNum + 1) + ')"><img src="images/next.png" border="0"></button>';
+		}
+		html += '</td></tr>';
+		
+		for (i = 0; i < ops.length; ++i)
+		{
+			html += '<tr><td align="center" valign="center"><input name="rb" type="checkbox" id="option' + i + '" onclick="setRule(' + ruleNum + ', ' + i + ')"';
+			if (isRuleAllowed(ruleNum, i))
+			{
+				html += ' checked';
+			}
+			html += '><td colspan="2"><p>' + ops[i] + '</p></td></tr><tr><td></td><td style="padding-left:8pt;">' + op[1] + '. ' + op[2][i];
+		}
+		$('#form-rules').html(html);
+	}
+	
+	showRule(0);
+	</script>
+<?php
+}
+
 ?>

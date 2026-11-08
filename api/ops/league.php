@@ -196,42 +196,7 @@ class ApiPage extends OpsApiPageBase
 			$flags = $old_flags;
 		}
 		
-		$rules = get_optional_param('rules', $old_rules);
-		if (!is_string($rules))
-		{
-			foreach ($rules as $rule => $values)
-			{
-				if (is_string($values))
-				{
-					switch (strtolower($values))
-					{
-						case 'true':
-							$rules[$rule] = true;
-							break;
-						case 'false':
-							$rules[$rule] = false;
-							break;
-					}
-				}
-				else
-				{
-					for ($i = 0; $i < count($values); ++$i)
-					{
-						switch (strtolower($values[$i]))
-						{
-							case 'true':
-								$values[$i] = true;
-								break;
-							case 'false':
-								$values[$i] = false;
-								break;
-						}
-					}
-				}
-			}
-			
-			$rules = json_encode($rules);
-		}
+		$rules = rules_filter_to_json(get_optional_param('rules', $old_rules));
 		
 		$def_rules = check_rules_code(get_optional_param('default_rules', $old_def_rules));
 		$def_rules = correct_rules($def_rules, $rules);

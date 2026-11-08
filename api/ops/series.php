@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/series.php';
+require_once '../../include/rules.php';
 require_once '../../include/email.php';
 require_once '../../include/message.php';
 require_once '../../include/datetime.php';
@@ -630,6 +631,49 @@ class ApiPage extends OpsApiPageBase
 									'<li value="32">When a moderator starts a new game, they can assign it to the tournament even if the game is in a non-tournament or in any other tournament event.</li>' .
 									'<li value="64">When a custom event is created, it can be assigned to this tournament as a round.</li>' .
 									'</ol>', 'remain the same.');*/
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// change_rules
+	//-------------------------------------------------------------------------------------------------------
+	function change_rules_op()
+	{
+		$series_id = (int)get_required_param('series_id');
+		
+		Db::begin();
+		list($league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT league_id, club_id FROM series WHERE id = ?', $series_id);
+		$owner = new SeriesOwner($league_id, $club_id);
+		check_series_permissions($owner, $series_id);
+		
+		// A series of a club carries the rules code of its club rather than a filter, and a code
+		// is picked rather than filtered - see form/rules_edit.php, which is the editor of one.
+		// Writing a filter over it would leave the series saying something it cannot mean.
+		if (!$owner->is_league())
+		{
+			throw new Exc(get_label('A series of a club is played by the rules of the club.'));
+		}
+		
+		// A filter that allows everything is an empty object, and an empty object is nothing at
+		// all once the editor has put it on the wire - so a request with no filter in it is one
+		// that allows everything, not one that means to leave the filter alone. This operation
+		// changes nothing else, so there is nothing else for it to mean.
+		$rules = rules_filter_to_json(get_optional_param('rules', '{}'));
+		Db::exec(get_label('sеriеs'), 'UPDATE series SET rules = ? WHERE id = ?', $rules, $series_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details = new stdClass();
+			$log_details->rules = $rules;
+			db_log(LOG_OBJECT_SERIES, 'changed', $log_details, $series_id, $club_id, $league_id);
+		}
+		Db::commit();
+	}
+	
+	function change_rules_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Change the rules filter of a series - what the tournaments of the series are allowed to be played by. A series of a club has no filter: it carries the rules code of its club, which is picked rather than filtered, so this is refused for one.');
+		$help->request_param('series_id', 'Series id.');
+		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the series. Contains json. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.', 'the series allows every rule.'));
 		return $help;
 	}
 

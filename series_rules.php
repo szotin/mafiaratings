@@ -17,11 +17,12 @@ class Page extends SeriesPageBase
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_FULL . ')"' . ($view <= RULES_VIEW_FULL ? ' checked' : '') . '> ' . get_label('detailed');
 		echo ' <input type="radio" onclick="filter(' . RULES_VIEW_SHORT . ')"' . ($view == RULES_VIEW_SHORT ? ' checked' : '') . '> ' . get_label('shorter');
 		
-		// The editor behind this button is the league rules filter editor. A club series carries
-		// its club's rules code rather than a filter, so there is nothing for it to edit.
+		// A series keeps a rules filter of its own, copied from its owner when it was made and
+		// edited here since. A club series carries its club's rules code instead, and a code is
+		// picked rather than filtered, so there is nothing here for this button to edit.
 		if ($this->owner->is_league() && is_series_manager($this->owner, $this->id))
 		{
-			echo '</td><td align="right"><button class="icon" onclick="mr.editLeagueRules(' . $this->id . ')"><img src="images/edit.png" border="0"></button>';
+			echo '</td><td align="right"><button class="icon" onclick="mr.editSeriesRules(' . $this->id . ')"><img src="images/edit.png" border="0"></button>';
 		}
 		echo '</td></tr></table></p>';
 		$rules = json_decode($this->rules);
