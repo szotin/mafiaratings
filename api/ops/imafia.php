@@ -126,6 +126,16 @@ class ApiPage extends OpsApiPageBase
 			$delim = ',';
 		}
 		
+		// Nobody to look up. iMafia answers for a tournament it has nothing on with an empty list of
+		// games, and then there is no player in it to match against our own - so the lookup would be
+		// an IN () with nothing inside it, which MySQL will not parse. Coming back empty is the true
+		// answer to what was asked, and the caller is the one that says no games arrived; see
+		// import_games_op.
+		if (empty($players))
+		{
+			return $players;
+		}
+		
 		$query = new DbQuery('SELECT u.imafia_id, u.imafia_name, u.id, n.name, u.flags FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.imafia_id IN (' . $players_list . ')');
 		while ($row = $query->next())
 		{
@@ -190,12 +200,16 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($ready_for_import)
 		{
-			usort($content->games, 'compare_games');
-			$games_count = count($content->games);
-			if ($games_count <= 0)
+			// Said before anything is sorted. usort is handed the list itself, and on PHP 8 being
+			// handed something that is not a list at all is fatal rather than merely complained about
+			// - which is what an iMafia tournament with nothing on it comes back as.
+			if (!isset($content->games) || !is_array($content->games) || count($content->games) <= 0)
 			{
 				throw new Exc(get_label('No games received from [0]', 'iMafia'));
 			}
+			
+			usort($content->games, 'compare_games');
+			$games_count = count($content->games);
 			$end = $start + $duration;
 			$game_start = (int)$start;
 			
