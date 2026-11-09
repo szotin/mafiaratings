@@ -72,7 +72,18 @@ function format_float($number, $digits, $zeroes = true)
 
 function format_coeff($coeff, $sign_digits = 3)
 {
-	return round($coeff, $sign_digits - floor(log10($coeff)) - 1);
+	// Where to round is read off how big the number is, and zero is not big in any amount:
+	// its logarithm is minus infinity, which comes out of the line below as an infinite
+	// number of digits, and an infinite number of digits is not a number of digits at all.
+	// PHP 7 took the infinity and rounded to it; PHP 8 refuses it, and a coefficient of zero
+	// - which is what a player with nothing to divide by has - stopped the page. Zero rounds
+	// to zero however many digits are asked for. A negative coefficient has no logarithm
+	// either, so the size is read off its magnitude and the sign left where it was.
+	if ($coeff == 0 || !is_finite($coeff))
+	{
+		return 0;
+	}
+	return round($coeff, (int)($sign_digits - floor(log10(abs($coeff))) - 1));
 }
 
 function format_score($score, $zeroes = true)

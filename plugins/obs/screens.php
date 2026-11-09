@@ -544,17 +544,25 @@ function obs_head_game($game_num, $games)
 	return $games > 0 ? get_label('Game [0] of [1]', $game_num, $games) : get_label('Game [0]', $game_num);
 }
 
-// A number with the word after it, in the form that number takes. $label holds the three
+// A number with the word after it, in the form that number takes. $words holds the three
 // forms separated by bars - one thing, a few of them, many of them - because that is what
 // Russian and Ukrainian count in; English uses the second for everything but one.
-function obs_count($count, $label)
+//
+// The words arrive already translated, and the caller is the one who asks for them: this
+// was the only place in the whole site that looked a label up by a name held in a variable,
+// and build_labels.php reads the source with the PHP tokenizer to find out which labels are
+// still in use. A name it cannot see is a label it believes nobody wants, so every rebuild
+// of the label files quietly took the two plural forms this function counts in out of the
+// Russian and the Ukrainian - and the frame then counted in English. Asked for at the call
+// site the names are plain in the source, and the tokenizer finds them there.
+function obs_count($count, $words)
 {
 	global $_lang;
 
-	$forms = explode('|', get_label($label));
+	$forms = explode('|', $words);
 	if (count($forms) < 3)
 	{
-		return $count . ' ' . get_label($label);
+		return $count . ' ' . $words;
 	}
 
 	if (($_lang & (LANG_RUSSIAN | LANG_UKRAINIAN)) != 0)

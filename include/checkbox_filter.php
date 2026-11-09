@@ -7,6 +7,12 @@
 // returns the same two bits per filter it always did.
 function show_checkbox_filter($labels, $flags, $on_change = NULL)
 {
+	// The flags are read off the address bar, where anything at all can be written, and the
+	// switches are set by shifting them apart two bits at a time. PHP 7 made a number of
+	// whatever it was given before shifting it; PHP 8 refuses to shift a string that is not
+	// one, and refusing it took down the whole page the switches were drawn on. A filter that
+	// is not a number names no filtering, which is what an empty address bar means as well.
+	$flags = (int)$flags;
 	// A line of its own. The filters share a cell with whatever else a page filters by - a
 	// club, a range of dates - and strung after those they run off the end and break wherever
 	// they happen to reach, leaving the last of them stranded under something else.

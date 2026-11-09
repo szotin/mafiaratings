@@ -118,9 +118,7 @@ class Page extends TournamentPageBase
 				$this->player = new stdClass();
 				$this->player->id = $this->user_id;
 				$this->player->games = array();
-				$this->player->normalization = 1;
-				$this->player->points = 0;
-				$this->player->raw_points = 0;
+				init_unscored_player($this->player, $this->scoring);
 				list ($this->player->name, $this->player->flags, $this->player->tournament_reg_flags, $this->player->club_reg_flags) = 
 					Db::record(get_label('user'), 
 						'SELECT nu.name, u.flags, tu.flags, cu.flags'.
@@ -136,9 +134,7 @@ class Page extends TournamentPageBase
 			$this->player = new stdClass();
 			$this->player->id = $this->user_id;
 			$this->player->games = array();
-			$this->player->normalization = 1;
-			$this->player->points = 0;
-			$this->player->raw_points = 0;
+			init_unscored_player($this->player, $this->scoring);
 			$this->player->name = '';
 			$this->player->flags = $this->player->tournament_reg_flags = $this->player->club_reg_flags = 0;
 		}

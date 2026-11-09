@@ -902,12 +902,12 @@ class SeriesPageBase extends PageBase
 	
 	protected function show_title()
 	{
-		if ($this->hasError())
-		{
-			trigger_error('Exception: ' . $this->getErrorMessage(), E_USER_ERROR);
-			parent::show_title();
-			return;
-		}
+		// A page that failed to prepare itself is given the plain heading by the base class
+		// now, which no longer asks the page for one it has nothing to write - so what stood
+		// here is never reached. It was the wrong way to say it in any case: E_USER_ERROR
+		// ends the request, so the error page it was announcing stopped at its heading and
+		// never got its footer, and with the footer went every dialog on it. See
+		// PageBase::run.
 		echo '<table class="head" width="100%">';
 
 		$is_manager = is_series_manager($this->owner, $this->id);

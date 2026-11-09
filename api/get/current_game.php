@@ -336,6 +336,11 @@ class ApiPage extends GetApiPageBase
 			{
 				$game->moderator->name = '';
 				$event_reg_flags = $tournament_reg_flags = $club_reg_flags = $user_flags = 0;
+				// The club is asked after this, and when there is no judge there is nobody to
+				// have read one for. Left unset it was read anyway: a warning in the log for
+				// every poll of this answer, and the overlay polls it every few seconds all
+				// through a game. No club reads the same as a judge who belongs to none.
+				$user_club_id = $user_club_name = $user_club_flags = NULL;
 			}
 			$this->user_pic->
 				set($game->moderator->id, $game->moderator->name, $event_reg_flags, 'e' . $this->event_id)->

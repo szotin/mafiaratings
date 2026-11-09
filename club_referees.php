@@ -63,7 +63,7 @@ class Page extends ClubPageBase
 		echo '<p><table class="transp" width="100%"><tr><td>';
 		show_date_filter();
 		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->user_name, 'filterChanged');
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $this->filter, 'filterChanged');
 		echo '</td><td align="right"><img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
 		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
 		echo '</td></tr></table></p>';

@@ -127,7 +127,18 @@ class PageBase
 				}
 				if (!$title_shown)
 				{
-					$this->show_title();
+					// The plain heading rather than the page's own. A page writes its heading
+					// out of what prepare() read - the name of the event, the club it belongs
+					// to, the buttons its manager is given - and prepare() is what just threw,
+					// so none of that is there. Asked for the heading anyway, the page wrote
+					// one out of nothing: a warning in the log for every field of it, some
+					// thirty of them per failed request, which is the greater part of what the
+					// error log on the production server had grown to. And where such a page
+					// counted one of those fields instead of printing it, PHP 8 stopped it a
+					// second time - see the count() of the series in TournamentPageBase. The
+					// base heading is the title the page was run under and a back button, and
+					// both of those are known whatever prepare() did.
+					PageBase::show_title();
 				}
 				if (!$footer_shown)
 				{

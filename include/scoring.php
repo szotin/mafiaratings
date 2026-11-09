@@ -528,12 +528,21 @@ function init_player_score($player, $scoring, $lod_flags)
     
     $player->points = 0;
     $player->mvp_points = 0;
-	if (isset($scoring->counters) && count($scoring->counters) > 0)
-	{
-		$player->counters = array(
-			array_fill(0, count($scoring->counters), 0),
-			array_fill(0, count($scoring->counters), 0));
-	}
+	// Two rows of counters, one for the games already played and one for the game being
+	// scored, with a place in each for every counter the scoring names. A scoring that names
+	// none gets two empty rows rather than no rows at all: add_player_counters below asks for
+	// a row by reference, and a row that is not there is made out of nothing on the way in -
+	// an absent property becomes a list holding one null, which the count() at the top of
+	// that function then refuses. PHP 7 counted the null as nothing and wrote a warning
+	// nobody was reading; PHP 8 throws, and a TypeError is not an Exception, so nothing on
+	// the way out caught it and the page died where it stood - which is what the details of
+	// a player in an event had been doing. An empty row counts as nothing and says the same
+	// thing: every loop over it does nothing, which is what a scoring with no counters asks
+	// for.
+	$counters_count = isset($scoring->counters) ? count($scoring->counters) : 0;
+	$player->counters = array(
+		array_fill(0, $counters_count, 0),
+		array_fill(0, $counters_count, 0));
 	
     if ($lod_flags & SCORING_LOD_PER_GROUP)
     {
@@ -681,6 +690,33 @@ function remove_scoring_evaluators($scoring)
 				unset($policy->mvpEvaluator);
 			}
 		}
+	}
+}
+
+// The player the scoring never scored: one whose details are asked for in an event or a
+// tournament where they played no game that counted. Those pages build such a player out of
+// the users table rather than out of the standings, and then print them the same table of
+// scores as everybody else - so they need the same rows of zeroes init_player_score lays out,
+// and the raw twins normalize_player_scores would have put beside them. Without those the
+// totals row reached into a property that was never there: on PHP 7 a warning for every
+// policy of every group, tens of thousands of them a day and the greater part of what the
+// error log on the production server was made of, and on the page itself a row of empty cells
+// under a row of headings. A player who played nothing scored nothing, and nothing is zero.
+function init_unscored_player($player, $scoring)
+{
+	global $_scoring_groups;
+
+	init_player_score($player, $scoring, SCORING_LOD_PER_GROUP | SCORING_LOD_PER_POLICY);
+	$player->normalization = 1;
+	$player->raw_points = $player->points;
+	$player->raw_mvp_points = $player->mvp_points;
+	foreach ($_scoring_groups as $group)
+	{
+		$g = $group . '_points';
+		$rg = 'raw_' . $g;
+		$player->$rg = $player->$g;
+		$rg = 'raw_' . $group;
+		$player->$rg = $player->$group;
 	}
 }
 
@@ -1261,7 +1297,15 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 	{
 		$games[] = $row;
 		list ($player_id, $flags, $role) = $row;
-		add_player_counters($players[$player_id]->counters[0], $scoring, $flags, $role);
+		// A player the games were read for but the standings above did not list. It happens,
+		// for reasons nobody has got to the bottom of - the tournament scoring below says the
+		// same and has said it for years. Reached by reference, as the counters are here, a
+		// player who is not there is made out of nothing and comes out null, and PHP 8 will
+		// not make an object out of a null at all.
+		if (isset($players[$player_id]))
+		{
+			add_player_counters($players[$player_id]->counters[0], $scoring, $flags, $role);
+		}
 	}
 
 	// Calculate scores
@@ -1272,6 +1316,10 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 		{
 			$extra_points = 0;
 			$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
+		}
+		if (!isset($players[$player_id]))
+		{
+			continue;
 		}
 		$p = $players[$player_id];
 		add_player_counters($p->counters[1], $scoring, $flags, $role);

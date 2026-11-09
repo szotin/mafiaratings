@@ -584,12 +584,40 @@ function initiate_session($lang_code = NULL)
 	$session_timeout = 60 * 60 * 24 * 90; // 90 days
 	ini_set('session.gc_maxlifetime', $session_timeout);
 	ini_set('session.cookie_lifetime', $session_timeout);
-	ini_set('session.gc_probability', 0);
+	// Somebody has to delete a session file in the end. These were kept for ninety days with
+	// the collector switched off, and written into a subdirectory of the host's own session
+	// folder, which the host's own cleaner does not go down into - so nothing deleted them at
+	// all. The folder filled the partition it sits on, and session_start() started answering
+	// "No space left on device" to people trying to log in. One load in a thousand now sweeps
+	// the folder and takes out what has not been touched in the ninety days a session is kept
+	// for, which leaves everybody still using the site where they were.
+	ini_set('session.gc_probability', 1);
+	ini_set('session.gc_divisor', 1000);
 
-	$base_path = ini_get('session.save_path');
-	if (empty($base_path)) $base_path = sys_get_temp_dir();
-	$session_path = rtrim($base_path, '/\\') . '/mafiaratings';
-	if (!is_dir($session_path)) { @mkdir($session_path, 0700); }
+	// And the sessions are kept on our own disk, in a folder beside the site rather than under
+	// /var on the server: then what fills up is this account's own space, which we can look at
+	// and empty over FTP, and not a partition shared with every other site on the machine.
+	// __DIR__ is the include folder, one below the site, so the folder named here stands next
+	// to the site and outside the web root - nothing in it is ever served. Should it turn out
+	// not to be writable, the host's folder is still better than no sessions at all.
+	$session_path = dirname(dirname(__DIR__)) . '/sessions';
+	if (!is_dir($session_path))
+	{
+		@mkdir($session_path, 0700, true);
+	}
+	if (!is_dir($session_path))
+	{
+		$base_path = ini_get('session.save_path');
+		if (empty($base_path))
+		{
+			$base_path = sys_get_temp_dir();
+		}
+		$session_path = rtrim($base_path, '/\\') . '/mafiaratings';
+		if (!is_dir($session_path))
+		{
+			@mkdir($session_path, 0700);
+		}
+	}
 	session_save_path($session_path);
 
     session_start();

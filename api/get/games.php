@@ -27,6 +27,15 @@ class ApiPage extends GetApiPageBase
 		$ended_before = get_optional_param('ended_before');
 		$started_after = get_optional_param('started_after');
 		$ended_after = get_optional_param('ended_after');
+		// Written as started_before[]=... in the address, a date arrives as a list instead,
+		// and the four of them are handed to strpos and substr below. PHP 7 made a string of
+		// the list and said so in a warning nobody was reading; PHP 8 refuses it, and the
+		// request answers with a fatal error instead of with games. A date that is not a date
+		// names no date, which is what leaving it out of the address means.
+		$started_before = is_string($started_before) ? $started_before : '';
+		$ended_before = is_string($ended_before) ? $ended_before : '';
+		$started_after = is_string($started_after) ? $started_after : '';
+		$ended_after = is_string($ended_after) ? $ended_after : '';
 		$game_id = (int)get_optional_param('game_id', -1);
 		$club_id = (int)get_optional_param('club_id', -1);
 		$league_id = (int)get_optional_param('league_id', -1);

@@ -224,7 +224,22 @@ class Page extends TournamentPageBase
 			$this->better_version = null;
 			$this->can_optimize = false;
 		}
-		$this->tables = &$this->misc->seating->rounds;
+		// A seating is kept as the rounds it is made of. A tournament whose misc holds no
+		// seating at all, and one whose seating has not been arranged into rounds yet, have
+		// nothing of the sort - and taken by reference, as the rounds are here, what is not
+		// there is made out of nothing and comes out null. Every loop below asks count() of
+		// it: PHP 7 counted the null as nothing and wrote a warning nobody read, PHP 8
+		// refuses it and the page stops where it stood. An empty list of rounds says the same
+		// thing, and each of those loops over it draws nothing, which is the whole of what a
+		// seating with no rounds has to show.
+		if (isset($this->misc->seating->rounds))
+		{
+			$this->tables = &$this->misc->seating->rounds;
+		}
+		else
+		{
+			$this->tables = array();
+		}
 		if (isset($this->misc->seating->mapping))
 		{
 			$this->mapping = &$this->misc->seating->mapping;

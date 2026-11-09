@@ -80,7 +80,7 @@ class Page extends EventPageBase
 				$this->player = new stdClass();
 				$this->player->id = $this->user_id;
 				$this->player->games = array();
-				$this->player->points = 0;
+				init_unscored_player($this->player, $this->scoring);
 				list ($this->player->name, $this->player->flags, $this->player->nickname, $this->player->event_reg_flags, $this->player->tournament_reg_flags, $this->player->club_reg_flags) = 
 					Db::record(get_label('user'), 
 						'SELECT nu.name, u.flags, eu.nickname, eu.flags, tu.flags, cu.flags FROM users u' .
@@ -96,7 +96,7 @@ class Page extends EventPageBase
 			$this->player = new stdClass();
 			$this->player->id = $this->user_id;
 			$this->player->games = array();
-			$this->player->points = 0;
+			init_unscored_player($this->player, $this->scoring);
 			$this->player->nickname = $this->player->name = '';
 			$this->player->flags = $this->player->event_reg_flags = $this->player->tournament_reg_flags = $this->player->club_reg_flags = 0;
 		}

@@ -26,6 +26,11 @@ class ApiPage extends GetApiPageBase
             'SELECT t.user_id, t.place, t.games_count FROM tournament_places t', $condition);
         $query->add(' ORDER BY t.place');
 
+        // An empty list to begin with, so that a tournament nobody has a place in answers
+        // with one rather than with nothing at all: the list was only ever made by the loop
+        // below putting something in it, and where the loop ran no times the answer named a
+        // variable that was never there - null where every reader expects a list.
+        $places = array();
         $this->show_query($query);
         while ($row = $query->next())
         {

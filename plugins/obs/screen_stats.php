@@ -298,17 +298,17 @@ if ($sheriff > 0)
 obs_frame_start('f4');
 obs_head($c, get_label('Wins'),
 	get_label('all tables') . ' · ' . get_label('finished games'), '',
-	obs_count($total, 'game|games|games'));
+	obs_count($total, get_label('game|games|games')));
 obs_foot($c->table_num, obs_judge($c));
 
 echo '<div class="f4main glass">';
 echo '<div class="sides">';
 echo '<div class="side t"><div class="k">' . get_label('Town') . '</div>' .
 	'<div class="pc">' . $town_share . '%</div>' .
-	'<div class="ct">' . obs_count($town, 'win|wins|wins') . '</div></div>';
+	'<div class="ct">' . obs_count($town, get_label('win|wins|wins')) . '</div></div>';
 echo '<div class="side m"><div class="k">' . get_label('Mafia') . '</div>' .
 	'<div class="pc">' . (100 - $town_share) . '%</div>' .
-	'<div class="ct">' . obs_count($mafia, 'win|wins|wins') . '</div></div>';
+	'<div class="ct">' . obs_count($mafia, get_label('win|wins|wins')) . '</div></div>';
 echo '</div>';
 
 // The one bar the two sides share. A kind nobody has played is left out of it altogether, and
