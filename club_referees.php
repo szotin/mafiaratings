@@ -69,27 +69,27 @@ class Page extends ClubPageBase
 		echo '</td></tr></table></p>';
 
 		$condition = new SQL(' WHERE g.club_id = ?', $this->id);
-		if ($this->user_name & FLAG_FILTER_TOURNAMENT)
+		if ($this->filter & FLAG_FILTER_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NOT NULL');
 		}
-		if ($this->user_name & FLAG_FILTER_NO_TOURNAMENT)
+		if ($this->filter & FLAG_FILTER_NO_TOURNAMENT)
 		{
 			$condition->add(' AND g.tournament_id IS NULL');
 		}
-		if ($this->user_name & FLAG_FILTER_RATING)
+		if ($this->filter & FLAG_FILTER_RATING)
 		{
 			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') <> 0');
 		}
-		if ($this->user_name & FLAG_FILTER_NO_RATING)
+		if ($this->filter & FLAG_FILTER_NO_RATING)
 		{
 			$condition->add(' AND (g.flags & '.GAME_FLAG_RATING.') = 0');
 		}
-		if ($this->user_name & FLAG_FILTER_CANCELED)
+		if ($this->filter & FLAG_FILTER_CANCELED)
 		{
 			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') <> 0');
 		}
-		if ($this->user_name & FLAG_FILTER_NO_CANCELED)
+		if ($this->filter & FLAG_FILTER_NO_CANCELED)
 		{
 			$condition->add(' AND (g.flags & '.GAME_FLAG_CANCELED.') = 0');
 		}
