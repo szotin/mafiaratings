@@ -239,6 +239,8 @@ function obs_context()
 
 	$c->event_id = 0;
 	$c->event_name = '';
+	$c->round_num = 0;
+	$c->tables = 0;    // nothing says how many tables there are until a round does
 	$c->next_game_num = 0;
 	$c->done = NULL;    // the game played out at this table but not yet written down, if there is one
 	$c->playing = NULL; // the game under way, whose referee the frames name
