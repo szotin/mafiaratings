@@ -163,8 +163,8 @@ function obs_event_context($event_id, $table_num)
 	$c->normalizer_id = 0;
 	$c->normalizer_version = 0;
 
-	list ($name, $event_flags, $c->club_id, $c->scoring_id, $c->scoring_version, $c->scoring_options) = Db::record(get_label('event'),
-		'SELECT name, flags, club_id, scoring_id, scoring_version, scoring_options FROM events WHERE id = ?', $event_id);
+	list ($name, $event_flags, $c->club_id, $c->scoring_id, $c->scoring_version, $c->scoring_options, $misc) = Db::record(get_label('event'),
+		'SELECT name, flags, club_id, scoring_id, scoring_version, scoring_options, misc FROM events WHERE id = ?', $event_id);
 
 	$c->logo = obs_logo(new Picture(EVENT_PICTURE), $event_id, $name, (int)$event_flags, $c->club_id);
 
@@ -174,6 +174,7 @@ function obs_event_context($event_id, $table_num)
 	$c->event_id = $event_id;
 	$c->event_name = '';
 	$c->round_num = 0;
+	$c->tables = seating_tables($misc);
 
 	$state = obs_table_state($event_id, $table_num);
 	$c->next_game_num = obs_next_game_num($event_id, $table_num, $state);
@@ -232,6 +233,7 @@ function obs_context()
 		list ($r->id, $r->name, $r->round_num, $misc) = $row;
 		$r->id = (int)$r->id;
 		$r->games = obs_seated_games($misc, $table_num);
+		$r->tables = seating_tables($misc);
 		$c->rounds[] = $r;
 	}
 
@@ -268,6 +270,7 @@ function obs_context()
 		$c->event_id = $r->id;
 		$c->event_name = $r->name;
 		$c->round_num = (int)$r->round_num;
+		$c->tables = $r->tables;
 		$c->next_game_num = ($r->games > 0) ? $next : 0; // no seating, so nothing to call upcoming
 		$settled = $index;
 		break;
@@ -282,6 +285,7 @@ function obs_context()
 		$c->event_id = $last->id;
 		$c->event_name = $last->name;
 		$c->round_num = (int)$last->round_num;
+		$c->tables = $last->tables;
 	}
 
 	// Which round the game behind us comes from. Normally the one the table is in - a round that
@@ -487,13 +491,23 @@ function obs_head($c, $title, $line = '', $sub = '', $num = '')
 // The referee, in the bottom right corner: the table, the gavel, the name and the face. No
 // word before the name - their nicknames run long and the gavel says what it is.
 // $judge is what obs_players() returned, or NULL when nobody is at the table.
-function obs_foot($table_num, $judge)
+//
+// A round seated for one table says nothing about which table it is. There is no other table
+// to tell this one from, and "Table 1" on a stream with one table in it is a word that tells a
+// viewer nothing. A round whose seating is not arranged yet says it as before: nothing states
+// how many tables it will turn out to need - see seating_tables().
+function obs_foot($c, $judge)
 {
 	echo '<div class="ftr">';
-	echo '<span>' . get_label('Table [0]', $table_num) . '</span>';
+	$named = false;
+	if ($c->tables != 1)
+	{
+		echo '<span>' . get_label('Table [0]', $c->table_num) . '</span>';
+		$named = true;
+	}
 	if (!is_null($judge))
 	{
-		echo '<span class="fdv"></span>' . obs_icon('gavel') .
+		echo ($named ? '<span class="fdv"></span>' : '') . obs_icon('gavel') .
 			'<b>' . htmlspecialchars($judge->name) . '</b>';
 		if ($judge->photo != '')
 		{

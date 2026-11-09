@@ -31,7 +31,7 @@ $players = obs_players($seating, $c->event_id, $c->tournament_id, $c->club_id);
 obs_frame_start('f3');
 obs_head($c, get_label('Next game'), $c->event_name, '',
 	obs_head_game($c->next_game_num, obs_round_games($c->event_id, $c->table_num)));
-obs_foot($c->table_num, obs_judge($c));
+obs_foot($c, obs_judge($c));
 
 echo '<div class="lineup">';
 $seat = 1;

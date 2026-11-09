@@ -299,7 +299,7 @@ obs_frame_start('f4');
 obs_head($c, get_label('Wins'),
 	get_label('all tables') . ' · ' . get_label('finished games'), '',
 	obs_count($total, get_label('game|games|games')));
-obs_foot($c->table_num, obs_judge($c));
+obs_foot($c, obs_judge($c));
 
 echo '<div class="f4main glass">';
 echo '<div class="sides">';

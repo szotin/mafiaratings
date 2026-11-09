@@ -460,20 +460,57 @@ var obs = new function()
 	//--------------------------------------------------------------------------------------
 	// top right: the tournament and the judge
 	//--------------------------------------------------------------------------------------
+
+	// Which part of the tournament is being played - the final, the semi-final, and so on
+	// down. Empty for the main round, for a game that belongs to no tournament, and for a rung
+	// deeper than the names reach: the list the page was handed holds the rungs above the main
+	// round and nothing else, so there is nothing to look up in the one case that matters. A
+	// tournament still in its main round is simply the tournament, and saying so would take up
+	// room on the overlay for a word that tells a viewer nothing.
+	function stageName(g)
+	{
+		if (!g.stage || !options.labels.stages)
+		{
+			return '';
+		}
+		var name = options.labels.stages[g.stage];
+		return name ? name : '';
+	}
+
+	// Which table this is, unless the round is seated for one table only - then there is no
+	// other table to tell it from. A round whose seating is not arranged yet says it as
+	// before: tableCount is 0 there, which means nothing states how many tables it will need.
+	function tableName(g)
+	{
+		if (!g.table || g.tableCount == 1)
+		{
+			return '';
+		}
+		return options.labels.table.replace('[0]', g.table);
+	}
+
 	function topRight(g)
 	{
 		var html = '';
 		var parts = [];
 		var name = g.tournament ? g.tournament.name : (g.club ? g.club.name : '');
 		var logo = g.tournament ? g.tournament.iconUrl : (g.club ? g.club.iconUrl : null);
+		var stage = stageName(g);
+		var table = tableName(g);
 
 		if (name)
 		{
 			parts.push('<span class="nm">' + escapeHtml(name) + '</span>');
 		}
-		if (g.table)
+		// After the tournament and before the table: the round is the tournament's own
+		// business, while the table and the game are this table's.
+		if (stage)
 		{
-			parts.push('<span>' + escapeHtml(options.labels.table.replace('[0]', g.table)) + '</span>');
+			parts.push('<span>' + escapeHtml(stage) + '</span>');
+		}
+		if (table)
+		{
+			parts.push('<span>' + escapeHtml(table) + '</span>');
 		}
 		if (g.tour)
 		{
@@ -528,10 +565,17 @@ var obs = new function()
 			title = options.labels.tie;
 		}
 
+		// The same three things as the pill above, in the same order and under the same rules.
 		var sub = [];
-		if (g.table)
+		var stage = stageName(g);
+		var table = tableName(g);
+		if (stage)
 		{
-			sub.push(options.labels.table.replace('[0]', g.table));
+			sub.push(stage);
+		}
+		if (table)
+		{
+			sub.push(table);
 		}
 		if (g.tour)
 		{

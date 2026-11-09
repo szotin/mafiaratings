@@ -22,7 +22,12 @@ if ($c->event_name != '')
 {
 	echo '<div class="rn">' . htmlspecialchars($c->event_name) . '</div>';
 }
-echo '<div class="tb">' . get_label('Table [0]', $c->table_num) . '</div>';
+// Which table this is, unless the round is seated for one table only - then there is no other
+// table to tell it from. obs_foot() in screens.php leaves it out for the same reason.
+if ($c->tables != 1)
+{
+	echo '<div class="tb">' . get_label('Table [0]', $c->table_num) . '</div>';
+}
 echo '</div>';
 obs_frame_end();
 

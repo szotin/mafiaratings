@@ -4,6 +4,7 @@ require_once '../../include/api.php';
 require_once '../../include/game.php';
 require_once '../../include/game_log.php';
 require_once '../../include/datetime.php';
+require_once '../../include/rounds.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -67,6 +68,10 @@ class ApiPage extends GetApiPageBase
 		{
 			$game->table = $g->tableNum;
 		}
+		// How many tables this round lays out, according to its seating, and 0 where it has
+		// none. Which table a game is at is worth saying only where there is another table to
+		// tell it from - see topRight() in plugins/obs/obs.js.
+		$game->tableCount = seating_tables($this->misc);
 		
 		if (isset($game->tour))
 		{
@@ -575,7 +580,7 @@ class ApiPage extends GetApiPageBase
 		}
 
 		$query = new DbQuery(
-			'SELECT g.game, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name'.
+			'SELECT g.game, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name, e.misc'.
 			' FROM current_games g'.
 			' JOIN events e ON e.id = g.event_id'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
@@ -627,7 +632,7 @@ class ApiPage extends GetApiPageBase
 
 		if (!is_null($best_row))
 		{
-			list($game, $this->event_id, $this->event_name, $this->event_flags, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->stage, $this->club_id, $this->club_name, $this->club_flags, $this->city, $this->country) = $best_row;
+			list($game, $this->event_id, $this->event_name, $this->event_flags, $this->tournament_id, $this->tournament_name, $this->tournament_flags, $this->stage, $this->club_id, $this->club_name, $this->club_flags, $this->city, $this->country, $this->misc) = $best_row;
 			$this->game = new Game($game);
 			$this->response['game'] = $this->new_game();
 		}
@@ -677,6 +682,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('country', 'Country name where the game is played.');
 			$param->sub_param('name', 'Game name.');
 			$param->sub_param('table', 'Table number staring from 1.', 'the table number is unknown.');
+			$param->sub_param('tableCount', 'How many tables the round is played at, according to its seating. 0 when the round has no seating yet, which means "no telling" rather than "none".');
 			$param->sub_param('tour', 'Game number (we call it a tour number) in the tournament staring from 1.', 'the tour is unknown.');
 			$param->sub_param('stage', 'Tournament stage. 0 for the main stage; 1 - for the finals; 2 - for the semi-finals; 3 - quater-finals; etc');
 			$players = $param->sub_param('players', 'Players.');

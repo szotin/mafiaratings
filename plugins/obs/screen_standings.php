@@ -179,7 +179,7 @@ obs_frame_start('f2');
 obs_head($c, get_label('Standings'),
 	get_label('all tables') . ' · ' . get_label('finished games'), '',
 	get_label('Places [0]-[1]', 1, $shown_count));
-obs_foot($c->table_num, obs_judge($c));
+obs_foot($c, obs_judge($c));
 
 $pic = new Picture(USER_TOURNAMENT_PICTURE, new Picture(USER_CLUB_PICTURE, new Picture(USER_PICTURE)));
 

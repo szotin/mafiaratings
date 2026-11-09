@@ -445,7 +445,7 @@ function obs_results_cards($seats, $players, $log, $roles, $shot)
 
 obs_frame_start('f1 ' . $tint);
 obs_head($c, $title, $g->event_name, $extra, obs_head_game($g->game_num, obs_round_games($g->event_id, $c->table_num)));
-obs_foot($c->table_num, $judge);
+obs_foot($c, $judge);
 
 echo '<div class="f1rows">';
 for ($row = 0; $row < 2; ++$row)

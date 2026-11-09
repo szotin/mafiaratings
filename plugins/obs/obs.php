@@ -2,6 +2,7 @@
 
 require_once '../../include/session.php';
 require_once '../../include/stream.php';
+require_once '../../include/rounds.php'; // get_round_stage_names()
 
 // How often (in milliseconds) the page asks the site for the game state. The game screen itself
 // saves what the moderator does once a second, so this is the other half of the delay between a
@@ -81,6 +82,12 @@ function show_obs_page($view)
 	$options->labels->night = get_label('Night [0]');
 	$options->labels->table = get_label('Table [0]');
 	$options->labels->game = get_label('Game [0]');
+	// What each rung of a knockout is called, keyed by the number the round carries - the
+	// final, the semi-final and so on down. The script is handed the whole list because the
+	// page is drawn before the game is known and the round can change under it while it runs;
+	// and the main round is not in the list at all, which is what makes the overlay say
+	// nothing where there is nothing to say. See get_round_stage_names().
+	$options->labels->stages = get_round_stage_names();
 	$options->labels->nominated = get_label('Nominees');
 	$options->labels->noVoting = get_label('No voting this round');
 	$options->labels->tieTag = get_label('Tie');

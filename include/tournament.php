@@ -15,6 +15,7 @@ require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 require_once __DIR__ . '/currency.php';
 require_once __DIR__ . '/geo.php';
+require_once __DIR__ . '/rounds.php'; // get_round_name()
 
 define('TOURNAMENT_TYPE_CUSTOM', 0);
 define('TOURNAMENT_TYPE_FIIM_ONE_ROUND', 1);
@@ -487,23 +488,6 @@ function tournament_stars_str($stars, $wrap = true, $max_stars = 10)
 		return implode('', $symbols);
 	}
 	return implode('', array_slice($symbols, 0, STARS_PER_ROW)) . '<br>' . implode('', array_slice($symbols, STARS_PER_ROW));
-}
-
-function get_round_name($round_num)
-{
-	switch ($round_num)
-	{
-		case 0:
-			return get_label('main round');
-		case 1:
-			return get_label('final');
-		case 2:
-			return get_label('semi-final');
-		case 3:
-			return get_label('quarter-final');
-		default:
-			return get_label('1/[0] final', pow(2, $round_num - 1));
-	}
 }
 
 function create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $tournament_flags, $players = null, $tables = null, $games = null)

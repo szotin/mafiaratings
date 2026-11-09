@@ -4,6 +4,7 @@ require_once 'db.php';
 require_once 'constants.php';
 require_once 'languages.php';
 require_once 'localization.php'; // get_label
+require_once __DIR__ . '/rounds.php'; // seating_tables()
 // By full path on purpose: a bare 'game.php' is resolved against the working directory first,
 // and the working directory is the site root, where game.php is the page the game is played on.
 require_once __DIR__ . '/game.php'; // the phases of a game and the order they come in
@@ -459,18 +460,7 @@ function stream_seated_tables($owner)
 	while ($row = $query->next())
 	{
 		list ($misc) = $row;
-		$misc = is_null($misc) ? NULL : json_decode($misc);
-		if (is_null($misc) || !isset($misc->seating->rounds) || !is_array($misc->seating->rounds))
-		{
-			continue;
-		}
-		foreach ($misc->seating->rounds as $round)
-		{
-			if (is_array($round))
-			{
-				$tables = max($tables, count($round));
-			}
-		}
+		$tables = max($tables, seating_tables($misc));
 	}
 	return $tables;
 }
@@ -486,18 +476,7 @@ function stream_seated_tables($owner)
 function stream_event_tables($event_id)
 {
 	list ($misc, $scheme) = Db::record(get_label('event'), 'SELECT misc, tables FROM events WHERE id = ?', $event_id);
-	$misc = is_null($misc) ? NULL : json_decode($misc);
-	$tables = 0;
-	if (!is_null($misc) && isset($misc->seating->rounds) && is_array($misc->seating->rounds))
-	{
-		foreach ($misc->seating->rounds as $round)
-		{
-			if (is_array($round))
-			{
-				$tables = max($tables, count($round));
-			}
-		}
-	}
+	$tables = seating_tables($misc);
 	if ($tables > 0)
 	{
 		return $tables;
