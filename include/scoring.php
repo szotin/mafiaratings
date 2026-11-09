@@ -1052,12 +1052,17 @@ function compare_scores($player1, $player2, $scoring)
 		//'legacy', 'penalty', 'night1'
 		switch ($char)
 		{
+			// continue 2, and not continue: inside a switch, continue means break. Breaking
+			// out here runs the comparison below and the $sign = 1 that ends the loop body, so
+			// the minus was thrown away before the criterion it belongs to had been read - a
+			// sorting of 'ewk-s' broke its ties by the most special role wins rather than the
+			// fewest. The bracket reads the same either way, and is said the same way for it.
 			case '-':
 				$sign = -1;
-				continue;
+				continue 2;
 			case '(':
 				$in_brackets = true;
-				continue;
+				continue 2;
 			case ')':
 				$in_brackets = false;
 				break;
