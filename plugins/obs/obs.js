@@ -20,6 +20,9 @@ var obs = new function()
 	var shows;     // which parts of the drawing this table is set to show - see settings()
 	var shown;     // the voters already on the screen, so that only a new one flies in
 	var stacks;    // the nominees whose vote card is already up, so that only a new one rises
+	var step;      // how far the game had got when it was last drawn - see show()
+	var stepGame;  // which game that was, so that the next game is not read as a step back
+	var wasSplit;  // true when the hands last drawn were the ones the table split on
 
 	this.start = function(pageOptions)
 	{
@@ -323,7 +326,27 @@ var obs = new function()
 		setHtml(document.getElementById('nom'), nominated(g));
 		setHtml(document.getElementById('tr'), topRight(g));
 		setHtml(document.getElementById('over'), banner(g));
-		showPlayers(g);
+
+		// Whether the moderator has gone back since the last drawing. The game's own step only
+		// grows while a game is played, so a step smaller than the one we drew last is the one
+		// thing a page can read as the undo button being pressed - and it has to read it,
+		// because a count of hands that is being unmade and one that is simply over look the
+		// same from here. A game we were not looking at a moment ago is not a game going back.
+		var sameGame = (g.id === stepGame);
+		var back = (typeof g.step == 'number' && typeof step == 'number' &&
+			sameGame && g.step < step);
+		if (typeof g.step == 'number')
+		{
+			step = g.step;
+			stepGame = g.id;
+		}
+		if (!sameGame)
+		{
+			// A different game at the table: nothing we were holding about the last one says
+			// anything about this one.
+			wasSplit = false;
+		}
+		showPlayers(g, back);
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -588,7 +611,7 @@ var obs = new function()
 	//--------------------------------------------------------------------------------------
 	// the players
 	//--------------------------------------------------------------------------------------
-	function showPlayers(g)
+	function showPlayers(g, back)
 	{
 		var div = document.getElementById('players');
 		if (!div)
@@ -639,9 +662,18 @@ var obs = new function()
 			}
 		}
 
+		// A table that splits puts every hand down and is asked again. The hands it split on
+		// stand through the speeches of the tied players and no further - see playersContext() -
+		// so the draw after the last of those speeches is the moment every hand on the table
+		// comes down at once. They go home to the players who put them up, the way they do when
+		// the moderator takes a count back: the panels themselves stay where they are, because
+		// the same seats are about to be asked about again.
+		var swap = (wasSplit === true && !context.split && !back);
+		wasSplit = context.split;
+
 		fitNames(div);
 		flyVotes(div);
-		flyBack(div, going);
+		clearVotes(div, going, back, swap);
 		riseStacks(div);
 	}
 
@@ -684,6 +716,7 @@ var obs = new function()
 		// the speeches and no further: when the last of them ends and the table is asked again,
 		// the cards over those same seats are where the new hands are about to land, and an old
 		// count sitting in them would be read as the new one.
+		context.split = false;
 		if (context.tie && context.max <= 0 && g.splitVotes)
 		{
 			for (var k = 0; k < g.splitVotes.length; ++k)
@@ -691,6 +724,9 @@ var obs = new function()
 				context.votes[g.splitVotes[k].nominee] = g.splitVotes[k].voters;
 				context.max = Math.max(context.max, g.splitVotes[k].voters.length);
 			}
+			// Said out loud, because the draw where this stops being true is the draw where the
+			// table is asked again and the panels change hands - see showPlayers().
+			context.split = true;
 		}
 
 		// Everybody who has been named, whether a hand has gone up for them yet or not. A card
@@ -1066,9 +1102,10 @@ var obs = new function()
 	}
 
 	// The vote card itself. The chips fly in one by one, but the glass they land on simply
-	// appeared, which on a stream is a panel snapping into being. It rises into place instead -
-	// and only the first time, the tick the nominee's first vote arrives: the cell is written
-	// again on every count, so an animation left on the card would play on every hand raised.
+	// appeared, which on a stream is a panel snapping into being. It slides out from under the
+	// player's card instead - and only the first time, the tick the nominee's first vote arrives:
+	// the cell is written again on every count, so an animation left on the card would play on
+	// every hand raised.
 	function riseStacks(div)
 	{
 		var cards = div.querySelectorAll('.stk[data-seat]');
@@ -1079,10 +1116,28 @@ var obs = new function()
 			seen[seat] = true;
 			if (!stacks || !stacks[seat])
 			{
+				cards[i].style.setProperty('--drop', dropOf(cards[i]) + 'px');
 				cards[i].classList.add('rise');
 			}
 		}
 		stacks = seen;
+	}
+
+	// How far a vote card has to go down to be out of sight behind the player's card: the
+	// distance between the two tops. Measured rather than worked out, because the gap between
+	// them is not always the same gap - a seat whose player has left keeps the height their card
+	// gave up under the count that is still being read, and the vote card then stands further
+	// above it than the others do. See .cell.held in obs.css.
+	function dropOf(stk)
+	{
+		var cell = stk.parentNode;
+		var pc = cell ? cell.querySelector('.pc') : null;
+		var rect = stk.getBoundingClientRect();
+		if (!pc)
+		{
+			return rect.height;
+		}
+		return Math.max(pc.getBoundingClientRect().top - rect.top, rect.height);
 	}
 
 	// How high above the straight line the throw goes. A vote from the next seat is tossed a
@@ -1109,27 +1164,44 @@ var obs = new function()
 			var card = cards[i];
 			// The card itself, not a copy of it: writing the cell again takes this one out of the
 			// page but leaves it whole in hand, which is all a thing that is leaving needs.
+			// How far down this one would have to go to be behind the player's card, taken while
+			// the cell it belongs to is still standing: a copy laid over the page afterwards has
+			// no cell to measure itself against.
 			snap.cards.push({ seat: card.getAttribute('data-seat'),
-				rect: card.getBoundingClientRect(), node: card });
+				rect: card.getBoundingClientRect(), drop: dropOf(card), node: card });
 			var chips = card.querySelectorAll('.stk-c .chip[data-from]');
 			for (var k = 0; k < chips.length; ++k)
 			{
-				snap.chips.push({ from: chips[k].getAttribute('data-from'), cls: chips[k].className,
+				// The card as well as the voter: a vote whose card went with it is carried away
+				// by the card rather than seen off on its own - see clearVotes().
+				snap.chips.push({ seat: card.getAttribute('data-seat'),
+					from: chips[k].getAttribute('data-from'), cls: chips[k].className,
 					rect: chips[k].getBoundingClientRect() });
 			}
 		}
 		return snap;
 	}
 
-	// A count that is taken down does not simply go out. Every vote goes back to the player who
-	// gave it, thrown along the same curve it arrived by and settling into their seat number; and
-	// when the whole card goes - the hands are down, or the last word of whoever they put out is
-	// over - the glass stays where it was for a moment longer, emptied, and fades behind them.
+	// A count that is taken down does not simply go out. The panel goes back the way it came,
+	// down under the player's card, whichever of the two things has happened to it - it slid out
+	// from under that card and that is where it belongs. What differs is the votes.
+	//
+	// Hands come down off a count in two ways. The moderator can be unmaking it - they pressed
+	// back - or the table can have split, put every hand down and be about to be asked again.
+	// Either way the hands are given back: each vote goes home to the player who gave it, thrown
+	// along the same curve it arrived by, settling into their seat number. The panel goes with
+	// them where the seat is not being asked about any more, emptied; where it is, it stays, and
+	// the hands land again on the same card a moment later.
+	//
+	// Any other count is simply over - the hands are down for good, or the last word of whoever
+	// they put out has been said - and the votes ride the panel down, still in it. The table is
+	// shown the day closing, rather than ten chips finding their way home from a day nobody is
+	// going back to.
 	//
 	// The cells have already been written again without any of this, so what moves is laid over
 	// the page at the place it stood in: a fresh chip for each vote, and the card itself, which
 	// writing the cell again left detached and whole.
-	function flyBack(div, was)
+	function clearVotes(div, was, back, swap)
 	{
 		var i;
 		var here = {};
@@ -1138,6 +1210,25 @@ var obs = new function()
 		{
 			here[chips[i].getAttribute('data-from')] = true;
 		}
+		var standing = {};
+		var cards = div.querySelectorAll('.stk[data-seat]');
+		for (i = 0; i < cards.length; ++i)
+		{
+			standing[cards[i].getAttribute('data-seat')] = true;
+		}
+
+		// Which of the panels that were up are going down: the ones whose seat has no panel any
+		// more. A seat that is about to be asked about again keeps its panel and loses only the
+		// hands that were on it.
+		var sinking = {};
+		for (i = 0; i < was.cards.length; ++i)
+		{
+			if (!standing[was.cards[i].seat])
+			{
+				sinking[was.cards[i].seat] = true;
+			}
+		}
+
 		for (i = 0; i < was.chips.length; ++i)
 		{
 			var vote = was.chips[i];
@@ -1145,44 +1236,74 @@ var obs = new function()
 			{
 				continue;
 			}
-			var seat = seatOf(div, vote.from);
-			var at = seat ? seat.getBoundingClientRect() : null;
-			// Into the middle of the seat number, which is smaller than the chip in the air.
-			var dx = at ? at.left + (at.width - vote.rect.width) / 2 - vote.rect.left : 0;
-			var dy = at ? at.top + (at.height - vote.rect.height) / 2 - vote.rect.top : 0;
+			// A vote whose panel is going down is inside it and rides it under; only a vote taken
+			// off a panel that is staying up has to be seen off on its own.
+			if (!back && sinking[vote.seat])
+			{
+				continue;
+			}
 			var ghost = document.createElement('div');
-			// Without the class that flew it in: it is going the other way now.
-			ghost.className = vote.cls.replace(' fly', '') + ' ghost';
 			ghost.textContent = vote.from;
-			ghost.style.setProperty('--dx', dx + 'px');
-			ghost.style.setProperty('--dy', dy + 'px');
-			ghost.style.setProperty('--lift', lift(dx, vote.rect.height) + 'px');
+			// Home to the player who put it up, either because the moderator is taking the count
+			// back or because the table split and is being asked again: both are hands coming
+			// down off a count, and a hand that comes down belongs to whoever raised it.
+			if (back || swap)
+			{
+				var seat = seatOf(div, vote.from);
+				var at = seat ? seat.getBoundingClientRect() : null;
+				// Into the middle of the seat number, which is smaller than the chip in the air.
+				var dx = at ? at.left + (at.width - vote.rect.width) / 2 - vote.rect.left : 0;
+				var dy = at ? at.top + (at.height - vote.rect.height) / 2 - vote.rect.top : 0;
+				// Without the class that flew it in: it is going the other way now.
+				ghost.className = vote.cls.replace(' fly', '') + ' ghost';
+				ghost.style.setProperty('--dx', dx + 'px');
+				ghost.style.setProperty('--dy', dy + 'px');
+				ghost.style.setProperty('--lift', lift(dx, vote.rect.height) + 'px');
+			}
+			else
+			{
+				// One hand off a card that is still standing, with the count it belongs to
+				// still being taken: a hand lifted off the last name while the moderator is
+				// standing on it, which is the one name that is shown as it is counted. Nothing
+				// has been given back - the count is still going - so this one goes out where
+				// it is rather than flying home.
+				ghost.className = vote.cls.replace(' fly', '') + ' gone';
+			}
 			layOver(ghost, vote.rect);
 		}
 
-		here = {};
-		var cards = div.querySelectorAll('.stk[data-seat]');
-		for (i = 0; i < cards.length; ++i)
-		{
-			here[cards[i].getAttribute('data-seat')] = true;
-		}
 		for (i = 0; i < was.cards.length; ++i)
 		{
 			var card = was.cards[i];
-			if (here[card.seat])
+			if (!sinking[card.seat])
 			{
 				continue;
 			}
 			var copy = card.node;
-			var votes = copy.querySelector('.stk-c');
-			if (votes)
-			{
-				// The chips are in the air on their way home; the copy keeps only the glass and the
-				// count, and the height it is given holds its shape without them.
-				votes.parentNode.removeChild(votes);
-			}
 			copy.classList.remove('rise');
-			copy.classList.add('ghost');
+			if (back)
+			{
+				var votes = copy.querySelector('.stk-c');
+				if (votes)
+				{
+					// The chips are in the air on their way home; the copy keeps only the glass and the
+					// count, and the height it is given holds its shape without them.
+					votes.parentNode.removeChild(votes);
+				}
+			}
+			else
+			{
+				// The votes ride it down, still in it. A chip caught in the middle of flying in
+				// is stopped first - putting the copy back on the page starts its throw again,
+				// and a vote arriving into a panel that is on its way out is nonsense.
+				var flying = copy.querySelectorAll('.chip.fly');
+				for (var k = 0; k < flying.length; ++k)
+				{
+					flying[k].classList.remove('fly');
+				}
+			}
+			copy.style.setProperty('--drop', card.drop + 'px');
+			copy.classList.add('sink');
 			layOver(copy, card.rect);
 		}
 	}

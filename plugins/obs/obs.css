@@ -944,13 +944,20 @@ html.bg-light .pc.speak::before {
 
 .stk-c:empty { display: none; }
 
-/*  The card rises into place the tick the first vote for that seat arrives - see riseStacks()
-    in obs.js, which puts the class on only then. */
-.stk.rise { animation: rise 0.28s cubic-bezier(0.4, 0, 0.2, 1) both; }
+/*  The card slides out from under the player's card the tick the first vote for that seat
+    arrives - see riseStacks() in obs.js, which puts the class on only then, and measures how far
+    down the player's card begins. It is behind that card the whole way up: the vote card stands
+    above it and is drawn ahead of it, so z-index is what puts it back for as long as it is
+    moving. --drop is the distance between the two tops, measured rather than worked out, because
+    the gap between them is not always the same one - see .cell.held below. */
+.stk.rise {
+	z-index: 0;
+	animation: rise 0.55s cubic-bezier(0.25, 0.8, 0.3, 1) both;
+}
 
 @keyframes rise {
-	0% { opacity: 0; transform: translateY(0.625rem) scale(0.94); }
-	100% { opacity: 1; transform: none; }
+	0% { transform: translateY(var(--drop, 100%)); }
+	100% { transform: none; }
 }
 
 /*  A vote arrives as a copy of the voter's seat chip, thrown from their card up onto this one,
@@ -981,9 +988,10 @@ html.bg-light .pc.speak::before {
 	100% { transform: none; }
 }
 
-/*  The way back: the same curve read the other way, into the seat the vote came from, where the
-    chip shrinks into the seat number and is gone. What flies is a copy laid over the page - the
-    card it stood on has already been written again without it - see flyBack() in obs.js. */
+/*  The way back, which is the moderator taking the count back: the same curve read the other
+    way, into the seat the vote came from, where the chip shrinks into the seat number and is
+    gone. What flies is a copy laid over the page - the card it stood on has already been written
+    again without it - see clearVotes() in obs.js. */
 .chip.ghost {
 	position: fixed;
 	z-index: 90;
@@ -1005,26 +1013,52 @@ html.bg-light .pc.speak::before {
 	100% { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.66); opacity: 0; }
 }
 
-/*  The glass the votes stood on, when the whole count goes rather than only its chips. It holds
-    its place and its size while the votes it held are still in the air, and fades behind them. */
-.stk.ghost {
+/*  The way a count goes, whichever way it goes: back down under the player's card, slowly, the
+    way it came out. A count the moderator is unmaking sends its votes home to the players who
+    gave them first and takes the glass down empty; a count that has simply ended takes the hands
+    with it. Either way the panel leaves by the door it came in at - see clearVotes() in obs.js.
+
+    A copy laid over the page, which is not where the cards are, so being behind the player's card
+    is not a matter of standing order here but of z-index: the cards are drawn in .players, which
+    is given a layer of its own, and anything at the foot of the page below that layer passes
+    under them. --drop is measured where the panel stood - see dropOf() in obs.js. */
+.stk.sink {
 	position: fixed;
-	z-index: 89;
+	z-index: 0;
 	box-sizing: border-box;
 	pointer-events: none;
 	transition: none;
-	animation: stk-go 0.44s ease-out both;
+	animation: sink 0.55s cubic-bezier(0.5, 0, 0.3, 1) both;
 }
 
-@keyframes stk-go {
+@keyframes sink {
+	0% { transform: none; }
+	100% { transform: translateY(var(--drop, 100%)); }
+}
+
+/*  One hand taken off a count that is still being taken: a hand lifted off the last name while
+    the moderator is standing on it, that being the one name shown as it is counted. There is
+    nowhere for this one to go - the count has not come down, so nothing is being given back, and
+    sending it home would say that it had. It goes out where it stands, slowly enough not to read
+    as a thing blinking off the screen. */
+.chip.gone {
+	position: fixed;
+	z-index: 90;
+	margin: 0;
+	box-sizing: border-box;
+	pointer-events: none;
+	animation: gone 0.4s ease-in both;
+}
+
+@keyframes gone {
 	0% { opacity: 1; transform: none; }
-	100% { opacity: 0; transform: translateY(0.375rem) scale(0.96); }
+	100% { opacity: 0; transform: scale(0.72); }
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.stk-c .chip.fly { animation: none; }
 	.stk.rise { animation: none; }
-	.chip.ghost, .stk.ghost { display: none; }
+	.chip.ghost, .chip.gone, .stk.sink { display: none; }
 }
 
 /*  A seat that has lost its card's height while the count above it is still being read: the

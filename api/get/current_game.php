@@ -512,6 +512,42 @@ class ApiPage extends GetApiPageBase
 			}
 		}
 
+		// How far the game has got, as one number. It grows while a game is played and gets
+		// smaller only when the moderator goes back - which is the one thing an overlay cannot
+		// otherwise read, and it has to: a count of hands that has been taken down because the
+		// day moved on and one that is being unmade look the same from outside, and the two want
+		// saying differently. See clearVotes() in plugins/obs/obs.js.
+		//
+		// The game's own clock is the round and the time within it, which Game::gametime_to_int
+		// puts in the order they are played. While the hands are being counted neither of those
+		// moves: what moves is the name being counted, so the count of the day and the place of
+		// that name in the order the moderator calls them are the two finest digits. Sixteen to
+		// a digit, which is more than a game has of any of them; the number itself means nothing
+		// but its order.
+		$game->step = 0;
+		if (isset($g->time))
+		{
+			$voting_round = 0;
+			$place = 0;
+			if ($g->time->time == GAMETIME_VOTING)
+			{
+				$voting_round = game_log_voting_round($this->game, (int)$g->time->round);
+				if (isset($g->time->nominee) && isset($game->nominees))
+				{
+					foreach ($game->nominees as $at => $nominee)
+					{
+						if ((int)$nominee == (int)$g->time->nominee)
+						{
+							$place = $at + 1;
+							break;
+						}
+					}
+				}
+			}
+			$game->step = (((int)$g->time->round * 16 + Game::gametime_to_int($g->time->time)) * 16 +
+				min($voting_round, 15)) * 16 + min($place, 15);
+		}
+
 		// The game told in words, for a text broadcast - the same words view_game.php shows
 		// under a game that has been played, so that the two cannot tell it differently. Asked
 		// for rather than always sent: the overlays read this answer every second and have no
@@ -735,6 +771,7 @@ class ApiPage extends GetApiPageBase
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
  			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number, which is also the number a table calls the night or the day by. A game starts with night-0, where nobody is shot; then day-0, with all ten at the table; then night-1, the first shot; then day-1; and so on.');
+ 			$param->sub_param('step', 'How far the game has got, as a single number. It grows as the game is played and gets smaller only when the moderator goes back, which is the only way of telling a step back from a step forward: an overlay reading this answer sees the state the game is in and not the way it got there. The number itself means nothing but its order - do not read a round or a phase out of it.');
  			$param->sub_param('nominees', 'Array of players currently nominated, in the order the moderator calls them. When the table has split, only the players who tied are here. It is set only in the day phase.');
  			$param->sub_param('votingCanceled', 'Boolean which is true when votings were canceled (most likely because someone was mod-killed). It is set only in the day phase.');
  			$param->sub_param('votes', 'Array of the hands counted in the current round, each {nominee, voters}, where voters is an array of player numbers in the order they sit. Only the count being taken: when a table splits every hand comes down, so this is empty again until the new count begins. A count the moderator is still taking is not here at all - it shows up when they move on from it. The last name of a count is the exception: it holds everybody who was not counted for anybody else, so it is here as soon as the counting reaches it. It is set only in the day phase.');
