@@ -226,7 +226,20 @@ class Page extends SeriesPageBase
 		}
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*) FROM series_places WHERE series_id = ? AND cut_stages = ?', $this->id, $cut_stages);
-		
+
+		// How big a field this series is as a competition of the series above: everybody in its
+		// full ranking, which is what enters a parent and what its rating sums are measured over.
+		// It is the count of the whole series rather than of the ranking on screen, so the column
+		// below says the same thing whichever stage is being looked at.
+		if ($cut_stages == 0)
+		{
+			$full_count = $count;
+		}
+		else
+		{
+			list ($full_count) = Db::record(get_label('series'), 'SELECT count(*) FROM series_places WHERE series_id = ? AND cut_stages = 0', $this->id);
+		}
+
 		$parent_series = array();
 		$query = new DbQuery(
 			'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, g.gaining'.
@@ -351,7 +364,12 @@ class Page extends SeriesPageBase
 			{
 				if ($s->stars > 0)
 				{
-					echo '<td align="center">' . format_gain(get_gaining_points($s->id, $s->gaining, $s->stars, $place, $points, $count, 0, 0, 0, 0, true)) . '</td>';
+					// The competition being scored here is this series, so it is measured by its
+					// own strength of field - the same four numbers the recount gave the series
+					// above to count it with. Passing zeros made every subseries look like a
+					// field of thousand-rated players and paid accordingly.
+					echo '<td align="center">' . format_gain(get_gaining_points($s->id, $s->gaining, $s->stars, $place, $points, $full_count,
+						$this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, true)) . '</td>';
 				}
 				else
 				{

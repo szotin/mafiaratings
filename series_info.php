@@ -108,13 +108,40 @@ class Page extends SeriesPageBase
 			echo '</tr></table>';
 		}
 	}
-	
+
+	// The strength of the field, the same four numbers a tournament shows about itself.
+	//
+	// They are divided by the number of players the series counts, which is how many stand in its
+	// full table - and that is exactly the count a series above divides them by when it counts
+	// this one as a competition of its own, so the page says what the number does.
+	private function show_properties()
+	{
+		list ($players_count) = Db::record(get_label('sеriеs'),
+			'SELECT count(*) FROM series_places WHERE series_id = ? AND cut_stages = 0', $this->id);
+		if ($players_count <= 0)
+		{
+			return;
+		}
+
+		echo '<p><table class="bordered light" width="100%">';
+		echo '<tr class="darker"><td colspan="2"><b>' . get_label('Properties') . '</b></td></tr>';
+		echo '<tr><td width="200">' . get_label('Average rating') . ':</td><td>' .
+			format_rating(1000 + $this->rating_sum / $players_count) . '</td></tr>';
+		echo '<tr><td width="200">' . get_label('Average rating of top 20 players') . ':</td><td>' .
+			format_rating(1000 + $this->rating_sum_20 / ($players_count > 20 ? 20 : $players_count)) . '</td></tr>';
+		echo '<tr><td>' . get_label('Total traveling distance') . ':</td><td>' .
+			get_label('[0] km', format_rating(convert_distance($this->traveling_distance, GEO_MILES, GEO_KILOMETERS))) . '</td></tr>';
+		echo '<tr><td>' . get_label('Guest coefficient') . ':</td><td>' . format_rating($this->guest_coeff) . '</td></tr>';
+		echo '</table></p>';
+	}
+
 	protected function show_body()
 	{
 		global $_profile;
 		
 		echo '<table width="100%"><tr valign="top"><td>';
 		$this->show_details();
+		$this->show_properties();
 		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
 	}
 }

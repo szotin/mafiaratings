@@ -708,7 +708,11 @@ CREATE TABLE `series` (
   `fee` int(11) DEFAULT NULL,
   `currency_id` int(11) DEFAULT NULL,
   `max_stars` int(11) NOT NULL DEFAULT '5',
-  `stages` int(11) NOT NULL DEFAULT '1'
+  `stages` int(11) NOT NULL DEFAULT '1',
+  `rating_sum` double NOT NULL DEFAULT '0',
+  `rating_sum_20` double NOT NULL DEFAULT '0',
+  `traveling_distance` double NOT NULL DEFAULT '0',
+  `guest_coeff` double NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `series_clubs`;
@@ -742,7 +746,8 @@ CREATE TABLE `series_places` (
   `total_cut_off` float NOT NULL DEFAULT '0',
   `cut_off` float NOT NULL DEFAULT '0',
   `stage` int(11) NOT NULL DEFAULT '0',
-  `cut_stages` int(11) NOT NULL DEFAULT '0'
+  `cut_stages` int(11) NOT NULL DEFAULT '0',
+  `rating` double NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `series_regs`;

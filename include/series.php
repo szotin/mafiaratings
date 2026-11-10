@@ -856,7 +856,13 @@ class SeriesPageBase extends PageBase
 	protected $timezone;
 	protected $gaining_id;
 	protected $gaining_version;
-	
+	// The strength of the field, as the recount worked it out - see seriesRatingSums() in
+	// complete_competitions.php. Zero until the series has been counted once.
+	protected $rating_sum;
+	protected $rating_sum_20;
+	protected $traveling_distance;
+	protected $guest_coeff;
+
 	protected function prepare()
 	{
 		global $_profile;
@@ -870,10 +876,12 @@ class SeriesPageBase extends PageBase
 		$this->timezone = get_timezone();
 		list(
 			$this->name, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags,
-			$this->start_time, $this->duration, $this->max_stars, $this->stages, $this->langs, $this->notes, $this->flags, $this->rules, $this->gaining_id, $this->gaining_version) =
+			$this->start_time, $this->duration, $this->max_stars, $this->stages, $this->langs, $this->notes, $this->flags, $this->rules, $this->gaining_id, $this->gaining_version,
+			$this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
 		Db::record(
 			get_label('sеriеs'),
-			'SELECT s.name, ' . series_owner_fields() . ', s.start_time, s.duration, s.max_stars, s.stages, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version FROM series s' .
+			'SELECT s.name, ' . series_owner_fields() . ', s.start_time, s.duration, s.max_stars, s.stages, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version,' .
+				' s.rating_sum, s.rating_sum_20, s.traveling_distance, s.guest_coeff FROM series s' .
 				series_owner_join() .
 				' WHERE s.id = ?',
 			$this->id);

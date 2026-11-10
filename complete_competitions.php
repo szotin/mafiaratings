@@ -104,24 +104,32 @@ function compare_series_players($player1, $player2)
 	{
 		return -1;
 	}
+	// Whoever played at all stands above whoever played nothing, and of two who played it is the
+	// better win rate - near enough rates counting as the same one.
+	//
+	// Two players who are equal all the way down are ordered by id, which is nothing but a way of
+	// ordering them the same way every time. It has to be reached: saying "the first one is above"
+	// about a pair that is equal says the same thing about the pair the other way round, and a
+	// sort given such an answer puts a tied group in whatever order its own bookkeeping happens to
+	// produce - so the table was not the same table after an unrelated change elsewhere.
 	if ($player1->games != 0)
 	{
-		if ($player2->games != 0)
+		if ($player2->games == 0)
 		{
-			$win_rate1 = $player1->wins / $player1->games;
-			$win_rate2 = $player2->wins / $player2->games;
-			if ($win_rate1 + 0.00001 < $win_rate2)
-			{
-				return 1;
-			}
-			else if ($win_rate2 + 0.00001 < $win_rate1)
-			{
-				return -1;
-			}
+			return -1;
 		}
-		return -1;
+		$win_rate1 = $player1->wins / $player1->games;
+		$win_rate2 = $player2->wins / $player2->games;
+		if ($win_rate1 + 0.00001 < $win_rate2)
+		{
+			return 1;
+		}
+		else if ($win_rate2 + 0.00001 < $win_rate1)
+		{
+			return -1;
+		}
 	}
-	if ($player2->games != 0)
+	else if ($player2->games != 0)
 	{
 		return 1;
 	}
@@ -596,6 +604,9 @@ class CompleteCompetitions extends Updater
 		$source->traveling_distance = 0;
 		$source->guest_coeff = 0;
 		$source->num_players = 0;
+		// When this competition was played, so that of the competitions of a series the latest one
+		// a player counted in can be told - see seriesPlayerRatings().
+		$source->time = 0;
 		// The furthest stage this competition has, in the order its stages are played. For a
 		// tournament that is its deepest round, for a subseries the last stage of its ladder.
 		$source->max_stage = 0;
@@ -603,7 +614,7 @@ class CompleteCompetitions extends Updater
 		return $source;
 	}
 
-	private function seriesSourceRow($user_id, $place, $games, $wins, $score)
+	private function seriesSourceRow($user_id, $place, $games, $wins, $score, $rating = 0)
 	{
 		$row = new stdClass();
 		$row->user_id = (int)$user_id;
@@ -611,6 +622,10 @@ class CompleteCompetitions extends Updater
 		$row->games = (int)$games;
 		$row->wins = (int)$wins;
 		$row->score = $score;
+		// What this player's rating was at this competition, above the thousand everybody starts
+		// at - the same number tournament_regs stores. It says nothing about the standings and is
+		// only there to measure the strength of the field, see seriesRatingSums().
+		$row->rating = is_numeric($rating) ? (float)$rating : 0;
 		$row->points = 0;
 		// How far this player got in this competition, in the order its stages are played, and
 		// what they scored in each of those stages. The scores are only known for a subseries -
@@ -752,8 +767,8 @@ class CompleteCompetitions extends Updater
 		// tournament_regs holds the substitute flag, which takes them out of this one tournament
 		// only - they still stand in the table of the tournament itself.
 		$query = new DbQuery(
-			'SELECT st.tournament_id, st.stage, st.stars, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff,' .
-			' p.user_id, p.place, p.games_count, p.wins, p.main_points + p.bonus_points + p.shot_points' .
+			'SELECT st.tournament_id, st.stage, st.stars, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff, t.start_time,' .
+			' p.user_id, p.place, p.games_count, p.wins, p.main_points + p.bonus_points + p.shot_points, tr.rating' .
 			' FROM tournament_places p' .
 			' JOIN series_tournaments st ON st.tournament_id = p.tournament_id AND st.series_id = ?' .
 			' JOIN tournaments t ON t.id = p.tournament_id' .
@@ -765,8 +780,8 @@ class CompleteCompetitions extends Updater
 			' ORDER BY st.tournament_id', $series_id);
 		while ($row = $query->next())
 		{
-			list($tournament_id, $stage, $stars, $rating_sum, $rating_sum20, $trav_dist, $guest_coef,
-				$user_id, $place, $games, $wins, $score) = $row;
+			list($tournament_id, $stage, $stars, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $start_time,
+				$user_id, $place, $games, $wins, $score, $rating) = $row;
 			$key = 't' . (int)$tournament_id;
 			if (!isset($sources[$key]))
 			{
@@ -775,13 +790,14 @@ class CompleteCompetitions extends Updater
 				$source->rating_sum_20 = $rating_sum20;
 				$source->traveling_distance = $trav_dist;
 				$source->guest_coeff = $guest_coef;
+				$source->time = (int)$start_time;
 				if (isset($tournament_stages[(int)$tournament_id]))
 				{
 					$source->max_stage = $tournament_stages[(int)$tournament_id]->max_stage;
 				}
 				$sources[$key] = $source;
 			}
-			$source_row = $this->seriesSourceRow($user_id, $place, $games, $wins, $score);
+			$source_row = $this->seriesSourceRow($user_id, $place, $games, $wins, $score, $rating);
 			if (isset($tournament_stages[(int)$tournament_id]->players[$source_row->user_id]))
 			{
 				$source_row->stage = $tournament_stages[(int)$tournament_id]->players[$source_row->user_id];
@@ -799,7 +815,8 @@ class CompleteCompetitions extends Updater
 		// about, its score is the points of it, and a player who never got that far has none.
 		$child_stage_scores = array();
 		$query = new DbQuery(
-			'SELECT sp.series_id, ss.stars, sp.user_id, sp.cut_stages, sp.stage, sp.place, sp.games, sp.wins, sp.score, s.stages' .
+			'SELECT sp.series_id, ss.stars, sp.user_id, sp.cut_stages, sp.stage, sp.place, sp.games, sp.wins, sp.score, s.stages,' .
+			' sp.rating, s.rating_sum, s.rating_sum_20, s.traveling_distance, s.guest_coeff, s.start_time' .
 			' FROM series_places sp' .
 			' JOIN series_series ss ON ss.child_id = sp.series_id' .
 			' JOIN series s ON s.id = sp.series_id' .
@@ -810,7 +827,8 @@ class CompleteCompetitions extends Updater
 			' ORDER BY sp.series_id', $series_id);
 		while ($row = $query->next())
 		{
-			list($child_series_id, $stars, $user_id, $cut_stages, $stage, $place, $games, $wins, $score, $child_stages) = $row;
+			list($child_series_id, $stars, $user_id, $cut_stages, $stage, $place, $games, $wins, $score, $child_stages,
+				$rating, $rating_sum, $rating_sum20, $trav_dist, $guest_coef, $start_time) = $row;
 			$user_id = (int)$user_id;
 			$child_stages = series_stage_count($child_stages);
 			$key = 's' . (int)$child_series_id;
@@ -826,10 +844,20 @@ class CompleteCompetitions extends Updater
 			if (!isset($sources[$key]))
 			{
 				$source = $this->seriesSource($child_series_id, SERIES_STAGE_BASE, $stars, true);
+				// A subseries measures its field the same way a tournament does, and keeps the
+				// numbers on its own row for whoever counts it - see seriesRatingSums(). Without
+				// this a subseries came to the gaining formula as a field of nothing but
+				// thousand-rated players, so a five-star subseries paid its winner the least a
+				// five-star competition can pay.
+				$source->rating_sum = $rating_sum;
+				$source->rating_sum_20 = $rating_sum20;
+				$source->traveling_distance = $trav_dist;
+				$source->guest_coeff = $guest_coef;
+				$source->time = (int)$start_time;
 				$source->max_stage = $child_stages - 1;
 				$sources[$key] = $source;
 			}
-			$source_row = $this->seriesSourceRow($user_id, $place, $games, $wins, $score);
+			$source_row = $this->seriesSourceRow($user_id, $place, $games, $wins, $score, $rating);
 			$source_row->stage = $stage_order;
 			$sources[$key]->rows[] = $source_row;
 		}
@@ -848,6 +876,70 @@ class CompleteCompetitions extends Updater
 			$this->closeSeriesSource($source);
 		}
 		return $sources;
+	}
+
+	// What each player of the series was rated, above the thousand everybody starts at.
+	//
+	// A tournament freezes the rating of a player when it is completed, and that is the number its
+	// own strength is measured with. A series is played over a span rather than at a moment, so
+	// the rating it takes for a player is the one they carried at the latest of its competitions
+	// they counted in - the closest thing to "their rating at this competition" a series has. Ties
+	// on time keep the first competition read, which is the lower id.
+	private function seriesPlayerRatings($sources)
+	{
+		$ratings = array();
+		$times = array();
+		foreach ($sources as $source)
+		{
+			foreach ($source->rows as $row)
+			{
+				if (!isset($ratings[$row->user_id]) || $source->time > $times[$row->user_id])
+				{
+					$ratings[$row->user_id] = $row->rating;
+					$times[$row->user_id] = $source->time;
+				}
+			}
+		}
+		return $ratings;
+	}
+
+	// The strength of the field of the series: the ratings of everybody it counts, and the ratings
+	// of its twenty strongest - the two numbers ratingSum() and ratingSum20() answer with, held on
+	// the series the same way a tournament holds them on itself.
+	//
+	// Extra points are not a competition and bring nobody into the field: a player who has nothing
+	// but extra points in the series was at none of its competitions and has no rating in it.
+	private function seriesRatingSums($ratings)
+	{
+		$sum = 0;
+		foreach ($ratings as $rating)
+		{
+			$sum += $rating;
+		}
+		$top = array_values($ratings);
+		rsort($top);
+		$sum_20 = 0;
+		for ($i = 0; $i < count($top) && $i < 20; ++$i)
+		{
+			$sum_20 += $top[$i];
+		}
+		return array($sum, $sum_20);
+	}
+
+	// How far the players of the series travelled to it and how much of a guest they were, summed
+	// over its competitions. A series has no place of its own to measure a distance to, so it is
+	// the distances of the competitions played in it that add up - and for a subseries among them,
+	// the sum it made of its own.
+	private function seriesTravelingSums($sources)
+	{
+		$distance = 0;
+		$guest_coeff = 0;
+		foreach ($sources as $source)
+		{
+			$distance += $source->traveling_distance;
+			$guest_coeff += $source->guest_coeff;
+		}
+		return array($distance, $guest_coeff);
 	}
 
 	private function readSeriesExtraPoints($series_id)
@@ -979,6 +1071,16 @@ class CompleteCompetitions extends Updater
 			$sources = $this->readSeriesSources($series_id, $stages);
 			$extra_points = $this->readSeriesExtraPoints($series_id);
 
+			// What this series looks like to whoever counts it as a competition of theirs. It is
+			// written before its own standings because it does not depend on them, and it is read
+			// by the series above only on their own recount, which this one asks for below.
+			$ratings = $this->seriesPlayerRatings($sources);
+			list ($rating_sum, $rating_sum_20) = $this->seriesRatingSums($ratings);
+			list ($traveling_distance, $guest_coeff) = $this->seriesTravelingSums($sources);
+			Db::exec(get_label('series'),
+				'UPDATE series SET rating_sum = ?, rating_sum_20 = ?, traveling_distance = ?, guest_coeff = ? WHERE id = ?',
+				$rating_sum, $rating_sum_20, $traveling_distance, $guest_coeff, $series_id);
+
 			// What one competition gives one player does not depend on where the table is cut, so
 			// it is worked out once here and only bucketed by stage for each ranking below. The
 			// gaining evaluator caches per competition, which is the other reason to do it in one
@@ -1019,11 +1121,12 @@ class CompleteCompetitions extends Updater
 					// full table carries it - a partial one would compete with its own series.
 					$importance = $cut_stages == 0 ? $this->getSeriesImportance($place, $ranking_count) : 0;
 					Db::exec(get_label('series'),
-						'INSERT INTO series_places (series_id, user_id, cut_stages, stage, place, importance, score, tournaments, games, wins, total_cut_off, cut_off)' .
-						' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+						'INSERT INTO series_places (series_id, user_id, cut_stages, stage, place, importance, score, tournaments, games, wins, total_cut_off, cut_off, rating)' .
+						' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 						$series_id, $player->id, $cut_stages, $player->stage, $place, $importance,
 						$player->points, $player->tournaments, $player->games, $player->wins,
-						$player->total_cut_off, $player->cut_off);
+						$player->total_cut_off, $player->cut_off,
+						isset($ratings[$player->id]) ? $ratings[$player->id] : 0);
 					++$place;
 				}
 				if ($cut_stages == 0)

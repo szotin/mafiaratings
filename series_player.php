@@ -212,7 +212,8 @@ class Page extends SeriesPageBase
 		{
 			$delim = '';
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score'.
+				'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score,'.
+				' s.rating_sum, s.rating_sum_20, s.traveling_distance, s.guest_coeff'.
 				' FROM series_places p'.
 				' JOIN series s ON s.id = p.series_id'.
 				' JOIN series_places p1 ON p1.series_id = s.id AND p1.cut_stages = 0'.
@@ -227,10 +228,15 @@ class Page extends SeriesPageBase
 					$c_series->id, $c_series->name, $c_series->flags,
 					$league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags,
 					$c_series->stars, $c_series->series_series_flags, $c_series->place, $c_series->time, $c_series->duration,
-					$c_series->players_count, $c_series->points) = $row;
+					$c_series->players_count, $c_series->points,
+					$c_series->rating_sum, $c_series->rating_sum20, $c_series->trav_dist, $c_series->guest_coef) = $row;
 				$c_series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 				$c_series->exclude = (($c_series->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) != 0);
-				$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count, 0, 0, 0, 0, true);
+				// Measured by its own strength of field, exactly as the tournament above it is -
+				// the four numbers the recount left on the subseries. Passing zeros here made a
+				// five-star subseries pay the least a five-star competition can pay.
+				$c_series->score = get_gaining_points($c_series->id, $this->gaining, $c_series->stars, $c_series->place, $c_series->points, $c_series->players_count,
+					$c_series->rating_sum, $c_series->rating_sum20, $c_series->trav_dist, $c_series->guest_coef, true);
 				$c_series->type = TYPE_SERIES;
 				$c_series->timezone = $default_timezone;
 				$tournaments[] = $c_series;
