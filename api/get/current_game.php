@@ -72,6 +72,9 @@ class ApiPage extends GetApiPageBase
 		// none. Which table a game is at is worth saying only where there is another table to
 		// tell it from - see topRight() in plugins/obs/obs.js.
 		$game->tableCount = seating_tables($this->misc);
+		// And how many games the round lays out for this table, which is the other half of
+		// "game 3 of 7" - see the night cover in plugins/obs/obs.js.
+		$game->tourCount = isset($g->tableNum) ? seating_games($this->misc, (int)$g->tableNum) : 0;
 		
 		if (isset($game->tour))
 		{
@@ -379,9 +382,16 @@ class ApiPage extends GetApiPageBase
 				$game->state = 'starting';
 				break;
 			case GAMETIME_ARRANGEMENT:
-			case GAMETIME_RELAXED_SITTING:
 				$game->phase = 'night';
 				$game->state = 'arranging';
+				break;
+			// The two used to come back as one. They are not one: the mafia arrange with their
+			// eyes open and everybody else's shut, and the free seating afterwards is the whole
+			// table awake and settling. A night cover that calls them both the arrangement says
+			// the mafia are still at it while they are not - see nightSteps() in obs.js.
+			case GAMETIME_RELAXED_SITTING:
+				$game->phase = 'night';
+				$game->state = 'sitting';
 				break;
 			case GAMETIME_DAY_START:
 				$game->phase = 'day';
@@ -720,6 +730,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('table', 'Table number staring from 1.', 'the table number is unknown.');
 			$param->sub_param('tableCount', 'How many tables the round is played at, according to its seating. 0 when the round has no seating yet, which means "no telling" rather than "none".');
 			$param->sub_param('tour', 'Game number (we call it a tour number) in the tournament staring from 1.', 'the tour is unknown.');
+			$param->sub_param('tourCount', 'How many games the round lays out for this table, according to its seating. A game that needs fewer tables than the round does seats none at this one, so this counts the games this table is in rather than the games of the round. 0 when the round has no seating yet.');
 			$param->sub_param('stage', 'Tournament stage. 0 for the main stage; 1 - for the finals; 2 - for the semi-finals; 3 - quater-finals; etc');
 			$players = $param->sub_param('players', 'Players.');
 				$players->sub_param('id', 'User id. If 0 or lower - the player is unknown.');
@@ -769,7 +780,7 @@ class ApiPage extends GetApiPageBase
 				$moderator->sub_param('gender', 'Either "mail" or "female".', 'the gender is unknown.');
 			$param->sub_param('hideRoles', 'True when the roles are kept off the overlays. The players then have no role, and nobody has a checkedByDon or a checkedBySheriff. It is the event\'s answer: a club manager turns it over from the stream settings, and every table of the event follows at once.');
  			$param->sub_param('phase', 'Current game phase - "day" or "night".');
- 			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
+ 			$param->sub_param('state', 'Contains more detailed information about the game phase - which part of the day or night. One of:<ul><li>"notStarted" - when the game is not started yet.</li><li>"starting" - night before shooting, or day before any speaches.</li><li>"arranging" - mafia is arranging in night 0.</li><li>"sitting" - the free seating of night 0, after the mafia have arranged.</li><li>"speaking" - normal day speaches.</li><li>"nightKillSpeaking" - a player gives their last speach after being night-shooted.</li><li>"voting" - voting phase.</li><li>"nomineeSpeaking" - 30-sec speach after splitting the table.</li><li>"shooting" - mafia is shooting.</li><li>"donChecking" - don is checking.</li><li>"sheriffChecking" - sheriff is checking.</li><li>"mafiaWon" - game over mafia won.</li><li>"townWon" - game over town won.</li><li>"unknown" - something strange happening.</li></ul>');
  			$param->sub_param('round', 'Current round number, which is also the number a table calls the night or the day by. A game starts with night-0, where nobody is shot; then day-0, with all ten at the table; then night-1, the first shot; then day-1; and so on.');
  			$param->sub_param('step', 'How far the game has got, as a single number. It grows as the game is played and gets smaller only when the moderator goes back, which is the only way of telling a step back from a step forward: an overlay reading this answer sees the state the game is in and not the way it got there. The number itself means nothing but its order - do not read a round or a phase out of it.');
  			$param->sub_param('nominees', 'Array of players currently nominated, in the order the moderator calls them. When the table has split, only the players who tied are here. It is set only in the day phase.');

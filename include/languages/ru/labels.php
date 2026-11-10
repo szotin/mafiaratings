@@ -2123,6 +2123,7 @@ $labelMenu = array (
 'No voting this round' => 'В этом круге голосования нет', // plugins/obs/obs.php
 'Dealing roles' => 'Раздача ролей', // plugins/obs/obs.php
 'Mafia arranging' => 'Договорка мафии', // plugins/obs/obs.php
+'Relaxed sitting' => 'Свободная посадка', // plugins/obs/obs.php
 'Tie speeches' => 'Речи при равенстве', // plugins/obs/obs.php
 'YouTube streams' => 'Ютуб стримы', // streams.php
 'Everything else about a stream - the addresses to point OBS Studio at, the language, the scenes and what the cards show - is set up table by table on the [0] page.' => 'Всё остальное в трансляции — адреса для OBS Studio, язык, сцены и то, что показывают плашки, — настраивается по столам на странице [0].', // include/preparation.php

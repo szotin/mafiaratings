@@ -98,25 +98,6 @@ function obs_next_game_num($event_id, $table_num, $state)
 
 // How many games this round holds at this table, according to its seating. Zero when the round
 // has no seating - then there is no telling how long it runs and nothing to show as upcoming.
-function obs_seated_games($misc, $table_num)
-{
-	$misc = is_null($misc) ? NULL : json_decode($misc);
-	if (is_null($misc) || !isset($misc->seating) || !isset($misc->seating->rounds))
-	{
-		return 0;
-	}
-
-	$games = 0;
-	foreach ($misc->seating->rounds as $round)
-	{
-		if ($table_num <= count($round))
-		{
-			++$games;
-		}
-	}
-	return $games;
-}
-
 // The badge in the top left corner of every frame. A tournament that has a logo of its own
 // wears it; one that has none wears its club's, which is what the stream is run by anyway.
 // Nothing at all when neither has a picture - the name then stands where the two of them
@@ -232,7 +213,7 @@ function obs_context()
 		$r = new stdClass();
 		list ($r->id, $r->name, $r->round_num, $misc) = $row;
 		$r->id = (int)$r->id;
-		$r->games = obs_seated_games($misc, $table_num);
+		$r->games = seating_games($misc, $table_num);
 		$r->tables = seating_tables($misc);
 		$c->rounds[] = $r;
 	}
@@ -551,7 +532,7 @@ function obs_judge($c)
 function obs_round_games($event_id, $table_num)
 {
 	list ($misc) = Db::record(get_label('event'), 'SELECT misc FROM events WHERE id = ?', $event_id);
-	return obs_seated_games($misc, $table_num);
+	return seating_games($misc, $table_num);
 }
 
 // Which game of how many, as the corner of a frame says it.

@@ -82,6 +82,10 @@ function show_obs_page($view)
 	$options->labels->night = get_label('Night [0]');
 	$options->labels->table = get_label('Table [0]');
 	$options->labels->game = get_label('Game [0]');
+	// Which game of how many, for the night cover, where the corner says both. The overlay's
+	// own pill says only the number: beside the tournament, the table and the round it is one
+	// word among four, and a game out of a count nobody has been told is a count of nothing.
+	$options->labels->gameOf = get_label('Game [0] of [1]');
 	// What each rung of a knockout is called, keyed by the number the round carries - the
 	// final, the semi-final and so on down. The script is handed the whole list because the
 	// page is drawn before the game is known and the round can change under it while it runs;
@@ -108,6 +112,7 @@ function show_obs_page($view)
 		'notStarted' => get_label('Not started'),
 		'starting' => get_label('Dealing roles'),
 		'arranging' => get_label('Mafia arranging'),
+		'sitting' => get_label('Relaxed sitting'),
 		'voting' => get_label('Voting'),
 		'nomineeSpeaking' => get_label('Tie speeches'),
 		'shooting' => get_label('Mafia shooting'),
@@ -162,6 +167,15 @@ function show_obs_page($view)
 	if ($view == 'overlay')
 	{
 		echo '<div class="sheet" id="over"></div>';
+	}
+	// The curtain drawn over the whole picture through a night played with the roles hidden,
+	// last of everything so that it stands over the rest of the stage - see nightCover() in
+	// obs.js. Only in the view that is the whole picture: the two narrow ones cover a strip of
+	// the camera and could not hide a table if they tried, which is worth knowing when a club
+	// is set up - see streams.php.
+	if ($view == 'overlay')
+	{
+		echo '<div class="curtain" id="curtain"></div>';
 	}
 	echo '</div>';
 

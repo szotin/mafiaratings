@@ -10,6 +10,14 @@
 var obs = new function()
 {
 	var SEATS = 10; // a table has ten seats whether anybody is sitting at them or not
+	// How long the curtain takes to sweep across, which is how long the page has to wait before
+	// taking away what it was covering. The same length is written into .curtain in obs.css, and
+	// the two have to be changed together.
+	//
+	// It is slow on purpose - a curtain in a theatre is - and it can afford to be because it
+	// starts closing as the night opens rather than when the first thing worth hiding happens:
+	// see nightCovered(), where the whole of a night is covered and not only its steps.
+	var CURTAIN_TIME = 2200;
 
 	var options;   // the options passed by obs.php
 	var game;      // the last game state we got from the site
@@ -23,6 +31,9 @@ var obs = new function()
 	var step;      // how far the game had got when it was last drawn - see show()
 	var stepGame;  // which game that was, so that the next game is not read as a step back
 	var wasSplit;  // true when the hands last drawn were the ones the table split on
+	var ground;    // the ground this table's between-games screens stand on: "dark" or "light"
+	var curtainDown; // whether the curtain is across the picture, as the page last drew it
+	var curtainTimer; // when the halves of an opening curtain are to be taken off the page
 
 	this.start = function(pageOptions)
 	{
@@ -30,6 +41,12 @@ var obs = new function()
 		game = null;
 		offline = false;
 		shown = {};
+		curtainDown = false;
+		curtainTimer = null;
+		// Until the site answers. Dark rather than pale because that is the ground the night
+		// cover was drawn for, and because a source that cannot reach the site is one whose
+		// curtain had better be the colour of a camera that has been switched off.
+		ground = 'dark';
 		// Everything, until the site says otherwise a moment from now. A source that comes up
 		// while the site is unreachable draws the whole thing rather than half of it.
 		shows = { top: true, phase: true, game: true, judge: true, donChecks: true,
@@ -79,6 +96,18 @@ var obs = new function()
 					return;
 				}
 				document.body.classList.toggle('hidden-source', answer.stream.hideGlyphs ? true : false);
+
+				// The ground the between-games screens of this table stand on. The overlay has
+				// none of its own - it stands on a camera - but the curtain drawn over a night
+				// does, and the two are one evening: a club that has set its break screens pale
+				// does not want one frame of it coming up black. See apply() in between.js,
+				// which reads the very same answer.
+				var wants = (answer.stream.background == 'light') ? 'light' : 'dark';
+				if (ground != wants)
+				{
+					ground = wants;
+					show();
+				}
 
 				// And which parts of the drawing this table shows. Unlike the language, these
 				// need no reload: nothing of them was written into the page by the server, so
@@ -181,6 +210,13 @@ var obs = new function()
 	//--------------------------------------------------------------------------------------
 	var IC =
 	{
+		// A chair, for the free seating. It was a table with seats round it first, which at the
+		// size the cover gives it read as a sun - and the sun is in this very list, standing for
+		// the day.
+		seats: '<svg viewBox="0 0 24 24"><g fill="currentColor"><path d="M5.6 2.6h12.8c.9 0 1.6.7 1.6 1.6v7.6H4V4.2c0-.9.7-1.6 1.6-1.6z"/><rect x="2.6" y="13.2" width="18.8" height="3.2" rx="1.3"/><rect x="5.2" y="17.1" width="2.3" height="4.3" rx="1.1"/><rect x="16.5" y="17.1" width="2.3" height="4.3" rx="1.1"/></g></svg>',
+		cards: '<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="11" height="15" rx="2" fill="currentColor" opacity=".55" transform="rotate(-10 9 12.5)"/><rect x="9.5" y="4" width="11" height="15" rx="2" fill="currentColor" transform="rotate(8 15 11.5)"/></svg>',
+		eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg>',
+		tick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
 		sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>',
 		moon: '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1z"/></svg>',
 		star: '<svg viewBox="-1 -1 26 26"><g fill="currentColor"><path d="M12.00 2.00 L15.05 6.72 L20.66 7.00 L18.10 12.00 L20.66 17.00 L15.05 17.28 L12.00 22.00 L8.95 17.28 L3.34 17.00 L5.90 12.00 L3.34 7.00 L8.95 6.72Z"/><circle cx="12.00" cy="1.60" r="1.7"/><circle cx="21.01" cy="6.80" r="1.7"/><circle cx="21.01" cy="17.20" r="1.7"/><circle cx="12.00" cy="22.40" r="1.7"/><circle cx="2.99" cy="17.20" r="1.7"/><circle cx="2.99" cy="6.80" r="1.7"/></g></svg>',
@@ -326,6 +362,8 @@ var obs = new function()
 		setHtml(document.getElementById('nom'), nominated(g));
 		setHtml(document.getElementById('tr'), topRight(g));
 		setHtml(document.getElementById('over'), banner(g));
+
+		showCurtain(g);
 
 		// Whether the moderator has gone back since the last drawing. The game's own step only
 		// grows while a game is played, so a step smaller than the one we drew last is the one
@@ -606,6 +644,274 @@ var obs = new function()
 		}
 		return '<div class="over gl ' + side + '"><h1>' + escapeHtml(title) + '</h1>' +
 			(sub.length > 0 ? '<div class="sub">' + escapeHtml(sub.join(' · ')) + '</div>' : '') + '</div>';
+	}
+
+	//--------------------------------------------------------------------------------------
+	// the night cover
+	//--------------------------------------------------------------------------------------
+	// A game played with its roles hidden cannot show the table at night. The camera would show
+	// the mafia putting their hands up and pointing, the don pointing and the sheriff pointing
+	// back, and a viewer who caught any of it would know more than the players at the table do -
+	// for the rest of that game, and, where the stream is kept, for as long as the recording
+	// lasts. So the whole picture is covered for the length of the night, and this stands over
+	// it: what the table is doing, said without saying who anybody is.
+	//
+	// Nothing drawn here reads a role, and nothing may be added to it that does. Every card is
+	// the town's red whoever is on it, every seat number is the chip of a player with no role,
+	// there are no role badges and no checks, and the only thing said about a player who has
+	// left is the thing the table itself saw: the night they were shot, or the day they were
+	// voted out.
+
+	// The steps of a night, in the order a table goes through them: the state the game calls
+	// each one by, the picture it is drawn by, and the colour of that picture.
+	//
+	// Night 0 is the deal, the mafia's arrangement and the free seating the table settles into
+	// afterwards; every night after it is the shot and the two checks. Every step is listed
+	// whether it is going to happen or not - a night that left out the don's check because the
+	// don is dead would say that the don is dead.
+	function nightSteps(g)
+	{
+		if (g.round == 0)
+		{
+			return [['starting', IC.cards, 't'], ['arranging', IC.eye, 'r'],
+				['sitting', IC.seats, 't']];
+		}
+		return [['shooting', IC.target, 'r'], ['donChecking', IC.hat, 'w'],
+			['sheriffChecking', IC.star, 'g']];
+	}
+
+	// Whether the picture is to be covered at all: a game whose roles are hidden, standing in a
+	// night. The whole of the night and not only the steps of it - the night opens with the
+	// table closing its eyes and ends with them still shut, and the curtain comes down over the
+	// first of those rather than over the shot. That is a table doing nothing, which is exactly
+	// when there is time to draw a curtain slowly; waiting for the mafia to wake would have it
+	// still crossing the picture while they are pointing at somebody.
+	//
+	// A table with no game on it is left alone: there is nothing to give away before the roles
+	// are dealt, and the hall is what a stream has to show between games.
+	function nightCovered(g)
+	{
+		return (g.hideRoles === true && g.phase == 'night' && g.state != 'notStarted');
+	}
+
+	// Where the night has got to: the step it is standing in, or -1 before the first of them and
+	// the number of them after the last. The moon stands over both ends - the steps are all
+	// still to come at one and all behind at the other - and a step stands over the middle.
+	function nightAt(g)
+	{
+		var steps = nightSteps(g);
+		for (var i = 0; i < steps.length; ++i)
+		{
+			if (steps[i][0] == g.state)
+			{
+				return i;
+			}
+		}
+		// The night played out, waiting for the morning. Anything else that is night and not a
+		// step of it is the night opening, before anything has been done in it.
+		return (g.state == 'ending') ? steps.length : -1;
+	}
+
+	// The curtain itself, which is the thing it is named after: two halves that sweep in from
+	// the sides of the picture and meet in the middle to cover it, and part and run off to the
+	// sides to uncover it. Each half is a window on the same frame, placed so that the two of
+	// them standing together are the one picture with no seam in it - see .curtain in obs.css.
+	//
+	// The night is written into both halves rather than the whole thing being written again,
+	// because writing an element again starts its animation over: a curtain written again at
+	// every step of the night would sweep shut five times a night.
+	//
+	// Going up takes as long as coming down, and what the curtain was covering is left on the
+	// page for the whole of it. Taking it away first would have the cover vanish and the halves
+	// run off over nothing, which is not a curtain opening.
+	function showCurtain(g)
+	{
+		var div = document.getElementById('curtain');
+		if (!div)
+		{
+			return; // one of the two narrow views, which has no picture to cover
+		}
+
+		if (nightCovered(g))
+		{
+			clearTimeout(curtainTimer);
+			curtainTimer = null;
+			if (!div.firstChild)
+			{
+				div.innerHTML = '<div class="cl"><div class="cin"></div></div>' +
+					'<div class="cr"><div class="cin"></div></div>';
+			}
+			var html = nightCover(g);
+			var halves = div.getElementsByClassName('cin');
+			for (var i = 0; i < halves.length; ++i)
+			{
+				setHtml(halves[i], html);
+			}
+			// The cards carry nicknames and are placed the way the ones on the table are, so
+			// they are measured the same way.
+			fitNames(div);
+			// Said every time round rather than only as it comes down, so that a table moved
+			// from one ground to the other while the curtain is up is answered without waiting
+			// for the night to end. It does not start the sweep again: what the halves are
+			// doing is named by a class that is not the one changing.
+			curtainDown = true;
+			var want = curtainClass('closing');
+			if (div.className != want)
+			{
+				div.className = want;
+			}
+			return;
+		}
+
+		if (!curtainDown)
+		{
+			return;
+		}
+		curtainDown = false;
+		div.className = curtainClass('opening');
+		clearTimeout(curtainTimer);
+		curtainTimer = setTimeout(function()
+		{
+			div.innerHTML = '';
+			div.className = curtainClass('');
+			curtainTimer = null;
+		}, CURTAIN_TIME);
+	}
+
+	// What the curtain wears: what it is doing, and which of the two grounds it stands on.
+	function curtainClass(doing)
+	{
+		return 'curtain' + (ground == 'light' ? ' light' : '') + (doing ? ' ' + doing : '');
+	}
+
+	function nightCover(g)
+	{
+		if (!nightCovered(g))
+		{
+			return '';
+		}
+
+		var steps = nightSteps(g);
+		var at = nightAt(g);
+		// Before the first step or past the last: the moon stands where a step that is not
+		// happening would, and the steps are shown all to come or all behind.
+		var moon = (at < 0 || at >= steps.length);
+		var i;
+
+		var html = '<div class="nbg"><div class="glow g1"></div><div class="glow g2"></div>' +
+			'<div class="glow g3"></div><div class="glow g4"></div><div class="glow vig"></div></div>';
+
+		html += nightHead(g);
+
+		html += '<div class="nmain"><div class="nbig ' + (moon ? 'w' : steps[at][2]) + '">' +
+			(moon ? IC.moon : steps[at][1]) + '</div>' +
+			(moon ? '' : '<div class="nstage">' + escapeHtml(stepName(steps[at][0])) + '</div>') +
+			'</div>';
+
+		var track = '';
+		for (i = 0; i < steps.length; ++i)
+		{
+			var done = (i < at);
+			track += (i > 0 ? '<i class="nsl"></i>' : '') +
+				'<div class="ns ' + (done ? 'done' : (i == at ? 'on' : '')) + '">' +
+				'<span class="ni ' + steps[i][2] + '">' + (done ? IC.tick : steps[i][1]) + '</span>' +
+				'<span>' + escapeHtml(stepName(steps[i][0])) + '</span></div>';
+		}
+		html += '<div class="nsteps">' + track + '</div>';
+
+		var cards = '';
+		var players = g.players ? g.players : [];
+		var count = Math.max(players.length, SEATS);
+		for (i = 0; i < count; ++i)
+		{
+			cards += nightCard(players[i] ? players[i] : { number: i + 1 });
+		}
+		html += '<div class="nt-row">' + cards + '</div>';
+
+		return html + nightFoot(g);
+	}
+
+	// What a step is called, in the words the overlay already names the phases of a game by.
+	function stepName(state)
+	{
+		return options.labels.states[state] ? options.labels.states[state] : '';
+	}
+
+	// The corners of the frame, the same ones every between-games screen wears: the tournament
+	// and which part of it on the left, the night in the middle, which game of how many on the
+	// right. The logo is the tournament's own, or its club's where it has none - the same answer
+	// the pill in the corner of the overlay gives.
+	function nightHead(g)
+	{
+		var owner = g.tournament ? g.tournament : (g.club ? g.club : null);
+		var stage = stageName(g);
+		var num = '';
+		if (g.tour)
+		{
+			num = (g.tourCount > 0)
+				? options.labels.gameOf.replace('[0]', g.tour).replace('[1]', g.tourCount)
+				: options.labels.game.replace('[0]', g.tour);
+		}
+
+		return '<div class="nhd"><div class="blk">' +
+			((owner && owner.hasPhoto && owner.iconUrl)
+				? '<span class="tlogo"><img src="' + escapeHtml(owner.iconUrl) + '" alt=""></span>' : '') +
+			'<div><div class="b1">' + escapeHtml(owner ? owner.name : '') + '</div>' +
+			(stage ? '<div class="b2">' + escapeHtml(stage) + '</div>' : '') + '</div></div>' +
+			'<div class="nttl"><h1>' +
+			escapeHtml(options.labels.night.replace('[0]', g.round)) + '</h1></div>' +
+			'<div class="blk r"><div class="b1">' + escapeHtml(num) + '</div></div></div>';
+	}
+
+	// One player, as a card that says nothing but who they are and whether they are still in the
+	// game. A player who has left wears the public reason - the night the table lost them, or
+	// the day it voted them out - and a judge taking somebody out wears the cross it wears on
+	// the table. None of the three says anything about a role.
+	function nightCard(player)
+	{
+		var mark = '';
+		if (player.state == 'dead')
+		{
+			if (player.deathType == 'shooting' || player.deathType == 'voting')
+			{
+				mark = '<span class="nx ' + player.deathType + '">' +
+					(player.deathType == 'shooting' ? IC.target : IC.thumb) +
+					'<span>' + player.deathRound + '</span></span>';
+			}
+			else
+			{
+				mark = '<span class="nx out">' + IC.cross + '</span>';
+			}
+		}
+
+		return '<div class="ncard' + (player.state == 'dead' ? ' out' : '') + '">' +
+			'<div class="ph">' + photo(player) + '</div>' + mark +
+			'<div class="meta"><span class="chip n">' + player.number + '</span>' +
+			'<span class="nick">' + escapeHtml(player.name ? player.name : '') + '</span>' +
+			'</div></div>';
+	}
+
+	// The referee, in the bottom right corner, said the way the between-games screens say it -
+	// see obs_foot() in screens.php, including the table being left out where the round is
+	// seated for one.
+	function nightFoot(g)
+	{
+		var table = tableName(g);
+		var judge = g.moderator;
+		var html = '';
+		if (table)
+		{
+			html += '<span>' + escapeHtml(table) + '</span>';
+		}
+		if (judge && judge.name)
+		{
+			html += (table ? '<span class="nfdv"></span>' : '') + IC.gavel +
+				'<b>' + escapeHtml(judge.name) + '</b>' +
+				((judge.hasPhoto && judge.iconUrl)
+					? '<span class="nav"><img src="' + escapeHtml(judge.iconUrl) + '" alt=""></span>'
+					: '<span class="nav none"></span>');
+		}
+		return (html == '') ? '' : '<div class="nftr">' + html + '</div>';
 	}
 
 	//--------------------------------------------------------------------------------------

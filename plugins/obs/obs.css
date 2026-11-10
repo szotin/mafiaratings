@@ -80,6 +80,16 @@ body.hidden-source > * {
 	display: none;
 }
 
+/*  Except the curtain over a night played with the roles hidden. That is not one of the glyphs
+    but the sheet drawn over them: a table may be set to show nothing on the stream, and a game
+    whose roles are hidden still may not show that table at night. So the stage is kept, with
+    everything in it but the curtain taken away, and the scrims with them - there is nothing
+    left for them to be read over. See .curtain at the foot of this file. */
+body.hidden-source > .ov { display: block; }
+body.hidden-source .ov > :not(.curtain) { display: none; }
+body.hidden-source .ov::before,
+body.hidden-source .ov::after { display: none; }
+
 /*--------------------------------------------------------------------------------------
     the stage
   --------------------------------------------------------------------------------------*/
@@ -1059,6 +1069,8 @@ html.bg-light .pc.speak::before {
 	.stk-c .chip.fly { animation: none; }
 	.stk.rise { animation: none; }
 	.chip.ghost, .chip.gone, .stk.sink { display: none; }
+	.curtain .cl, .curtain .cr { animation: none; }
+	.curtain .cl::after, .curtain .cr::after { animation: none; }
 }
 
 /*  A seat that has lost its card's height while the count above it is still being read: the
@@ -1143,3 +1155,615 @@ html.bg-light .pc.speak::before {
 }
 
 .over.town .sub { color: rgba(255, 255, 255, 0.82); }
+
+/*--------------------------------------------------------------------------------------
+    the night cover
+  --------------------------------------------------------------------------------------*/
+/*  A game played with its roles hidden cannot show the table at night: the camera would show
+    the mafia putting their hands up and pointing, the don pointing and the sheriff pointing
+    back. So the whole picture is covered for the length of the night and this stands over it -
+    see nightCover() in obs.js, where the rule that nothing here reads a role is kept.
+
+    It is the between-games frame of the same name, drawn here instead of there because the
+    thing that has to be covered is the camera during a game, and the overlay is the only source
+    that stands over the whole of it. The ground, the header and the referee's line are the
+    between-games ones written out again rather than borrowed: the two stylesheets have always
+    each carried their own copy of the drawing, and a curtain that waits for a second stylesheet
+    to arrive is a curtain that can fail to come down.
+
+    The glass is darker than in the frame it was drawn from, for the same reason every other
+    pane on these pages is: there is no backdrop-filter here - see .gl above. */
+.curtain {
+	position: absolute;
+	inset: 0;
+	z-index: 50;
+	overflow: hidden;
+	font-family: 'Onest', system-ui, sans-serif;
+	color: var(--c-ink);
+
+	/*  The dark ground, which is the one the frame was drawn for; the pale one is below. Both
+	    are the between-games screens' own - a club that has set its break screens pale does not
+	    want one frame of the evening coming up black, and the two are chosen by the same
+	    setting: see .light below and settings() in obs.js, which reads the same answer
+	    between.js does. The names are its own so that nothing here is mistaken for one of the
+	    overlay's tokens on .ov. */
+	--c-bg: #0A0608;
+	--c-ink: #FFFFFF;
+	--c-ink2: rgba(255, 255, 255, 0.72);
+	--c-hd2: rgba(255, 255, 255, 0.60);
+	--c-ttl: #FFEDEF;
+	--c-ttl-glow: 0 0 2.75rem rgba(255, 59, 78, 0.6);
+	--c-line: rgba(255, 255, 255, 0.14);
+	--c-gold: #F5C451;
+
+	/*  The glass the step stands in and the pills of the ones beside it, the light along the
+	    top of them and the shadow they throw. No backdrop-filter in either ground - see .gl. */
+	--c-glass: rgba(14, 8, 11, 0.62);
+	--c-pill: rgba(14, 8, 11, 0.52);
+	--c-glass-hi: rgba(255, 255, 255, 0.14);
+	--c-glass-sh: 0 1.125rem 2.5rem rgba(0, 0, 0, 0.45);
+	--c-pill-sh: 0 0.625rem 1.75rem rgba(0, 0, 0, 0.35);
+	--c-ni: rgba(255, 255, 255, 0.06);
+	--c-step: rgba(255, 255, 255, 0.45);
+	--c-step-done: rgba(255, 255, 255, 0.6);
+	--c-ring: rgba(255, 255, 255, 0.7);
+	--c-halo: rgba(255, 255, 255, 0.22);
+
+	/*  The leading edge of a half while it is moving: a shade with a light line down it. */
+	--c-edge: rgba(0, 0, 0, 0.45);
+	--c-edge-hi: rgba(255, 255, 255, 0.1);
+
+	--g1: rgba(214, 31, 52, 0.62);
+	--g2: rgba(160, 14, 42, 0.70);
+	--g3: rgba(255, 98, 58, 0.26);
+	--g4: rgba(72, 62, 170, 0.38);
+	--vig: rgba(0, 0, 0, 0.5);
+}
+
+/*  The pale ground, for a table whose between-games screens stand on one. The same values they
+    use - see body.between.bg-light in between.css - so that the curtain and the break screens
+    are the one evening rather than two. The players' cards are not in it: they are photographs
+    on the town's red and read the same against either ground, exactly as they do on the break
+    screens. */
+.curtain.light {
+	--c-bg: #F5F1F2;
+	--c-ink: #1A0E12;
+	--c-ink2: rgba(26, 14, 18, 0.70);
+	--c-hd2: rgba(26, 14, 18, 0.60);
+	--c-ttl: #1A0E12;
+	--c-ttl-glow: 0 0 2.5rem rgba(226, 52, 71, 0.18);
+	--c-line: rgba(26, 14, 18, 0.12);
+	/*  The sheriff's gold is the one colour that cannot cross: at the lightness it has on a
+	    near-black ground it is all but white on a pale one. */
+	--c-gold: #C08214;
+
+	--c-glass: rgba(255, 255, 255, 0.86);
+	--c-pill: rgba(255, 255, 255, 0.74);
+	--c-glass-hi: rgba(255, 255, 255, 0.92);
+	--c-glass-sh: 0 1.125rem 2.5rem rgba(60, 20, 30, 0.14);
+	--c-pill-sh: 0 0.5rem 1.25rem rgba(60, 20, 30, 0.10);
+	--c-ni: rgba(26, 14, 18, 0.07);
+	--c-step: rgba(26, 14, 18, 0.45);
+	--c-step-done: rgba(26, 14, 18, 0.62);
+	/*  A white ring round a white pill says nothing, so the one being played is ringed in the
+	    ink of the page and haloed in the red the ground is tinted with. */
+	--c-ring: rgba(26, 14, 18, 0.32);
+	--c-halo: rgba(226, 52, 71, 0.18);
+
+	--c-edge: rgba(60, 20, 30, 0.20);
+	--c-edge-hi: rgba(255, 255, 255, 0.75);
+
+	--g1: rgba(226, 52, 71, 0.20);
+	--g2: rgba(200, 30, 60, 0.16);
+	--g3: rgba(255, 140, 110, 0.16);
+	--g4: rgba(90, 90, 200, 0.12);
+	--vig: rgba(0, 0, 0, 0);
+}
+
+/*  And nothing at all when there is no night to cover. The sheet is always on the page - the
+    script writes into it rather than making it - so without this it would stand over the camera
+    through every game that has no reason to be covered at all. */
+.curtain:empty { display: none; }
+
+/*  It is a curtain, so it works like one: two halves that sweep in from the sides of the
+    picture and meet in the middle to cover it, and part and run off to the sides to uncover it.
+
+    Each half is a window on the whole frame rather than half a drawing: the frame is laid out
+    at full width inside both of them and slid so that each window shows its own half of it, so
+    the two standing together are the one picture and there is no seam to line up. The ground is
+    on the halves and not on the sheet they are in - a curtain that has run off the picture has
+    to leave nothing of itself behind.
+
+    It is slow, and it moves the way something heavy does: away gently, steadily across, and
+    softly to a stop. A curtain in a theatre takes its time, and this one can, because it starts
+    closing as the night opens rather than when the mafia wake - see nightCovered() in obs.js.
+    The same length is in CURTAIN_TIME there, and the two have to be changed together. */
+.curtain .cl,
+.curtain .cr {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 50%;
+	overflow: hidden;
+	background: var(--c-bg);
+}
+
+.curtain .cl { left: 0; }
+.curtain .cr { right: 0; }
+
+.curtain .cin {
+	position: absolute;
+	top: 0;
+	width: 200%;
+	height: 100%;
+}
+
+.curtain .cl .cin { left: 0; }
+.curtain .cr .cin { left: -100%; }
+
+.curtain.closing .cl { animation: curtain-close-l 2.2s cubic-bezier(0.45, 0.05, 0.35, 1) both; }
+.curtain.closing .cr { animation: curtain-close-r 2.2s cubic-bezier(0.45, 0.05, 0.35, 1) both; }
+.curtain.opening .cl { animation: curtain-open-l 2.2s cubic-bezier(0.45, 0.05, 0.35, 1) both; }
+.curtain.opening .cr { animation: curtain-open-r 2.2s cubic-bezier(0.45, 0.05, 0.35, 1) both; }
+
+@keyframes curtain-close-l {
+	0% { transform: translateX(-100%); }
+	100% { transform: none; }
+}
+
+@keyframes curtain-close-r {
+	0% { transform: translateX(100%); }
+	100% { transform: none; }
+}
+
+@keyframes curtain-open-l {
+	0% { transform: none; }
+	100% { transform: translateX(-100%); }
+}
+
+@keyframes curtain-open-r {
+	0% { transform: none; }
+	100% { transform: translateX(100%); }
+}
+
+/*  The leading edge of each half: a shadow with a thin light line down it, so that what crosses
+    the picture reads as two drapes meeting rather than as a picture wiping on. It is there only
+    while they are moving - a seam down the middle of a frame that stands for a whole night
+    would be a flaw in it, so it fades out as they close and comes back as they part. */
+.curtain .cl::after,
+.curtain .cr::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 4rem;
+	z-index: 9;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.curtain .cl::after {
+	right: 0;
+	background: linear-gradient(90deg, transparent 0%, var(--c-edge) 78%, var(--c-edge-hi) 100%);
+}
+
+.curtain .cr::after {
+	left: 0;
+	background: linear-gradient(270deg, transparent 0%, var(--c-edge) 78%, var(--c-edge-hi) 100%);
+}
+
+.curtain.closing .cl::after,
+.curtain.closing .cr::after { animation: curtain-edge-out 2.2s ease both; }
+
+.curtain.opening .cl::after,
+.curtain.opening .cr::after { animation: curtain-edge-in 2.2s ease both; }
+
+@keyframes curtain-edge-out {
+	0% { opacity: 1; }
+	72% { opacity: 1; }
+	100% { opacity: 0; }
+}
+
+@keyframes curtain-edge-in {
+	0% { opacity: 0; }
+	22% { opacity: 1; }
+	100% { opacity: 1; }
+}
+
+/*  The ground: a near-black under four large soft glows - red at the top left and the bottom
+    right, an ember right of the middle, a violet one at the bottom left - darkened at the
+    edges. */
+.curtain .nbg {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+}
+
+.curtain .glow {
+	position: absolute;
+	border-radius: 50%;
+	pointer-events: none;
+}
+
+.curtain .glow.g1 { left: -23.75rem; top: -29.375rem; width: 81.25rem; height: 81.25rem; background: radial-gradient(circle, var(--g1) 0%, transparent 62%); }
+.curtain .glow.g2 { right: -26.875rem; bottom: -33.75rem; width: 93.75rem; height: 93.75rem; background: radial-gradient(circle, var(--g2) 0%, transparent 62%); }
+.curtain .glow.g3 { left: 60rem; top: 13.75rem; width: 47.5rem; height: 47.5rem; background: radial-gradient(circle, var(--g3) 0%, transparent 64%); }
+.curtain .glow.g4 { left: -15rem; bottom: -21.25rem; width: 61.25rem; height: 61.25rem; background: radial-gradient(circle, var(--g4) 0%, transparent 64%); }
+
+.curtain .glow.vig {
+	left: 0;
+	top: 0;
+	width: 120rem;
+	height: 67.5rem;
+	border-radius: 0;
+	background: radial-gradient(ellipse at center, transparent 55%, var(--vig) 100%);
+}
+
+/*  The header: the tournament on the left with the part of it under its name, the night in the
+    middle, which game of how many on the right. */
+.curtain .nhd {
+	position: absolute;
+	left: 4.5rem;
+	right: 4.5rem;
+	top: 2.5rem;
+	height: 6.875rem;
+	z-index: 2;
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: center;
+}
+
+.curtain .blk {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	min-width: 0;
+}
+
+.curtain .blk.r { justify-self: end; text-align: right; }
+.curtain .blk > div { min-width: 0; }
+
+/*  The logo stands on a warm tile rather than on the page, so that a dark logo is still
+    something and the tournaments that use a black square do not all disappear. */
+.curtain .tlogo {
+	flex: none;
+	width: 3rem;
+	height: 3rem;
+	border-radius: 0.8125rem;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: linear-gradient(160deg, #FFF6E8, #FFE2BF);
+	box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.35);
+}
+
+.curtain .tlogo img {
+	width: 2.5rem;
+	height: 2.5rem;
+	object-fit: contain;
+	display: block;
+}
+
+.curtain .b1 {
+	font-size: 1.5rem;
+	font-weight: 800;
+	line-height: 1.15;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.curtain .b2 {
+	margin-top: 0.1875rem;
+	font-size: 1.125rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--c-hd2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.curtain .nttl h1 {
+	margin: 0;
+	font-family: 'Unbounded', sans-serif;
+	font-weight: 700;
+	font-size: 3.375rem;
+	line-height: 1.1;
+	text-transform: uppercase;
+	letter-spacing: 0.035em;
+	white-space: nowrap;
+	color: var(--c-ttl);
+	text-shadow: var(--c-ttl-glow);
+}
+
+/*  What the table is doing, in the middle of the picture: the step in a glass circle with its
+    name under it. */
+.curtain .nmain {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 13.4375rem;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.curtain .nbig {
+	width: 8.25rem;
+	height: 8.25rem;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	background: var(--c-glass);
+	box-shadow: inset 0 0.0625rem 0 var(--c-glass-hi), var(--c-glass-sh);
+}
+
+.curtain .nbig svg { width: 4.125rem; height: 4.125rem; }
+.curtain .nbig.r { color: var(--red); }
+.curtain .nbig.g { color: var(--c-gold); }
+.curtain .nbig.w, .curtain .nbig.t { color: var(--c-ink); }
+
+.curtain .nstage {
+	margin-top: 1.625rem;
+	font-weight: 800;
+	font-size: 4rem;
+	line-height: 1.05;
+	letter-spacing: -0.01em;
+}
+
+/*  The steps of the night in a row, with the one being played lit. Every step is in it whether
+    it is going to happen or not - see nightSteps() in obs.js. */
+.curtain .nsteps {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 35rem;
+	z-index: 2;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.curtain .ns {
+	height: 3.5rem;
+	padding: 0 1.5rem 0 0.75rem;
+	border-radius: 1.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	white-space: nowrap;
+	font-size: 1.3125rem;
+	font-weight: 700;
+	color: var(--c-step);
+	background: var(--c-pill);
+}
+
+.curtain .ns .ni {
+	flex: none;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	background: var(--c-ni);
+}
+
+.curtain .ns .ni svg { width: 1.25rem; height: 1.25rem; }
+
+.curtain .ns.on {
+	color: var(--c-ink);
+	background: var(--c-glass);
+	box-shadow: inset 0 0 0 0.09375rem var(--c-ring),
+		0 0 0.875rem 0.125rem var(--c-halo), var(--c-pill-sh);
+}
+
+.curtain .ns.on .ni.r { color: var(--red); }
+.curtain .ns.on .ni.g { color: var(--c-gold); }
+.curtain .ns.on .ni.w, .curtain .ns.on .ni.t { color: var(--c-ink); }
+
+/*  A step the night has been through wears a tick rather than its own picture: the picture
+    would read as the thing happening now. */
+.curtain .ns.done { color: var(--c-step-done); }
+.curtain .ns.done .ni { color: #5CF2A0; background: rgba(92, 242, 160, 0.12); }
+
+.curtain .nsl {
+	flex: none;
+	width: 2.75rem;
+	height: 0.125rem;
+	border-radius: 0.0625rem;
+	background: var(--c-line);
+}
+
+/*  The table along the bottom. The cards are the in-game ones at the size a whole picture can
+    give them, and every one of them is the town's red: the card of a player whose role is not
+    being shown is not the card of no side, which is a card of its own and would say that the
+    roles have not been dealt yet. */
+.curtain .nt-row {
+	position: absolute;
+	left: 4.5rem;
+	right: 4.5rem;
+	top: 43.75rem;
+	z-index: 2;
+	display: grid;
+	grid-template-columns: repeat(10, minmax(0, 1fr));
+	gap: 0.75rem;
+	align-items: end;
+}
+
+.curtain .ncard {
+	position: relative;
+	height: 15.625rem;
+	border-radius: 1.375rem;
+	overflow: hidden;
+	box-shadow: 0 0.625rem 1.625rem rgba(0, 0, 0, 0.4);
+	background: radial-gradient(120% 70% at 50% 18%, #C92E3E 0%, rgba(201, 46, 62, 0) 70%),
+		linear-gradient(180deg, #A8192A 0%, #7A0C1A 60%, #3E040D 100%);
+}
+
+.curtain .ncard .ph {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+}
+
+.curtain .ncard .ph img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: 50% 12%;
+	display: block;
+}
+
+.curtain .ncard .ph svg {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+/*  The fade the name is read against. */
+.curtain .ncard::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 34%;
+	z-index: 2;
+	background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(10, 6, 8, 0.4) 40%, rgba(10, 6, 8, 0.82) 100%);
+}
+
+.curtain .ncard .meta {
+	position: absolute;
+	z-index: 3;
+	left: 0.375rem;
+	right: 0.375rem;
+	bottom: 0.375rem;
+	height: 2rem;
+	display: flex;
+	align-items: center;
+}
+
+.curtain .ncard .meta .chip {
+	flex: none;
+	width: 2rem;
+	height: 2rem;
+	font-size: 0.875rem;
+}
+
+.curtain .ncard .nick {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	padding-left: var(--nl, 2.25rem);
+	padding-right: 0.25rem;
+	line-height: 2rem;
+	font-weight: 800;
+	font-size: 1.3125rem;
+	letter-spacing: -0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: #fff;
+	text-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.45);
+}
+
+/*  A player who has left the game: a shorter card, the colour taken out of the photograph and a
+    wash over it, with the public reason in the corner. */
+.curtain .ncard.out { height: 11.875rem; }
+.curtain .ncard.out .ph img { filter: saturate(0.25) brightness(0.75); }
+.curtain .ncard.out .meta { opacity: 0.85; }
+
+.curtain .ncard.out .ph::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(14, 9, 11, 0.6);
+}
+
+.curtain .nx {
+	position: absolute;
+	z-index: 3;
+	top: 0.5625rem;
+	right: 0.5625rem;
+	height: 2rem;
+	padding: 0 0.6875rem 0 0.5625rem;
+	border-radius: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.3125rem;
+	font-size: 1.0625rem;
+	font-weight: 800;
+	line-height: 1;
+	/*  White whichever ground the frame stands on: this one is not on the page but on a
+	    photograph, under a fill as dark as the page is on a dark night, so the ink of a pale
+	    page would be a number nobody can read. */
+	color: #fff;
+	background: rgba(10, 6, 8, 0.58);
+	box-shadow: inset 0 0.0625rem 0 rgba(255, 255, 255, 0.25), 0 0.25rem 0.625rem rgba(0, 0, 0, 0.3);
+}
+
+.curtain .nx svg { flex: none; width: 1.125rem; height: 1.125rem; }
+.curtain .nx.shooting svg { color: var(--red); }
+.curtain .nx.voting svg { color: #fff; transform: rotate(-14deg); }
+.curtain .nx.out svg { color: #FF3B52; }
+
+/*  The referee, in the gap between the lowest card and the bottom of the picture. */
+.curtain .nftr {
+	position: absolute;
+	right: 4.5rem;
+	top: 63.4375rem;
+	transform: translateY(-50%);
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	font-size: 1.375rem;
+	font-weight: 600;
+	color: var(--c-ink2);
+}
+
+.curtain .nftr b {
+	font-weight: 700;
+	color: var(--c-ink);
+	max-width: 32rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.curtain .nftr svg {
+	flex: none;
+	width: 1.3125rem;
+	height: 1.3125rem;
+}
+
+.curtain .nfdv {
+	flex: none;
+	width: 0.0625rem;
+	height: 1.375rem;
+	margin: 0 0.25rem;
+	background: var(--c-line);
+}
+
+.curtain .nav {
+	flex: none;
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 50%;
+	overflow: hidden;
+	background: radial-gradient(circle at 50% 30%, #5A4E54 0%, #2A2226 70%, #161113 100%);
+}
+
+.curtain .nav img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}

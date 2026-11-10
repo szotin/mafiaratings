@@ -83,4 +83,32 @@ function seating_tables($misc)
 	return $tables;
 }
 
+// How many games the seating of a round lays out for one table, or 0 where it has no seating.
+//
+// A round is seated game by game, and a game that needs fewer tables than the round does seats
+// none at this one - so this counts the games this table is actually in rather than the games
+// of the round. Which game of how many is the one number a frame says about a table; see
+// obs_head_game() in plugins/obs/screens.php and tourCount in api/get/current_game.php.
+function seating_games($misc, $table_num)
+{
+	if (is_string($misc))
+	{
+		$misc = json_decode($misc);
+	}
+	if (is_null($misc) || !isset($misc->seating->rounds) || !is_array($misc->seating->rounds))
+	{
+		return 0;
+	}
+
+	$games = 0;
+	foreach ($misc->seating->rounds as $round)
+	{
+		if (is_array($round) && $table_num <= count($round))
+		{
+			++$games;
+		}
+	}
+	return $games;
+}
+
 ?>
