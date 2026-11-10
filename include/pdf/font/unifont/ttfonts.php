@@ -68,6 +68,16 @@ var $underlineThickness;
 var $charWidths;
 var $defaultWidth;
 var $maxStrLenRead;
+// Said out loud rather than made up as the class runs. PHP 8.2 takes a property that was
+// never declared as a deprecation and writes a line about it: three a font, every time a
+// PDF is built, into the error log.
+var $maxUniChar;
+var $codeToGlyph;
+var $glyphdata;
+var $TTCFonts;
+var $version;
+var $sFamilyClass;
+var $sFamilySubClass;
 
 	function __construct() {
 		$this->maxStrLenRead = 200000;	// Maximum size of glyf table to read in as string (otherwise reads each glyph from file)

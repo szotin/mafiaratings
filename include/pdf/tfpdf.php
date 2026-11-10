@@ -1989,7 +1989,20 @@ function _putTTfontwidths(&$font, $maxUni) {
 		$interval = false;
 		$startcid = 1;
 	}
-	$cwlen = $maxUni + 1; 
+	// How far the widths go. maxUni is the highest character the document asked for, and the
+	// table holds only the characters this font has a glyph for - so the two are not the same
+	// number, and the table is the shorter of them whenever something was asked for that the
+	// font cannot draw. An emoji in a nickname did exactly that: the loop walked some sixty
+	// thousand characters past the end of the string, two warnings apiece - three hundred
+	// thousand of them for a single page, and tens of megabytes a day into the error log.
+	//
+	// There was nothing out there to read, either. Almost all of those characters were
+	// dropped a few lines below in any case, for not being among the ones the document uses.
+	// The one that was - the character somebody actually typed - was being given a width of
+	// nought, which is the one width it must not have: the reader cannot draw it, and a box
+	// of no width sits on top of the letter after it. Left out, it is given the font's own
+	// default width instead, which is what a character a font does not have should get.
+	$cwlen = min($maxUni + 1, intdiv(is_string($font['cw']) ? strlen($font['cw']) : 0, 2));
 
 	// for each character
 	for ($cid=$startcid; $cid<$cwlen; $cid++) {
