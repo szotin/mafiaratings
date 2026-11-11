@@ -107,9 +107,7 @@ class Page extends EventPageBase
 	{
 		list ($event_id, $round_num, $misc, $players, $tables, $games) = $this->rounds[0];
 
-		echo '<p align="right">';
-		$this->nextButton();
-		echo '</p>';
+		$this->navBar();
 
 		$players_val = is_null($players) ? '' : $players;
 		$tables_val = is_null($tables) ? '' : $tables;
@@ -152,9 +150,7 @@ class Page extends EventPageBase
 	{
 		global $_profile, $_lang;
 
-		echo '<p align="right">';
-		$this->nextButton();
-		echo '</p>';
+		$this->navBar();
 
 		$event_reg_pic =
 			new Picture(USER_EVENT_PICTURE,
@@ -261,9 +257,7 @@ class Page extends EventPageBase
 	// so what is shown is when it goes relative to that.
 	private function showMailingTab()
 	{
-		echo '<p align="right">';
-		$this->nextButton();
-		echo '</p>';
+		$this->navBar();
 
 		echo '<table class="bordered light" width="100%">';
 		if (isset($_REQUEST['msg']) && $_REQUEST['msg'] == 0)

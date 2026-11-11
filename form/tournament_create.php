@@ -89,11 +89,7 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</td></tr>';
 	
-	echo '<tr><td>' . get_label('Expected number of players') . ':</td><td><input type="number" style="width: 45px;" step="1" min="10" id="form-players" value="10"> ';
-	echo '<input type="checkbox" id="form-correct-players" checked> ';
-	echo get_label('correct number of players after the tournament is complete');
-	echo '</td></tr>';
-	
+
 	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="" onchange="feeChanged()">';
 	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
 	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()" checked> '.get_label('unknown');
@@ -106,35 +102,12 @@ try
 	}
 	echo '</select></td></tr>';
 	
+	// The rules, the scoring and the awards are set on the Rules tab of the preparation page,
+	// and the number of players on its Scheme. A new tournament starts with the club's rules
+	// and scoring - no normalizer, it is not a long-term one yet - and the scoring options of the
+	// club's last tournament.
 	$rules_code = upgrade_rules_code($club->rules_code);
-	$rules_list = get_available_rules($club_id, $club->name, $club->rules_code);
-	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
-	echo '<select id="form-rules">';
-	foreach ($rules_list as $r)
-	{
-		if (show_option($r->rules, $rules_code, $r->name))
-		{
-			$rules_code = '';
-		}
-	}
-	echo '</select></td></tr>';
-	
-	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-	show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
-	echo '</td></tr>';
-	
-	echo '<tr><td>'.get_label('Special awards').':</td><td>';
-	echo '<table class="transp" width="100%">';
-	echo '<tr><td colspan="2"><input type="checkbox" id="form-award-mvp" checked> ' . get_label('MVP') . '</td></tr>';
-	echo '<tr><td><input type="checkbox" id="form-award-red" checked> ' . get_label('best red player') . '</td>';
-	echo '<td><input type="checkbox" id="form-award-black" checked> ' . get_label('best black player') . '</td></tr>';
-	echo '<tr><td><input type="checkbox" id="form-award-sheriff"> ' . get_label('best sheriff') . '</td>';
-	echo '<td><input type="checkbox" id="form-award-don"> ' . get_label('best don') . '</td></tr>';
-	echo '<tr><td><p><input type="checkbox" id="form-award-no-sheriff"> ' . get_label('exclude the sheriff games from the "best red" award') . '</p></td>';
-	echo '<td><p><input type="checkbox" id="form-award-no-don"> ' . get_label('exclude the don games from the "best black" award') . '</p></td></tr>';
-	echo '</table>';
-	echo '</td></tr>';
-	
+
 	if (is_valid_lang($club->langs))
 	{
 		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
@@ -149,8 +122,7 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 	
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-reg"> ' . get_label('registration is closed') . '<br>';
-	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
+	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> '. get_label('long term tournament. Like a seasonal club championship.') . '<br>';
 	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
 	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	if (is_permitted(PERMISSION_ADMIN))
@@ -158,9 +130,6 @@ try
 		echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.') . '<br>';
 	}
 	echo '<input type="checkbox" id="form-hide"> ' . get_label('hide from the main page.') . '<br>';
-	echo '<input type="checkbox" id="form-streaming" checked> ' . get_label('video streaming games.') . '<br>';
-	// A tournament is played where the players cannot look the roles up, so this starts on.
-	echo '<input type="checkbox" id="form-show-roles" checked> ' . get_label('show the roles in the stream.') . '<br>';
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -313,22 +282,11 @@ try
 		setSeries();
 	}
 	
-	var scoringId = <?php echo $scoring_id; ?>;
-	var scoringVersion = <?php echo $scoring_version; ?>;
-	var scoringOptions = '<?php echo $scoring_options; ?>';
-	function onScoringChange(s)
-	{
-		scoringId = s.sId;
-		scoringVersion = s.sVer;
-		scoringOptions = JSON.stringify(s.ops);
-	}
-	
 	function longTermClicked()
 	{
 		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
 		$("#form-single_game").prop('disabled', !c);
-		mr.onChangeNormalizer('form-scoring', 0);
 	}
 	
 	function singleGameClicked()
@@ -387,23 +345,14 @@ try
 		var _langs = mr.getLangs('form-');
 		var _addr = $("#form-addr_id").val();
 		
-		var _flags = 0;
-		if ($("#form-reg").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_REGISTRATION_CLOSED; ?>;
+		// What a new tournament starts with of what is set elsewhere now: MVP, best red and best
+		// black, its games streamed, the roles shown in the stream, and anybody may register.
+		var _flags = <?php echo TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK | TOURNAMENT_FLAG_STREAMING; ?>;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
-		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_MVP; ?>;
-		if ($("#form-award-red").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_RED; ?>;
-		if ($("#form-award-black").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_BLACK; ?>;
-		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_SHERIFF; ?>;
-		if ($("#form-award-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_DON; ?>;
-		if ($("#form-award-no-sheriff").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED; ?>;
-		if ($("#form-award-no-don").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK; ?>;
 		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
-		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
-		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_ROLES; ?>;
-		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
 		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
@@ -429,18 +378,16 @@ try
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
 			address_id: _addr,
-			scoring_id: scoringId,
-			scoring_version: scoringVersion,
-			scoring_options: scoringOptions,
-			normalizer_id: $("#form-scoring-norm-sel").val(),
-			normalizer_version: $("#form-scoring-norm-ver").val(),
+			scoring_id: <?php echo (int)$scoring_id; ?>,
+			scoring_version: <?php echo (int)$scoring_version; ?>,
+			scoring_options: <?php echo json_encode($scoring_options); ?>,
+			normalizer_id: 0,
 			notes: $("#form-notes").val(),
 			start: $('#form-start').val(),
 			end: dateToStr(_end),
 			langs: _langs,
 			flags: _flags,
-			players: $("#form-players").val(),
-			rules_code: $("#form-rules").val(),
+			rules_code: <?php echo json_encode($rules_code); ?>,
 		};
 		
 		if (_addr > 0)

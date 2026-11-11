@@ -598,7 +598,11 @@ class ApiPage extends OpsApiPageBase
 		$notes = get_optional_param('notes', $old_notes);
 		$langs = get_optional_param('langs', $old_langs);
 		$flags = (int)get_optional_param('flags', $old_flags);
-		$flags = ($flags & TOURNAMENT_EDITABLE_MASK) + ($old_flags & ~TOURNAMENT_EDITABLE_MASK);
+		// The settings of a tournament are no longer all on one form: the preparation page sets
+		// some of the flags on its tabs, and the form the rest. Each says which ones it means,
+		// and the others stay as they are.
+		$flags_mask = (int)get_optional_param('flags_mask', TOURNAMENT_EDITABLE_MASK) & TOURNAMENT_EDITABLE_MASK;
+		$flags = ($flags & $flags_mask) + ($old_flags & ~$flags_mask);
 		if (!is_permitted(PERMISSION_ADMIN))
 		{
 			$flags = ($flags & ~TOURNAMENT_ADMIN_EDITABLE_MASK) + ($old_flags & TOURNAMENT_ADMIN_EDITABLE_MASK);
@@ -1043,6 +1047,7 @@ class ApiPage extends OpsApiPageBase
 									'<li value="16384">This tournament has best don as an award.</li>' .
 									'<li value="16777216">Games of the tournament are video streamed.</li>' .
 									'</ol>', 'remain the same.');
+		$help->request_param('flags_mask', 'Which of the flags the flags parameter sets. The others remain the same.', 'all of the flags that can be edited.');
 		$help->request_param('address_id', 'Address id of the tournament.', 'remains the same.');
 		$help->request_param('mwt_id', 'Id of this tournament on the MWT site. It can be either integer or MWT site URL for the tournament (for example: <a href="https://mafiaworldtour.com/tournaments/2898">https://mafiaworldtour.com/tournaments/2898</a>).', "remains the same");
 		$help->request_param('imafia_id', 'Id of this tournament on the iMafia site. It can be either integer or iMafia site URL for the tournament (for example: <a href="https://mafiaworldtour.com/tournaments/2898">https://mafiaworldtour.com/tournaments/2898</a>).', "remains the same");

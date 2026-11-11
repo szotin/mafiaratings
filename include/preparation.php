@@ -146,6 +146,27 @@ trait PreparationTabs
 		return false;
 	}
 
+	// The way through the tabs: Next at the right of the row the tab puts it in, and Back at the
+	// far left of the same row - backCell() is the first cell of it. Back is never held back:
+	// what was done there is done.
+	private function backCell()
+	{
+		$html = '<td width="1" nowrap>';
+		if ($this->tab > 0)
+		{
+			$html .= '<button id="prep-back-btn" onclick="goToTab(' . ($this->tab - 1) . ')"><img src="images/prev.png" border="0" style="vertical-align:middle">&nbsp; ' . get_label('Back') . '</button>&nbsp; ';
+		}
+		return $html . '</td>';
+	}
+
+	// A row with nothing but the two of them.
+	private function navBar()
+	{
+		echo '<p><table width="100%"><tr>' . $this->backCell() . '<td align="right">';
+		$this->nextButton();
+		echo '</td></tr></table></p>';
+	}
+
 	private function nextButton()
 	{
 		if ($this->tab < $this->tab_count - 1)
@@ -186,6 +207,9 @@ trait PreparationTabs
 		$url = 'https://dimtom.github.io/web_schedule';
 
 		echo '<input type="file" id="upload-' . $event_id . '" style="display:none" onchange="doUploadDimTom(' . $event_id . ')">';
+		// Back and Next in a row of their own, and what can be done to the seating under them.
+		// Clearing it stands apart at the right, away from the buttons that work on it.
+		$this->navBar();
 		echo '<p><table width="100%"><tr><td>';
 		if (!$has_seating)
 		{
@@ -203,7 +227,6 @@ trait PreparationTabs
 			{
 				echo ' <button onclick="swapTables(' . $event_id . ')"><img src="images/table.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap tables') . '</button>';
 			}
-			echo ' <button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
 
 			$stored_hash    = isset($misc->seating->hash)    ? $misc->seating->hash    : null;
 			$stored_version = isset($misc->seating->version) ? $misc->seating->version : null;
@@ -231,8 +254,11 @@ trait PreparationTabs
 			}
 		}
 		echo '</td><td align="right">';
-		$this->nextButton();
-		echo '</td></tr></table>';
+		if ($has_seating)
+		{
+			echo '<button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
+		}
+		echo '</td></tr></table></p><p>';
 
 		if (!empty($misc->seating) && !is_null($stored_hash))
 		{
@@ -359,9 +385,7 @@ trait PreparationTabs
 	{
 		require_once 'include/broadcast_table.php';
 
-		echo '<p align="right">';
-		$this->nextButton();
-		echo '</p>';
+		$this->navBar();
 
 		// What this tab is not. Here are the recordings - where to find afterwards what was
 		// broadcast - while everything about the broadcast as it happens belongs to a table

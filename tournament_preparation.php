@@ -5,22 +5,27 @@ require_once 'include/pages.php';
 require_once 'include/seating.php';
 require_once 'include/preparation.php';
 require_once 'include/table_hiding.php';
+require_once 'include/scoring.php';
+require_once 'include/rules.php';
 
 // The numbers are stored - tournaments.preparation_stage remembers the tab a tournament was left
-// on - so renumbering the tabs means moving the stored numbers too, the way db/alter210.sql did.
+// on - so renumbering the tabs means moving the stored numbers too, the way db/alter210.sql and
+// db/alter211.sql did.
 define('PREP_TAB_SCHEME', 0);
+// The rules the games are played by, the scoring and the special awards.
+define('PREP_TAB_RULES', 1);
 // What the scoring table hides until the tournament ends. It is decided once the rounds are
 // known, and long before any of them is played: the table hides itself when the moment comes.
-define('PREP_TAB_TABLE', 1);
+define('PREP_TAB_TABLE', 2);
 // The new-registration email links straight here, by number - see
 // include/languages/*/email/tournament_new_reg.php. Renumbering the tabs means fixing that link.
-define('PREP_TAB_REGISTRATIONS', 2);
+define('PREP_TAB_REGISTRATIONS', 3);
 // The broadcasts are set up before anybody is paired or seated: the addresses have to be in
 // before the games are played, or there is nothing for a game to be tied to as it is written
 // down - see include/broadcast.php.
-define('PREP_TAB_STREAMS', 3);
-define('PREP_TAB_PAIRS', 4);
-define('PREP_TAB_SEATING', 5);
+define('PREP_TAB_STREAMS', 4);
+define('PREP_TAB_PAIRS', 5);
+define('PREP_TAB_SEATING', 6);
 
 class Page extends TournamentPageBase
 {
@@ -135,9 +140,12 @@ class Page extends TournamentPageBase
 	{
 		global $_lang;
 
-		echo '<p align="right">';
-		$this->nextButton();
-		echo '</p>';
+		list ($tournament_flags) = Db::record(get_label('tournament'), 'SELECT flags FROM tournaments WHERE id = ?', $this->id);
+		$this->navBar();
+		// Without it only a manager can register anybody, and what players ask for themselves
+		// is not taken.
+		echo '<p><input type="checkbox" class="toggle" id="prep-self-reg"' . (($tournament_flags & TOURNAMENT_FLAG_REGISTRATION_CLOSED) ? '' : ' checked') .
+			' onchange="setTournamentFlag(' . TOURNAMENT_FLAG_REGISTRATION_CLOSED . ', !this.checked)"> ' . get_label('participants can register themselves') . '</p>';
 
 		$total_tables = 0;
 		$total_players = 0;
@@ -466,7 +474,7 @@ class Page extends TournamentPageBase
 			echo '<p>' . get_label('This tournament has no rounds. Select a tournament type to create rounds automatically.') . '</p>';
 		}
 
-		echo '<p><table width="100%"><tr><td>';
+		echo '<p><table width="100%"><tr>' . $this->backCell() . '<td>';
 		show_tournament_type_select($this->tournament_type, 'tournament-type', 'changeTournamentType()');
 		echo '</td><td align="right">';
 		$this->nextButton();
@@ -516,7 +524,80 @@ class Page extends TournamentPageBase
 		}
 
 		echo '</table></p>';
-		echo '<p align="right"><button id="prep-apply-btn" onclick="applyScheme()"' . (!$this->scheme_valid ? ' disabled' : '') . '>' . get_label('Apply') . '</button></p>';
+
+		// The number of players the tournament counts for is the players of its main round, which
+		// the scheme sets. Once it is over it can be corrected by those who actually played.
+		list ($tournament_flags) = Db::record(get_label('tournament'), 'SELECT flags FROM tournaments WHERE id = ?', $this->id);
+		echo '<p><table width="100%"><tr><td>';
+		echo '<input type="checkbox" class="toggle" id="prep-correct-players"' . (($tournament_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS) ? '' : ' checked') .
+			' onchange="setTournamentFlag(' . TOURNAMENT_FLAG_FORCE_NUM_PLAYERS . ', !this.checked)"> ' . get_label('correct number of players after the tournament is complete');
+		echo '</td><td align="right"><button id="prep-apply-btn" onclick="applyScheme()"' . (!$this->scheme_valid ? ' disabled' : '') . '>' . get_label('Apply') . '</button></td></tr></table></p>';
+	}
+
+	// The rules the games are played by, the scoring and its normalizer, and the special awards.
+	// Each is saved the moment it is changed. Changing the rules or the scoring changes them in
+	// every round as well - see the change op in api/ops/tournament.php.
+	private function showRulesTab()
+	{
+		list ($flags, $rules_code, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $club_name, $club_rules) = Db::record(get_label('tournament'),
+			'SELECT t.flags, t.rules, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, c.name, c.rules FROM tournaments t JOIN clubs c ON c.id = t.club_id WHERE t.id = ?', $this->id);
+		$flags = (int)$flags;
+		if (is_null($normalizer_id))
+		{
+			$normalizer_id = 0;
+			$normalizer_version = 0;
+		}
+
+		$this->navBar();
+
+		echo '<p><table class="bordered light" width="100%">';
+		$rules_code = upgrade_rules_code($rules_code);
+		echo '<tr><td width="160">' . get_label('Rules') . ':</td><td><select id="prep-rules" onchange="rulesChanged()">';
+		foreach (get_available_rules($this->club_id, $club_name, $club_rules) as $r)
+		{
+			if (show_option($r->rules, $rules_code, $r->name))
+			{
+				$rules_code = '';
+			}
+		}
+		if (!empty($rules_code))
+		{
+			show_option($rules_code, $rules_code, get_label('Custom...'));
+		}
+		echo '</select></td></tr>';
+
+		echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
+		show_scoring_select($this->club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'scoringChanged', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'prep-scoring');
+		echo '</td></tr>';
+
+		// One award a line, all of them alike. Leaving the sheriff out of the best red, and the
+		// don out of the best black, is a part of that award, so it stands on its line and is
+		// there only while the award is on.
+		$awards = array(
+			array(TOURNAMENT_FLAG_AWARD_MVP, get_label('MVP'), 0, ''),
+			array(TOURNAMENT_FLAG_AWARD_RED, get_label('best red player'), TOURNAMENT_FLAG_AWARD_NO_SHERIFF_IN_RED, get_label('exclude the sheriff games')),
+			array(TOURNAMENT_FLAG_AWARD_BLACK, get_label('best black player'), TOURNAMENT_FLAG_AWARD_NO_DON_IN_BLACK, get_label('exclude the don games')),
+			array(TOURNAMENT_FLAG_AWARD_SHERIFF, get_label('best sheriff'), 0, ''),
+			array(TOURNAMENT_FLAG_AWARD_DON, get_label('best don'), 0, ''));
+		echo '<tr><td valign="top">' . get_label('Special awards') . ':</td><td>';
+		echo '<table class="transp">';
+		foreach ($awards as $award)
+		{
+			list ($flag, $text, $sub_flag, $sub_text) = $award;
+			echo '<tr><td style="padding: 6px 24px 6px 0;" nowrap><input type="checkbox" class="toggle"' . (($flags & $flag) ? ' checked' : '') .
+				' onchange="awardChanged(this, ' . $flag . ', ' . $sub_flag . ')"> ' . $text . '</td>';
+			echo '<td style="padding: 6px 0;">';
+			if ($sub_flag != 0)
+			{
+				echo '<span id="award-sub-' . $sub_flag . '"' . (($flags & $flag) ? '' : ' style="display:none"') . '>' .
+					'<input type="checkbox" class="toggle"' . (($flags & $sub_flag) ? ' checked' : '') .
+					' onchange="setTournamentFlag(' . $sub_flag . ', this.checked)"> ' . $sub_text . '</span>';
+			}
+			echo '</td></tr>';
+		}
+		echo '</table>';
+		echo '</td></tr>';
+		echo '</table></p>';
 	}
 
 	// The table and the bonus points: where each is hidden from, and from which tour of that
@@ -559,7 +640,7 @@ class Page extends TournamentPageBase
 			TOURNAMENT_HIDE_FROM_SEMI_FINALS => get_label('Hide bonus points starting from the semi-finals'),
 			TOURNAMENT_HIDE_FROM_FINALS => get_label('Hide bonus points in the finals'));
 
-		echo '<p><table width="100%"><tr><td>' . get_label('Before the tournament is finished') . ':</td><td align="right">';
+		echo '<p><table width="100%"><tr>' . $this->backCell() . '<td align="right">';
 		$this->nextButton();
 		echo '</td></tr></table></p>';
 
@@ -592,9 +673,7 @@ class Page extends TournamentPageBase
 	{
 		global $_lang;
 
-		echo '<p align="right">';
-		$this->nextButton();
-		echo '</p>';
+		$this->navBar();
 
 		$pairs = get_tournament_pairs($this->id, $this->club_id, $_lang, true);
 		$user_pic = new Picture(USER_TOURNAMENT_PICTURE,
@@ -645,6 +724,7 @@ class Page extends TournamentPageBase
 
 		echo '<div class="tab">';
 		echo '<button' . ($this->tab == PREP_TAB_SCHEME ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_SCHEME . ')">' . get_label('Scheme') . '</button>';
+		echo '<button' . ($this->tab == PREP_TAB_RULES ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_RULES . ')">' . get_label('Rules') . '</button>';
 		echo '<button' . ($this->tab == PREP_TAB_TABLE ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_TABLE . ')">' . get_label('Hiding the table') . '</button>';
 		$reg_disabled = !$this->scheme_valid ? ' disabled' : '';
 		echo '<button id="prep-tab-registrations"' . ($this->tab == PREP_TAB_REGISTRATIONS ? ' class="active"' : '') . $reg_disabled . ' onclick="goToTab(' . PREP_TAB_REGISTRATIONS . ')">' . get_label('Registrations') . '</button>';
@@ -666,6 +746,9 @@ class Page extends TournamentPageBase
 		{
 			case PREP_TAB_SCHEME:
 				$this->showSchemeTab();
+				break;
+			case PREP_TAB_RULES:
+				$this->showRulesTab();
 				break;
 			case PREP_TAB_TABLE:
 				$this->showTableTab();
@@ -737,6 +820,54 @@ class Page extends TournamentPageBase
 				}, refr);
 			}
 			dlg.yesNo(confirmMessage, null, null, _remove);
+		}
+
+		// One flag of the tournament on or off, the others left as they are.
+		function setTournamentFlag(flag, on)
+		{
+			json.post("api/ops/tournament.php",
+			{
+				op: "change",
+				tournament_id: <?php echo $this->id; ?>,
+				flags: on ? flag : 0,
+				flags_mask: flag,
+			});
+		}
+
+		// An award, and the part of it that is shown only while it is on.
+		function awardChanged(box, flag, subFlag)
+		{
+			setTournamentFlag(flag, box.checked);
+			if (subFlag)
+			{
+				$('#award-sub-' + subFlag).toggle(box.checked);
+			}
+		}
+
+		function rulesChanged()
+		{
+			json.post("api/ops/tournament.php",
+			{
+				op: "change",
+				tournament_id: <?php echo $this->id; ?>,
+				rules_code: $('#prep-rules').val(),
+			});
+		}
+
+		// Called by the scoring select whenever anything in it is changed - the scoring, its
+		// version, its options or the normalizer - with all of them.
+		function scoringChanged(s)
+		{
+			json.post("api/ops/tournament.php",
+			{
+				op: "change",
+				tournament_id: <?php echo $this->id; ?>,
+				scoring_id: s.sId,
+				scoring_version: s.sVer,
+				scoring_options: JSON.stringify(s.ops),
+				normalizer_id: s.nId,
+				normalizer_version: s.nId > 0 ? s.nVer : -1,
+			});
 		}
 
 		function changeTournamentType()

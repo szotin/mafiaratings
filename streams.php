@@ -302,6 +302,14 @@ class Page extends StreamsPageBase
 			'<input type="checkbox" class="toggle" id="roles"' . ($show_roles ? ' checked' : '') .
 			' onchange="rolesChanged()">');
 
+		// Whether the games are streamed, for the whole tournament as well. All it changes is the
+		// game screen, which takes one more step at the end of the night so that the stream can
+		// show the night before the moderator says what came of it. See EVENT_FLAG_STREAMING.
+		$streaming_flag = STREAMS_UNDER_EVENT ? EVENT_FLAG_STREAMING : TOURNAMENT_FLAG_STREAMING;
+		$this->show_setting(get_label('Video streaming games'),
+			'<input type="checkbox" class="toggle" id="streaming"' . (($this->flags & $streaming_flag) ? ' checked' : '') .
+			' onchange="streamingChanged()">');
+
 		// Hiding the scoring table from now on - from the tour after the last one played, or
 		// altogether before anything is played. It is on whenever the table is hidden by now,
 		// including a hiding set up in advance on the preparation page once the tournament has
@@ -827,6 +835,17 @@ class Page extends StreamsPageBase
 				op: "set"
 				, table_num: tableNum
 				, hide_roles: document.getElementById('roles').checked ? 0 : 1
+			}, owner),
+			saved);
+		}
+
+		function streamingChanged()
+		{
+			json.post("api/ops/stream.php",
+			Object.assign({
+				op: "set"
+				, table_num: tableNum
+				, streaming: document.getElementById('streaming').checked ? 1 : 0
 			}, owner),
 			saved);
 		}

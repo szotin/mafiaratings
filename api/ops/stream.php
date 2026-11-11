@@ -57,6 +57,36 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('round'), 'UPDATE events SET flags = ' . $set . ' WHERE tournament_id = ?', $owner->id);
 	}
 
+	// Whether the games are streamed, which is decided for the whole thing too, and handed down
+	// to the rounds the same way. All it changes is the game screen: a streamed game takes one
+	// more step at the end of the night, so that the stream can show the night before the
+	// moderator says what came of it - see gameIsStreaming() in js/src/game.js. A game picks it
+	// up from its round when it is started.
+	private function set_streaming($owner)
+	{
+		if (!isset($_REQUEST['streaming']))
+		{
+			return;
+		}
+		$on = ((int)$_REQUEST['streaming'] != 0);
+		$set = $on ? ('flags | ' . EVENT_FLAG_STREAMING) : ('flags & ~' . EVENT_FLAG_STREAMING);
+		if (!$owner->is_tournament)
+		{
+			Db::exec(get_label('event'), 'UPDATE events SET flags = ' . $set . ' WHERE id = ?', $owner->id);
+			return;
+		}
+
+		list ($flags) = Db::record(get_label('tournament'), 'SELECT flags FROM tournaments WHERE id = ?', $owner->id);
+		$flags = (int)$flags;
+		if ($on == (($flags & TOURNAMENT_FLAG_STREAMING) != 0))
+		{
+			return;
+		}
+		$flags = $on ? ($flags | TOURNAMENT_FLAG_STREAMING) : ($flags & ~TOURNAMENT_FLAG_STREAMING);
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = ? WHERE id = ?', $flags, $owner->id);
+		Db::exec(get_label('round'), 'UPDATE events SET flags = ' . $set . ' WHERE tournament_id = ?', $owner->id);
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// scene
 	//-------------------------------------------------------------------------------------------------------
@@ -213,6 +243,7 @@ class ApiPage extends OpsApiPageBase
 
 		$this->check_owner_permissions($owner);
 		$this->set_roles($owner);
+		$this->set_streaming($owner);
 
 		// Table 0 is every table there is.
 		$tables = array();
@@ -344,6 +375,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('show_speaker', '1 lights the card of whoever is speaking, 0 leaves every card alike.', 'left as it is.');
 		$help->request_param('auto_scenes', '1 switches the OBS scenes at this table by the phase of the game being played, 0 leaves them to be switched by hand. What is set up against the phases is kept either way.', 'left as it is.');
 		$help->request_param('hide_roles', '1 keeps the roles off the overlays. It belongs to the tournament rather than to one table, so it is set for the whole of it and every round follows.', 'left as it is.');
+		$help->request_param('streaming', '1 - the games are video streamed: the game screen takes one more step at the end of the night, so that the stream can show the night before the moderator says what came of it. 0 - they are not. It belongs to the tournament rather than to one table, so it is set for the whole of it and every round follows.', 'left as it is.');
 		return $help;
 	}
 }
