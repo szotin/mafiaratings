@@ -11,14 +11,6 @@ require_once '../include/series.php';
 
 initiate_session();
 
-function show_hide_bonus_array()
-{
-	echo '[[0,"' . get_label('Show bonus points') . '"],';
-	echo '[' . (1 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points') . '"],';
-	echo '[' . (3 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points starting from the semi-finals') . '"],';
-	echo '[' . (2 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points in the finals') . '"]]';
-}
-
 try
 {
 	dialog_title(get_label('Create [0]', get_label('tournament')));
@@ -35,10 +27,6 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
 	
-	$tournament_type = TOURNAMENT_TYPE_CUSTOM;
-	echo '<tr><td>' . get_label('Tournament type') . '</td><td>';
-	show_tournament_type_select($tournament_type, 'form-type', 'typeChanged()');
-	echo '</td></tr>';
 
 	$scoring_id = $club->scoring_id;
 	$normalizer_id = $club->normalizer_id;
@@ -135,14 +123,6 @@ try
 	show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'form-scoring');
 	echo '</td></tr>';
 	
-	echo '<tr><td>'.get_label('Scoring table').':</td><td><p>' . get_label('Before the tournament is finished') . ': ';
-	echo '</p><p><select id="form-hide-table" onchange="onChangeHidenTable()">';
-	show_option(0, 0, get_label('Show the scoring table'));
-	show_option(1 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, 0, get_label('Hide the scoring table'));
-	show_option(2 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, 0, get_label('Hide the scoring table in the finals'));
-	show_option(3 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, 0, get_label('Hide the scoring table starting from the semi-finals'));
-	echo '</select></p><p><div id="form-hide-bonus-span"></div></p></td></tr>';
-	
 	echo '<tr><td>'.get_label('Special awards').':</td><td>';
 	echo '<table class="transp" width="100%">';
 	echo '<tr><td colspan="2"><input type="checkbox" id="form-award-mvp" checked> ' . get_label('MVP') . '</td></tr>';
@@ -184,13 +164,6 @@ try
 	echo '</td></tr>';
 	
 	echo '</table>';
-	
-	$fiim_id = 0;
-	$query = new DbQuery('SELECT id FROM scorings where club_id IS NULL AND name="ФИИМ"');
-	if ($row = $query->next())
-	{
-		list($fiim_id) = $row;
-	}
 	
 ?>	
 
@@ -301,46 +274,6 @@ try
 	}
 	setSeries();
 	
-	var hideBonusVal = 0;
-	function onChangeHidenTable()
-	{
-		var v = $("#form-hide-table").val();
-		var count = 0;
-		var html = "";
-		if (v == 0)
-			count = 4;
-		else if (v == <?php echo 2 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET; ?>)
-			count = 3;
-		else if (v == <?php echo 3 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET; ?>)
-			count = 2;
-		if (count > 0)
-		{
-			var l = <?php show_hide_bonus_array(); ?>;
-			html += '<select id="form-hide-bonus" onchange="onChangeHiddenBonus()">';
-			for (var i = 0; i < count; ++i)
-			{
-				html += '<option value="' + l[i][0] + '"';
-				if (l[i][0] == hideBonusVal)
-				{
-					html += ' selected';
-				}
-				html += '>' +  l[i][1] + '</option>';
-			}
-			html += '</select>';
-		}
-		else
-		{
-			html = '<input type="hidden" id="form-hide-bonus" value="0">';
-		}
-		$('#form-hide-bonus-span').html(html);
-	}
-	onChangeHidenTable();
-	
-	function onChangeHiddenBonus()
-	{
-		hideBonusVal = $("#form-hide-bonus").val();
-	}
-	
 	function starsChanged(control, stars)
 	{
 		var seriesId = control.id.substr(control.id.lastIndexOf('-')+1);
@@ -392,16 +325,14 @@ try
 	
 	function longTermClicked()
 	{
-		var type = parseInt($('#form-type').val());
 		var c = $("#form-long_term").attr('checked') ? true : false;
 		$("#form-single_game").prop('checked', c);
-		$("#form-single_game").prop('disabled', !c || type != 0);
+		$("#form-single_game").prop('disabled', !c);
 		mr.onChangeNormalizer('form-scoring', 0);
 	}
 	
 	function singleGameClicked()
 	{
-		var type = parseInt($('#form-type').val());
 		var c = $("#form-single_game").attr('checked') ? true : false;
 	}
 	longTermClicked();
@@ -438,43 +369,6 @@ try
 	}
 	addressClick();
 	
-	function typeChanged()
-	{
-		var l = false;
-		var s = false;
-		var r = false;
-		var scoringId = 0;
-		var type = parseInt($('#form-type').val());
-		switch(type)
-		{
-			case <?php echo TOURNAMENT_TYPE_CUSTOM; ?>:
-				break;
-			case <?php echo TOURNAMENT_TYPE_FIIM_ONE_ROUND; ?>:
-				scoringId = <?php echo $fiim_id; ?>;
-				break;
-			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4; ?>:
-				scoringId = <?php echo $fiim_id; ?>;
-				r = true;
-				break;
-			case <?php echo TOURNAMENT_TYPE_CHAMPIONSHIP; ?>:
-				s = l = true;
-				break;
-		}
-		
-		$("#form-long_term").prop('checked', l).prop('disabled', type != 0);
-		$("#form-single_game").prop('checked', s).prop('disabled', !l || type != 0);
-		
-		if (scoringId > 0)
-		{
-			$('#form-scoring-sel').val(scoringId);
-			$('#form-scoring-difficulty').prop('checked', false);
-			mr.onChangeScoring('form-scoring', 0, onScoringChange);
-		}
-	}
-	
 	function feeChanged()
 	{
 		$("#form-fee-unknown").prop('checked', 0);
@@ -510,8 +404,6 @@ try
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
 		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_ROLES; ?>;
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
-		_flags |= $("#form-hide-table").val();
-		_flags |= $("#form-hide-bonus").val();
 		
 		var _end = strToDate($('#form-end').val());
 		_end.setDate(_end.getDate() + 1); // inclusive
@@ -534,7 +426,6 @@ try
 			club_id: <?php echo $club_id; ?>,
 			parent_series: series,
 			name: $("#form-name").val(),
-			type: $('#form-type').val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
 			address_id: _addr,

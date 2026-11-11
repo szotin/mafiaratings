@@ -5,6 +5,7 @@ require_once 'include/tournament.php';
 require_once 'include/event.php';
 require_once 'include/stream.php';
 require_once 'include/broadcast_table.php';
+require_once 'include/table_hiding.php';
 
 // How the sources for a stream are set up, a tab per table: the addresses to point OBS at, and
 // everything the between-games screens do. The source is pointed at a table and nothing else,
@@ -300,6 +301,18 @@ class Page extends StreamsPageBase
 		$this->show_setting(get_label('Show roles'),
 			'<input type="checkbox" class="toggle" id="roles"' . ($show_roles ? ' checked' : '') .
 			' onchange="rolesChanged()">');
+
+		// Hiding the scoring table from now on - from the tour after the last one played, or
+		// altogether before anything is played. It is on whenever the table is hidden by now,
+		// including a hiding set up in advance on the preparation page once the tournament has
+		// got to it. See is_table_hidden_now() in include/table_hiding.php. A tournament thing,
+		// so it is not there for an event of its own, which has no tournament table.
+		if (!STREAMS_UNDER_EVENT && ($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
+		{
+			$this->show_setting(get_label('Hide the table'),
+				'<input type="checkbox" class="toggle" id="hide-table"' . (is_table_hidden_now($this->id, $this->flags) ? ' checked' : '') .
+				' onchange="hideTableChanged()">');
+		}
 
 		// Switching the scene by hand. The moderator's own screen does it by the phase of the
 		// game, so this is for when nobody is - the moderator is not using that, or forgot -
@@ -816,6 +829,22 @@ class Page extends StreamsPageBase
 				, hide_roles: document.getElementById('roles').checked ? 0 : 1
 			}, owner),
 			saved);
+		}
+
+		function hideTableChanged()
+		{
+			let box = document.getElementById('hide-table');
+			json.post("api/ops/tournament.php",
+			{
+				op: "hide_table"
+				, tournament_id: <?php echo $this->id; ?>
+				, hide: box.checked ? 1 : 0
+			},
+			function(data)
+			{
+				box.checked = data.hidden;
+				saved();
+			});
 		}
 
 		// The order the screens are shown in is the order they stand in on the page, so moving

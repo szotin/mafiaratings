@@ -16,6 +16,7 @@ require_once __DIR__ . '/user.php';
 require_once __DIR__ . '/currency.php';
 require_once __DIR__ . '/geo.php';
 require_once __DIR__ . '/rounds.php'; // get_round_name()
+require_once __DIR__ . '/table_hiding.php';
 
 define('TOURNAMENT_TYPE_CUSTOM', 0);
 define('TOURNAMENT_TYPE_FIIM_ONE_ROUND', 1);
@@ -391,55 +392,28 @@ class TournamentPageBase extends PageBase
 	{
 		$result = true;
 		$text = NULL;
-		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0 && ($this->flags & (TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK)) != 0)
+		// Said only once something has been played that is being kept out of the table - until
+		// then the table is the actual one. See include/table_hiding.php.
+		$table_hiding = table_hiding($this->id, $this->flags);
+		$bonus_hiding = bonus_hiding($this->id, $this->flags);
+		$notes = array();
+		if (!is_null($table_hiding) && $table_hiding->mode == TOURNAMENT_HIDE_ALL)
 		{
-			$hide_table = ($this->flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET;
-			$hide_bonus = ($this->flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET;
-			$delimiter = '';
-			switch ($hide_table)
-			{
-			case 1:
-				$text = get_label('Tournament tables are hidden for this tournament until it ends.');
-				$hide_bonus = 0;
-				$result = false;
-				break;
-			case 2:
-				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round = 1', $this->id, $condition);
-				if ($hidden_games_count > 0)
-				{
-					$text = get_label('Tournament tables of the finals are hidden for this tournament until it ends.');
-					$delimiter = '<br>';
-				}
-				break;
-			case 3:
-				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round IN (1, 2)', $this->id, $condition);
-				if ($hidden_games_count > 0)
-				{
-					$text = get_label('Tournament tables of the finals and semi-finals are hidden for this tournament until it ends.');
-					$delimiter = '<br>';
-				}
-				break;
-			}
-			switch ($hide_bonus)
-			{
-			case 1:
-				$text .= $delimiter . get_label('Bonus points are hidden for this tournament until it ends.');
-				break;
-			case 2:
-				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round = 1', $this->id, $condition);
-				if ($hidden_games_count > 0)
-				{
-					$text .= $delimiter . get_label('Bonus points of the finals are hidden for this tournament until it ends.');
-				}
-				break;
-			case 3:
-				list ($hidden_games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND e.round IN (1, 2)', $this->id, $condition);
-				if ($hidden_games_count > 0)
-				{
-					$text .= $delimiter . get_label('Bonus points of the finals and semi-finals are hidden for this tournament until it ends.');
-				}
-				break;
-			}
+			$notes[] = get_label('Tournament tables are hidden for this tournament until it ends.');
+			$bonus_hiding = NULL;
+			$result = false;
+		}
+		else if (is_hiding_in_effect($table_hiding, $condition))
+		{
+			$notes[] = hidden_table_message($table_hiding);
+		}
+		if (!is_null($bonus_hiding) && ($bonus_hiding->mode == TOURNAMENT_HIDE_ALL || is_hiding_in_effect($bonus_hiding, $condition)))
+		{
+			$notes[] = hidden_bonus_message($bonus_hiding);
+		}
+		if (!empty($notes))
+		{
+			$text = implode('<br>', $notes);
 		}
 		
 		if (!is_null($text))

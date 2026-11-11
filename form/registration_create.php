@@ -114,6 +114,12 @@ try
 	{
 		echo '<br><input type="checkbox" id="form-exhibition"> '.get_label('Exhibition player');
 	}
+	if (isset($tournament_id))
+	{
+		// Shown in the tournament standings, but this tournament does not count for them in any
+		// series. The same box the registration is edited with - see registration_edit.php.
+		echo '<br><input type="checkbox" id="form-substitute"> '.get_label('Substitute');
+	}
 	echo '</td></tr>';
 	
 	echo '</table>';
@@ -191,6 +197,7 @@ try
 				, team: $('#form-team').val()
 				, access_flags: flags
 				, exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
+				, substitute: ($("#form-substitute").attr("checked") ? 1 : 0)
 			}, onSuccess);
 <?php
 		}
@@ -205,6 +212,7 @@ try
 				, tournament_id: <?php echo $tournament_id; ?>
 				, access_flags: flags
 				, exhibition: ($("#form-exhibition").attr("checked") ? 1 : 0)
+				, substitute: ($("#form-substitute").attr("checked") ? 1 : 0)
 			}, onSuccess);
 <?php
 		}

@@ -840,7 +840,9 @@ CREATE TABLE `tournaments` (
   `imafia_id` int(11) DEFAULT NULL,
   `emo_id` int(11) DEFAULT NULL,
   `preparation_stage` int(11) NOT NULL DEFAULT '0',
-  `team_size` int(11) NOT NULL DEFAULT '1'
+  `team_size` int(11) NOT NULL DEFAULT '1',
+  `hide_table_tour` int(11) NOT NULL DEFAULT '0',
+  `hide_bonus_tour` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `tournament_approves`;

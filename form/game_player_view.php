@@ -3,6 +3,7 @@
 require_once '../include/session.php';
 require_once '../include/game.php';
 require_once '../include/picture.php';
+require_once '../include/table_hiding.php';
 
 initiate_session();
 
@@ -109,8 +110,8 @@ try
 	
 	if ($game_id > 0)
 	{
-		list($json, $club_id, $event_id, $tournament_id, $tournament_flags, $round_num, $feature_flags) = Db::record(get_label('game'), 
-			'SELECT g.json, g.event_id, g.club_id, t.id, t.flags, e.round, g.feature_flags'.
+		list($json, $club_id, $event_id, $tournament_id, $tournament_flags, $round_num, $feature_flags, $game_num) = Db::record(get_label('game'),
+			'SELECT g.json, g.club_id, g.event_id, t.id, t.flags, e.round, g.feature_flags, g.game_num'.
 			' FROM games g'.
 			' JOIN events e ON e.id = g.event_id'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
@@ -168,35 +169,13 @@ try
 	$show_bonus = true;
 	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0 && ($_profile == NULL || $_profile->user_id != $player_id))
 	{
-		switch (($tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+		// See include/table_hiding.php: a game is hidden by the round it is played in and by
+		// its tour.
+		if (is_game_hidden(table_hiding($tournament_id, $tournament_flags), $round_num, $game_num))
 		{
-			case 1:
-				return;
-			case 2:
-				if ($round_num == 1)
-				{
-					return;
-				}
-				break;
-			case 3:
-				if ($round_num == 1 || $round_num == 2)
-				{
-					return;
-				}
-				break;
+			return;
 		}
-		switch (($tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
-		{
-			case 1:
-				$show_bonus = false;
-				break;
-			case 2:
-				$show_bonus = ($round_num != 1);
-				break;
-			case 3:
-				$show_bonus = ($round_num != 1 && $round_num != 2);
-				break;
-		}
+		$show_bonus = !is_game_hidden(bonus_hiding($tournament_id, $tournament_flags), $round_num, $game_num);
 	}
 	
 	echo '<table class="bordered" width="100%"><tr><td width="1">';

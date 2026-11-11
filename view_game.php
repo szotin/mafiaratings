@@ -4,6 +4,7 @@ require_once 'include/page_base.php';
 require_once 'include/game.php';
 require_once 'include/game_log.php';
 require_once 'include/series.php';
+require_once 'include/table_hiding.php';
 
 define('VIEW_GENERAL', 0);
 define('VIEW_LOG', 1);
@@ -241,22 +242,9 @@ class Page extends PageBase
 			$this->tournament_flags &= ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK);
 		}
 		
-		$this->hide_bonus = false;
-		if (($this->tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
-		{
-			switch (($this->tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
-			{
-			case 1:
-				$this->hide_bonus = true;
-				break;
-			case 2:
-				$this->hide_bonus = ($this->round_num == 1);
-				break;
-			case 3:
-				$this->hide_bonus = ($this->round_num == 1 || $this->round_num == 2);
-				break;
-			}
-		}
+		// See include/table_hiding.php: a game is hidden by the round it is played in and by
+		// its tour.
+		$this->hide_bonus = is_game_hidden(bonus_hiding($this->tournament_id, $this->tournament_flags), $this->round_num, $this->game_num);
 		
 		$this->player_pic =
 			new Picture(USER_EVENT_PICTURE, 
@@ -693,18 +681,7 @@ class Page extends PageBase
 		$hidden = false;
 		if (($this->tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
 		{
-			switch (($this->tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
-			{
-			case 1:
-				$hidden = true;
-				break;
-			case 2:
-				$hidden = ($this->round_num == 1);
-				break;
-			case 3:
-				$hidden = ($this->round_num == 1 || $this->round_num == 2);
-				break;
-			}
+			$hidden = is_game_hidden(table_hiding($this->tournament_id, $this->tournament_flags), $this->round_num, $this->game_num);
 			if ($hidden)
 			{
 				if ($this->my_user_id <= 0)
@@ -1328,35 +1305,11 @@ class Page extends PageBase
 		$show_bonus = true;
 		if (($this->tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0 && ($_profile == NULL || $_profile->user_id != $player_id))
 		{
-			switch (($this->tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+			if (is_game_hidden(table_hiding($this->tournament_id, $this->tournament_flags), $this->round_num, $this->game_num))
 			{
-				case 1:
-					return;
-				case 2:
-					if ($round_num == 1)
-					{
-						return;
-					}
-					break;
-				case 3:
-					if ($round_num == 1 || $round_num == 2)
-					{
-						return;
-					}
-					break;
+				return;
 			}
-			switch (($this->tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
-			{
-				case 1:
-					$show_bonus = false;
-					break;
-				case 2:
-					$show_bonus = ($round_num != 1);
-					break;
-				case 3:
-					$show_bonus = ($round_num != 1 && $round_num != 2);
-					break;
-			}
+			$show_bonus = !is_game_hidden(bonus_hiding($this->tournament_id, $this->tournament_flags), $this->round_num, $this->game_num);
 		}
 		
 		// A fixed height, and everything hung from the top of it: the lines under the picture

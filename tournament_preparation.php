@@ -4,17 +4,23 @@ require_once 'include/tournament.php';
 require_once 'include/pages.php';
 require_once 'include/seating.php';
 require_once 'include/preparation.php';
+require_once 'include/table_hiding.php';
 
+// The numbers are stored - tournaments.preparation_stage remembers the tab a tournament was left
+// on - so renumbering the tabs means moving the stored numbers too, the way db/alter210.sql did.
 define('PREP_TAB_SCHEME', 0);
+// What the scoring table hides until the tournament ends. It is decided once the rounds are
+// known, and long before any of them is played: the table hides itself when the moment comes.
+define('PREP_TAB_TABLE', 1);
 // The new-registration email links straight here, by number - see
 // include/languages/*/email/tournament_new_reg.php. Renumbering the tabs means fixing that link.
-define('PREP_TAB_REGISTRATIONS', 1);
+define('PREP_TAB_REGISTRATIONS', 2);
 // The broadcasts are set up before anybody is paired or seated: the addresses have to be in
 // before the games are played, or there is nothing for a game to be tied to as it is written
 // down - see include/broadcast.php.
-define('PREP_TAB_STREAMS', 2);
-define('PREP_TAB_PAIRS', 3);
-define('PREP_TAB_SEATING', 4);
+define('PREP_TAB_STREAMS', 3);
+define('PREP_TAB_PAIRS', 4);
+define('PREP_TAB_SEATING', 5);
 
 class Page extends TournamentPageBase
 {
@@ -40,6 +46,10 @@ class Page extends TournamentPageBase
 		if (!$this->regs_complete && $this->tab == PREP_TAB_REGISTRATIONS)
 		{
 			return true;
+		}
+		if (!$this->scheme_valid && $this->tab == PREP_TAB_TABLE)
+		{
+			return true; // the registrations it leads to wait for the scheme
 		}
 		return (!$this->scheme_valid || !$this->regs_complete) && $this->tab == PREP_TAB_STREAMS;
 	}
@@ -509,6 +519,75 @@ class Page extends TournamentPageBase
 		echo '<p align="right"><button id="prep-apply-btn" onclick="applyScheme()"' . (!$this->scheme_valid ? ' disabled' : '') . '>' . get_label('Apply') . '</button></p>';
 	}
 
+	// The table and the bonus points: where each is hidden from, and from which tour of that
+	// round. See include/table_hiding.php. The rounds offered are the rounds the tournament has.
+	private function showTableTab()
+	{
+		list ($flags, $table_tour, $bonus_tour) = Db::record(get_label('tournament'),
+			'SELECT flags, hide_table_tour, hide_bonus_tour FROM tournaments WHERE id = ?', $this->id);
+		$flags = (int)$flags;
+		$table_mode = table_hiding_mode($flags);
+		$bonus_mode = bonus_hiding_mode($flags);
+
+		$has_round = array(0 => true);
+		foreach ($this->rounds as $round_row)
+		{
+			$has_round[(int)$round_row[1]] = true;
+		}
+		foreach (array($table_mode, $bonus_mode) as $mode)
+		{
+			$r = hiding_mode_round($mode);
+			if (!is_null($r))
+			{
+				$has_round[$r] = true; // even if the round has gone since
+			}
+		}
+
+		// In the order the rounds are played.
+		$table_options = array(
+			TOURNAMENT_HIDE_NONE => get_label('Show the scoring table'),
+			TOURNAMENT_HIDE_ALL => get_label('Hide the scoring table'),
+			TOURNAMENT_HIDE_FROM_MAIN_ROUND => get_label('Hide the scoring table starting from the main round'),
+			TOURNAMENT_HIDE_FROM_QUARTER_FINALS => get_label('Hide the scoring table starting from the quarter-finals'),
+			TOURNAMENT_HIDE_FROM_SEMI_FINALS => get_label('Hide the scoring table starting from the semi-finals'),
+			TOURNAMENT_HIDE_FROM_FINALS => get_label('Hide the scoring table in the finals'));
+		$bonus_options = array(
+			TOURNAMENT_HIDE_NONE => get_label('Show bonus points'),
+			TOURNAMENT_HIDE_ALL => get_label('Hide bonus points'),
+			TOURNAMENT_HIDE_FROM_MAIN_ROUND => get_label('Hide bonus points starting from the main round'),
+			TOURNAMENT_HIDE_FROM_QUARTER_FINALS => get_label('Hide bonus points starting from the quarter-finals'),
+			TOURNAMENT_HIDE_FROM_SEMI_FINALS => get_label('Hide bonus points starting from the semi-finals'),
+			TOURNAMENT_HIDE_FROM_FINALS => get_label('Hide bonus points in the finals'));
+
+		echo '<p><table width="100%"><tr><td>' . get_label('Before the tournament is finished') . ':</td><td align="right">';
+		$this->nextButton();
+		echo '</td></tr></table></p>';
+
+		echo '<p><table class="bordered light" width="100%">';
+		echo '<tr><td width="160">' . get_label('Scoring table') . ':</td><td>';
+		$this->hidingSelect('hide-table', $table_options, $table_mode, $has_round);
+		echo ' <span id="hide-table-tour-span"></span></td></tr>';
+		echo '<tr id="hide-bonus-row"><td>' . get_label('Bonus points') . ':</td><td>';
+		$this->hidingSelect('hide-bonus', $bonus_options, $bonus_mode, $has_round);
+		echo ' <span id="hide-bonus-tour-span"></span></td></tr>';
+		echo '</table></p>';
+		echo '<p><i>' . get_label('The games played before the moment the table is hidden from stay in it, and it says which moment it shows. Managers and referees can still see the actual table.') . '</i></p>';
+	}
+
+	private function hidingSelect($id, $options, $selected, $has_round)
+	{
+		echo '<select id="' . $id . '" onchange="hidingChanged()">';
+		foreach ($options as $mode => $text)
+		{
+			$r = hiding_mode_round($mode);
+			if (is_null($r) || isset($has_round[$r]))
+			{
+				show_option($mode, $selected, $text);
+			}
+		}
+		echo '</select>';
+	}
+
 	private function showPairs()
 	{
 		global $_lang;
@@ -566,6 +645,7 @@ class Page extends TournamentPageBase
 
 		echo '<div class="tab">';
 		echo '<button' . ($this->tab == PREP_TAB_SCHEME ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_SCHEME . ')">' . get_label('Scheme') . '</button>';
+		echo '<button' . ($this->tab == PREP_TAB_TABLE ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_TABLE . ')">' . get_label('Hiding the table') . '</button>';
 		$reg_disabled = !$this->scheme_valid ? ' disabled' : '';
 		echo '<button id="prep-tab-registrations"' . ($this->tab == PREP_TAB_REGISTRATIONS ? ' class="active"' : '') . $reg_disabled . ' onclick="goToTab(' . PREP_TAB_REGISTRATIONS . ')">' . get_label('Registrations') . '</button>';
 		$locked = (!$this->scheme_valid || !$this->regs_complete) ? ' disabled' : '';
@@ -586,6 +666,9 @@ class Page extends TournamentPageBase
 		{
 			case PREP_TAB_SCHEME:
 				$this->showSchemeTab();
+				break;
+			case PREP_TAB_TABLE:
+				$this->showTableTab();
 				break;
 			case PREP_TAB_REGISTRATIONS:
 				$this->showRegistrationsTab();
@@ -787,6 +870,93 @@ class Page extends TournamentPageBase
 <?php if ($this->tab == PREP_TAB_SCHEME): ?>
 		validateSchemeNext();
 <?php endif; ?>
+<?php
+		if ($this->tab == PREP_TAB_TABLE)
+		{
+			list ($table_tour, $bonus_tour) = Db::record(get_label('tournament'), 'SELECT hide_table_tour, hide_bonus_tour FROM tournaments WHERE id = ?', $this->id);
+			$mode_rounds = array();
+			$tours = array();
+			foreach (array(TOURNAMENT_HIDE_FROM_MAIN_ROUND, TOURNAMENT_HIDE_FROM_QUARTER_FINALS, TOURNAMENT_HIDE_FROM_SEMI_FINALS, TOURNAMENT_HIDE_FROM_FINALS) as $mode)
+			{
+				$r = hiding_mode_round($mode);
+				$mode_rounds[$mode] = $r;
+				$tours[$r] = hiding_round_tours($this->id, $r);
+			}
+?>
+		// The tour a hiding starts from, for a hiding that starts with a round. The main round
+		// cannot be hidden from its start: that is hiding the table altogether, which is the
+		// entry above it.
+		var hidingModeRounds = <?php echo json_encode((object)$mode_rounds); ?>;
+		var hidingTours = <?php echo json_encode((object)$tours); ?>;
+		var hidingTour = { 'hide-table': <?php echo (int)$table_tour; ?>, 'hide-bonus': <?php echo (int)$bonus_tour; ?> };
+
+		function hidingTourSelect(id)
+		{
+			var mode = $('#' + id).val();
+			if (!(mode in hidingModeRounds))
+			{
+				return '';
+			}
+			var round = hidingModeRounds[mode];
+			var count = hidingTours[round] > 0 ? hidingTours[round] : 20;
+			var tour = hidingTour[id];
+			count = Math.max(count, tour);
+			var html = '<select id="' + id + '-tour" onchange="hidingChanged()">';
+			if (round != 0)
+			{
+				html += '<option value="0"' + (tour <= 1 ? ' selected' : '') + '><?php echo get_label('from the start of the round'); ?></option>';
+			}
+			for (var i = 2; i <= count; ++i)
+			{
+				html += '<option value="' + i + '"' + (tour == i || (round == 0 && i == 2 && tour <= 1) ? ' selected' : '') + '>' + '<?php echo get_label('starting from tour [0]', '#'); ?>'.replace('#', i) + '</option>';
+			}
+			return html + '</select>';
+		}
+
+		function showHidingTours()
+		{
+			$('#hide-table-tour-span').html(hidingTourSelect('hide-table'));
+			$('#hide-bonus-tour-span').html(hidingTourSelect('hide-bonus'));
+			$('#hide-bonus-row').toggle($('#hide-table').val() != <?php echo TOURNAMENT_HIDE_ALL; ?>);
+		}
+		showHidingTours();
+
+		// A tour belongs to its round: another round starts from the start of it.
+		var hidingMode = { 'hide-table': $('#hide-table').val(), 'hide-bonus': $('#hide-bonus').val() };
+		function readHidingTour(id)
+		{
+			var t = $('#' + id + '-tour');
+			if ($('#' + id).val() != hidingMode[id])
+			{
+				hidingMode[id] = $('#' + id).val();
+				hidingTour[id] = 0;
+			}
+			else
+			{
+				hidingTour[id] = t.length > 0 ? parseInt(t.val()) : 0;
+			}
+		}
+
+		function hidingChanged()
+		{
+			readHidingTour('hide-table');
+			readHidingTour('hide-bonus');
+			showHidingTours();
+			hidingTour['hide-table'] = Math.max(hidingTour['hide-table'], $('#hide-table-tour').length > 0 ? parseInt($('#hide-table-tour').val()) : 0);
+			hidingTour['hide-bonus'] = Math.max(hidingTour['hide-bonus'], $('#hide-bonus-tour').length > 0 ? parseInt($('#hide-bonus-tour').val()) : 0);
+			json.post('api/ops/tournament.php',
+			{
+				op: 'set_hiding',
+				tournament_id: <?php echo $this->id; ?>,
+				table: $('#hide-table').val(),
+				table_tour: hidingTour['hide-table'],
+				bonus: $('#hide-bonus').val(),
+				bonus_tour: hidingTour['hide-bonus'],
+			});
+		}
+<?php
+		}
+?>
 <?php
 	}
 }

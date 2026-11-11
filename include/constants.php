@@ -395,6 +395,17 @@ define('TOURNAMENT_HIDE_TABLE_MASK', 0x70000);
 define('TOURNAMENT_HIDE_TABLE_MASK_OFFSET', 16);
 define('TOURNAMENT_HIDE_BONUS_MASK', 0x380000);
 define('TOURNAMENT_HIDE_BONUS_MASK_OFFSET', 19);
+// What the two masks above hold: where the table, or the bonus points, are hidden from until the
+// tournament ends. A mode with a round is hidden from the tour of it kept in
+// tournaments.hide_table_tour or hide_bonus_tour - 0 for from the start of the round. See
+// include/table_hiding.php. The numbers are stored, so they do not follow the order the rounds
+// are played in.
+define('TOURNAMENT_HIDE_NONE', 0);
+define('TOURNAMENT_HIDE_ALL', 1);
+define('TOURNAMENT_HIDE_FROM_FINALS', 2);
+define('TOURNAMENT_HIDE_FROM_SEMI_FINALS', 3);
+define('TOURNAMENT_HIDE_FROM_MAIN_ROUND', 4);
+define('TOURNAMENT_HIDE_FROM_QUARTER_FINALS', 5);
 
 // competition places flags
 //  1 - 0x0001 -      1 - MVP

@@ -2,12 +2,13 @@
 
 require_once 'screens.php';
 require_once '../../include/scoring.php';
+require_once '../../include/table_hiding.php';
 
 // The tournament table. Nothing is decided here about what may be seen: tournament_scores()
-// already refuses to add up a tournament whose table is hidden, and leaves the bonus points out
-// of the total when those are hidden - see is_hiding_bonus_needed() and _event_scores() in
-// include/scoring.php. So an empty answer here means the site would not show the table either,
-// and the screen simply does not come up.
+// already refuses to add up a tournament whose table is hidden, leaves out the games played after
+// the moment it is hidden from, and leaves the bonus points out of the total when those are
+// hidden - see include/table_hiding.php. So an empty answer here means the site would not show
+// the table either, and the screen simply does not come up.
 //
 //   rows, columns - how much of the table to fit on the screen, 10 by two by default.
 
@@ -77,55 +78,31 @@ function obs_standings_note($c)
 		return ''; // it is all out in the open once the tournament is over
 	}
 
-	// Worth saying only once something has been played in the rounds being held back.
-	$played = array();
-	$query = new DbQuery(
-		'SELECT DISTINCT e.round FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ?', $c->tournament_id);
-	while ($row = $query->next())
-	{
-		list ($round) = $row;
-		$played[(int)$round] = true;
-	}
-
+	// Worth saying only once something has been played that is being held back. That the table
+	// itself is closed is said under the title instead, where it cannot be missed.
 	$notes = array();
-	switch (($c->tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
+	$bonus_hiding= bonus_hiding($c->tournament_id, $c->tournament_flags);
+	if (!is_null($bonus_hiding) && ($bonus_hiding->mode == TOURNAMENT_HIDE_ALL || is_hiding_in_effect($bonus_hiding)))
 	{
-	case 2:
-		if (isset($played[1]))
-		{
-			$notes[] = get_label('Tournament tables of the finals are hidden for this tournament until it ends.');
-		}
-		break;
-	case 3:
-		if (isset($played[1]) || isset($played[2]))
-		{
-			$notes[] = get_label('Tournament tables of the finals and semi-finals are hidden for this tournament until it ends.');
-		}
-		break;
-	}
-
-	switch (($c->tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
-	{
-	case 1:
-		$notes[] = get_label('Bonus points are hidden for this tournament until it ends.');
-		break;
-	case 2:
-		if (isset($played[1]))
-		{
-			$notes[] = get_label('Bonus points of the finals are hidden for this tournament until it ends.');
-		}
-		break;
-	case 3:
-		if (isset($played[1]) || isset($played[2]))
-		{
-			$notes[] = get_label('Bonus points of the finals and semi-finals are hidden for this tournament until it ends.');
-		}
-		break;
+		$notes[] = hidden_bonus_message($bonus_hiding);
 	}
 	return implode('<br>', $notes);
 }
 
+// What the table is hidden from, once a game has been played after that moment: the table on the
+// screen is then the standings at the moment, and not the actual ones. NULL otherwise.
+function obs_standings_hiding($c)
+{
+	if (!$c->is_tournament)
+	{
+		return NULL;
+	}
+	$h = table_hiding($c->tournament_id, $c->tournament_flags);
+	return is_hiding_in_effect($h) ? $h : NULL;
+}
+
 $note = obs_standings_note($c);
+$hiding = obs_standings_hiding($c);
 
 // Who is at a table right now. Their points are the points of the games already written down,
 // so a line that is about to move is marked rather than left to look settled - see the note
@@ -172,12 +149,25 @@ function obs_standings_live($c)
 	return $live;
 }
 
-$live = obs_standings_live($c);
+// A table that shows the standings at a moment past does not move with the games being played,
+// so nobody is marked as about to move in it. That it is closed, and at which moment, goes right
+// under the title: in the corner, in small print, nobody watching the stream saw it.
+if (is_null($hiding))
+{
+	$live = obs_standings_live($c);
+	$made_of = get_label('all tables') . ' · ' . get_label('finished games');
+	$closed = '';
+}
+else
+{
+	$live = array();
+	$made_of = get_label('all tables');
+	$closed = hidden_table_message($hiding);
+}
 $shown_count = min(count($players), $rows * $columns);
 
 obs_frame_start('f2');
-obs_head($c, get_label('Standings'),
-	get_label('all tables') . ' · ' . get_label('finished games'), '',
+obs_head($c, get_label('Standings'), $made_of, $closed,
 	get_label('Places [0]-[1]', 1, $shown_count));
 obs_foot($c, obs_judge($c));
 

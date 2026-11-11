@@ -603,7 +603,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$flags = ($flags & ~TOURNAMENT_ADMIN_EDITABLE_MASK) + ($old_flags & TOURNAMENT_ADMIN_EDITABLE_MASK);
 		}
-		
+		// What the table hides is set by set_hiding and hide_table, together with the tours the
+		// hiding starts from, which the flags do not hold.
+		$flags = ($flags & ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK)) | ($old_flags & (TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK));
+
 		$address_id = get_optional_param('address_id', $old_address_id);
 		if ($address_id != $old_address_id)
 		{
@@ -1046,7 +1049,152 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('emo_id', 'Id of this tournament on the emotion.games site.', "remains the same");
 		return $help;
 	}
-	
+
+	//-------------------------------------------------------------------------------------------------------
+	// set_hiding
+	//-------------------------------------------------------------------------------------------------------
+	// What the scoring table, and the bonus points in it, are hidden from until the tournament
+	// ends - see include/table_hiding.php. The referees can do it as well as the managers: they
+	// are the ones who can see the actual table, and the ones running the stream.
+	private static function hiding_mode_param($name, $old_mode)
+	{
+		$mode = (int)get_optional_param($name, $old_mode);
+		if ($mode < TOURNAMENT_HIDE_NONE || $mode > TOURNAMENT_HIDE_FROM_QUARTER_FINALS)
+		{
+			throw new Exc(get_label('Invalid [0]', $name));
+		}
+		return $mode;
+	}
+
+	// Saves the hiding, and forgets the tables added up with the old one.
+	private static function save_hiding($tournament_id, $club_id, $old_flags, $old_table_tour, $old_bonus_tour, $table_mode, $table_tour, $bonus_mode, $bonus_tour)
+	{
+		// A tour only means something with a mode that hides from a round, and from the first
+		// tour is from the start of the round.
+		$table_tour = (is_null(hiding_mode_round($table_mode)) || $table_tour <= 1) ? 0 : (int)$table_tour;
+		$bonus_tour = (is_null(hiding_mode_round($bonus_mode)) || $bonus_tour <= 1) ? 0 : (int)$bonus_tour;
+		// From the start of the main round is everything.
+		if ($table_mode == TOURNAMENT_HIDE_FROM_MAIN_ROUND && $table_tour == 0)
+		{
+			$table_mode = TOURNAMENT_HIDE_ALL;
+		}
+		if ($bonus_mode == TOURNAMENT_HIDE_FROM_MAIN_ROUND && $bonus_tour == 0)
+		{
+			$bonus_mode = TOURNAMENT_HIDE_ALL;
+		}
+
+		$flags = ($old_flags & ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK)) |
+			($table_mode << TOURNAMENT_HIDE_TABLE_MASK_OFFSET) | ($bonus_mode << TOURNAMENT_HIDE_BONUS_MASK_OFFSET);
+		if ($flags == $old_flags && $table_tour == $old_table_tour && $bonus_tour == $old_bonus_tour)
+		{
+			return;
+		}
+
+		Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = ?, hide_table_tour = ?, hide_bonus_tour = ? WHERE id = ?', $flags, $table_tour, $bonus_tour, $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+
+		$log_details = new stdClass();
+		$log_details->hide_table = $table_mode;
+		$log_details->hide_table_tour = $table_tour;
+		$log_details->hide_bonus = $bonus_mode;
+		$log_details->hide_bonus_tour = $bonus_tour;
+		db_log(LOG_OBJECT_TOURNAMENT, 'changed', $log_details, $tournament_id, $club_id);
+	}
+
+	function set_hiding_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+
+		Db::begin();
+		list ($club_id, $old_flags, $old_table_tour, $old_bonus_tour) = Db::record(get_label('tournament'), 'SELECT club_id, flags, hide_table_tour, hide_bonus_tour FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+		$old_flags = (int)$old_flags;
+		$old_table_tour = (int)$old_table_tour;
+		$old_bonus_tour = (int)$old_bonus_tour;
+
+		$table_mode = ApiPage::hiding_mode_param('table', table_hiding_mode($old_flags));
+		$table_tour = (int)get_optional_param('table_tour', $old_table_tour);
+		$bonus_mode = ApiPage::hiding_mode_param('bonus', bonus_hiding_mode($old_flags));
+		$bonus_tour = (int)get_optional_param('bonus_tour', $old_bonus_tour);
+		ApiPage::save_hiding($tournament_id, $club_id, $old_flags, $old_table_tour, $old_bonus_tour, $table_mode, $table_tour, $bonus_mode, $bonus_tour);
+		Db::commit();
+	}
+
+	function set_hiding_op_help()
+	{
+		$modes = '<ol>' .
+			'<li value="' . TOURNAMENT_HIDE_NONE . '">Shown.</li>' .
+			'<li value="' . TOURNAMENT_HIDE_ALL . '">Hidden altogether.</li>' .
+			'<li value="' . TOURNAMENT_HIDE_FROM_MAIN_ROUND . '">Hidden starting from a tour of the main round.</li>' .
+			'<li value="' . TOURNAMENT_HIDE_FROM_QUARTER_FINALS . '">Hidden starting from the quarter-final.</li>' .
+			'<li value="' . TOURNAMENT_HIDE_FROM_SEMI_FINALS . '">Hidden starting from the semi-final.</li>' .
+			'<li value="' . TOURNAMENT_HIDE_FROM_FINALS . '">Hidden in the final.</li>' .
+			'</ol>';
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Set what the scoring table and the bonus points are hidden from until the tournament ends. The games played before that stay in the table.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('table', 'Where the scoring table is hidden from:' . $modes, 'remains the same.');
+		$help->request_param('table_tour', 'For a table hidden starting from a round: the tour of the round it is hidden from. 0 - from the start of the round. For the main round it has to be 2 or more; from its start is hidden altogether.', 'remains the same.');
+		$help->request_param('bonus', 'Where the bonus points are hidden from:' . $modes, 'remains the same.');
+		$help->request_param('bonus_tour', 'The same as table_tour for the bonus points.', 'remains the same.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// hide_table
+	//-------------------------------------------------------------------------------------------------------
+	// Hiding the table right now, the way the streams page does it: from the tour after the last
+	// one anything has been played in, or altogether when nothing has been played yet. Showing it
+	// again shows it altogether. The bonus points are left as they are.
+	function hide_table_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$hide = (int)get_required_param('hide') != 0;
+
+		Db::begin();
+		list ($club_id, $old_flags, $old_table_tour, $old_bonus_tour) = Db::record(get_label('tournament'), 'SELECT club_id, flags, hide_table_tour, hide_bonus_tour FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
+		$old_flags = (int)$old_flags;
+		$old_table_tour = (int)$old_table_tour;
+		$old_bonus_tour = (int)$old_bonus_tour;
+
+		$table_mode = TOURNAMENT_HIDE_NONE;
+		$table_tour = 0;
+		if ($hide)
+		{
+			$table_mode = TOURNAMENT_HIDE_ALL;
+			$last = hiding_last_played($tournament_id);
+			if (!is_null($last))
+			{
+				$mode = hiding_round_mode($last->round);
+				if (is_null($mode))
+				{
+					// A round deeper than the quarter-final has no mode of its own. The nearest
+					// one hides the quarter-final on, and the rest of this round stays shown.
+					$table_mode = TOURNAMENT_HIDE_FROM_QUARTER_FINALS;
+				}
+				else
+				{
+					$table_mode = $mode;
+					$table_tour = $last->tour + 1;
+				}
+			}
+		}
+		ApiPage::save_hiding($tournament_id, $club_id, $old_flags, $old_table_tour, $old_bonus_tour, $table_mode, $table_tour, bonus_hiding_mode($old_flags), $old_bonus_tour);
+		Db::commit();
+
+		$this->response['hidden'] = is_table_hidden_now($tournament_id, Db::record(get_label('tournament'), 'SELECT flags FROM tournaments WHERE id = ?', $tournament_id)[0]);
+	}
+
+	function hide_table_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, 'Hide the scoring table from now on until the tournament ends, or show it again. Hiding hides it from the tour after the last one a game has been played in, or altogether when nothing has been played; the games already played stay in the table. Showing shows it altogether.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('hide', '1 - hide the table, 0 - show it.');
+		$help->response_param('hidden', 'Whether the table is hidden by now.');
+		return $help;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// cancel
 	//-------------------------------------------------------------------------------------------------------
@@ -1761,6 +1909,10 @@ class ApiPage extends OpsApiPageBase
 		{
 			$flags |= USER_FLAG_EXHIBITION_PLAYER;
 		}
+		if (isset($_REQUEST['substitute']) && (int)$_REQUEST['substitute'])
+		{
+			$flags |= USER_FLAG_SUBSTITUTE;
+		}
 		
 		Db::begin();
 		list ($user_city_id, $user_rating, $user_club_id) = Db::record(get_label('user'), 'SELECT city_id, rating, club_id FROM users WHERE id = ?', $user_id);
@@ -1867,6 +2019,15 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET flags = flags & ~' . TOURNAMENT_FLAG_FINISHED . ' WHERE id = ?', $tournament_id);
 		}
+
+		// A substitute leaves the tournament alone and only changes what the series make of it,
+		// so only they are asked to rebuild - the same as edit_registration does.
+		if (($flags & USER_FLAG_SUBSTITUTE) != 0)
+		{
+			Db::exec(get_label('series'),
+				'UPDATE series s JOIN series_tournaments st ON st.series_id = s.id SET s.flags = s.flags | ' . SERIES_FLAG_DIRTY .
+				' WHERE st.tournament_id = ?', $tournament_id);
+		}
 		Db::commit();
 
 		$this->response['tournament_id'] = $tournament_id;
@@ -1887,6 +2048,7 @@ class ApiPage extends OpsApiPageBase
 		$help->response_param('team', 'Team name for this user. Works for team tournaments only.', 'user is registered without a team.');
 		$help->response_param('access_flags', 'A bit-set of user permissions for this toournament. 1 - player; 2 - referee; 4 - manager.', '1 - player.');
 		$help->request_param('exhibition', 'Exhibition-player flag. 1 to mark. Excludes the player from tournament standings and series scoring while their games still count in overall statistics.', 'not set.');
+		$help->request_param('substitute', 'Substitute flag. 1 to mark. The player is shown in the tournament standings, but the tournament does not count for them in any series.', 'not set.');
 		return $help;
 	}
 

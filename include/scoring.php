@@ -5,6 +5,7 @@ require_once __DIR__ . '/names.php';
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/evaluator.php';
 require_once __DIR__ . '/utilities.php';
+require_once __DIR__ . '/table_hiding.php';
 
 define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIIM)
 define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
@@ -96,6 +97,12 @@ define('SCORING_LOD_NO_SORTING', 16); // When set sorting returns associative ar
 define('SCORING_LOD_TEAMS', 32); // Outputs team scores instead of player scores. Works for team tournaments only.
 define('SCORING_LOD_PER_ROLE', 64); // adds scores per role
 
+// Not a level of detail: it goes into the flags the scores are cached under, never into what is
+// asked for. A table that a tournament hides something of is a different table from the actual
+// one a manager asks to see, and the two must not be cached in each other's place. See
+// _scores_cache_flags().
+define('SCORING_CACHE_HIDDEN', 0x10000);
+
 define('SCORING_OPTION_NO_NIGHT_KILLS', 1); // Do not use policies dependent on the night kills
 define('SCORING_OPTION_NO_GAME_DIFFICULTY', 2); // Do not use policies dependent on the game difficulty
 
@@ -167,25 +174,6 @@ function get_scoring_functions()
 		new EvFuncParam('role'), // 0-civ,1-sheriff;2-maf;3-don
 		new EvFuncParam('difficulty'),
 		new EvFuncMatter());
-}
-
-function is_hiding_bonus_needed($tournament_flags, $round_num)
-{
-	if ($tournament_flags & TOURNAMENT_FLAG_FINISHED)
-	{
-		return false;
-	}
-	
-	switch (($tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
-	{
-		case 1:
-			return true;
-		case 2:
-			return $round_num == 1;
-		case 3:
-			return $round_num == 1 || $round_num == 2;
-	}
-	return false;
 }
 
 function compare_role_scores($role, $player1, $player2)
@@ -1203,25 +1191,25 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 		$scoring = new stdClass();
 	}
 
-	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
+	// What the tournament hides of this round - see include/table_hiding.php. A round hidden as a
+	// whole has nothing to show. A round hidden from one of its tours shows the tours before it,
+	// and not its extra points, which are given when the round is over.
+	$hiding_tournament_id = event_hiding_tournament($event_id, $tournament_flags);
+	$table_hiding = table_hiding($hiding_tournament_id, $tournament_flags);
+	$bonus_hiding = bonus_hiding($hiding_tournament_id, $tournament_flags);
+	if (is_round_hidden($table_hiding, $round_num))
 	{
-		switch (($tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
-		{
-			case 1:
-				return array();
-			case 2:
-				if ($round_num == 1)
-				{
-					return array();
-				}
-				break;
-			case 3:
-				if ($round_num == 1 || $round_num == 2)
-				{
-					return array();
-				}
-				break;
-		}
+		return array();
+	}
+	$hiding_condition = new SQL();
+	$hiding_red_condition = '';
+	$show_extra_points = true;
+	if (is_round_partly_hidden($table_hiding, $round_num))
+	{
+		$first_hidden = hiding_first_game_num($table_hiding);
+		$hiding_condition = new SQL(' AND IFNULL(g.game_num, 0) < ' . $first_hidden);
+		$hiding_red_condition = ' AND IFNULL(game_num, 0) < ' . $first_hidden;
+		$show_extra_points = false;
 	}
 
 	// todo: replace user name with name id
@@ -1232,6 +1220,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
     
     // prepare additional filter
     $condition = get_players_condition($players_list);
+	$condition->add($hiding_condition);
 	
 	// Create players array
 	$players = array();
@@ -1283,7 +1272,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 	$red_win_rate = 0;
 	if ($scoring->is_game_difficulty_used)
 	{
-		list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(id), SUM(IF(result = ' . GAME_RESULT_TOWN . ', 1, 0)) FROM games WHERE event_id = ? AND (flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING, $event_id);
+		list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(id), SUM(IF(result = ' . GAME_RESULT_TOWN . ', 1, 0)) FROM games WHERE event_id = ? AND (flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING . $hiding_red_condition, $event_id);
 		if ($count > 0)
 		{
 			$red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -1317,7 +1306,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 	foreach ($games as $row)
 	{
 		list ($player_id, $flags, $role, $extra_points, $mr_points, $game_id, $game_end_time, $table_num, $game_num) = $row;
-		if (is_hiding_bonus_needed($tournament_flags, $round_num))
+		if (is_game_hidden($bonus_hiding, $round_num, $game_num))
 		{
 			$extra_points = 0;
 			$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
@@ -1333,6 +1322,10 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 	
 	// Add event extra points
 	$query = new DbQuery('SELECT user_id, points, mvp FROM event_extra_points WHERE event_id = ?', $event_id);
+	if (!$show_extra_points)
+	{
+		$query->add(' AND FALSE');
+	}
 	while ($row = $query->next())
 	{
 		list ($player_id, $points, $mvp) = $row;
@@ -1462,6 +1455,18 @@ function scores_read_names($scores)
 	}
 }
 
+// The flags the scores are cached under: what is asked for, and whether the tournament is hiding
+// anything of it - see SCORING_CACHE_HIDDEN.
+function _scores_cache_flags($lod_flags, $tournament_flags)
+{
+	$tournament_flags = (int)$tournament_flags;
+	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0 && ($tournament_flags & (TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK)) != 0)
+	{
+		return $lod_flags | SCORING_CACHE_HIDDEN;
+	}
+	return $lod_flags;
+}
+
 function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num)
 {
 	if (is_null($players_list) && isset($scoring->id) && isset($scoring->version) && (!isset($options->custom) || !$options->custom))
@@ -1471,7 +1476,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		
 		Db::begin();
 		$query = new DbQuery('SELECT scores FROM event_scores_cache WHERE event_id = ? AND flags = ? AND scoring_id = ? AND scoring_version = ?',
-			$event_id, $lod_flags, $scoring->id, $scoring->version); 
+			$event_id, _scores_cache_flags($lod_flags, $tournament_flags), $scoring->id, $scoring->version); 
 		if ($row = $query->next())
 		{
 			list ($scores) = $row;
@@ -1483,7 +1488,7 @@ function event_scores($event_id, $players_list, $lod_flags, $scoring, $options, 
 		$scores = _event_scores($event_id, $players_list, $lod_flags, $scoring, $options, $tournament_flags, $round_num);
 		scores_forget_names($scores);
 		Db::exec(get_label('score'), 'INSERT INTO event_scores_cache (event_id, flags, scoring_id, scoring_version, scores) VALUES (?, ?, ?, ?, ?)',
-			$event_id, $lod_flags, $scoring->id, $scoring->version, json_encode($scores)); 
+			$event_id, _scores_cache_flags($lod_flags, $tournament_flags), $scoring->id, $scoring->version, json_encode($scores)); 
 		Db::commit();
 		scores_read_names($scores);
 		return $scores;
@@ -1755,21 +1760,15 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		$normalizer = new stdClass();
 	}
 	
-	$hide_table_condition = new SQL();
-	if (($tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
+	// What the tournament hides - see include/table_hiding.php. The games from the moment the
+	// table is hidden from are left out of it, and with them the rounds played after it.
+	$table_hiding = table_hiding($tournament_id, $tournament_flags);
+	$bonus_hiding = bonus_hiding($tournament_id, $tournament_flags);
+	if (!is_null($table_hiding) && $table_hiding->mode == TOURNAMENT_HIDE_ALL)
 	{
-		switch (($tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
-		{
-			case 1:
-				return array();
-			case 2:
-				$hide_table_condition = new SQL(' AND e.round <> 1');
-				break;
-			case 3:
-				$hide_table_condition = new SQL(' AND e.round NOT IN (1,2)');
-				break;
-		}
+		return array();
 	}
+	$hide_table_condition = hiding_games_condition($table_hiding);
 	
     $condition = get_players_condition($players_list);
 	$condition->add($hide_table_condition);
@@ -1889,7 +1888,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		foreach ($games as $row)
 		{
             list ($player_id, $flags, $role, $extra_points, $mr_points, $game_id, $game_end_time, $event_name, $round_num, $rating_before, $table_num, $game_num) = $row;
-			if (is_hiding_bonus_needed($tournament_flags, $round_num))
+			if (is_game_hidden($bonus_hiding, $round_num, $game_num))
 			{
 				$extra_points = 0;
 				$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
@@ -1912,7 +1911,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		// prepare scorings per event
 		$groups = array();
 		$event_options = array();
-		$query = new DbQuery('SELECT e.id, e.name, e.scoring_options FROM events e WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
+		$query = new DbQuery('SELECT e.id, e.name, e.scoring_options FROM events e WHERE e.tournament_id = ?', $tournament_id, hiding_events_condition($table_hiding));
 		while ($row = $query->next())
 		{
             list($event_id, $event_name, $event_scoring_options) = $row;
@@ -2004,7 +2003,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 			$group->red_win_rate = 0;
 			if ($scoring->is_game_difficulty_used)
 			{
-				list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = '.GAME_RESULT_TOWN.', 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING . $group->cond, $tournament_id);
+				list ($count, $red_wins) = Db::record(get_label('event'), 'SELECT count(g.id), SUM(IF(g.result = '.GAME_RESULT_TOWN.', 1, 0)) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING . $group->cond, $tournament_id, $hide_table_condition);
 				if ($count > 0)
 				{
 					$group->red_win_rate = max(min((float)($red_wins / $count), 1), 0);
@@ -2060,7 +2059,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 					$p->first_game_end = $game_end_time;
 					$p->rating = $rating_before;
 				}					
-				if (is_hiding_bonus_needed($tournament_flags, $round_num))
+				if (is_game_hidden($bonus_hiding, $round_num, $game_num))
 				{
 					$extra_points = 0;
 					$flags &= ~(SCORING_FLAG_BEST_PLAYER | SCORING_FLAG_BEST_MOVE | SCORING_FLAG_EXTRA_POINTS | SCORING_FLAG_WORST_MOVE);
@@ -2086,7 +2085,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
     }
 	
 	// Add event extra points
-	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points, p.mvp FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, $hide_table_condition);
+	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points, p.mvp FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, hiding_events_condition($table_hiding, true));
 	while ($row = $query->next())
 	{
 		list ($event_id, $player_id, $points, $mvp) = $row;
@@ -2193,7 +2192,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		
 		Db::begin();
 		$query = new DbQuery('SELECT scores FROM tournament_scores_cache WHERE tournament_id = ? AND flags = ? AND scoring_id = ? AND scoring_version = ? AND normalizer_id = ? AND normalizer_version = ?',
-			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer_id, $normalizer_version);
+			$tournament_id, _scores_cache_flags($lod_flags, $tournament_flags), $scoring->id, $scoring->version, $normalizer_id, $normalizer_version);
 		if ($row = $query->next())
 		{
 			list ($scores) = $row;
@@ -2205,7 +2204,7 @@ function tournament_scores($tournament_id, $tournament_flags, $players_list, $lo
 		$scores = _tournament_scores($tournament_id, $tournament_flags, $players_list, $lod_flags, $scoring, $normalizer, $options);
 		scores_forget_names($scores);
 		Db::exec(get_label('score'), 'INSERT INTO tournament_scores_cache (tournament_id, flags, scoring_id, scoring_version, normalizer_id, normalizer_version, scores) VALUES (?, ?, ?, ?, ?, ?, ?)',
-			$tournament_id, $lod_flags, $scoring->id, $scoring->version, $normalizer_id, $normalizer_version, json_encode($scores));
+			$tournament_id, _scores_cache_flags($lod_flags, $tournament_flags), $scoring->id, $scoring->version, $normalizer_id, $normalizer_version, json_encode($scores));
 		Db::commit();
 		scores_read_names($scores);
 		return $scores;

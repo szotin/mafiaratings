@@ -11,14 +11,6 @@ require_once '../include/series.php';
 
 initiate_session();
 
-function show_hide_bonus_array()
-{
-	echo '[[0,"' . get_label('Show bonus points') . '"],';
-	echo '[' . (1 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points') . '"],';
-	echo '[' . (3 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points starting from the semi-finals') . '"],';
-	echo '[' . (2 << TOURNAMENT_HIDE_BONUS_MASK_OFFSET) . ',"' . get_label('Hide bonus points in the finals') . '"]]';
-}
-
 try
 {
 	dialog_title(get_label('Edit [0]', get_label('tournament')));
@@ -82,9 +74,6 @@ try
 	end_upload_logo_button(TOURNAMENT_PIC_CODE, $tournament_id);
 	echo '</td></tr>';
 
-	echo '<tr><td>' . get_label('Tournament type') . '</td><td>';
-	show_tournament_type_select($tournament_type, 'form-type', 'typeChanged()');
-	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
@@ -162,15 +151,6 @@ try
 		langs_checkboxes($langs, $club->langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
-	
-	$hide_table = $flags & TOURNAMENT_HIDE_TABLE_MASK;
-	echo '<tr><td>'.get_label('Scoring table').':</td><td><p>' . get_label('Before the tournament is finished') . ': ';
-	echo '</p><p><select id="form-hide-table" onchange="onChangeHidenTable()">';
-	show_option(0, $hide_table, get_label('Show the scoring table'));
-	show_option(1 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, $hide_table, get_label('Hide the scoring table'));
-	show_option(2 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, $hide_table, get_label('Hide the scoring table in the finals'));
-	show_option(3 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET, $hide_table, get_label('Hide the scoring table starting from the semi-finals'));
-	echo '</select></p><p><div id="form-hide-bonus-span"></div></p></td></tr>';
 	
 	echo '<tr><td>'.get_label('Special awards').':</td><td>';
 	echo '<table class="transp" width="100%">';
@@ -257,13 +237,6 @@ try
 
 	echo '</td></tr>';
 	echo '</table>';
-	
-	$fiim_id = 0;
-	$query = new DbQuery('SELECT id FROM scorings where club_id IS NULL AND name="ФИИМ"');
-	if ($row = $query->next())
-	{
-		list($fiim_id) = $row;
-	}
 	
 ?>
 
@@ -374,46 +347,6 @@ try
 	}
 	setSeries();
 	
-	var hideBonusVal = <?php echo $flags & TOURNAMENT_HIDE_BONUS_MASK; ?>;
-	function onChangeHidenTable()
-	{
-		var v = $("#form-hide-table").val();
-		var count = 0;
-		var html = "";
-		if (v == 0)
-			count = 4;
-		else if (v == <?php echo 2 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET; ?>)
-			count = 3;
-		else if (v == <?php echo 3 << TOURNAMENT_HIDE_TABLE_MASK_OFFSET; ?>)
-			count = 2;
-		if (count > 0)
-		{
-			var l = <?php show_hide_bonus_array(); ?>;
-			html += '<select id="form-hide-bonus" onchange="onChangeHiddenBonus()">';
-			for (var i = 0; i < count; ++i)
-			{
-				html += '<option value="' + l[i][0] + '"';
-				if (l[i][0] == hideBonusVal)
-				{
-					html += ' selected';
-				}
-				html += '>' +  l[i][1] + '</option>';
-			}
-			html += '</select>';
-		}
-		else
-		{
-			html = '<input type="hidden" id="form-hide-bonus" value="0">';
-		}
-		$('#form-hide-bonus-span').html(html);
-	}
-	onChangeHidenTable();
-	
-	function onChangeHiddenBonus()
-	{
-		hideBonusVal = $("#form-hide-bonus").val();
-	}
-	
 	function starsChanged(control, stars)
 	{
 		
@@ -477,43 +410,6 @@ try
 		var c = $("#form-single_game").attr('checked') ? true : false;
 	}
 	
-	function typeChanged()
-	{
-		var l = false;
-		var s = false;
-		var r = false;
-		var scoringId = 0;
-		var type = parseInt($('#form-type').val());
-		switch(type)
-		{
-			case <?php echo TOURNAMENT_TYPE_CUSTOM; ?>:
-				break;
-			case <?php echo TOURNAMENT_TYPE_FIIM_ONE_ROUND; ?>:
-				scoringId = <?php echo $fiim_id; ?>;
-				break;
-			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3; ?>:
-			case <?php echo TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4; ?>:
-				scoringId = <?php echo $fiim_id; ?>;
-				r = true;
-				break;
-			case <?php echo TOURNAMENT_TYPE_CHAMPIONSHIP; ?>:
-				s = l = true;
-				break;
-		}
-		
-		$("#form-long_term").prop('checked', l).prop('disabled', type != 0);
-		$("#form-single_game").prop('checked', s).prop('disabled', !l || type != 0);
-		
-		if (scoringId > 0)
-		{
-			$('#form-scoring-sel').val(scoringId);
-			$('#form-scoring-difficulty').prop('checked', false);
-			mr.onChangeScoring('form-scoring', 0, onScoringChange);
-		}
-	}
-	
 	function feeChanged()
 	{
 		$("#form-fee-unknown").prop('checked', 0);
@@ -547,8 +443,6 @@ try
 		if (!$("#form-correct-players").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_FORCE_NUM_PLAYERS; ?>;
 		if ($("#form-streaming").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_STREAMING; ?>;
 		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_ROLES; ?>;
-		_flags |= $("#form-hide-table").val();
-		_flags |= $("#form-hide-bonus").val();
 		
 		var series = [];
 		for (const i in seriesList) 
@@ -570,7 +464,6 @@ try
 			tournament_id: <?php echo $tournament_id; ?>,
 			parent_series: series,
 			name: $("#form-name").val(),
-			type: $('#form-type').val(),
 			address_id: $("#form-addr_id").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),

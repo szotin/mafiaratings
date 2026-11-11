@@ -14,6 +14,7 @@ require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
 require_once __DIR__ . '/rules.php';
 require_once __DIR__ . '/currency.php';
+require_once __DIR__ . '/table_hiding.php';
 
 define('WEEK_FLAG_SUN', 1);
 define('WEEK_FLAG_MON', 2);
@@ -659,58 +660,41 @@ class EventPageBase extends PageBase
 		echo '</table>';
 	}
 	
-	protected function should_hide_table()
-	{
-		if ($this->tournament_flags & TOURNAMENT_FLAG_FINISHED)
-		{
-			return false;
-		}
-
-		switch (($this->tournament_flags & TOURNAMENT_HIDE_TABLE_MASK) >> TOURNAMENT_HIDE_TABLE_MASK_OFFSET)
-		{
-			case 1:
-				return true;
-			case 2:
-				return $this->round_num == 1;
-			case 3:
-				return $this->round_num == 1 || $this->round_num == 2;
-		}
-		return false;
-	}
-	
-	protected function should_hide_bonus()
-	{
-		if ($this->tournament_flags & TOURNAMENT_FLAG_FINISHED)
-		{
-			return false;
-		}
-
-		switch (($this->tournament_flags & TOURNAMENT_HIDE_BONUS_MASK) >> TOURNAMENT_HIDE_BONUS_MASK_OFFSET)
-		{
-			case 1:
-				return true;
-			case 2:
-				return $this->round_num == 1;
-			case 3:
-				return $this->round_num == 1 || $this->round_num == 2;
-		}
-		return false;
-	}
-	
+	// What the tournament hides of this round - see include/table_hiding.php. A round hidden as a
+	// whole has an empty table. A round hidden from one of its tours shows the tours before it,
+	// and says that is what it shows once a tour after them has been played.
 	protected function show_hidden_table_message()
 	{
 		$result = true;
 		$text = NULL;
-		if ($this->should_hide_table())
+		$table_hiding = table_hiding($this->tournament_id, $this->tournament_flags);
+		$bonus_hiding = bonus_hiding($this->tournament_id, $this->tournament_flags);
+		if (is_round_hidden($table_hiding, $this->round_num))
 		{
 			$result = false;
 			$text = get_label('Tournament tables are hidden for this round until the tournament ends.');
 		}
-		else if ($this->should_hide_bonus())
+		else
 		{
-			$text = get_label('Bonus points are hidden for this round until the tournament ends.');
+			$notes = array();
+			if (is_event_hiding_in_effect($table_hiding, $this->id))
+			{
+				$notes[] = hidden_table_message($table_hiding);
+			}
+			if (is_round_hidden($bonus_hiding, $this->round_num))
+			{
+				$notes[] = get_label('Bonus points are hidden for this round until the tournament ends.');
+			}
+			else if (is_event_hiding_in_effect($bonus_hiding, $this->id))
+			{
+				$notes[] = hidden_bonus_message($bonus_hiding);
+			}
+			if (!empty($notes))
+			{
+				$text = implode('<br>', $notes);
+			}
 		}
-		
+
 		if (!is_null($text))
 		{
 			echo '<p><table class="transp" width="100%"><tr><td width="32">';
