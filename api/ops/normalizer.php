@@ -9,25 +9,18 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
-	private function check_name($name, $club_id, $id = -1)
+	// The name is unique among the normalizers of the same owner. The default normalizer of a club
+	// is often a copy of one of the site under the same name, so the site's do not count.
+	private function check_name($name, $club_id, $league_id, $id = -1)
 	{
-		global $_profile;
-
 		if ($name == '')
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('Scoring normalizer name')));
 		}
 
 		check_name($name, get_label('Scoring normalizer name'));
-		
-		if (!is_null($club_id))
-		{
-			$query = new DbQuery('SELECT name FROM normalizers WHERE name = ? AND (club_id = ? OR club_id IS NULL)', $name, $club_id);
-		}
-		else
-		{
-			$query = new DbQuery('SELECT name FROM normalizers WHERE name = ? AND club_id IS NULL', $name);
-		}
+
+		$query = new DbQuery('SELECT name FROM normalizers WHERE name = ? AND club_id <=> ? AND league_id <=> ?', $name, $club_id, $league_id);
 		
 		if ($id > 0)
 		{
@@ -99,8 +92,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::exec(get_label('scoring normalizer'), 'INSERT INTO normalizer_versions (normalizer_id, version, normalizer) VALUES (?, 1, ?)', $normalizer_id, $normalizer);
-		Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET version = 1', $club_id, $league_id, $name);
-		
+		Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET version = 1 WHERE id = ?', $normalizer_id);
+
 		$log_details = new stdClass();
 		$log_details->name = $name;
 		$log_details->version = 1;
@@ -149,8 +142,9 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_ADMIN);
 		}
 		
-		$name = trim(get_optional_param('name', $old_name));
-		$this->check_name($name, $club_id, $normalizer_id);
+		// A default system is called by the name of its owner, so its own name stays as it is.
+		$name = is_default_system('normalizers', $normalizer_id) ? $old_name : trim(get_optional_param('name', $old_name));
+		$this->check_name($name, $club_id, $league_id, $normalizer_id);
 		
 		list ($current_version) = Db::record(get_label('scoring normalizer'), 'SELECT version FROM normalizers WHERE id = ?', $normalizer_id);
 		
@@ -337,14 +331,21 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, $club_id, $league_id);
 
 		Db::begin();
-		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+		// The default normalizer of a club, a league or the site can be edited but not deleted.
+		if (is_default_system('normalizers', $normalizer_id))
+		{
+			throw new Exc(get_label('The default scoring normalizer can not be deleted.'));
+		}
+		// A normalizer of both a club and a league is given up by the one who deletes it and stays
+		// with the other; otherwise it is deleted.
+		if ($club_id != NULL && $league_id != NULL && !is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
 			Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET league_id = NULL WHERE id = ?', $normalizer_id);
 			$log_details = new stdClass();
 			$log_details->league_id = NULL;
 			db_log(LOG_OBJECT_SCORING_NORMALIZER, 'changed', $log_details, $normalizer_id, $club_id, $league_id);
 		}
-		else if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+		else if ($club_id != NULL && $league_id != NULL && !is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 		{
 			Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET club_id = NULL WHERE id = ?', $normalizer_id);
 			$log_details = new stdClass();

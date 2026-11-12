@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/rules.php';
+require_once __DIR__ . '/scoring.php';
 
 // The Rules page of the management menu: the rules and the scoring systems of one owner, a tab
 // for each kind. The owner is a club (club_scorings.php), a league (league_scorings.php) or the
@@ -75,6 +76,26 @@ class RulesManagement
 			return $this->league_id;
 		}
 		return '-1';
+	}
+
+	// The default scoring system and normalizer of this owner - see own_system() in scoring.php.
+	// The normalizer is NULL only when the owner has none yet - the site before it has a default.
+	private function default_systems()
+	{
+		if ($this->club_id != NULL)
+		{
+			list($scoring_id, $normalizer_id) = Db::record(get_label('club'), 'SELECT scoring_id, normalizer_id FROM clubs WHERE id = ?', $this->club_id);
+		}
+		else if ($this->league_id != NULL)
+		{
+			list($scoring_id, $normalizer_id) = Db::record(get_label('league'), 'SELECT scoring_id, normalizer_id FROM leagues WHERE id = ?', $this->league_id);
+		}
+		else
+		{
+			$scoring_id = get_site_scoring_id();
+			$normalizer_id = get_site_normalizer_id();
+		}
+		return array((int)$scoring_id, $normalizer_id == NULL ? NULL : (int)$normalizer_id);
 	}
 
 	private function tab_button($tab, $label)
@@ -153,15 +174,22 @@ class RulesManagement
 		echo '</table>';
 	}
 
+	// The default system first - it is edited, never deleted - then the others.
 	private function show_scorings()
 	{
+		list($default_id) = $this->default_systems();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createScoringSystem(' . $this->scoring_owner_args() . ')" title="' . get_label('New scoring system') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
 		echo '<td>' . get_label('Scoring system name') . '</td></tr>';
 
+		list($default_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $default_id);
+		echo '<tr><td class="dark" align="center">';
+		echo '<a onclick="mr.editScoringSystem(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
+		echo '</td><td><a href="javascript:showScoring(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td></tr>';
+
 		$query = new DbQuery('SELECT id, name, version FROM scorings WHERE ', $this->owner_condition());
-		$query->add(' ORDER BY name');
+		$query->add(' AND id <> ? ORDER BY name', $default_id);
 		while ($row = $query->next())
 		{
 			list ($id, $name, $version) = $row;
@@ -173,15 +201,25 @@ class RulesManagement
 		echo '</table>';
 	}
 
+	// The default normalizer first - it is edited, never deleted - then the others. Going without
+	// normalization is for a tournament to choose, not for its club or league.
 	private function show_normalizers()
 	{
+		list($scoring_id, $default_id) = $this->default_systems();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createNormalizer(' . $this->scoring_owner_args() . ')" title="' . get_label('New scoring normalizer') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
 		echo '<td>' . get_label('Scoring normalizer name') . '</td></tr>';
 
+		echo '<tr><td class="dark" align="center">';
+		if ($default_id != NULL)
+		{
+			echo '<a onclick="mr.editNormalizer(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
+		}
+		echo '</td><td>' . get_label('[default]') . '</td></tr>';
+
 		$query = new DbQuery('SELECT id, name, version FROM normalizers WHERE ', $this->owner_condition());
-		$query->add(' ORDER BY name');
+		$query->add(' AND id <> ? ORDER BY name', (int)$default_id);
 		while ($row = $query->next())
 		{
 			list ($id, $name, $version) = $row;

@@ -633,7 +633,18 @@ function refreshNormalizerEditor(isDirty)
     var html = '<table width="100%" class="bordered light">';
 	if (_data.name)
 	{
-		html += '<tr class="dark"><td colspan="3"><label for="normalizer-name">' + str.name + ': </label><input id="normalizer-name" value="' + _data.name + '" onChange="onNormalizerNameChange()"><label for="normalizer-name"> ' + str.version + ': </label>' + versionSelectHtml() + '</td></tr>';
+		// A default system is called by the name of its owner, which is not edited here.
+		var name = $('<div>').text(_data.name).html();
+		html += '<tr class="dark"><td colspan="3">';
+		if (_data.nameFixed)
+		{
+			html += str.name + ': <b>' + name + '</b> ' + str.version + ': ';
+		}
+		else
+		{
+			html += '<label for="normalizer-name">' + str.name + ': </label><input id="normalizer-name" value="' + name.replace(/"/g, '&quot;') + '" onChange="onNormalizerNameChange()"><label for="normalizer-name"> ' + str.version + ': </label>';
+		}
+		html += versionSelectHtml() + '</td></tr>';
 	}
 	
 	html += '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + str.policyAdd + '" onclick="createPolicy()"><img src="images/create.png"></button></td>';

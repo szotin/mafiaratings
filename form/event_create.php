@@ -131,7 +131,7 @@ try
 	echo '</select></td></tr>';
 	
 	echo '<tr><td valign="top">' . get_label('Scoring system') . '</td><td>';
-	show_scoring_select($club_id, -1, 0, 0, 0, new stdClass(), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
+	show_scoring_select($club_id, $club->scoring_id, 0, 0, 0, new stdClass(), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
 	echo '</td></tr>';
 	
 	if (is_valid_lang($club->langs))

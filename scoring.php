@@ -10,6 +10,7 @@ class Page extends PageBase
 	private $scoring_id;
 	private $used_versions;
 	private $scoring_name;
+	private $name_fixed;
 	private $scoring_version;
 	private $current_version;
 	private $versions;
@@ -56,6 +57,13 @@ class Page extends PageBase
 		// version button worth offering.
 		$this->used_versions = get_used_system_versions('scoring', $this->scoring_id, array('tournaments', 'events'));
 		
+		// A default system is called by the name of its owner, and its name is not edited.
+		$default_name = get_default_system_name('scorings', $this->scoring_id);
+		$this->name_fixed = $default_name !== NULL;
+		if ($this->name_fixed)
+		{
+			$this->scoring_name = $default_name;
+		}
 		$this->_title = get_label('Scoring system') . ': ' . $this->scoring_name;
 		
 		$this->langs_array = '[';
@@ -106,7 +114,8 @@ class Page extends PageBase
 		{
 			scoring: <?php echo $this->scoring; ?>,
 			id: <?php echo $this->scoring_id; ?>,
-			name: "<?php echo $this->scoring_name; ?>",
+			name: <?php echo json_encode($this->scoring_name); ?>,
+			nameFixed: <?php echo $this->name_fixed ? 'true' : 'false'; ?>,
 			version: <?php echo $this->scoring_version; ?>,
 			versions: [<?php echo implode(',', $this->versions); ?>],
 			strings:
@@ -266,10 +275,13 @@ class Page extends PageBase
 			{
 				op: 'change'
 				, scoring_id: data.id
-				, name: data.name
 				, scoring: JSON.stringify(data.scoring)
 				, scoring_version: data.version
 			};
+			if (!data.nameFixed)
+			{
+				params.name = data.name;
+			}
 			json.post("api/ops/scoring.php", params, function(response)
 			{
 				// A save that added a version gives the picker one more entry. This has to happen

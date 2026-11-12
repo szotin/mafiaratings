@@ -68,13 +68,9 @@ try
 	}
 	echo '</select></td></tr>';
 	
+	// The same for the scoring system: the club gets its own copy of the one picked.
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id IS NULL ORDER BY name');
-	while ($row = $query->next())
-	{		
-		list ($scoring_id, $scoring_name) = $row;
-		show_option((int)$scoring_id, SCORING_DEFAULT_ID, $scoring_name);
-	} 
+	show_system_options('scorings', NULL, get_site_scoring_id());
 	echo '</select></td></tr>';
 	
 	echo '</table>';

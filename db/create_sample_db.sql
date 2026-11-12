@@ -521,7 +521,8 @@ CREATE TABLE `normalizers` (
   `club_id` int(11) DEFAULT NULL,
   `league_id` int(11) DEFAULT NULL,
   `name` varchar(128) NOT NULL,
-  `version` int(11) DEFAULT NULL
+  `version` int(11) DEFAULT NULL,
+  `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `normalizer_versions`;
@@ -654,7 +655,8 @@ CREATE TABLE `scorings` (
   `club_id` int(11) DEFAULT NULL,
   `name` varchar(128) NOT NULL,
   `league_id` int(11) DEFAULT NULL,
-  `version` int(11) DEFAULT '1'
+  `version` int(11) DEFAULT '1',
+  `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `scoring_versions`;
@@ -1079,17 +1081,19 @@ INSERT INTO `addresses` (`id`, `name`, `club_id`, `address`, `map_url`, `flags`,
 
 -- Scoring (reused verbatim from the site 'mafiaratings' scoring, id 45 v1)
 INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`) VALUES (1, 1, 'Sample Scoring', NULL, 1);
+-- The default scoring system of a league is its own (db/alter213.sql): the sample league has a
+-- copy of the sample club's.
+INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`) VALUES (2, NULL, 'Sample Scoring', 1, 1);
 INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) VALUES (1, 1, '{\"night1\":[{\"matter\":260,\"roles\":3,\"points\":\"max(min(counter(0,1)*1.2\\/counter(0,0)-0.18,0.3),0)\"}],\"counters\":[{\"matter\":1},{\"matter\":256,\"roles\":3}],\"main\":[{\"matter\":1,\"points\":1}],\"extra\":[{\"matter\":4194304,\"points\":\"bonus\",\"mvp\":true},{\"matter\":1,\"points\":\"mr_points\",\"mvp\":true,\"name\":\"MR\"}],\"penalty\":[{\"matter\":1,\"points\":\"matter(12) || matter(13) || matter(14) ? -0.8 : (matter(25) ? -1 : 0)\",\"mvp\":true}]}'
 , 3312);
+INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) SELECT 2, 1, `scoring`, `functions` FROM `scoring_versions` WHERE `scoring_id` = 1 AND `version` = 1;
 
--- Default scoring system. include/scoring.php hardcodes SCORING_DEFAULT_ID = 19, which is
--- what club/league/tournament creation falls back to, so the sample database has to contain
--- that exact id. club_id and league_id are NULL because show_scoring_selector() lists only
--- "club_id = ? OR club_id IS NULL" - without a global scoring the selector on the club
--- creation page is empty and the form posts an empty scoring_id. Definition copied verbatim
--- from db/alter106.sql, which created this scoring in production. functions = 0: the formula
--- uses plain numbers only, no scoring functions.
-INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`) VALUES (19, NULL, 'ФИИМ', NULL, 1);
+-- The default scoring system of the site (flags 1, see get_site_scoring_id() in
+-- include/scoring.php): what a new club or league gets its own copy of. Its id is the one ФИИМ
+-- has in production, where db/alter213.sql gave ФИИМ to the league ФИИМ and the site kept a copy
+-- of it as its default. Definition copied verbatim from db/alter106.sql, which created this scoring in
+-- production. functions = 0: the formula uses plain numbers only, no scoring functions.
+INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`, `flags`) VALUES (19, NULL, 'ФИИМ', NULL, 1, 1);
 INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) VALUES (19, 1, '{\"main\":[{\"matter\":2,\"points\":1}],\"prima_nocta\":[{\"matter\":1024,\"roles\":3,\"points\":0.4},{\"matter\":2048,\"roles\":3,\"points\":0.25}],\"penalty\":[{\"matter\":4096,\"points\":-0.5},{\"matter\":8192,\"points\":-0.5}]}', 0);
 
 -- Gaining (formula reused verbatim from gaining 'Серийник', id 4 v1). This row also has to be the
@@ -1153,11 +1157,16 @@ INSERT INTO `club_regs` (`user_id`, `club_id`, `flags`) VALUES
 (25, 1, 17);
 
 -- Club, league, season(series), their links
-INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`) VALUES (1, 'Sample Club', 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, NULL, 1284784660, NULL, NULL);
-INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 1, 0, '{}', NULL, 1);
+INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`) VALUES (1, 'Sample Club', 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, 2, 1284784660, NULL, NULL);
+INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 2, 0, '{}', 3, 1);
 INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`) VALUES (1, 1, 0);
 -- The default rules of the site: the rules of the site with no name - see db/alter212.sql.
 INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name`, `rules`) VALUES (1, NULL, NULL, '', '0002000010000');
+-- The default normalizer of the site (flags 1, see get_site_normalizer_id() in include/scoring.php)
+-- and the copies of it that the sample club and the sample league have as their own defaults -
+-- see db/alter213.sql.
+INSERT INTO `normalizers` (`id`, `club_id`, `league_id`, `name`, `version`, `flags`) VALUES (1, NULL, NULL, 'Mafia Ratings', 1, 1), (2, 1, NULL, 'Mafia Ratings', 1, 0), (3, NULL, 1, 'Mafia Ratings', 1, 0);
+INSERT INTO `normalizer_versions` (`normalizer_id`, `version`, `normalizer`) VALUES (1, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}'), (2, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}'), (3, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}');
 INSERT INTO `league_managers` (`league_id`, `user_id`) VALUES (1, 1);
 INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (1, 'Season 2024', 1, NULL, 1284784660, 31536000, 7, '', 0, '{}', 1, 1, 0, NULL, NULL, 5);
 -- A series owned by a club instead of a league. Exactly one of league_id / club_id is set.
@@ -2368,7 +2377,7 @@ ALTER TABLE `news`
 -- AUTO_INCREMENT for table `normalizers`
 --
 ALTER TABLE `normalizers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `objections`

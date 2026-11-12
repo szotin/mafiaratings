@@ -300,23 +300,13 @@ class ApiPage extends OpsApiPageBase
 		$scoring_options_str = json_encode($scoring_options);
 		$parent_series = json_decode(get_optional_param('parent_series', '[]'));
 		
-		if ($normalizer_id < 0)
-		{
-			if ($scoring_id <= 0)
-			{
-				list($scoring_id, $normalizer_id) = Db::record(get_label('club'), 'SELECT scoring_id, normalizer_id FROM clubs WHERE id = ?', $club_id);
-			}
-			else
-			{
-				list($normalizer_id) = Db::record(get_label('club'), 'SELECT normalizer_id FROM clubs WHERE id = ?', $club_id);
-			}
-		}
-		else if ($scoring_id <= 0)
+		if ($scoring_id <= 0)
 		{
 			list($scoring_id) = Db::record(get_label('club'), 'SELECT scoring_id FROM clubs WHERE id = ?', $club_id);
 		}
 		
-		if ($normalizer_id == 0)
+		// A tournament is not normalized unless a normalizer is asked for.
+		if ($normalizer_id <= 0)
 		{
 			$normalizer_id = null;
 		}
@@ -487,7 +477,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('rules_code', 'Rules for this tournament.', 'default club rules are used.');
 		$help->request_param('scoring_id', 'Scoring id for this tournament.', 'default club scoring system is used.');
 		$help->request_param('scoring_version', 'Scoring version for this tournament.', 'the latest version of the system identified by scoring_id is used.');
-		$help->request_param('normalizer_id', 'Normalizer id for this tournament.', 'default club scoring normalizer is used.');
+		$help->request_param('normalizer_id', 'Normalizer id for this tournament. 0 means no normalization.', 'the tournament is not normalized.');
 		$help->request_param('normalizer_version', 'Normalizer version for this tournament.', 'the latest version of the system identified by normalizer_id is used.');
 		api_scoring_help($help->request_param('scoring_options', 'Scoring options for this tournament.', 'null is used. All values are assumed to be default.'));
 		$help->request_param('notes', 'Tournament notes. Just a text.', 'empty.');

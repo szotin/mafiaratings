@@ -7,8 +7,10 @@ require_once __DIR__ . '/evaluator.php';
 require_once __DIR__ . '/utilities.php';
 require_once __DIR__ . '/table_hiding.php';
 
-define('SCORING_DEFAULT_ID', 19); // Default scoring system is hardcoded here to ФИИМ (FIIM)
-define('NORMALIZER_DEFAULT_ID', NULL); // Default normalizer is hardcoded here to no-normalizer.
+// scorings.flags and normalizers.flags: the default system of the site. A club and a league point
+// to their own default system (clubs.scoring_id, leagues.normalizer_id...); the site has nothing
+// to point from, so its default is marked instead - see db/alter213.sql.
+define('SYSTEM_FLAG_SITE_DEFAULT', 1);
 
 //define('SCORING_TRACK_ROLE', -1); //ROLE_CIVILIAN);
 
@@ -265,6 +267,286 @@ function compare_role_scores($role, $player1, $player2)
 	return $games_count2 - $games_count1;
 }
 
+// The default scoring system of the site: the one a new club or league starts from.
+function get_site_scoring_id()
+{
+	$query = new DbQuery('SELECT id FROM scorings WHERE club_id IS NULL AND league_id IS NULL ORDER BY (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') DESC, id LIMIT 1');
+	if ($row = $query->next())
+	{
+		return (int)$row[0];
+	}
+	throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
+}
+
+// The default normalizer of the site, NULL when the site does not normalize.
+function get_site_normalizer_id()
+{
+	$query = new DbQuery('SELECT id FROM normalizers WHERE club_id IS NULL AND league_id IS NULL AND (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0 LIMIT 1');
+	if ($row = $query->next())
+	{
+		return (int)$row[0];
+	}
+	return NULL;
+}
+
+function _system_choice($id, $name)
+{
+	$s = new stdClass();
+	$s->id = (int)$id;
+	$s->name = $name;
+	return $s;
+}
+
+function _sort_system_choices(&$choices)
+{
+	usort($choices, function($a, $b)
+	{
+		return strcmp(mb_strtolower($a->name, 'UTF-8'), mb_strtolower($b->name, 'UTF-8'));
+	});
+}
+
+/*  The scoring systems ($table = 'scorings') or the normalizers ($table = 'normalizers') a club
+    can use, in the order they are offered - the same order as the rules, see get_available_rules().
+    Each is an object with ->id and ->name.
+
+    1. The default system of the club, called by the name of the club.
+    2. The other systems of the club, "club: name", and the systems of the site, together, by
+       name. The default system of the site is called by the name of the site.
+    3. Then, together and by name: the default system of each league the club belongs to, called
+       by the name of the league; the other systems of those leagues, "league: name"; and the
+       default systems of the global leagues it does not belong to.
+
+    Without a club there is no first entry, and only the systems of the site and the defaults of
+    the global leagues are offered - unless $league_id is given: then what a league can use is
+    offered, its default system called by the name of the league first, and its other systems,
+    "league: name", together with the systems of the site. $current_id is the system that is in use already; if it is
+    none of these (an old tournament can use a system of a league its club has left), it is added
+    at the end so that it can stay selected. */
+function get_available_systems($table, $club_id = NULL, $current_id = NULL, $league_id = NULL)
+{
+	if ($table != 'scorings' && $table != 'normalizers')
+	{
+		throw new Exc('Unknown system table ' . $table);
+	}
+	$column = $table == 'scorings' ? 'scoring_id' : 'normalizer_id';
+	$site_default_id = $table == 'scorings' ? get_site_scoring_id() : get_site_normalizer_id();
+
+	$top = array();
+	$club_default_id = NULL;
+	$league_default_id = NULL;
+	if ($club_id != NULL)
+	{
+		list($club_name, $club_default_id) = Db::record(get_label('club'), 'SELECT name, ' . $column . ' FROM clubs WHERE id = ?', $club_id);
+		if ($club_default_id != NULL)
+		{
+			$club_default_id = (int)$club_default_id;
+			$top[] = _system_choice($club_default_id, $club_name);
+		}
+	}
+	else if ($league_id != NULL)
+	{
+		list($league_name, $league_default_id) = Db::record(get_label('league'), 'SELECT name, ' . $column . ' FROM leagues WHERE id = ?', $league_id);
+		if ($league_default_id != NULL)
+		{
+			$top[] = _system_choice($league_default_id, $league_name);
+		}
+	}
+
+	$own = array();
+	if ($club_id != NULL)
+	{
+		$query = new DbQuery('SELECT id, name, club_id FROM ' . $table . ' WHERE (club_id = ? AND id <> ?) OR (club_id IS NULL AND league_id IS NULL)', $club_id, (int)$club_default_id);
+	}
+	else if ($league_id != NULL)
+	{
+		$query = new DbQuery('SELECT id, name, league_id FROM ' . $table . ' WHERE (league_id = ? AND club_id IS NULL AND id <> ?) OR (club_id IS NULL AND league_id IS NULL)', $league_id, (int)$league_default_id);
+	}
+	else
+	{
+		$query = new DbQuery('SELECT id, name, club_id FROM ' . $table . ' WHERE club_id IS NULL AND league_id IS NULL');
+	}
+	while ($row = $query->next())
+	{
+		list($id, $name, $owner_id) = $row;
+		if ($owner_id != NULL)
+		{
+			$name = ($club_id != NULL ? $club_name : $league_name) . ': ' . $name;
+		}
+		else if ($id == $site_default_id)
+		{
+			$name = PRODUCT_NAME;
+		}
+		$own[] = _system_choice($id, $name);
+	}
+	_sort_system_choices($own);
+
+	$others = array();
+	if ($club_id != NULL)
+	{
+		$query = new DbQuery(
+			'SELECT l.' . $column . ', l.name FROM leagues l' .
+			' LEFT OUTER JOIN league_clubs lc ON lc.league_id = l.id AND lc.club_id = ?' .
+			' WHERE l.' . $column . ' IS NOT NULL AND (lc.club_id IS NOT NULL OR (l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0)', $club_id);
+	}
+	else
+	{
+		$query = new DbQuery('SELECT ' . $column . ', name FROM leagues WHERE ' . $column . ' IS NOT NULL AND (flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0');
+	}
+	while ($row = $query->next())
+	{
+		list($id, $name) = $row;
+		$others[] = _system_choice($id, $name);
+	}
+	if ($club_id != NULL)
+	{
+		$query = new DbQuery(
+			'SELECT s.id, l.name, s.name FROM ' . $table . ' s' .
+			' JOIN leagues l ON l.id = s.league_id' .
+			' JOIN league_clubs lc ON lc.league_id = s.league_id' .
+			' WHERE lc.club_id = ? AND s.id <> IFNULL(l.' . $column . ', 0)', $club_id);
+		while ($row = $query->next())
+		{
+			list($id, $league_name, $name) = $row;
+			$others[] = _system_choice($id, $league_name . ': ' . $name);
+		}
+	}
+	_sort_system_choices($others);
+
+	// A system of both a club and a league would be there twice.
+	$result = array();
+	$ids = array();
+	foreach (array_merge($top, $own, $others) as $s)
+	{
+		if (!isset($ids[$s->id]))
+		{
+			$ids[$s->id] = true;
+			$result[] = $s;
+		}
+	}
+
+	if ($current_id != NULL && $current_id > 0 && !isset($ids[(int)$current_id]))
+	{
+		$query = new DbQuery(
+			'SELECT s.id, s.name, c.name, l.name FROM ' . $table . ' s' .
+			' LEFT OUTER JOIN clubs c ON c.id = s.club_id' .
+			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
+			' WHERE s.id = ?', $current_id);
+		if ($row = $query->next())
+		{
+			list($id, $name, $owner_club_name, $owner_league_name) = $row;
+			if ($owner_club_name != NULL)
+			{
+				$name = $owner_club_name . ': ' . $name;
+			}
+			else if ($owner_league_name != NULL)
+			{
+				$name = $owner_league_name . ': ' . $name;
+			}
+			$result[] = _system_choice($id, $name);
+		}
+	}
+	return $result;
+}
+
+// A copy of the current version of a scoring system ($table = 'scorings') or a normalizer
+// ($table = 'normalizers'), owned by a club or by a league, under the same name. This is how a
+// club or a league gets its own default system. Returns the id of the copy.
+function copy_system($table, $source_id, $club_id, $league_id)
+{
+	if ($table == 'scorings')
+	{
+		$versions = 'scoring_versions';
+		$key = 'scoring_id';
+		$fields = 'scoring, functions';
+	}
+	else if ($table == 'normalizers')
+	{
+		$versions = 'normalizer_versions';
+		$key = 'normalizer_id';
+		$fields = 'normalizer';
+	}
+	else
+	{
+		throw new Exc('Unknown system table ' . $table);
+	}
+
+	list($name, $version) = Db::record(get_label('scoring system'), 'SELECT name, version FROM ' . $table . ' WHERE id = ?', $source_id);
+	Db::exec(get_label('scoring system'), 'INSERT INTO ' . $table . ' (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
+	list($id) = Db::record(get_label('scoring system'), 'SELECT LAST_INSERT_ID()');
+	if ($version != NULL)
+	{
+		Db::exec(get_label('scoring system'), 'INSERT INTO ' . $versions . ' (' . $key . ', version, ' . $fields . ') SELECT ?, 1, ' . $fields . ' FROM ' . $versions . ' WHERE ' . $key . ' = ? AND version = ?', $id, $source_id, $version);
+		Db::exec(get_label('scoring system'), 'UPDATE ' . $table . ' SET version = 1 WHERE id = ?', $id);
+	}
+	return (int)$id;
+}
+
+// The system itself if it already belongs to this club or league, a copy of it otherwise; NULL
+// for no system. What a club or a league is given as its default.
+function own_system($table, $id, $club_id, $league_id)
+{
+	if ($id == NULL || $id <= 0)
+	{
+		return NULL;
+	}
+	list($owner_club_id, $owner_league_id) = Db::record(get_label('scoring system'), 'SELECT club_id, league_id FROM ' . $table . ' WHERE id = ?', $id);
+	if ($club_id != NULL ? $owner_club_id == $club_id : ($league_id != NULL && $owner_league_id == $league_id))
+	{
+		return (int)$id;
+	}
+	return copy_system($table, $id, $club_id, $league_id);
+}
+
+// Whether a scoring system or a normalizer is the default of anyone - a club, a league, or the site.
+function is_default_system($table, $id)
+{
+	$column = $table == 'scorings' ? 'scoring_id' : 'normalizer_id';
+	$query = new DbQuery('SELECT id FROM ' . $table . ' WHERE id = ? AND (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0', $id);
+	if ($query->next())
+	{
+		return true;
+	}
+	$query = new DbQuery('SELECT id FROM clubs WHERE ' . $column . ' = ? LIMIT 1', $id);
+	if ($query->next())
+	{
+		return true;
+	}
+	$query = new DbQuery('SELECT id FROM leagues WHERE ' . $column . ' = ? LIMIT 1', $id);
+	return $query->next() ? true : false;
+}
+
+// A default system is called by the name of its owner - the club, the league, or the site - and
+// its own name is not shown or edited. Returns that name, or NULL when $id is not a default system.
+function get_default_system_name($table, $id)
+{
+	$column = $table == 'scorings' ? 'scoring_id' : 'normalizer_id';
+	$query = new DbQuery('SELECT name FROM clubs WHERE ' . $column . ' = ? ORDER BY id LIMIT 1', $id);
+	if ($row = $query->next())
+	{
+		return $row[0];
+	}
+	$query = new DbQuery('SELECT name FROM leagues WHERE ' . $column . ' = ? ORDER BY id LIMIT 1', $id);
+	if ($row = $query->next())
+	{
+		return $row[0];
+	}
+	$query = new DbQuery('SELECT id FROM ' . $table . ' WHERE id = ? AND (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0', $id);
+	if ($query->next())
+	{
+		return PRODUCT_NAME;
+	}
+	return NULL;
+}
+
+// Shows the options of a scoring or normalizer select.
+function show_system_options($table, $club_id, $selected_id, $league_id = NULL)
+{
+	foreach (get_available_systems($table, $club_id, $selected_id, $league_id) as $s)
+	{
+		show_option($s->id, (int)$selected_id, $s->name);
+	}
+}
+
 define('SCORING_SELECT_FLAG_NO_PREFIX', 1);
 define('SCORING_SELECT_FLAG_NO_VERSION', 2);
 define('SCORING_SELECT_FLAG_NO_FLAGS_OPTION', 8);
@@ -285,12 +567,7 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 		echo '<a href="#" onclick="mr.showScoring(\'' . $name . '\')" title="' . get_label('Show scoring rules.') . '">' . get_label('Scoring system') . ':</a> ';
 	}
 	echo '<select id="' . $name . '-sel" name="' . $name . '_id" onChange="mr.onChangeScoring(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring system') . '">';
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
-	while ($row = $query->next())
-	{
-		list ($sid, $sname) = $row;
-		show_option((int)$sid, (int)$scoring_id, $sname);
-	}
+	show_system_options('scorings', $club_id, $scoring_id);
 	echo '</select>';
 	if (($flags & SCORING_SELECT_FLAG_NO_VERSION) == 0)
 	{
@@ -357,12 +634,22 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 		
 		echo get_label('Scoring normalizer') . ': ';
 		echo '<select id="' . $name . '-norm-sel" name="' . $name . '-norm-sel" onChange="mr.onChangeNormalizer(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring normalizer') . '">';
-		show_option(0, (int)$normalizer_id, get_label('No scoring normalization'));
-		$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id = ? OR club_id IS NULL ORDER BY name', $club_id);
-		while ($row = $query->next())
+		// The default normalizer of the club first, if it has one; no normalization right after it.
+		$normalizers = get_available_systems('normalizers', $club_id, $normalizer_id);
+		$first = 0;
+		if ($club_id != NULL && count($normalizers) > 0)
 		{
-			list ($nid, $nname) = $row;
-			show_option((int)$nid, (int)$normalizer_id, $nname);
+			list($club_normalizer_id) = Db::record(get_label('club'), 'SELECT normalizer_id FROM clubs WHERE id = ?', $club_id);
+			if ($club_normalizer_id != NULL && $normalizers[0]->id == $club_normalizer_id)
+			{
+				show_option($normalizers[0]->id, (int)$normalizer_id, $normalizers[0]->name);
+				$first = 1;
+			}
+		}
+		show_option(0, (int)$normalizer_id, get_label('No scoring normalization'));
+		for ($i = $first; $i < count($normalizers); ++$i)
+		{
+			show_option($normalizers[$i]->id, (int)$normalizer_id, $normalizers[$i]->name);
 		}
 		echo '</select>';
 		echo '<span id="' . $name . '-norm-version"> ' . get_label('version') . ': <select id="' . $name . '-norm-ver" name="' . $name . '-norm-ver" onChange="mr.onChangeNormalizerVersion(\'' . $name . '\', ' . $on_change . ')"></select></span></p>';

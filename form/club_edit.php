@@ -89,27 +89,9 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</td></tr>';
 	
-	// The rules of the club are its default rules, set in Rules of its management menu.
-	
-	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
-	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
-	while ($row = $query->next())
-	{		
-		list ($scoring_id, $scoring_name) = $row;
-		show_option((int)$scoring_id, $club->scoring_id, $scoring_name);
-	} 
-	echo '</select></td></tr>';
-	
-	echo '<tr><td>' . get_label('Scoring normalizer') . ':</td><td><select id="form-normalizer">';
-	show_option(0, is_null($club->normalizer_id) ? 0 : -1, get_label('No scoring normalization'));
-	$query = new DbQuery('SELECT id, name FROM normalizers WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
-	while ($row = $query->next())
-	{		
-		list ($normalizer_id, $normalizer_name) = $row;
-		show_option((int)$normalizer_id, $club->normalizer_id, $normalizer_name);
-	} 
-	echo '</select></td></tr>';
-	
+	// The rules, the scoring system and the normalizer of the club are its defaults, set in Rules
+	// of its management menu.
+
 	echo '</table>';
 	
 ?>	
@@ -143,9 +125,6 @@ try
 			, currency_id: $("#form-currency").val()
 			, city: $("#form-city").val()
 			, country: $("#form-country").val()
-			, scoring_id: $("#form-scoring").val()
-
-			, normalizer_id: $("#form-normalizer").val()
 			, langs: languages
 		},
 		onSuccess);

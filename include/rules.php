@@ -699,8 +699,8 @@ function _sort_rules_choices(&$choices)
     of a league.
 
     1. The default rules of the club, called by the name of the club.
-    2. The other rules of the club and the rules of the site, together, by name. The default
-       rules of the site are called by the name of the site.
+    2. The other rules of the club, "club: name", and the rules of the site, together, by name.
+       The default rules of the site are called by the name of the site.
     3. Then, together and by name: the default rules of each league the club belongs to, called
        by the name of the league; the other rules of those leagues, "league: name"; and the
        default rules of the global leagues it does not belong to. The other rules of a global
@@ -727,16 +727,24 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	$own = array();
 	if ($club_id != null)
 	{
-		$query = new DbQuery('SELECT id, name, rules FROM rules WHERE league_id IS NULL AND (club_id = ? OR club_id IS NULL)', $club_id);
+		$query = new DbQuery('SELECT id, name, rules, club_id FROM rules WHERE league_id IS NULL AND (club_id = ? OR club_id IS NULL)', $club_id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT id, name, rules FROM rules WHERE league_id IS NULL AND club_id IS NULL');
+		$query = new DbQuery('SELECT id, name, rules, club_id FROM rules WHERE league_id IS NULL AND club_id IS NULL');
 	}
 	while ($row = $query->next())
 	{
-		list($id, $name, $rules) = $row;
-		$own[] = _rules_choice('r' . $id, $name == '' ? PRODUCT_NAME : $name, upgrade_rules_code($rules));
+		list($id, $name, $rules, $owner_id) = $row;
+		if ($owner_id != null)
+		{
+			$name = $club_name . ': ' . $name;
+		}
+		else if ($name == '')
+		{
+			$name = PRODUCT_NAME;
+		}
+		$own[] = _rules_choice('r' . $id, $name, upgrade_rules_code($rules));
 	}
 	_sort_rules_choices($own);
 

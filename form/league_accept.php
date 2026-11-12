@@ -39,7 +39,7 @@ try
 	if (is_permitted(PERMISSION_ADMIN))
 	{
 		echo '<tr><td colspan="2">';
-		echo '<input type="checkbox" id="form-elite"> ' . get_label('global league. The default rules of a global league are offered to every club, and it can create elite series that bring more rating points.');
+		echo '<input type="checkbox" id="form-elite"> ' . get_label('global league. The default rules and scoring systems of a global league are offered to every club, and it can create elite series that bring more rating points.');
 		echo '</td></tr>';
 	}
 	echo '</table>';

@@ -66,8 +66,13 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$rules_code = get_optional_param('rules_code', get_site_rules());
-		$scoring_id = get_optional_param('scoring_id', SCORING_DEFAULT_ID);
-		$normalizer_id = NORMALIZER_DEFAULT_ID;
+		// The club gets its own copies of these - see own_system().
+		$scoring_id = (int)get_optional_param('scoring_id', 0);
+		if ($scoring_id <= 0)
+		{
+			$scoring_id = get_site_scoring_id();
+		}
+		$normalizer_id = get_site_normalizer_id();
 		
 		Db::begin();
 		if ($city_id <= 0)
@@ -95,6 +100,9 @@ class ApiPage extends OpsApiPageBase
 			'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id, activated, currency_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?)',
 			$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id, $scoring_id, $normalizer_id, $currency_id);
 		list($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
+		$scoring_id = own_system('scorings', $scoring_id, $club_id, NULL);
+		$normalizer_id = own_system('normalizers', $normalizer_id, $club_id, NULL);
+		Db::exec(get_label('club'), 'UPDATE clubs SET scoring_id = ?, normalizer_id = ? WHERE id = ?', $scoring_id, $normalizer_id, $club_id);
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
@@ -183,11 +191,21 @@ class ApiPage extends OpsApiPageBase
 		{
 			$currency_id = NULL;
 		}
-		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
-		$normalizer_id = get_optional_param('normalizer_id', $old_normalizer_id);
+		// The default systems of a club are its own: someone else's becomes a copy - see own_system().
+		$scoring_id = (int)get_optional_param('scoring_id', $old_scoring_id);
+		if ($scoring_id != $old_scoring_id)
+		{
+			$scoring_id = own_system('scorings', $scoring_id, $club_id, NULL);
+		}
+		$normalizer_id = (int)get_optional_param('normalizer_id', $old_normalizer_id);
+		// There is always a default normalizer - a tournament is the one that can go without.
 		if ($normalizer_id <= 0)
 		{
-			$normalizer_id = NULL;
+			$normalizer_id = $old_normalizer_id;
+		}
+		else if ($normalizer_id != $old_normalizer_id)
+		{
+			$normalizer_id = own_system('normalizers', $normalizer_id, $club_id, NULL);
 		}
 		$langs = (int)get_optional_param('langs', $old_langs);
 		if ($langs == 0)
@@ -329,8 +347,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', 'city remains the same unless <q>city_id</q> is set.');
 		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', 'city remains the same unless <q>city_id</q> is set.');
 		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
-		$help->request_param('scoring_id', 'Default scoring system for the club. This scoring system is suggested by default to all new tournaments of the club.', 'remains the same.');
-		$help->request_param('normalizer_id', 'Default scoring normalizer for the club. This scoring normalizer is suggested by default to all new tournaments of the club. Send 0 if no default normalizer needed.', 'remains the same.');
+		$help->request_param('scoring_id', 'Default scoring system for the club. This scoring system is suggested by default to all new tournaments of the club. The default scoring system of a club is its own: if this one belongs to someone else, the club gets a copy of it.', 'remains the same.');
+		$help->request_param('normalizer_id', 'Default scoring normalizer for the club. This scoring normalizer is suggested by default to all new tournaments of the club. As with the scoring system, the club gets a copy of a normalizer of someone else.', 'remains the same.');
 		$help->request_param('fee', 'Admition rate for a common event.', 'remains the same.');
 		$help->request_param('currency_id', 'Currency used in the club.', 'remains the same.');
 		return $help;

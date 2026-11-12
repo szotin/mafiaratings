@@ -10,6 +10,7 @@ class Page extends PageBase
 	private $normalizer_id;
 	private $used_versions;
 	private $normalizer_name;
+	private $name_fixed;
 	private $normalizer_version;
 	private $current_version;
 	private $versions;
@@ -56,6 +57,13 @@ class Page extends PageBase
 		// version button worth offering.
 		$this->used_versions = get_used_system_versions('normalizer', $this->normalizer_id, array('tournaments'));
 
+		// A default system is called by the name of its owner, and its name is not edited.
+		$default_name = get_default_system_name('normalizers', $this->normalizer_id);
+		$this->name_fixed = $default_name !== NULL;
+		if ($this->name_fixed)
+		{
+			$this->normalizer_name = $default_name;
+		}
 		$this->_title = get_label('Scoring normalizer') . ': ' . $this->normalizer_name;
 	}
 	
@@ -85,7 +93,8 @@ class Page extends PageBase
 		{
 			normalizer: <?php echo $this->normalizer; ?>,
 			id: <?php echo $this->normalizer_id; ?>,
-			name: "<?php echo $this->normalizer_name; ?>",
+			name: <?php echo json_encode($this->normalizer_name); ?>,
+			nameFixed: <?php echo $this->name_fixed ? 'true' : 'false'; ?>,
 			version: <?php echo $this->normalizer_version; ?>,
 			versions: [<?php echo implode(',', $this->versions); ?>],
 			strings:
@@ -271,10 +280,13 @@ class Page extends PageBase
 			{
 				op: 'change'
 				, normalizer_id: data.id
-				, name: data.name
 				, normalizer: JSON.stringify(data.normalizer)
 				, normalizer_version: data.version
 			};
+			if (!data.nameFixed)
+			{
+				params.name = data.name;
+			}
 			json.post("api/ops/normalizer.php", params, function(response)
 			{
 				// A save that added a version gives the picker one more entry. This has to happen

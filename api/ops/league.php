@@ -14,6 +14,14 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	// A new league gets its own copies of the default systems of the site - see own_system().
+	private static function own_systems($league_id)
+	{
+		$scoring_id = own_system('scorings', get_site_scoring_id(), NULL, $league_id);
+		$normalizer_id = own_system('normalizers', get_site_normalizer_id(), NULL, $league_id);
+		Db::exec(get_label('league'), 'UPDATE leagues SET scoring_id = ?, normalizer_id = ? WHERE id = ?', $scoring_id, $normalizer_id, $league_id);
+	}
+
 	private function check_name($name, $league_id = 0)
 	{
 		if ($name == '')
@@ -81,8 +89,9 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(
 				get_label('league'),
 				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-				$name, $langs, $flags, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
+				$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, GAINING_DEFAULT_ID);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
+			self::own_systems($league_id);
 			
 			$log_details = new stdClass();
 			$log_details->name = $name;
@@ -176,13 +185,23 @@ class ApiPage extends OpsApiPageBase
 		
 		$url = check_url(get_optional_param('url', $old_url));
 		$phone = get_optional_param('phone', $old_phone);
-		$scoring_id = get_optional_param('scoring_id', $old_scoring_id);
-		$normalizer_id = get_optional_param('normalizer_id', $old_normalizer_id);
+		// The default systems of a league are its own: someone else's becomes a copy - see own_system().
+		$scoring_id = (int)get_optional_param('scoring_id', $old_scoring_id);
+		if ($scoring_id != $old_scoring_id)
+		{
+			$scoring_id = own_system('scorings', $scoring_id, NULL, $league_id);
+		}
+		$normalizer_id = (int)get_optional_param('normalizer_id', $old_normalizer_id);
+		// There is always a default normalizer - a tournament is the one that can go without.
 		if ($normalizer_id <= 0)
 		{
-			$normalizer_id = NULL;
+			$normalizer_id = $old_normalizer_id;
 		}
-		$gaining_id = get_optional_param('gaining_id', $old_gaining_id);
+		else if ($normalizer_id != $old_normalizer_id)
+		{
+			$normalizer_id = own_system('normalizers', $normalizer_id, NULL, $league_id);
+		}
+		$gaining_id= get_optional_param('gaining_id', $old_gaining_id);
 		$langs = (int)get_optional_param('langs', $old_langs);
 		$flags = (int)get_optional_param('flags', $old_flags);
 		if ($_profile->is_admin())
@@ -291,7 +310,7 @@ class ApiPage extends OpsApiPageBase
 
 		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		$help->request_param('scoring_id', 'Default tournament scoring system for the league. This scoring system is suggested by default to all new tournaments of the league.', 'remains the same.');
-		$help->request_param('normalizer_id', 'Default tournament scoring normalizer for the league. This scoring normalizer is suggested by default to all new tournaments of the league. Send 0 if the league does need to have default normalizer.', 'remains the same.');
+		$help->request_param('normalizer_id', 'Default tournament scoring normalizer for the league. This scoring normalizer is suggested by default to all new tournaments of the league. As with the scoring system, the league gets a copy of a normalizer of someone else.', 'remains the same.');
 		$help->request_param('gaining_id', 'Default series scoring system for the league. This scoring system is suggested by default to all new tournament series of the league.', 'remains the same.');
 		return $help;
 	}
@@ -326,9 +345,10 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(
 			get_label('league'),
 			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-			$name, $langs, $flags, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
-			
+			$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, GAINING_DEFAULT_ID);
+
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
+		self::own_systems($league_id);
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;

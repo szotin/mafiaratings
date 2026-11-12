@@ -588,7 +588,18 @@ function refreshScoringEditor(isDirty)
     var html = '<table width="100%" class="bordered dark">';
 	if (_data.name)
 	{
-		html += '<tr><td colspan="5">' + _data.strings.name + ': <input id="scoring-name" value="' + _data.name + '" oninput="onScoringNameChange()"> ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
+		// A default system is called by the name of its owner, which is not edited here.
+		var name = $('<div>').text(_data.name).html();
+		html += '<tr><td colspan="5">' + _data.strings.name + ': ';
+		if (_data.nameFixed)
+		{
+			html += '<b>' + name + '</b>';
+		}
+		else
+		{
+			html += '<input id="scoring-name" value="' + name.replace(/"/g, '&quot;') + '" oninput="onScoringNameChange()">';
+		}
+		html += ' ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
 	}
     for (var sectionName in _data.sections)
     {

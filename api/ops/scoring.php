@@ -58,25 +58,18 @@ function check_scoring($scoring)
 
 class ApiPage extends OpsApiPageBase
 {
-	private function check_name($name, $club_id, $id = -1)
+	// The name is unique among the systems of the same owner. The default system of a club is
+	// often a copy of one of the site under the same name, so the site's do not count.
+	private function check_name($name, $club_id, $league_id, $id = -1)
 	{
-		global $_profile;
-
 		if ($name == '')
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('scoring system name')));
 		}
 
 		check_name($name, get_label('scoring system name'));
-		
-		if (!is_null($club_id))
-		{
-			$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND (club_id = ? OR club_id IS NULL)', $name, $club_id);
-		}
-		else
-		{
-			$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND club_id IS NULL', $name);
-		}
+
+		$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND club_id <=> ? AND league_id <=> ?', $name, $club_id, $league_id);
 		
 		if ($id > 0)
 		{
@@ -132,7 +125,7 @@ class ApiPage extends OpsApiPageBase
 		$scoring = json_encode($scoring);
 		
 		Db::begin();
-		$this->check_name($name, $club_id);
+		$this->check_name($name, $club_id, $league_id);
 		
 		Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
 		list ($scoring_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
@@ -198,8 +191,9 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_ADMIN);
 		}
 		
-		$name = trim(get_optional_param('name', $old_name));
-		$this->check_name($name, $club_id, $scoring_id);
+		// A default system is called by the name of its owner, so its own name stays as it is.
+		$name = is_default_system('scorings', $scoring_id) ? $old_name : trim(get_optional_param('name', $old_name));
+		$this->check_name($name, $club_id, $league_id, $scoring_id);
 		
 		list ($current_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $scoring_id);
 		
@@ -392,14 +386,21 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, $club_id, $league_id);
 
 		Db::begin();
-		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
+		// The default system of a club, a league or the site can be edited but not deleted.
+		if (is_default_system('scorings', $scoring_id))
+		{
+			throw new Exc(get_label('The default scoring system can not be deleted.'));
+		}
+		// A system of both a club and a league is given up by the one who deletes it and stays
+		// with the other; otherwise it is deleted.
+		if ($club_id != NULL && $league_id != NULL && !is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
 			Db::exec(get_label('scoring system'), 'UPDATE scorings SET league_id = NULL WHERE id = ?', $scoring_id);
 			$log_details = new stdClass();
 			$log_details->league_id = NULL;
 			db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id, $league_id);
 		}
-		else if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
+		else if ($club_id != NULL && $league_id != NULL && !is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 		{
 			Db::exec(get_label('scoring system'), 'UPDATE scorings SET club_id = NULL WHERE id = ?', $scoring_id);
 			$log_details = new stdClass();
