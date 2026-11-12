@@ -151,13 +151,10 @@ try
 		echo '</td></tr>';
 	}
 	
-	$query = new DbQuery('SELECT id, name FROM gainings WHERE (league_id IS NULL AND club_id IS NULL) OR league_id = ? OR club_id = ? ORDER BY name', $league_id, $club_id);
+	// What the owner can use - see get_available_systems(). The system the series is on stays on
+	// the list even if the owner could not pick it any more.
 	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining" onchange="gainingChanged()">';
-	while ($row = $query->next())
-	{
-		list($gid, $gname) = $row;
-		show_option((int)$gid, $gaining_id, $gname);
-	}
+	show_system_options('gainings', $club_id > 0 ? (int)$club_id : NULL, $gaining_id, $club_id > 0 ? NULL : (int)$league_id);
 	echo '</select> <select id="form-gaining-version"></select>';
 	echo '</td></tr>';
 	

@@ -78,24 +78,26 @@ class RulesManagement
 		return '-1';
 	}
 
-	// The default scoring system and normalizer of this owner - see own_system() in scoring.php.
-	// The normalizer is NULL only when the owner has none yet - the site before it has a default.
+	// The default scoring system, normalizer and gaining system of this owner - see own_system()
+	// in scoring.php. The normalizer is NULL only when the owner has none yet - the site before it
+	// has a default.
 	private function default_systems()
 	{
 		if ($this->club_id != NULL)
 		{
-			list($scoring_id, $normalizer_id) = Db::record(get_label('club'), 'SELECT scoring_id, normalizer_id FROM clubs WHERE id = ?', $this->club_id);
+			list($scoring_id, $normalizer_id, $gaining_id) = Db::record(get_label('club'), 'SELECT scoring_id, normalizer_id, gaining_id FROM clubs WHERE id = ?', $this->club_id);
 		}
 		else if ($this->league_id != NULL)
 		{
-			list($scoring_id, $normalizer_id) = Db::record(get_label('league'), 'SELECT scoring_id, normalizer_id FROM leagues WHERE id = ?', $this->league_id);
+			list($scoring_id, $normalizer_id, $gaining_id) = Db::record(get_label('league'), 'SELECT scoring_id, normalizer_id, gaining_id FROM leagues WHERE id = ?', $this->league_id);
 		}
 		else
 		{
 			$scoring_id = get_site_scoring_id();
 			$normalizer_id = get_site_normalizer_id();
+			$gaining_id = get_site_gaining_id();
 		}
-		return array((int)$scoring_id, $normalizer_id == NULL ? NULL : (int)$normalizer_id);
+		return array((int)$scoring_id, $normalizer_id == NULL ? NULL : (int)$normalizer_id, (int)$gaining_id);
 	}
 
 	private function tab_button($tab, $label)
@@ -231,15 +233,20 @@ class RulesManagement
 		echo '</table>';
 	}
 
+	// The default system first - it is edited, never deleted - then the others.
 	private function show_gainings()
 	{
+		list($scoring_id, $normalizer_id, $default_id) = $this->default_systems();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createGainingSystem(' . $this->gaining_owner_args() . ')" title="' . get_label('New gaining system') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
 		echo '<td>' . get_label('Gaining system name') . '</td></tr>';
-
+		list($default_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $default_id);
+		echo '<tr><td class="dark" align="center">';
+		echo '<a onclick="mr.editGainingSystem(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
+		echo '</td><td><a href="javascript:showGaining(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td></tr>';
 		$query = new DbQuery('SELECT id, name, version FROM gainings WHERE ', $this->owner_condition());
-		$query->add(' ORDER BY name');
+		$query->add(' AND id <> ? ORDER BY name', $default_id);
 		while ($row = $query->next())
 		{
 			list ($id, $name, $version) = $row;

@@ -2,6 +2,7 @@
 
 require_once '../include/session.php';
 require_once '../include/security.php';
+require_once '../include/scoring.php';
 
 initiate_session();
 
@@ -39,13 +40,9 @@ try
 
 	echo '<tr><td>'.get_label('Copy all rules from') . ':</td><td><select id="form-copy">';
 	show_option(0, 0, '');
-	$query = new DbQuery('SELECT id, name FROM gainings WHERE (league_id IS NULL AND club_id IS NULL) OR league_id = ? OR club_id = ? ORDER BY name', $league_id, $club_id);
-	while ($row = $query->next())
-	{
-		list ($id, $name) = $row;
-		show_option((int)$id, 0, $name);
-	}
-	echo '</td></tr>';
+	// What the owner can use - see get_available_systems().
+	show_system_options('gainings', $club_id > 0 ? $club_id : NULL, 0, $club_id <= 0 && $league_id > 0 ? $league_id : NULL);
+	echo '</select></td></tr>';
 	
 	echo '</table>';
 	

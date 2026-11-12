@@ -9,6 +9,7 @@ require_once '../include/security.php';
 require_once '../include/picture.php';
 require_once '../include/currency.php';
 require_once '../include/series.php';
+require_once '../include/scoring.php';
 
 initiate_session();
 
@@ -25,11 +26,10 @@ try
 	if ($club_id > 0)
 	{
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		list($owner_name, $owner_flags, $owner_langs) = Db::record(get_label('club'), 'SELECT name, flags, langs FROM clubs WHERE id = ?', $club_id);
+		list($owner_name, $owner_flags, $owner_langs, $default_gaining_id) = Db::record(get_label('club'), 'SELECT name, flags, langs, gaining_id FROM clubs WHERE id = ?', $club_id);
 		$owner_pic = new Picture(CLUB_PICTURE);
 		$owner_id = $club_id;
 		$owner_is_elite = false;
-		$default_gaining_id = 0;
 	}
 	else if ($league_id > 0)
 	{
@@ -125,20 +125,10 @@ try
 		echo '</td></tr>';
 	}
 
-	// The owner's own gaining systems plus the global ones. A club has no default gaining system
-	// the way a league does, so the first one on the list is preselected.
-	$default_gaining_id = (int)$default_gaining_id;
-	$query = new DbQuery('SELECT id, name FROM gainings WHERE (league_id IS NULL AND club_id IS NULL) OR league_id = ? OR club_id = ? ORDER BY name', $league_id, $club_id);
+	// What the owner can use - see get_available_systems(). Its default comes first and is
+	// preselected.
 	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
-	while ($row = $query->next())
-	{
-		list($gaining_id, $gaining_name) = $row;
-		if ($default_gaining_id <= 0)
-		{
-			$default_gaining_id = (int)$gaining_id;
-		}
-		show_option((int)$gaining_id, $default_gaining_id, $gaining_name);
-	}
+	show_system_options('gainings', $club_id > 0 ? $club_id : NULL, (int)$default_gaining_id, $club_id > 0 ? NULL : $league_id);
 	echo '</select></td></tr>';
 	
 	echo '<tr><td>' . get_label('Notes') . ':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';

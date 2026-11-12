@@ -562,8 +562,17 @@ function refreshGainingEditor(isDirty)
 
 	// The name of the system and which version is open.
 	html += geSectionStart('dark');
-	html += '<tr><td>' + _data.strings.name + ': <input id="gaining-name" value="' + geEscape(_data.name) + '" oninput="geNameChange()">' +
-		' &emsp; ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
+	// A default system is called by the name of its owner, which is not edited here.
+	html += '<tr><td>' + _data.strings.name + ': ';
+	if (_data.nameFixed)
+	{
+		html += '<b>' + geEscape(_data.name) + '</b>';
+	}
+	else
+	{
+		html += '<input id="gaining-name" value="' + geEscape(_data.name) + '" oninput="geNameChange()">';
+	}
+	html += ' &emsp; ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
 	html += geSectionEnd();
 
 	// The formulas.

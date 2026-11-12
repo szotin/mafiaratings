@@ -49,7 +49,19 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter [0].', get_label('league')));
 		}
 
+		// Without one the series is on the default gaining system of its owner.
 		$gaining_id = (int)get_optional_param('gaining_id');
+		if ($gaining_id <= 0)
+		{
+			if ($club_id > 0)
+			{
+				list($gaining_id) = Db::record(get_label('club'), 'SELECT gaining_id FROM clubs WHERE id = ?', $club_id);
+			}
+			else
+			{
+				list($gaining_id) = Db::record(get_label('league'), 'SELECT gaining_id FROM leagues WHERE id = ?', $league_id);
+			}
+		}
 		list($gaining_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
 		$gaining_version = (int)get_optional_param('gaining_version', $gaining_version);
 		
@@ -217,7 +229,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('currency_id', 'Currency id for the admission rate. Send -1 if unknown.', '-1.');
 		$help->request_param('langs', 'Languages on this series. A bit combination of language ids.', 'all league languages are used.');
 		$help->request_param('flags', 'Series flags. Currently not used');
-		$help->request_param('gaining_id', 'Gaining system id.', 'Default gaining of the league is used.');
+		$help->request_param('gaining_id', 'Gaining system id.', 'the default gaining system of the league or of the club is used.');
 		$help->request_param('gaining_version', 'Gaining system version.', 'Latest gaining system version is used.');
 /*		
 									'A bit cobination of:<ol>' .

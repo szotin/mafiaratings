@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../include/api.php';
+require_once '../../include/scoring.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -76,7 +77,10 @@ class ApiPage extends GetApiPageBase
 		
 		$gainings = array();
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.league_id, s.club_id, v.version, v.gaining FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id', $condition);
+			// Whether it is the default system of its owner: the club, the league or the site.
+			'SELECT s.id, s.name, s.league_id, s.club_id, v.version, v.gaining,' .
+			' (s.flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0 OR EXISTS (SELECT 1 FROM clubs c WHERE c.gaining_id = s.id) OR EXISTS (SELECT 1 FROM leagues l WHERE l.gaining_id = s.id)' .
+			' FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id', $condition);
 		$query->add(' ORDER BY s.name, v.version');
 		if ($page_size > 0)
 		{
@@ -88,7 +92,7 @@ class ApiPage extends GetApiPageBase
 		$current_gaining = NULL;
 		while ($row = $query->next())
 		{
-			list ($gaining_id, $gaining_name, $gaining_league_id, $gaining_club_id, $gaining_version, $gaining) = $row;
+			list ($gaining_id, $gaining_name, $gaining_league_id, $gaining_club_id, $gaining_version, $gaining, $is_default) = $row;
 			if (count($gainings) > 0)
 			{
 				$current_gaining = $gainings[count($gainings)-1];
@@ -110,6 +114,10 @@ class ApiPage extends GetApiPageBase
 				if (!is_null($gaining_club_id))
 				{
 					$current_gaining->club_id = (int)$gaining_club_id;
+				}
+				if ($is_default)
+				{
+					$current_gaining->default = true;
 				}
 				$current_gaining->versions = array();
 				$gainings[] = $current_gaining;
@@ -138,6 +146,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('name', 'gaining system name.');
 			$param->sub_param('league_id', 'League id that this system belongs to. Missing for gaining systems that do not belong to a league.');
 			$param->sub_param('club_id', 'Club id that this system belongs to. Missing for gaining systems that do not belong to a club.');
+			$param->sub_param('default', 'True when it is the default gaining system of its owner - of the club or the league it belongs to, or, when it belongs to neither, of the site. Every club and league has its own.', 'it is not a default');
 			$versions_param = $param->sub_param('versions', 'List of versions of the gaining system.');
 				$versions_param->sub_param('version', 'Version number.');
 				$versions_param->sub_param('rules', 'gaining rules. Todo: make a detailed description of the format.');

@@ -3,12 +3,14 @@
 require_once 'include/general_page_base.php';
 require_once 'include/systems.php';
 require_once 'include/gaining.php';
+require_once 'include/scoring.php';
 
 class Page extends PageBase
 {
 	private $gaining;
 	private $gaining_id;
 	private $gaining_name;
+	private $name_fixed;
 	private $gaining_version;
 	private $current_version;
 	private $versions;
@@ -59,6 +61,13 @@ class Page extends PageBase
 		// offering. What uses a gaining system is the series, not the tournaments inside it.
 		$this->used_versions = get_used_system_versions('gaining', $this->gaining_id, array('series'));
 
+		// A default system is called by the name of its owner, and its name is not edited.
+		$default_name = get_default_system_name('gainings', $this->gaining_id);
+		$this->name_fixed = $default_name !== NULL;
+		if ($this->name_fixed)
+		{
+			$this->gaining_name = $default_name;
+		}
 		$this->_title = get_label('Gaining system') . ': ' . $this->gaining_name;
 	}
 
@@ -112,7 +121,8 @@ class Page extends PageBase
 		{
 			gaining: <?php echo $this->gaining; ?>,
 			id: <?php echo $this->gaining_id; ?>,
-			name: "<?php echo $this->gaining_name; ?>",
+			name: <?php echo json_encode($this->gaining_name); ?>,
+			nameFixed: <?php echo $this->name_fixed ? 'true' : 'false'; ?>,
 			version: <?php echo $this->gaining_version; ?>,
 			versions: [<?php echo implode(',', $this->versions); ?>],
 			functions: "<?php echo implode(',', $function_names); ?>",
@@ -263,10 +273,13 @@ class Page extends PageBase
 			{
 				op: 'change'
 				, gaining_id: data.id
-				, name: data.name
 				, gaining: JSON.stringify(data.gaining)
 				, gaining_version: data.version
 			};
+			if (!data.nameFixed)
+			{
+				params.name = data.name;
+			}
 			json.post("api/ops/gaining.php", params, function(response)
 			{
 				// A save that added a version gives the picker one more entry. This has to happen

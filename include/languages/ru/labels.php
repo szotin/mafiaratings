@@ -2182,6 +2182,7 @@ $labelMenu = array (
 'Sheriff\'s checks' => 'Проверки шерифа', // streams.php
 'The default scoring system can not be deleted.' => 'Систему подсчёта баллов по умолчанию удалить нельзя.', // api/ops/scoring.php
 'The default scoring normalizer can not be deleted.' => 'Систему выравнивания баллов по умолчанию удалить нельзя.', // api/ops/normalizer.php
+'The default gaining system can not be deleted.' => 'Систему серийных баллов по умолчанию удалить нельзя.', // api/ops/gaining.php
 'global league. The default rules and scoring systems of a global league are offered to every club, and it can create elite series that bring more rating points.' => 'глобальная лига. Правила и системы подсчёта баллов глобальной лиги по умолчанию предлагаются каждому клубу, и она может создавать элитные серии, которые приносят больше рейтинговых баллов.', // form/league_accept.php, form/league_create.php, form/league_edit.php
 );
 

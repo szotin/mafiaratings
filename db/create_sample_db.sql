@@ -95,7 +95,8 @@ CREATE TABLE `clubs` (
   `normalizer_id` int(11) DEFAULT NULL,
   `activated` int(11) NOT NULL,
   `fee` int(11) DEFAULT NULL,
-  `currency_id` int(11) DEFAULT NULL
+  `currency_id` int(11) DEFAULT NULL,
+  `gaining_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `club_info`;
@@ -302,7 +303,8 @@ CREATE TABLE `gainings` (
   `league_id` int(11) DEFAULT NULL,
   `club_id` int(11) DEFAULT NULL,
   `name` varchar(128) NOT NULL,
-  `version` int(11) DEFAULT NULL
+  `version` int(11) DEFAULT NULL,
+  `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `gaining_versions`;
@@ -1096,15 +1098,15 @@ INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`)
 INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`, `flags`) VALUES (19, NULL, 'ФИИМ', NULL, 1, 1);
 INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) VALUES (19, 1, '{\"main\":[{\"matter\":2,\"points\":1}],\"prima_nocta\":[{\"matter\":1024,\"roles\":3,\"points\":0.4},{\"matter\":2048,\"roles\":3,\"points\":0.25}],\"penalty\":[{\"matter\":4096,\"points\":-0.5},{\"matter\":8192,\"points\":-0.5}]}', 0);
 
--- Gaining (formula reused verbatim from gaining 'Серийник', id 4 v1). This row also has to be the
--- default gaining system: include/gaining.php hardcodes GAINING_DEFAULT_ID = 1, which every
--- league creation is assigned, so it must exist under exactly that id. league_id is NULL
--- (global) because the gaining selectors list only "league_id IS NULL OR league_id = ?" -
--- scoped to a single league it is invisible to every other league, leaving an empty dropdown
--- that posts an empty gaining_id into the NOT NULL series.gaining_id column.
-INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name`, `version`) VALUES (1, NULL, NULL, 'Sample Gaining', 1);
+-- Gaining (formula reused verbatim from gaining 'Серийник', id 4 v1). This row is the default
+-- gaining system of the site (flags 1, see get_site_gaining_id() in include/scoring.php): what a
+-- new club or league gets its own copy of. Gainings 2 and 3 are those copies, the defaults of the
+-- sample club and the sample league - see db/alter214.sql.
+INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name`, `version`, `flags`) VALUES (1, NULL, NULL, 'Sample Gaining', 1, 1);
+INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name`, `version`, `flags`) VALUES (2, NULL, 1, 'Sample Gaining', 1, 0), (3, 1, NULL, 'Sample Gaining', 1, 0);
 INSERT INTO `gaining_versions` (`gaining_id`, `version`, `gaining`, `functions`) VALUES (1, 1, '{\"maxTournaments\":1,\"points\":\"table(stars-1, place-1)\",\"table\":[[20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1],[40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21],[60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41]]}'
 , 576);
+INSERT INTO `gaining_versions` (`gaining_id`, `version`, `gaining`, `functions`) SELECT `g`.`id`, 1, `v`.`gaining`, `v`.`functions` FROM `gaining_versions` `v` JOIN `gainings` `g` ON `g`.`id` IN (2, 3) WHERE `v`.`gaining_id` = 1 AND `v`.`version` = 1;
 
 -- Users (all passwords are md5('1')). Id 1 is the site admin (USER_PERM_ADMIN | male).
 INSERT INTO `users` (`id`, `password`, `auth_key`, `email`, `games_moderated`, `flags`, `languages`, `reg_time`, `def_lang`, `city_id`, `phone`, `club_id`, `games`, `games_won`, `rating`, `name_id`, `mwt_id`, `mwt_name`, `red_rating`, `black_rating`, `imafia_id`, `imafia_name`, `emo_id`, `emo_name`) VALUES
@@ -1157,8 +1159,8 @@ INSERT INTO `club_regs` (`user_id`, `club_id`, `flags`) VALUES
 (25, 1, 17);
 
 -- Club, league, season(series), their links
-INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`) VALUES (1, 'Sample Club', 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, 2, 1284784660, NULL, NULL);
-INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 2, 0, '{}', 3, 1);
+INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`, `gaining_id`) VALUES (1, 'Sample Club', 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, 2, 1284784660, NULL, NULL, 2);
+INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 2, 0, '{}', 3, 3);
 INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`) VALUES (1, 1, 0);
 -- The default rules of the site: the rules of the site with no name - see db/alter212.sql.
 INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name`, `rules`) VALUES (1, NULL, NULL, '', '0002000010000');
@@ -1605,7 +1607,8 @@ ALTER TABLE `clubs`
   ADD KEY `prompt_sound_id` (`prompt_sound_id`),
   ADD KEY `end_sound_id` (`end_sound_id`),
   ADD KEY `normalizer_id` (`normalizer_id`),
-  ADD KEY `currency_id` (`currency_id`);
+  ADD KEY `currency_id` (`currency_id`),
+  ADD KEY `gaining_id` (`gaining_id`);
 
 --
 -- Indexes for table `club_info`
@@ -2323,7 +2326,7 @@ ALTER TABLE `event_mailings`
 -- AUTO_INCREMENT for table `gainings`
 --
 ALTER TABLE `gainings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `games`
@@ -2514,6 +2517,7 @@ ALTER TABLE `clubs`
   ADD CONSTRAINT `club_city` FOREIGN KEY (`city_id`) REFERENCES `cities` (`id`),
   ADD CONSTRAINT `club_currency` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
   ADD CONSTRAINT `club_end_sound` FOREIGN KEY (`end_sound_id`) REFERENCES `sounds` (`id`),
+  ADD CONSTRAINT `club_gaining` FOREIGN KEY (`gaining_id`) REFERENCES `gainings` (`id`),
   ADD CONSTRAINT `club_normalizer` FOREIGN KEY (`normalizer_id`) REFERENCES `normalizers` (`id`),
   ADD CONSTRAINT `club_prompt_sound` FOREIGN KEY (`prompt_sound_id`) REFERENCES `sounds` (`id`),
   ADD CONSTRAINT `club_scoring` FOREIGN KEY (`scoring_id`) REFERENCES `scorings` (`id`),

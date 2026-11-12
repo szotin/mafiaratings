@@ -22,9 +22,8 @@ try
 		throw new FatalExc(get_label('No permissions'));
 	}
 	
-	list ($name, $url, $email, $phone, $langs, $flags, $league_gaining_id) =
-		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags, gaining_id FROM leagues WHERE id = ?', $id);
-	$league_gaining_id = (int)$league_gaining_id;
+	list ($name, $url, $email, $phone, $langs, $flags) =
+		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags FROM leagues WHERE id = ?', $id);
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
@@ -49,17 +48,8 @@ try
 	echo '<tr><td>'.get_label('Contact email').':</td><td><input class="longest" id="form-email" value="' . htmlspecialchars($email, ENT_QUOTES) . '"></td></tr>';
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td><input class="longest" id="form-phone" value="' . htmlspecialchars($phone, ENT_QUOTES) . '"></td></tr>';
 	
-	// The scoring system and the normalizer of the league are its defaults, set in Rules of its
-	// management menu.
-
-	$query = new DbQuery('SELECT id, name FROM gainings WHERE (league_id IS NULL AND club_id IS NULL) OR league_id = ? ORDER BY name', $id);
-	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
-	while ($row = $query->next())
-	{
-		list($gaining_id, $gaining_name) = $row;
-		show_option((int)$gaining_id, $league_gaining_id, $gaining_name);
-	}
-	echo '</select></td></tr>';
+	// The scoring system, the normalizer and the gaining system of the league are its defaults,
+	// set in Rules of its management menu.
 	
 	if (is_permitted(PERMISSION_ADMIN))
 	{
@@ -90,7 +80,6 @@ try
 			, url: $("#form-url").val()
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()
-			, gaining_id: $("#form-gaining").val()
 			, langs: languages
 			, flags: flags
 		},

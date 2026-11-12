@@ -19,7 +19,8 @@ class ApiPage extends OpsApiPageBase
 	{
 		$scoring_id = own_system('scorings', get_site_scoring_id(), NULL, $league_id);
 		$normalizer_id = own_system('normalizers', get_site_normalizer_id(), NULL, $league_id);
-		Db::exec(get_label('league'), 'UPDATE leagues SET scoring_id = ?, normalizer_id = ? WHERE id = ?', $scoring_id, $normalizer_id, $league_id);
+		$gaining_id = own_system('gainings', get_site_gaining_id(), NULL, $league_id);
+		Db::exec(get_label('league'), 'UPDATE leagues SET scoring_id = ?, normalizer_id = ?, gaining_id = ? WHERE id = ?', $scoring_id, $normalizer_id, $gaining_id, $league_id);
 	}
 
 	private function check_name($name, $league_id = 0)
@@ -89,7 +90,7 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(
 				get_label('league'),
 				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-				$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, GAINING_DEFAULT_ID);
+				$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			self::own_systems($league_id);
 			
@@ -201,7 +202,15 @@ class ApiPage extends OpsApiPageBase
 		{
 			$normalizer_id = own_system('normalizers', $normalizer_id, NULL, $league_id);
 		}
-		$gaining_id= get_optional_param('gaining_id', $old_gaining_id);
+		$gaining_id = (int)get_optional_param('gaining_id', $old_gaining_id);
+		if ($gaining_id <= 0)
+		{
+			$gaining_id = $old_gaining_id;
+		}
+		else if ($gaining_id != $old_gaining_id)
+		{
+			$gaining_id = own_system('gainings', $gaining_id, NULL, $league_id);
+		}
 		$langs = (int)get_optional_param('langs', $old_langs);
 		$flags = (int)get_optional_param('flags', $old_flags);
 		if ($_profile->is_admin())
@@ -311,7 +320,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		$help->request_param('scoring_id', 'Default tournament scoring system for the league. This scoring system is suggested by default to all new tournaments of the league.', 'remains the same.');
 		$help->request_param('normalizer_id', 'Default tournament scoring normalizer for the league. This scoring normalizer is suggested by default to all new tournaments of the league. As with the scoring system, the league gets a copy of a normalizer of someone else.', 'remains the same.');
-		$help->request_param('gaining_id', 'Default series scoring system for the league. This scoring system is suggested by default to all new tournament series of the league.', 'remains the same.');
+		$help->request_param('gaining_id', 'Default gaining system for the league. It is suggested by default to all new series of the league. As with the scoring system, the league gets a copy of a gaining system of someone else.', 'remains the same.');
 		return $help;
 	}
 	
@@ -345,7 +354,7 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(
 			get_label('league'),
 			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-			$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, GAINING_DEFAULT_ID);
+			$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
 
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		self::own_systems($league_id);

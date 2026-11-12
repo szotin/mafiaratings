@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/gaining.php';
+require_once '../../include/scoring.php';
 require_once '../../include/systems.php';
 require_once '../../include/names.php';
 
@@ -48,18 +49,10 @@ class ApiPage extends OpsApiPageBase
 
 		check_name($name, get_label('gaining system name'));
 
-		// The name has to be unique among the systems this owner can see - their own plus the
-		// global ones.
-		$query = new DbQuery('SELECT name FROM gainings WHERE name = ? AND ((league_id IS NULL AND club_id IS NULL)', $name);
-		if (!is_null($league_id))
-		{
-			$query->add(' OR league_id = ?', $league_id);
-		}
-		if (!is_null($club_id))
-		{
-			$query->add(' OR club_id = ?', $club_id);
-		}
-		$query->add(')');
+		// The name is unique among the systems of the same owner. The default system of a club or
+		// a league is often a copy of one of the site under the same name, so the site's do not
+		// count.
+		$query = new DbQuery('SELECT name FROM gainings WHERE name = ? AND league_id <=> ? AND club_id <=> ?', $name, $league_id, $club_id);
 
 		if ($id > 0)
 		{
@@ -154,7 +147,8 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_ADMIN);
 		}
 
-		$name = trim(get_optional_param('name', $old_name));
+		// A default system is called by the name of its owner, so its own name stays as it is.
+		$name = is_default_system('gainings', $gaining_id) ? $old_name : trim(get_optional_param('name', $old_name));
 		$this->check_name($name, $league_id, $club_id, $gaining_id);
 		
 		list ($current_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
@@ -351,6 +345,11 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		Db::begin();
+		// The default system of a club, a league or the site can be edited but not deleted.
+		if (is_default_system('gainings', $gaining_id))
+		{
+			throw new Exc(get_label('The default gaining system can not be deleted.'));
+		}
 		Db::exec(get_label('gaining system'), 'UPDATE gainings SET version = NULL WHERE id = ?', $gaining_id);
 		Db::exec(get_label('gaining system'), 'DELETE FROM gaining_versions WHERE gaining_id = ?', $gaining_id);
 		Db::exec(get_label('gaining system'), 'DELETE FROM gainings WHERE id = ?', $gaining_id);

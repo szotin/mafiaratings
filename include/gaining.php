@@ -5,8 +5,6 @@ require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/evaluator.php';
 require_once __DIR__ . '/utilities.php';
 
-define('GAINING_DEFAULT_ID', 1); // Default gaining system is hardcoded here to MWT (Mafia World Tour)
-
 define('GAINING_FUNCTION_ROUND',              0x0001); //      1
 define('GAINING_FUNCTION_FLOOR',              0x0002); //      2
 define('GAINING_FUNCTION_CEIL',               0x0004); //      4

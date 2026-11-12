@@ -267,26 +267,61 @@ function compare_role_scores($role, $player1, $player2)
 	return $games_count2 - $games_count1;
 }
 
-// The default scoring system of the site: the one a new club or league starts from.
-function get_site_scoring_id()
+/*  Scoring systems, normalizers and gaining systems are kept the same way, and so are their
+    defaults: clubs.<column> and leagues.<column> point to a system the club or the league owns,
+    and the site's default is its system with SYSTEM_FLAG_SITE_DEFAULT. This is what differs
+    between them: the column that points to a system, the table of its versions, and what a
+    version holds. */
+function _system_table_info($table)
 {
-	$query = new DbQuery('SELECT id FROM scorings WHERE club_id IS NULL AND league_id IS NULL ORDER BY (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') DESC, id LIMIT 1');
-	if ($row = $query->next())
+	switch ($table)
 	{
-		return (int)$row[0];
+		case 'scorings':
+			return array('scoring_id', 'scoring_versions', 'scoring, functions');
+		case 'normalizers':
+			return array('normalizer_id', 'normalizer_versions', 'normalizer');
+		case 'gainings':
+			return array('gaining_id', 'gaining_versions', 'gaining, functions');
 	}
-	throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
+	throw new Exc('Unknown system table ' . $table);
 }
 
-// The default normalizer of the site, NULL when the site does not normalize.
-function get_site_normalizer_id()
+// The default system of the site: the one a new club or league gets a copy of. The first system
+// of the site stands in for it if none is flagged.
+function get_site_system_id($table)
 {
-	$query = new DbQuery('SELECT id FROM normalizers WHERE club_id IS NULL AND league_id IS NULL AND (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0 LIMIT 1');
+	_system_table_info($table);
+	$query = new DbQuery('SELECT id FROM ' . $table . ' WHERE club_id IS NULL AND league_id IS NULL ORDER BY (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') DESC, id LIMIT 1');
 	if ($row = $query->next())
 	{
 		return (int)$row[0];
 	}
 	return NULL;
+}
+
+function get_site_scoring_id()
+{
+	$id = get_site_system_id('scorings');
+	if ($id == NULL)
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('scoring system')));
+	}
+	return $id;
+}
+
+function get_site_normalizer_id()
+{
+	return get_site_system_id('normalizers');
+}
+
+function get_site_gaining_id()
+{
+	$id = get_site_system_id('gainings');
+	if ($id == NULL)
+	{
+		throw new Exc(get_label('Unknown [0]', get_label('gaining system')));
+	}
+	return $id;
 }
 
 function _system_choice($id, $name)
@@ -324,12 +359,8 @@ function _sort_system_choices(&$choices)
     at the end so that it can stay selected. */
 function get_available_systems($table, $club_id = NULL, $current_id = NULL, $league_id = NULL)
 {
-	if ($table != 'scorings' && $table != 'normalizers')
-	{
-		throw new Exc('Unknown system table ' . $table);
-	}
-	$column = $table == 'scorings' ? 'scoring_id' : 'normalizer_id';
-	$site_default_id = $table == 'scorings' ? get_site_scoring_id() : get_site_normalizer_id();
+	list($column) = _system_table_info($table);
+	$site_default_id = get_site_system_id($table);
 
 	$top = array();
 	$club_default_id = NULL;
@@ -453,22 +484,7 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 // club or a league gets its own default system. Returns the id of the copy.
 function copy_system($table, $source_id, $club_id, $league_id)
 {
-	if ($table == 'scorings')
-	{
-		$versions = 'scoring_versions';
-		$key = 'scoring_id';
-		$fields = 'scoring, functions';
-	}
-	else if ($table == 'normalizers')
-	{
-		$versions = 'normalizer_versions';
-		$key = 'normalizer_id';
-		$fields = 'normalizer';
-	}
-	else
-	{
-		throw new Exc('Unknown system table ' . $table);
-	}
+	list($key, $versions, $fields) = _system_table_info($table);
 
 	list($name, $version) = Db::record(get_label('scoring system'), 'SELECT name, version FROM ' . $table . ' WHERE id = ?', $source_id);
 	Db::exec(get_label('scoring system'), 'INSERT INTO ' . $table . ' (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
@@ -497,10 +513,10 @@ function own_system($table, $id, $club_id, $league_id)
 	return copy_system($table, $id, $club_id, $league_id);
 }
 
-// Whether a scoring system or a normalizer is the default of anyone - a club, a league, or the site.
+// Whether a system is the default of anyone - a club, a league, or the site.
 function is_default_system($table, $id)
 {
-	$column = $table == 'scorings' ? 'scoring_id' : 'normalizer_id';
+	list($column) = _system_table_info($table);
 	$query = new DbQuery('SELECT id FROM ' . $table . ' WHERE id = ? AND (flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0', $id);
 	if ($query->next())
 	{
@@ -519,7 +535,7 @@ function is_default_system($table, $id)
 // its own name is not shown or edited. Returns that name, or NULL when $id is not a default system.
 function get_default_system_name($table, $id)
 {
-	$column = $table == 'scorings' ? 'scoring_id' : 'normalizer_id';
+	list($column) = _system_table_info($table);
 	$query = new DbQuery('SELECT name FROM clubs WHERE ' . $column . ' = ? ORDER BY id LIMIT 1', $id);
 	if ($row = $query->next())
 	{
@@ -538,7 +554,7 @@ function get_default_system_name($table, $id)
 	return NULL;
 }
 
-// Shows the options of a scoring or normalizer select.
+// Shows the options of a system select.
 function show_system_options($table, $club_id, $selected_id, $league_id = NULL)
 {
 	foreach (get_available_systems($table, $club_id, $selected_id, $league_id) as $s)
