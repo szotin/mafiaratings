@@ -11,7 +11,6 @@
 ALTER TABLE `gainings` ADD COLUMN `flags` INT(11) NOT NULL DEFAULT 0;
 ALTER TABLE `clubs` ADD COLUMN `gaining_id` INT(11) NULL DEFAULT NULL;
 ALTER TABLE `clubs` ADD KEY `gaining_id` (`gaining_id`);
-ALTER TABLE `clubs` ADD CONSTRAINT `club_gaining` FOREIGN KEY (`gaining_id`) REFERENCES `gainings` (`id`);
 
 UPDATE `gainings` SET `flags` = 1 WHERE `id` = 1 AND `club_id` IS NULL AND `league_id` IS NULL;
 
@@ -59,7 +58,9 @@ UPDATE `gainings` n JOIN `gaining_versions` v ON v.`gaining_id` = n.`id` SET n.`
 
 UPDATE `clubs` c JOIN `gainings` n ON n.`club_id` = c.`id` AND n.`id` > @first SET c.`gaining_id` = n.`id`;
 
+-- The foreign key comes only now: MySQL 8 does not let a column in a foreign key be modified.
 ALTER TABLE `clubs` MODIFY `gaining_id` INT(11) NOT NULL;
+ALTER TABLE `clubs` ADD CONSTRAINT `club_gaining` FOREIGN KEY (`gaining_id`) REFERENCES `gainings` (`id`);
 
 -- Gaining systems of the leagues.
 SET @first = (SELECT MAX(`id`) FROM `gainings`);
