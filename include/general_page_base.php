@@ -68,7 +68,7 @@ class GeneralPageBase extends PageBase
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
 				new MenuItem('currencies.php' . $ccc, get_label('Currencies'), get_label('Manage currencies')),
 				new MenuItem(null, null, null),
-				new MenuItem('scorings.php' . $ccc, get_label('Scoring systems'), get_label('Manage scoring systems')),
+				new MenuItem('scorings.php' . $ccc, get_label('Rules'), get_label('Game rules and scoring systems of [0]', PRODUCT_NAME)),
 				new MenuItem('sounds.php' . $ccc, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.')),
 				new MenuItem(null, null, null),
 				new MenuItem('game_issues.php' . $ccc, get_label('Game issues'), get_label('List of the games that have issues.')),

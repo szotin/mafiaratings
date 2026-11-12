@@ -663,57 +663,116 @@ function show_rules($rules_code, $view)
 	echo '</table></big>';
 }
 
+// The default rules of the site - the rules a new club starts from, and the rules the filters
+// of the leagues are put over where there is no club. They are the rules of the site that have
+// no name, see db/alter212.sql.
+function get_site_rules()
+{
+	$query = new DbQuery('SELECT rules FROM rules WHERE club_id IS NULL AND league_id IS NULL AND name = \'\'');
+	if ($row = $query->next())
+	{
+		return upgrade_rules_code($row[0]);
+	}
+	return DEFAULT_RULES;
+}
+
+function _rules_choice($id, $name, $rules)
+{
+	$r = new stdClass();
+	$r->id = $id;
+	$r->name = $name;
+	$r->rules = $rules;
+	return $r;
+}
+
+function _sort_rules_choices(&$choices)
+{
+	usort($choices, function($a, $b)
+	{
+		return strcmp(mb_strtolower($a->name, 'UTF-8'), mb_strtolower($b->name, 'UTF-8'));
+	});
+}
+
+/*  The rules a club can play by, in the order they are offered. Each is an object with the rules
+    code in ->rules, what it is called in ->name, and in ->id where it comes from: 'club' for the
+    default rules of the club, 'r<id>' for a row of the table rules, 'l<id>' for the default rules
+    of a league.
+
+    1. The default rules of the club, called by the name of the club.
+    2. The other rules of the club and the rules of the site, together, by name. The default
+       rules of the site are called by the name of the site.
+    3. Then, together and by name: the default rules of each league the club belongs to, called
+       by the name of the league; the other rules of those leagues, "league: name"; and the
+       default rules of the global leagues it does not belong to. The other rules of a global
+       league are for its own clubs only.
+
+    The rules of a league are a filter rather than rules, so what is offered for one is the
+    default rules of the club put through it: what the filter allows stays as the club has it,
+    the rest is the first option the filter allows - see correct_rules(). Without a club the
+    filters are put over the default rules of the site, and there is no first entry. */
 function get_available_rules($club_id = null, $club_name = null, $club_rules = null)
 {
-	$rules = array();
+	if ($club_id != null && ($club_name == null || $club_rules == null))
+	{
+		list($club_name, $club_rules) = Db::record(get_label('club'), 'SELECT name, rules FROM clubs WHERE id = ?', $club_id);
+	}
+	$base = $club_id != null ? upgrade_rules_code($club_rules) : get_site_rules();
+
+	$top = array();
 	if ($club_id != null)
 	{
-		if ($club_name != null && $club_rules != null)
-		{
-			$r = new stdClass();
-			$r->id = 0;
-			$r->name = $club_name;
-			$r->rules = $club_rules;
-			$rules[] = $r;
-		}
-	
-		$query = new DbQuery('SELECT l.id, l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ? ORDER BY name', $club_id);
-		while ($row = $query->next())
-		{
-			$r = new stdClass();
-			list($r->id, $r->name, $r->rules) = $row;
-			$r->id = -(int)$r->id;
-			$rules[] = $r;
-		}
-		$query = new DbQuery('SELECT id, name, default_rules FROM leagues WHERE (flags & '.LEAGUE_FLAG_ELITE.') <> 0 AND id NOT IN (SELECT league_id FROM league_clubs WHERE club_id = ?) ORDER BY name', $club_id);
-		while ($row = $query->next())
-		{
-			$r = new stdClass();
-			list($r->id, $r->name, $r->rules) = $row;
-			$r->id = -(int)$r->id;
-			$rules[] = $r;
-		}
-		$query = new DbQuery('SELECT id, name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
-		while ($row = $query->next())
-		{
-			$r = new stdClass();
-			list($r->id, $r->name, $r->rules) = $row;
-			$r->id = (int)$r->id;
-			$rules[] = $r;
-		}
+		$top[] = _rules_choice('club', $club_name, $base);
+	}
+
+	$own = array();
+	if ($club_id != null)
+	{
+		$query = new DbQuery('SELECT id, name, rules FROM rules WHERE league_id IS NULL AND (club_id = ? OR club_id IS NULL)', $club_id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT id, name, default_rules FROM leagues WHERE (flags & '.LEAGUE_FLAG_ELITE.') <> 0 ORDER BY name');
+		$query = new DbQuery('SELECT id, name, rules FROM rules WHERE league_id IS NULL AND club_id IS NULL');
+	}
+	while ($row = $query->next())
+	{
+		list($id, $name, $rules) = $row;
+		$own[] = _rules_choice('r' . $id, $name == '' ? PRODUCT_NAME : $name, upgrade_rules_code($rules));
+	}
+	_sort_rules_choices($own);
+
+	$others = array();
+	if ($club_id != null)
+	{
+		$query = new DbQuery(
+			'SELECT l.id, l.name, l.rules FROM leagues l' .
+			' LEFT OUTER JOIN league_clubs lc ON lc.league_id = l.id AND lc.club_id = ?' .
+			' WHERE lc.club_id IS NOT NULL OR (l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0', $club_id);
+	}
+	else
+	{
+		$query = new DbQuery('SELECT id, name, rules FROM leagues WHERE (flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0');
+	}
+	while ($row = $query->next())
+	{
+		list($id, $name, $filter) = $row;
+		$others[] = _rules_choice('l' . $id, $name, correct_rules($base, $filter));
+	}
+	if ($club_id != null)
+	{
+		$query = new DbQuery(
+			'SELECT r.id, l.name, r.name, r.rules FROM rules r' .
+			' JOIN leagues l ON l.id = r.league_id' .
+			' JOIN league_clubs lc ON lc.league_id = r.league_id' .
+			' WHERE lc.club_id = ?', $club_id);
 		while ($row = $query->next())
 		{
-			$r = new stdClass();
-			list($r->id, $r->name, $r->rules) = $row;
-			$r->id = -(int)$r->id;
-			$rules[] = $r;
+			list($id, $league_name, $name, $filter) = $row;
+			$others[] = _rules_choice('r' . $id, $league_name . ': ' . $name, correct_rules($base, $filter));
 		}
 	}
-	return $rules;
+	_sort_rules_choices($others);
+
+	return array_merge($top, $own, $others);
 }
 
 /*  A rules filter as an editor sends it, turned back into what is stored. The dialog posts the
@@ -770,7 +829,10 @@ function rules_filter_to_json($rules)
     $rules is the filter as it stands in the database, which is already JSON and goes to the
     page as it is. $api and $params say where the dialog posts what it has: the filter itself is
     added to the parameters under the name every one of those operations calls it by. */
-function show_rules_filter_form($rules, $api, $params)
+// $name is null for a filter that has no name of its own - the filter of a league or of a series.
+// For named rules of a league it is their name, shown in a field above the filter and sent as
+// "name" along with it.
+function show_rules_filter_form($rules, $api, $params, $name = null)
 {
 	global $_lang, $_rules_options;
 ?>
@@ -780,11 +842,19 @@ function show_rules_filter_form($rules, $api, $params)
 	{
 		var params = <?php echo json_encode($params); ?>;
 		params.rules = rules;
+<?php if (!is_null($name)) { ?>
+		params.name = $("#form-name").val();
+<?php } ?>
 		json.post(<?php echo json_encode($api); ?>, params, onSuccess);
 	}
 	</script>
 <?php
-	echo '<table class="transp" width="100%"><tr><td><span id="form-rules"></span></td></tr>';
+	echo '<table class="transp" width="100%">';
+	if (!is_null($name))
+	{
+		echo '<tr><td><p>' . get_label('Rules name') . ': <input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></p></td></tr>';
+	}
+	echo '<tr><td><span id="form-rules"></span></td></tr>';
 	
 	echo '</table><script>';
 	

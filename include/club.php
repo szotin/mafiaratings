@@ -196,8 +196,7 @@ class ClubPageBase extends PageBase
 			if ($this->is_manager)
 			{
 				$managment_menu[] = new MenuItem(null, null, null);
-				$managment_menu[] = new MenuItem('club_custom_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name));
-				$managment_menu[] = new MenuItem('club_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name));
+				$managment_menu[] = new MenuItem('club_scorings.php?id=' . $this->id, get_label('Rules'), get_label('Game rules and scoring systems of [0]', $this->name));
 				$managment_menu[] = new MenuItem('club_sounds.php?id=' . $this->id, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.'));
 				$managment_menu[] = new MenuItem(null, null, null);
 				$managment_menu[] = new MenuItem('club_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));

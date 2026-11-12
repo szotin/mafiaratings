@@ -10,9 +10,8 @@ define('VIEW_CODES', 2);
 
 class ApiPage extends GetApiPageBase
 {
-	private function create_rule($row, $view)
+	private function create_rule($name, $code, $view)
 	{
-		list($name, $code) = $row;
 		$rules = new stdClass();
 		$rules->name = $name;
 		switch ($view)
@@ -44,19 +43,12 @@ class ApiPage extends GetApiPageBase
 				break;
 		}
 		
+		// The same rules, in the same order, as the club is offered them - see
+		// get_available_rules().
 		$rules = array();
-		$rules[] = $this->create_rule(Db::record('club', 'SELECT name, rules FROM clubs WHERE id = ?', $club_id), $view);
-		
-		$query = new DbQuery('SELECT name, rules FROM club_rules WHERE club_id = ? ORDER BY name', $club_id);
-		while ($row = $query->next())
+		foreach (get_available_rules($club_id) as $r)
 		{
-			$rules[] = $this->create_rule($row, $view);
-		}
-		
-		$query = new DbQuery('SELECT l.name, c.rules FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.club_id = ?', $club_id);
-		while ($row = $query->next())
-		{
-			$rules[] = $this->create_rule($row, $view);
+			$rules[] = $this->create_rule($r->name, $r->rules, $view);
 		}
 		
 		$this->response['rules'] = $rules;
@@ -67,7 +59,7 @@ class ApiPage extends GetApiPageBase
 		$help = new ApiHelp(PERMISSION_EVERYONE);
 		$help->request_param('club_id', 'Club id. For example: <a href="club_rules.php?club_id=1">/api/get/club_rules.php?club_id=1</a> returns the rules of Russian Mafia of Vancouver.');
 		$help->request_param('view', 'How to show the rules. Possible values are: "all" and "code".<br>"All" shows all default fields explicitly. <a href="club_rules.php?club_id=1&view=all">/api/get/club_rules.php?club_id=1&view=all</a> detailed view.<br>"Code" shows rules codes only. <a href="club_rules.php?club_id=1&view=code">/api/get/club_rules.php?club_id=1&view=all</a> code view.', 'shows only the fields with the non-default values');
-		$param = $help->response_param('rules', 'Array of all rules used in the club. The first rules in the array are default rules used in the club.');
+		$param = $help->response_param('rules', 'Array of all rules the club can play by, in the order it is offered them. The first are the default rules of the club. Then its other rules and the rules of the site, by name. Then, by name, the rules of its leagues and the default rules of the global leagues - each of them a filter, given here as the default rules of the club put through it.');
 			$param->sub_param('name', 'Rules name');
 			$rules_param = $param->sub_param('rules', 'Game rules.');
 			api_rules_help($rules_param, true);

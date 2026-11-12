@@ -180,7 +180,7 @@ try
 		}
 		echo  '> ' . get_label('pin to the main page.');
 	}
-	if ($owner->is_league() && ($owner_flags & LEAGUE_FLAG_ELITE) != 0)
+	if ($owner->is_league() && ($owner_flags & LEAGUE_FLAG_GLOBAL) != 0)
 	{
 		echo '<br><input type="checkbox" id="form-elite"';
 		if ($flags & SERIES_FLAG_ELITE)

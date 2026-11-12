@@ -506,11 +506,11 @@ define('CLUB_ICON_MAX_VERSION', 7);
 // 2 - 0x0002 -      2 - icon mask
 // 3 - 0x0004 -      4 - icon mask
 // 4 - 0x0008 -      8 - icon mask
-// 5 - 0x0010 -     16 - elite league. Elite league can have elite series. Only admin can create elite leagues or assign/remove elite status to/from the leagues. Elite flag also makes the rules of the league appear in all rules selects.
+// 5 - 0x0010 -     16 - global league (it used to be called elite). Only admin can create global leagues or assign/remove the global status to/from the leagues. The default rules of a global league are offered to every club, not only to its own - see get_available_rules(). A global league can also have elite series.
 define('LEAGUE_FLAG_CLOSED', 0x1);
-define('LEAGUE_FLAG_ELITE', 0x10);
+define('LEAGUE_FLAG_GLOBAL', 0x10);
 define('NEW_LEAGUE_FLAGS', 0);
-define('LEAGUE_EDITABLE_MASK', 0x10); // LEAGUE_FLAG_ELITE
+define('LEAGUE_EDITABLE_MASK', 0x10); // LEAGUE_FLAG_GLOBAL
 
 define('LEAGUE_ICON_MASK', 0xe);
 define('LEAGUE_ICON_MASK_OFFSET', 1);

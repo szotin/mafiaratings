@@ -122,12 +122,13 @@ CREATE TABLE `club_regs` (
   `flags` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `club_rules`;
-CREATE TABLE `club_rules` (
-  `club_id` int(11) NOT NULL,
+DROP TABLE IF EXISTS `rules`;
+CREATE TABLE `rules` (
+  `id` int(11) NOT NULL,
+  `club_id` int(11) DEFAULT NULL,
+  `league_id` int(11) DEFAULT NULL,
   `name` varchar(128) NOT NULL,
-  `rules` char(32) NOT NULL,
-  `id` int(11) NOT NULL
+  `rules` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `countries`;
@@ -384,16 +385,14 @@ CREATE TABLE `leagues` (
   `flags` int(11) NOT NULL,
   `rules` text NOT NULL,
   `normalizer_id` int(11) DEFAULT NULL,
-  `gaining_id` int(11) NOT NULL,
-  `default_rules` char(32) NOT NULL
+  `gaining_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `league_clubs`;
 CREATE TABLE `league_clubs` (
   `league_id` int(11) NOT NULL,
   `club_id` int(11) NOT NULL,
-  `flags` int(11) NOT NULL,
-  `rules` char(32) NOT NULL
+  `flags` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `league_managers`;
@@ -1155,8 +1154,10 @@ INSERT INTO `club_regs` (`user_id`, `club_id`, `flags`) VALUES
 
 -- Club, league, season(series), their links
 INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`) VALUES (1, 'Sample Club', 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, NULL, 1284784660, NULL, NULL);
-INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`, `default_rules`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 1, 0, '{}', NULL, 1, '0002000010000');
-INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`, `rules`) VALUES (1, 1, 0, '0002000010000');
+INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 1, 0, '{}', NULL, 1);
+INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`) VALUES (1, 1, 0);
+-- The default rules of the site: the rules of the site with no name - see db/alter212.sql.
+INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name`, `rules`) VALUES (1, NULL, NULL, '', '0002000010000');
 INSERT INTO `league_managers` (`league_id`, `user_id`) VALUES (1, 1);
 INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (1, 'Season 2024', 1, NULL, 1284784660, 31536000, 7, '', 0, '{}', 1, 1, 0, NULL, NULL, 5);
 -- A series owned by a club instead of a league. Exactly one of league_id / club_id is set.
@@ -1620,11 +1621,12 @@ ALTER TABLE `club_regs`
   ADD KEY `user_club_club` (`club_id`);
 
 --
--- Indexes for table `club_rules`
+-- Indexes for table `rules`
 --
-ALTER TABLE `club_rules`
+ALTER TABLE `rules`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `name` (`club_id`,`name`);
+  ADD KEY `club_id` (`club_id`),
+  ADD KEY `league_id` (`league_id`);
 
 --
 -- Indexes for table `countries`
@@ -2261,10 +2263,10 @@ ALTER TABLE `club_info`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `club_rules`
+-- AUTO_INCREMENT for table `rules`
 --
-ALTER TABLE `club_rules`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `rules`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `countries`
@@ -2530,10 +2532,11 @@ ALTER TABLE `club_regs`
   ADD CONSTRAINT `user_club_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --
--- Constraints for table `club_rules`
+-- Constraints for table `rules`
 --
-ALTER TABLE `club_rules`
-  ADD CONSTRAINT `club_rules_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`);
+ALTER TABLE `rules`
+  ADD CONSTRAINT `rules_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
+  ADD CONSTRAINT `rules_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`);
 
 --
 -- Constraints for table `countries`

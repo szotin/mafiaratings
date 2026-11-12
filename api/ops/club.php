@@ -65,7 +65,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('[0] is not a valid email address.', $email));
 		}
 		
-		$rules_code = get_optional_param('rules_code', DEFAULT_RULES);
+		$rules_code = get_optional_param('rules_code', get_site_rules());
 		$scoring_id = get_optional_param('scoring_id', SCORING_DEFAULT_ID);
 		$normalizer_id = NORMALIZER_DEFAULT_ID;
 		

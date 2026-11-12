@@ -59,10 +59,10 @@ class LeaguePageBase extends PageBase
 
 		$this->is_manager = $_profile != NULL ? $_profile->is_league_manager($this->id) : false;
 		
-		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->scoring_id, $rules, $this->default_rules) = 
+		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->scoring_id, $rules) = 
 			Db::record(
 				get_label('league'),
-				'SELECT l.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules, l.default_rules FROM leagues l WHERE l.id = ?', $this->id);
+				'SELECT l.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules FROM leagues l WHERE l.id = ?', $this->id);
 		$this->rules_filter = json_decode($rules);
 	}
 
@@ -106,8 +106,7 @@ class LeaguePageBase extends PageBase
 				new MenuItem('league_managers.php?id=' . $this->id, get_label('Users'), get_label('Managers and referees of [0]', $this->name)),
 				new MenuItem('league_pairs.php?id=' . $this->id, get_label('Pairs'), get_label('[0] pairs', $this->name)),
 				new MenuItem(null, null, null),
-				// new MenuItem('league_rules.php?id=' . $this->id, get_label('Rules'), get_label('[0] game rules', $this->name)),
-				new MenuItem('league_scorings.php?id=' . $this->id, get_label('Scoring systems'), get_label('Alternative methods of calculating points for [0]', $this->name)),
+				new MenuItem('league_scorings.php?id=' . $this->id, get_label('Rules'), get_label('Game rules and scoring systems of [0]', $this->name)),
 				// new MenuItem(null, null, null),
 				// new MenuItem('league_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name)),
 			));

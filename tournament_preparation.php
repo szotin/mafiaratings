@@ -566,8 +566,10 @@ class Page extends TournamentPageBase
 		}
 		echo '</select></td></tr>';
 
-		echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-		show_scoring_select($this->club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<br>', 'scoringChanged', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'prep-scoring');
+		// The options under the scoring system each stand on a line of their own, with room
+		// between them, like the awards below.
+		echo '<tr><td valign="top">' . get_label('Scoring system') . ':</td><td>';
+		show_scoring_select($this->club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, json_decode($scoring_options), '<div style="height:12px"></div>', 'scoringChanged', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION, 'prep-scoring');
 		echo '</td></tr>';
 
 		// One award a line, all of them alike. Leaving the sheriff out of the best red, and the

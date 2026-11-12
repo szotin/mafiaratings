@@ -80,8 +80,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, default_rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?, ?)',
-				$name, $langs, $flags, $url, $email, $phone, DEFAULT_RULES, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
+				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
+				$name, $langs, $flags, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();
@@ -165,8 +165,8 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_rules, $old_def_rules, $old_flags) = Db::record(get_label('league'),
-			'SELECT name, web_site, email, phone, langs, scoring_id, normalizer_id, gaining_id, rules, default_rules, flags FROM leagues c WHERE id = ?', $league_id);
+		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_rules, $old_flags) = Db::record(get_label('league'),
+			'SELECT name, web_site, email, phone, langs, scoring_id, normalizer_id, gaining_id, rules, flags FROM leagues c WHERE id = ?', $league_id);
 			
 		$name = get_optional_param('name', $old_name);
 		if ($name != $old_name)
@@ -192,14 +192,11 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			// return when there will be more editable flags
-			// $flags = ($flags & (LEAGUE_EDITABLE_MASK & ~LEAGUE_FLAG_ELITE) + ($old_flags & ~(LEAGUE_EDITABLE_MASK & ~LEAGUE_FLAG_ELITE));
+			// $flags = ($flags & (LEAGUE_EDITABLE_MASK & ~LEAGUE_FLAG_GLOBAL) + ($old_flags & ~(LEAGUE_EDITABLE_MASK & ~LEAGUE_FLAG_GLOBAL));
 			$flags = $old_flags;
 		}
 		
 		$rules = rules_filter_to_json(get_optional_param('rules', $old_rules));
-		
-		$def_rules = check_rules_code(get_optional_param('default_rules', $old_def_rules));
-		$def_rules = correct_rules($def_rules, $rules);
 		
 		if ($langs == 0)
 		{
@@ -226,8 +223,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'), 
-			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, normalizer_id = ?, gaining_id = ?, rules = ?, default_rules = ?, flags = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $scoring_id, $normalizer_id, $gaining_id, $rules, $def_rules, $flags, $league_id);
+			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, normalizer_id = ?, gaining_id = ?, rules = ?, flags = ? WHERE id = ?',
+			$name, $url, $langs, $email, $phone, $scoring_id, $normalizer_id, $gaining_id, $rules, $flags, $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
@@ -278,19 +275,6 @@ class ApiPage extends OpsApiPageBase
 			db_log(LOG_OBJECT_LEAGUE, 'changed', $log_details, $league_id, NULL, $league_id);
 		}
 		
-		if ($rules != $old_rules)
-		{
-			$query = new DbQuery('SELECT club_id, rules FROM league_clubs WHERE league_id = ?', $league_id);
-			while ($row = $query->next())
-			{
-				list ($club_id, $rules_code) = $row;
-				$new_rules_code = correct_rules($rules_code, $rules);
-				if ($new_rules_code !== $rules_code)
-				{
-					Db::exec(get_label('club'), 'UPDATE league_clubs SET rules = ? WHERE club_id = ? AND league_id = ?', $new_rules_code, $club_id, $league_id);
-				}
-			}
-		}
 		Db::commit();
 	}
 	
@@ -304,7 +288,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('email', 'League email.', 'remains the same.');
 		$help->request_param('phone', 'League phone. Just a text.', 'remains the same.');
 		api_rules_filter_help($help->request_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Contains json. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
-		$help->request_param('default_rules', 'Rules code for the rules that are default for this league.', 'remains the same.');
+
 		$help->request_param('logo', 'Png or jpeg file to be uploaded for multicast multipart/form-data.', "remains the same");
 		$help->request_param('scoring_id', 'Default tournament scoring system for the league. This scoring system is suggested by default to all new tournaments of the league.', 'remains the same.');
 		$help->request_param('normalizer_id', 'Default tournament scoring normalizer for the league. This scoring normalizer is suggested by default to all new tournaments of the league. Send 0 if the league does need to have default normalizer.', 'remains the same.');
@@ -341,11 +325,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'),
-			// default_rules is the rules code a club of this league starts from - see
-			// club_rules.php. Leaving it out stored an empty code, which is not a rules code at
-			// all, so it gets the same DEFAULT_RULES a league created by an admin gets above.
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, default_rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?, ?)',
-			$name, $langs, $flags, $url, $email, $phone, DEFAULT_RULES, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
+			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
+			$name, $langs, $flags, $url, $email, $phone, SCORING_DEFAULT_ID, NORMALIZER_DEFAULT_ID, GAINING_DEFAULT_ID);
 			
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		
@@ -674,11 +655,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($insert)
 			{
-				list($rules_code) = Db::record(get_label('club'), 'SELECT rules FROM clubs WHERE id = ?', $club_id);
-				list($rules_filter) = Db::record(get_label('league'), 'SELECT rules FROM leagues WHERE id = ?', $league_id);
-				$rules_filter = json_decode($rules_filter);
-				$rules_code = correct_rules($rules_code, $rules_filter);
-				Db::exec(get_label('league'), 'INSERT INTO league_clubs (league_id, club_id, rules, flags) VALUES (?, ?, ?, ?)', $league_id, $club_id, $rules_code, $flags);
+				Db::exec(get_label('league'), 'INSERT INTO league_clubs (league_id, club_id, flags) VALUES (?, ?, ?)', $league_id, $club_id, $flags);
 			}
 			else
 			{

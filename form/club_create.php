@@ -54,8 +54,10 @@ try
 	show_city_input('form-city', CITY_DETECT, 'form-country');
 	echo '</td></tr>';
 	
+	// A new club starts from the default rules of the site, or from any of the rules of the
+	// site and of the global leagues.
 	$rules_list = get_available_rules();
-	$rules_code = DEFAULT_RULES;
+	$rules_code = get_site_rules();
 	echo '<tr><td>' . get_label('Rules') . ':</td><td><select id="form-rules">';
 	foreach ($rules_list as $r)
 	{

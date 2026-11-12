@@ -112,7 +112,7 @@ class ApiPage extends OpsApiPageBase
 			$flags |= $preset['plays'];
 		}
 		// Elite is a property of elite leagues. A club series is never elite.
-		if (($owner_flags & LEAGUE_FLAG_ELITE) == 0)
+		if (($owner_flags & LEAGUE_FLAG_GLOBAL) == 0)
 		{
 			$flags &= ~SERIES_FLAG_ELITE;
 		}
@@ -298,7 +298,7 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		// Elite is a property of elite leagues. A club series is never elite.
-		if (($owner_flags & LEAGUE_FLAG_ELITE) == 0)
+		if (($owner_flags & LEAGUE_FLAG_GLOBAL) == 0)
 		{
 			$flags &= ~SERIES_FLAG_ELITE;
 		}
@@ -833,7 +833,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			list($new_owner_name, $new_owner_flags) = Db::record(get_label('league'), 'SELECT name, flags FROM leagues WHERE id = ?', $new_league_id);
 			$new_owner = new SeriesOwner($new_league_id, NULL);
-			$is_elite_owner = ($new_owner_flags & LEAGUE_FLAG_ELITE) != 0;
+			$is_elite_owner = ($new_owner_flags & LEAGUE_FLAG_GLOBAL) != 0;
 			$new_club_id = NULL;
 		}
 		else

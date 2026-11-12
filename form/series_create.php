@@ -37,7 +37,7 @@ try
 		list($owner_name, $owner_flags, $owner_langs, $default_gaining_id) = Db::record(get_label('league'), 'SELECT name, flags, langs, gaining_id FROM leagues WHERE id = ?', $league_id);
 		$owner_pic = new Picture(LEAGUE_PICTURE);
 		$owner_id = $league_id;
-		$owner_is_elite = ($owner_flags & LEAGUE_FLAG_ELITE) != 0;
+		$owner_is_elite = ($owner_flags & LEAGUE_FLAG_GLOBAL) != 0;
 	}
 	else
 	{

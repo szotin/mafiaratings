@@ -83,11 +83,11 @@ try
 	{
 		echo '<tr><td colspan="2">';
 		echo '<input type="checkbox" id="form-elite"';
-		if ($flags & LEAGUE_FLAG_ELITE)
+		if ($flags & LEAGUE_FLAG_GLOBAL)
 		{
 			echo ' checked';
 		}
-		echo  '> ' . get_label('elite league. Elite leagues can create elite series that bring more rating points.');
+		echo  '> ' . get_label('global league. The default rules of a global league are offered to every club, and it can create elite series that bring more rating points.');
 		echo '</td></tr>';
 	}
 	
@@ -98,7 +98,7 @@ try
 	function commit(onSuccess)
 	{
 		let flags = 0;
-		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_ELITE; ?>;
+		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_GLOBAL; ?>;
 		let languages = mr.getLangs();
 		json.post("api/ops/league.php",
 		{

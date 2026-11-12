@@ -95,8 +95,26 @@ try
 	$rules_filter = 'null';
 	if ($rules_id > 0)
 	{
-		list($club_id, $rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT club_id, rules, name FROM club_rules WHERE id = ?', $rules_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+		// Named rules of a club or of the site. Those of a league are a filter, edited in
+		// form/league_rules_edit.php. The default rules of the site have no name, and keep it.
+		list($club_id, $league_id, $rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT club_id, league_id, rules, name FROM rules WHERE id = ?', $rules_id);
+		if ($league_id != NULL)
+		{
+			throw new FatalExc(get_label('Unknown [0]', get_label('rules')));
+		}
+		if ($club_id != NULL)
+		{
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
+		}
+		else
+		{
+			check_permissions(PERMISSION_ADMIN);
+		}
+		$has_name = $rules_name != '';
+		if (!$has_name)
+		{
+			$rules_name = get_label('[default]');
+		}
 
 		dialog_title(get_label('Edit [0]', get_label('rules [0]', $rules_name)));
 ?>
@@ -107,7 +125,9 @@ try
 			{
 				op: 'change'
 				, rules_id: <?php echo $rules_id; ?>
+<?php if ($has_name) { ?>
 				, name: $("#form-name").val()
+<?php } ?>
 				, rules: rulesCode
 			};
 			json.post("api/ops/rules.php", params, onSuccess);
@@ -115,7 +135,11 @@ try
 		</script>
 <?php
 		echo '<table class="transp" width="100%"><tr><td>';
-		echo '<p><input class="longest" id="form-name" value="' . $rules_name . '"></p><p>';
+		if ($has_name)
+		{
+			echo '<p><input class="longest" id="form-name" value="' . htmlspecialchars($rules_name, ENT_QUOTES) . '"></p>';
+		}
+		echo '<p>';
 		show_rules_select($club_id, $rules_code);
 		echo '</p></td></tr>';
 	}
@@ -326,42 +350,21 @@ try
 		show_rules_select($club_id, $rules_code);
 		echo '</h3><br></td></tr>';
 	}
-	else if ($club_id <= 0)
+	else if ($create)
 	{
-		if ($league_id > 0)
+		// New rules of a club, or of the site when there is no club. They start as the
+		// default rules of their owner.
+		if ($club_id > 0)
 		{
-			list ($rules_code, $rules_filter, $rules_name) = Db::record(get_label('league'), 'SELECT default_rules, rules, name FROM leagues l WHERE id = ?', $league_id);
-			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-
-			dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
-?>
-			<script>
-			function commit(onSuccess)
-			{
-				var params =
-				{
-					op: 'change'
-					, league_id: <?php echo $league_id; ?>
-					, default_rules: rulesCode
-				};
-				json.post("api/ops/league.php", params, onSuccess);
-			}
-			</script>
-<?php
-			echo '<table class="transp" width="100%"><tr><td><h3>';
-			echo $rules_name;
-			echo '</h3><br></td></tr>';
+			list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		}
 		else
 		{
-			throw new Exc(get_label('Unknown [0]', get_label('club')));
+			check_permissions(PERMISSION_ADMIN);
+			$rules_code = get_site_rules();
+			$rules_name = PRODUCT_NAME;
 		}
-	}
-	else if ($create)
-	{
-		$rules_name = '';
-		list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		dialog_title(get_label('Create [0]', get_label('rules for [0]', $rules_name)));
 ?>
@@ -371,7 +374,9 @@ try
 			var params =
 			{
 				op: 'create'
+<?php if ($club_id > 0) { ?>
 				, club_id: <?php echo $club_id; ?>
+<?php } ?>
 				, name: $("#form-name").val()
 				, rules: rulesCode
 			};
@@ -381,33 +386,12 @@ try
 <?php
 		echo '<table class="transp" width="100%"><tr><td>';
 		echo '<p><input class="longest" id="form-name"></p><p>';
-		show_rules_select(null, $rules_code);
+		show_rules_select($club_id > 0 ? $club_id : null, $rules_code);
 		echo '</p></td></tr>';
 	}
-	else if ($league_id > 0)
+	else if ($club_id <= 0)
 	{
-		list ($rules_code, $rules_filter,  $rules_name) = Db::record(get_label('league'), 'SELECT lc.rules, l.rules, l.name FROM league_clubs lc JOIN leagues l ON l.id = lc.league_id WHERE lc.league_id = ? AND lc.club_id = ?', $league_id, $club_id);
-		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
-
-		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));
-?>
-		<script>
-		function commit(onSuccess)
-		{
-			var params =
-			{
-				op: 'change'
-				, club_id: <?php echo $club_id; ?>
-				, league_id: <?php echo $league_id; ?>
-				, rules: rulesCode
-			};
-			json.post("api/ops/rules.php", params, onSuccess);
-		}
-		</script>
-<?php
-		echo '<table class="transp" width="100%"><tr><td><h3>';
-		echo $rules_name;
-		echo '</h3><br></td></tr>';
+		throw new Exc(get_label('Unknown [0]', get_label('club')));
 	}
 	else
 	{
@@ -429,8 +413,9 @@ try
 		}
 		</script>
 <?php
+		// The default rules of the club can start from any of the rules the club has.
 		echo '<table class="transp" width="100%"><tr><td><p>';
-		show_rules_select(null, $rules_code);
+		show_rules_select($club_id, $rules_code);
 		echo '</p></td></tr>';
 	}
 	

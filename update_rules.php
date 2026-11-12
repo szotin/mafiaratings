@@ -79,7 +79,8 @@ class RulesUpdater extends Updater
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// RulesUpdater.club_rules
+	// RulesUpdater.club_rules - the named rules of the clubs and of the site. The rules of the
+	// leagues are filters, not codes, so there is nothing in them to upgrade.
 	//-------------------------------------------------------------------------------------------------------
 	function club_rules_task($items_count)
 	{
@@ -99,7 +100,7 @@ class RulesUpdater extends Updater
 		}
 
 		$count = 0;
-		$query = new DbQuery('SELECT id, rules FROM club_rules WHERE id > ? ORDER BY id LIMIT ' . $items_count, $this->vars->club_rule);
+		$query = new DbQuery('SELECT id, rules FROM rules WHERE league_id IS NULL AND id > ? ORDER BY id LIMIT ' . $items_count, $this->vars->club_rule);
 		while ($row = $query->next())
 		{
 			++$count;
@@ -107,7 +108,7 @@ class RulesUpdater extends Updater
 			$new_rules_code = upgrade_rules_code($rules_code);
 			if ($new_rules_code !== $rules_code)
 			{
-				Db::exec('rules', 'UPDATE club_rules SET rules = ? WHERE id = ?', $new_rules_code, $club_rule_id);
+				Db::exec('rules', 'UPDATE rules SET rules = ? WHERE id = ?', $new_rules_code, $club_rule_id);
 				++$this->vars->real_count;
 			}
 			$this->vars->club_rule = (int)$club_rule_id;
@@ -156,107 +157,6 @@ class RulesUpdater extends Updater
 				++$this->vars->real_count;
 			}
 			$this->vars->event = (int)$event_id;
-			if (!$this->canDoOneMoreItem())
-			{
-				break;
-			}
-		}
-		if ($old_real_count != $this->vars->real_count)
-		{
-			$this->log('Upgraded '.$this->vars->real_count.' rules codes');
-		}
-		return $count;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
-	// RulesUpdater.league_clubs
-	//-------------------------------------------------------------------------------------------------------
-	function league_clubs_task($items_count)
-	{
-		if (!isset($this->vars->league))
-		{
-			$this->vars->league = 0;
-			$this->vars->club = 0;
-		}
-		
-		if (!isset($this->vars->real_count))
-		{
-			$this->vars->real_count = 0;
-			$old_real_count = -1;
-		}
-		else
-		{
-			$old_real_count = $this->vars->real_count;
-		}
-
-		$count = 0;
-		$query = new DbQuery('SELECT league_id, club_id, rules FROM league_clubs WHERE league_id > ? OR (league_id = ? AND club_id > ?) ORDER BY league_id, club_id LIMIT ' . $items_count, $this->vars->league, $this->vars->league, $this->vars->club);
-		while ($row = $query->next())
-		{
-			++$count;
-			list($league_id, $club_id, $rules_code) = $row;
-			$new_rules_code = upgrade_rules_code($rules_code);
-			if ($new_rules_code !== $rules_code)
-			{
-				Db::exec('league_club', 'UPDATE league_clubs SET rules = ? WHERE league_id = ? AND club_id = ?', $new_rules_code, $league_id, $club_id);
-				++$this->vars->real_count;
-			}
-			
-			if ($this->vars->league != $league_id)
-			{
-				$this->vars->league = (int)$league_id;
-				$this->vars->club = (int)0;
-			}
-			else
-			{
-				$this->vars->club = (int)$club_id;
-			}
-			
-			if (!$this->canDoOneMoreItem())
-			{
-				break;
-			}
-		}
-		if ($old_real_count != $this->vars->real_count)
-		{
-			$this->log('Upgraded '.$this->vars->real_count.' rules codes');
-		}
-		return $count;
-	}
-	
-	//-------------------------------------------------------------------------------------------------------
-	// RulesUpdater.leagues
-	//-------------------------------------------------------------------------------------------------------
-	function leagues_task($items_count)
-	{
-		if (!isset($this->vars->league))
-		{
-			$this->vars->league = 0;
-		}
-		
-		if (!isset($this->vars->real_count))
-		{
-			$this->vars->real_count = 0;
-			$old_real_count = -1;
-		}
-		else
-		{
-			$old_real_count = $this->vars->real_count;
-		}
-
-		$count = 0;
-		$query = new DbQuery('SELECT id, default_rules FROM leagues WHERE id > ? ORDER BY id LIMIT ' . $items_count, $this->vars->league);
-		while ($row = $query->next())
-		{
-			++$count;
-			list($league_id, $rules_code) = $row;
-			$new_rules_code = upgrade_rules_code($rules_code);
-			if ($new_rules_code !== $rules_code)
-			{
-				Db::exec('league', 'UPDATE leagues SET default_rules = ? WHERE id = ?', $new_rules_code, $league_id);
-				++$this->vars->real_count;
-			}
-			$this->vars->league = (int)$league_id;
 			if (!$this->canDoOneMoreItem())
 			{
 				break;

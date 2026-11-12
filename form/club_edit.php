@@ -89,21 +89,7 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</td></tr>';
 	
-	$rules_list = get_available_rules($club->id);
-	$rules_code = $club->rules_code;
-	echo '<tr><td>' . get_label('Rules') . ':</td><td><select id="form-rules">';
-	foreach ($rules_list as $r)
-	{
-		if (show_option($r->rules, $rules_code, $r->name))
-		{
-			$rules_code = '';
-		}
-	}
-	if (!empty($rules_code))
-	{
-		show_option($rules_code, $rules_code, get_label('Custom...'));
-	}
-	echo '</select></td></tr>';
+	// The rules of the club are its default rules, set in Rules of its management menu.
 	
 	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
 	$query = new DbQuery('SELECT id, name FROM scorings WHERE club_id = ? OR club_id IS NULL ORDER BY name', $id);
@@ -158,7 +144,7 @@ try
 			, city: $("#form-city").val()
 			, country: $("#form-country").val()
 			, scoring_id: $("#form-scoring").val()
-			, rules_code: $("#form-rules").val()
+
 			, normalizer_id: $("#form-normalizer").val()
 			, langs: languages
 		},

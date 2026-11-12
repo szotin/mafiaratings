@@ -16,7 +16,7 @@ DROP TABLE IF EXISTS `league_separations`;
 DROP TABLE IF EXISTS `tournament_separations`;
 DROP TABLE IF EXISTS `separations`;
 DROP TABLE IF EXISTS `club_info`;
-DROP TABLE IF EXISTS `club_rules`;
+DROP TABLE IF EXISTS `rules`;
 DROP TABLE IF EXISTS `dons`;
 DROP TABLE IF EXISTS `emails`;
 DROP TABLE IF EXISTS `event_mailings`;
