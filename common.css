@@ -163,16 +163,28 @@ img.message-img
 	max-width: 300px;
 }
 
-.tab 
+/*  One row, however many tabs there are: those that do not fit go into the menu behind the
+    button at the end of it - see tabs.js. */
+.tab
 {
+	display: flex;
+	flex-wrap: nowrap;
 	overflow: hidden;
+	/* The row takes the width of where it stands and never asks for more: with width 0 it adds
+	   nothing to the width a table works out for its cell, and min-width then stretches it to
+	   all of that cell. Without it the tabs, kept in one line, widen the whole page. */
+	box-sizing: border-box;
+	width: 0;
+	min-width: 100%;
 	border: 1px solid #c0cccc;
 	border-bottom: none;
 	background-color: #c0cccc;
 }
 
-.tab button 
+.tab button
 {
+	flex: none;
+	white-space: nowrap;
 	background-color: inherit;
 	float: left;
 	border: none;
@@ -203,6 +215,55 @@ img.message-img
 .tab button.active 
 {
 	background-color: #e8f8f8;
+}
+
+.tab button.tab-away
+{
+	display: none;
+}
+
+.tab button.tab-more
+{
+	margin-left: auto;
+	font-weight: bold;
+}
+
+.tab button.tab-less
+{
+	font-weight: bold;
+}
+
+.tab-menu
+{
+	position: absolute;
+	z-index: 1000;
+	background-color: #e8f8f8;
+	border: 1px solid #c0cccc;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	font-size: 14px;
+}
+
+.tab-menu-item
+{
+	padding: 8px 14px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.tab-menu-item:hover
+{
+	background-color: #cfdfdf;
+}
+
+.tab-menu-item.disabled
+{
+	opacity: 0.4;
+	cursor: default;
+}
+
+.tab-menu-item.disabled:hover
+{
+	background-color: inherit;
 }
 
 /* Style the tab content */

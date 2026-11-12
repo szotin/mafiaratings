@@ -405,6 +405,8 @@ class PageBase
 		// echo '<script>document.getElementsByTagName(\'html\')[0].style.display=\'block\';</script>';
 		// ...
 		
+		// Keeps a row of tabs to one row, with a menu for those that do not fit - see tabs.js.
+		echo '<script src="' . versioned_asset('tabs.js') . '"></script>';
 		echo '<div id="dlg"></div>';
 		echo '<div id="loading"><img style="margin-top:20px;z-index:2147483647;" src="images/loading.gif" alt="' . get_label('Loading..') . '"/><h4>' . get_label('Please wait..') . '</h4></div>';
 		echo '</body></html>';
