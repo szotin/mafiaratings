@@ -24,6 +24,7 @@ class ApiPage extends GetApiPageBase
 		$langs = (int)get_optional_param('langs', 0);
 		$rules_code = upgrade_rules_code(get_optional_param('rules_code', ''));
 		$scoring_id = (int)get_optional_param('scoring_id', -1);
+		$normalizer_id = (int)get_optional_param('normalizer_id', -1);
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
 		$page = (int)get_optional_param('page', 0);
@@ -92,6 +93,11 @@ class ApiPage extends GetApiPageBase
 		{
 			$condition->add(' AND c.scoring_id = ?', $scoring_id);
 		}
+		
+		if ($normalizer_id > 0)
+		{
+			$condition->add(' AND c.normalizer_id = ?', $normalizer_id);
+		}
 
 		list($count) = Db::record('club', 'SELECT count(*) FROM clubs c JOIN cities i ON i.id = c.city_id', $condition);
 		$this->response['count'] = (int)$count;
@@ -105,7 +111,7 @@ class ApiPage extends GetApiPageBase
 		{
 			$club_pic = new Picture(CLUB_PICTURE);
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, ni.name, no.name, c.rules, c.scoring_id FROM clubs c' . 
+				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, ni.name, no.name, c.rules, c.scoring_id, c.normalizer_id FROM clubs c' . 
 				' JOIN cities i ON i.id = c.city_id' .
 				' JOIN countries o ON o.id = i.country_id' .
 				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
@@ -120,9 +126,10 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$club = new stdClass();
-				list ($club->id, $club->name, $flags, $club->langs, $web, $email, $phone, $club->city_id, $club->city, $club->country, $rules_code, $club->scoring_id) = $row;
+				list ($club->id, $club->name, $flags, $club->langs, $web, $email, $phone, $club->city_id, $club->city, $club->country, $rules_code, $club->scoring_id, $club->normalizer_id) = $row;
 				$club->id = (int)$club->id;
 				$club->scoring_id = (int)$club->scoring_id;
+				$club->normalizer_id = (int)$club->normalizer_id;
 				$club->rules = rules_code_to_object($rules_code);
 				$club->city_id = (int)$club->city_id;
 				$club->langs = (int)$club->langs;
@@ -148,7 +155,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.langs, c.web_site, c.email, c.phone, c.city_id, rules, scoring_id FROM clubs c' . 
+				'SELECT c.id, c.name, c.langs, c.web_site, c.email, c.phone, c.city_id, rules, scoring_id, normalizer_id FROM clubs c' . 
 				' JOIN cities i ON i.id = c.city_id', $condition);
 			$query->add(' ORDER BY name');
 			if ($page_size > 0)
@@ -160,9 +167,10 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$club = new stdClass();
-				list ($club->id, $club->name, $club->langs, $web, $email, $phone, $club->city_id, $rules_code, $club->scoring_id) = $row;
+				list ($club->id, $club->name, $club->langs, $web, $email, $phone, $club->city_id, $rules_code, $club->scoring_id, $club->normalizer_id) = $row;
 				$club->id = (int)$club->id;
 				$club->scoring_id = (int)$club->scoring_id;
+				$club->normalizer_id = (int)$club->normalizer_id;
 				$club->rules = rules_code_to_object($rules_code);
 				$club->city_id = (int)$club->city_id;
 				$club->langs = (int)$club->langs;
@@ -198,6 +206,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('langs', 'Languages filter. Bit combination of language ids. ' . LANG_ALL . ' - means any language (this is a default value). For example: <a href="clubs.php?langs=1">/api/get/clubs.php?langs=1</a> returns all clubs that support English as their language.' . valid_langs_help(), '-');
 		$help->request_param('rules_code', 'Rules code. For example: <a href="clubs.php?rules_code=' . DEFAULT_RULES . '">' . PRODUCT_URL . '/api/get/clubs.php?rules_code=' . DEFAULT_RULES . '</a> returns all clubs using the rules with the code ' . DEFAULT_RULES . '. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('scoring_id', 'Scoring id. For example: <a href="clubs.php?scoring_id=21">' . PRODUCT_URL . '/api/get/clubs.php?scoring_id=21</a> returns all clubs using VaWaCa scoring.', '-');
+		$help->request_param('normalizer_id', 'Scoring normalizer id. Returns the club whose default scoring normalizer it is - each club has its own.', '-');
 		$help->request_param('lang', 'Language id for returned names. For example: <a href="clubs.php?lang=2">/api/get/clubs.php?lang=2</a> returns club names in Russian.' . valid_langs_help(), 'default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.');
 		$help->request_param('count', 'Returns clubs count instead of the clubs themselves. For example: <a href="clubs.php?contains=an&count">/api/get/clubs.php?contains=an&count</a> returns how many clubs contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="clubs.php?page=1">/api/get/clubs.php?page=1</a> returns the second page of clubs by alphabet.', '-');
@@ -215,8 +224,9 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('city_id', 'City id');
 			$param->sub_param('city', 'City name using default language for the profile.', 1);
 			$param->sub_param('country', 'Country name using default language for the profile.', 1);
-			$param->sub_param('scoring_id', 'Default scoring system used in the club.');
-			api_rules_help($param->sub_param('rules', 'Game rules used in the club.'), true);
+			$param->sub_param('scoring_id', 'Default scoring system of the club. It belongs to the club - see <a href="scorings.php?help">scorings.php</a>.');
+			$param->sub_param('normalizer_id', 'Default scoring normalizer of the club. It belongs to the club - see <a href="normalizers.php?help">normalizers.php</a>.');
+			api_rules_help($param->sub_param('rules', 'Default game rules of the club. Its other rules are listed by <a href="club_rules.php?help">club_rules.php</a>.'), true);
 		$help->response_param('count', 'Total number of clubs satisfying the request parameters.');
 		return $help;
 	}

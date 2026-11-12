@@ -17,6 +17,7 @@ class ApiPage extends GetApiPageBase
 		$club_id = (int)get_optional_param('club_id', -1);
 		$langs = (int)get_optional_param('langs', 0);
 		$scoring_id = (int)get_optional_param('scoring_id', -1);
+		$normalizer_id = (int)get_optional_param('normalizer_id', -1);
 		$rules_code = get_optional_param('rules_code');
 		$lod = (int)get_optional_param('lod', 0);
 		$count_only = isset($_REQUEST['count']);
@@ -56,6 +57,11 @@ class ApiPage extends GetApiPageBase
 		{
 			$condition->add(' AND l.scoring_id = ?', $scoring_id);
 		}
+		
+		if ($normalizer_id > 0)
+		{
+			$condition->add(' AND l.normalizer_id = ?', $normalizer_id);
+		}
 
 		if (empty($rules_code))
 		{
@@ -86,7 +92,7 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT l.id, l.name, l.flags, l.langs, l.web_site, l.email, l.phone, l.rules, l.scoring_id FROM leagues l', $condition);
+				'SELECT l.id, l.name, l.flags, l.langs, l.web_site, l.email, l.phone, l.rules, l.scoring_id, l.normalizer_id FROM leagues l', $condition);
 			$query->add(' ORDER BY l.name');
 			if ($page_size > 0)
 			{
@@ -96,7 +102,7 @@ class ApiPage extends GetApiPageBase
 			$this->show_query($query);
 			while ($row = $query->next())
 			{
-				list ($id, $name, $flags, $langs, $web, $email, $phone, $rules, $scoring_id) = $row;
+				list ($id, $name, $flags, $langs, $web, $email, $phone, $rules, $scoring_id, $normalizer_id) = $row;
 				$rules_filter = json_decode($rules);
 				if (!empty($rules_code) && !are_rules_allowed($rules_code, $rules_filter))
 				{
@@ -108,6 +114,7 @@ class ApiPage extends GetApiPageBase
 				$league->name = $name;
 				$league->langs = (int)$langs;
 				$league->scoring_id = (int)$scoring_id;
+				$league->normalizer_id = (int)$normalizer_id;
 				$league->rules = $rules_filter;
 				if ($web != NULL)
 				{
@@ -132,7 +139,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT l.id, l.name, l.langs, l.web_site, l.email, l.phone, rules, scoring_id FROM leagues l', $condition);
+				'SELECT l.id, l.name, l.langs, l.web_site, l.email, l.phone, rules, scoring_id, normalizer_id FROM leagues l', $condition);
 			$query->add(' ORDER BY l.name');
 			if ($page_size > 0)
 			{
@@ -142,7 +149,7 @@ class ApiPage extends GetApiPageBase
 			$this->show_query($query);
 			while ($row = $query->next())
 			{
-				list ($id, $name, $langs, $web, $email, $phone, $rules, $scoring_id) = $row;
+				list ($id, $name, $langs, $web, $email, $phone, $rules, $scoring_id, $normalizer_id) = $row;
 				$rules_filter = json_decode($rules);
 				if (!empty($rules_code) && !are_rules_allowed($rules_code, $rules_filter))
 				{
@@ -150,11 +157,11 @@ class ApiPage extends GetApiPageBase
 				}
 				
 				$league = new stdClass();
-				list ($league->id, $league->name, $league->langs, $web, $email, $phone, $rules, $league->scoring_id) = $row;
 				$league->id = (int)$id;
 				$league->name = $name;
 				$league->langs = (int)$langs;
 				$league->scoring_id = (int)$scoring_id;
+				$league->normalizer_id = (int)$normalizer_id;
 				$league->rules = $rules_filter;
 				if ($web != NULL)
 				{
@@ -183,8 +190,8 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('league_id', 'League id. For example: <a href="leagues.php?league_id=2">/api/get/leagues.php?league_id=2</a> returns information about American Mafia League.', '-');
 		$help->request_param('club_id', 'Club id. For example: <a href="leagues.php?club_id=1">/api/get/leagues.php?club_id=1</a> returns all leagues that Vancouver Mafia Club belongs to.', '-');
 		$help->request_param('langs', 'Languages filter. A bit combination of language ids. For example: <a href="leagues.php?langs=1">/api/get/leagues.php?langs=1</a> returns all leagues that support English as their language.' . valid_langs_help(), '-');
-		$help->request_param('scoring_id', 'Scoring id. For example: <a href="leagues.php?scoring_id=10">' . PRODUCT_URL . '/api/get/leagues.php?scoring_id=10</a> returns all leagues using VaWaCa scoring.', '-');
-		$help->request_param('scoring_id', 'Scoring id. For example: <a href="leagues.php?scoring_id=10">' . PRODUCT_URL . '/api/get/leagues.php?scoring_id=10</a> returns all leagues using VaWaCa scoring.', '-');
+		$help->request_param('scoring_id', 'Scoring system id. Returns the league whose default scoring system it is - each league has its own.', '-');
+		$help->request_param('normalizer_id', 'Scoring normalizer id. Returns the league whose default scoring normalizer it is - each league has its own.', '-');
 		$help->request_param('rules_code', 'Rules code. For example: <a href="leagues.php?rules_code=' . DEFAULT_RULES . '">' . PRODUCT_URL . '/api/get/leagues.php?rules_code=' . DEFAULT_RULES . '</a> returns all leagues where the rules with the code ' . DEFAULT_RULES . ' are allowed. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('count', 'Returns leagues count instead of the leagues themselves. For example: <a href="leagues.php?contains=an&count">/api/get/leagues.php?contains=an&count</a> returns how many leagues contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="leagues.php?page=1">/api/get/leagues.php?page=1</a> returns the second page of leagues by alphabet.', '-');
@@ -199,7 +206,8 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('web_site', 'Subj. Not set if unknown.');
 			$param->sub_param('email', 'Subj.', 'unknown');
 			$param->sub_param('phone', 'Subj.', 'unknown');
-			$param->sub_param('scoring_id', 'Default scoring system used in the league.');
+			$param->sub_param('scoring_id', 'Default scoring system of the league. It belongs to the league - see <a href="scorings.php?help">scorings.php</a>.');
+			$param->sub_param('normalizer_id', 'Default scoring normalizer of the league. It belongs to the league - see <a href="normalizers.php?help">normalizers.php</a>.');
 			api_rules_filter_help($param->sub_param('rules', 'Game rules filter. Specifies what rules are allowed in the league. Example: { "split_on_four": true, "extra_points": ["fiim", "maf-club"] } - linching 2 players on 4 must be allowed; extra points assignment is allowed in ФИИМ or maf-club styles, but no others.'));
 		$help->response_param('count', 'Total number of leagues satisfying the request parameters.');
 		return $help;

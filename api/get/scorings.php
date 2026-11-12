@@ -1,6 +1,7 @@
 <?php
 
 require_once '../../include/api.php';
+require_once '../../include/scoring.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -75,7 +76,10 @@ class ApiPage extends GetApiPageBase
 		
 		$scorings = array();
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.club_id, s.league_id, v.version, v.scoring FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id', $condition);
+			// Whether it is the default system of its owner: the club, the league or the site.
+			'SELECT s.id, s.name, s.club_id, s.league_id, v.version, v.scoring,' .
+			' (s.flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0 OR EXISTS (SELECT 1 FROM clubs c WHERE c.scoring_id = s.id) OR EXISTS (SELECT 1 FROM leagues l WHERE l.scoring_id = s.id)' .
+			' FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id', $condition);
 		$query->add(' ORDER BY s.name, v.version');
 		if ($page_size > 0)
 		{
@@ -86,7 +90,7 @@ class ApiPage extends GetApiPageBase
 		$current_scoring = NULL;
 		while ($row = $query->next())
 		{
-			list ($scoring_id, $scoring_name, $scoring_club_id, $scoring_league_id, $scoring_version, $scoring) = $row;
+			list ($scoring_id, $scoring_name, $scoring_club_id, $scoring_league_id, $scoring_version, $scoring, $is_default) = $row;
 			if (count($scorings) > 0)
 			{
 				$current_scoring = $scorings[count($scorings)-1];
@@ -108,6 +112,10 @@ class ApiPage extends GetApiPageBase
 				if (!is_null($scoring_league_id))
 				{
 					$current_scoring->league_id = (int)$scoring_league_id;
+				}
+				if ($is_default)
+				{
+					$current_scoring->default = true;
 				}
 				$current_scoring->versions = array();
 				$scorings[] = $current_scoring;
@@ -136,6 +144,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('name', 'Scoring system name.');
 			$param->sub_param('club_id', 'Club id that this system belongs to. Missing for scoring systems that do not belong to a club.');
 			$param->sub_param('league_id', 'League id that this system belongs to. Missing for scoring systems that do not belong to a league.');
+			$param->sub_param('default', 'True when it is the default scoring system of its owner - of the club or the league it belongs to, or, when it belongs to neither, of the site. Every club and league has its own.', 'it is not a default');
 			$versions_param = $param->sub_param('versions', 'List of versions of the scoring system.');
 				$versions_param->sub_param('version', 'Version number.');
 				$versions_param->sub_param('rules', 'Scoring rules. Todo: make a detailed description of the format.');
