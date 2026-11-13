@@ -21,12 +21,11 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $num_players, $langs, $notes, $flags, $tournament_type, $mwt_id, $imafia_id, $emo_id, $rules_code) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.mwt_id, t.imafia_id, t.emo_id, t.rules FROM tournaments t' . 
+	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $num_players, $langs, $notes, $flags, $mwt_id, $imafia_id, $emo_id, $rules_code) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.mwt_id, t.imafia_id, t.emo_id, t.rules FROM tournaments t' . 
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
-	$tournament_type = (int)$tournament_type;
 	$address_id = (int)$address_id;
 	$currency_id = (int)$currency_id;
 	$flags = (int)$flags;
@@ -127,28 +126,11 @@ try
 
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
 		
-	// The rules, the scoring, the awards, the number of players, the hiding of the table and
-	// who may register are set on the preparation page now, each on its own tab; the stream
-	// on the stream settings page. The ids on the other sites are set by the imports.
+	// The rules, the scoring, the awards, the number of players, whether the tournament is a
+	// long-term one, the hiding of the table and who may register are set on the preparation
+	// page now, each on its own tab; the stream on the stream settings page. The ids on the other
+	// sites are set by the imports.
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"';
-	if ($flags & TOURNAMENT_FLAG_LONG_TERM)
-	{
-		echo ' checked';
-	}
-	echo '> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
-	
-	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"';
-	if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
-	{
-		echo ' disabled';
-	}
-	if ($flags & TOURNAMENT_FLAG_SINGLE_GAME)
-	{
-		echo ' checked';
-	}
-	echo '> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
-	
 	echo '<input type="checkbox" id="form-manual_scoring"';
 	if ($flags & TOURNAMENT_FLAG_MANUAL_SCORE)
 	{
@@ -324,18 +306,6 @@ try
 		setSeries();
 	}
 	
-	function longTermClicked()
-	{
-		var c = $("#form-long_term").attr('checked') ? true : false;
-		$("#form-single_game").prop('checked', c);
-		$("#form-single_game").prop('disabled', !c);
-	}
-	
-	function singleGameClicked()
-	{
-		var c = $("#form-single_game").attr('checked') ? true : false;
-	}
-	
 	function feeChanged()
 	{
 		$("#form-fee-unknown").prop('checked', 0);
@@ -353,14 +323,12 @@ try
 	{
 		var _langs = mr.getLangs('form-');
 		var _flags = 0;
-		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
-		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		// Only the flags this form shows. The rest are set elsewhere - see the note above the
 		// checkboxes - and are left as they are.
-		var _flagsMask = <?php echo TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME | TOURNAMENT_FLAG_MANUAL_SCORE | TOURNAMENT_FLAG_PINNED | TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
+		var _flagsMask = <?php echo TOURNAMENT_FLAG_MANUAL_SCORE | TOURNAMENT_FLAG_PINNED | TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		
 		var series = [];
 		for (const i in seriesList) 

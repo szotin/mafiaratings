@@ -122,8 +122,6 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 	
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-long_term" onclick="longTermClicked()"> '. get_label('long term tournament. Like a seasonal club championship.') . '<br>';
-	echo '<input type="checkbox" id="form-single_game" onclick="singleGameClicked()"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '<br>';
 	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	if (is_permitted(PERMISSION_ADMIN))
 	{
@@ -282,19 +280,6 @@ try
 		setSeries();
 	}
 	
-	function longTermClicked()
-	{
-		var c = $("#form-long_term").attr('checked') ? true : false;
-		$("#form-single_game").prop('checked', c);
-		$("#form-single_game").prop('disabled', !c);
-	}
-	
-	function singleGameClicked()
-	{
-		var c = $("#form-single_game").attr('checked') ? true : false;
-	}
-	longTermClicked();
-	
 	var oldAddressValue = "<?php echo $selected_address; ?>";
 	function newAddressChange()
 	{
@@ -348,8 +333,6 @@ try
 		// What a new tournament starts with of what is set elsewhere now: MVP, best red and best
 		// black, its games streamed, the roles shown in the stream, and anybody may register.
 		var _flags = <?php echo TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK | TOURNAMENT_FLAG_STREAMING; ?>;
-		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
-		if ($("#form-single_game").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_SINGLE_GAME; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;

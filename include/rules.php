@@ -783,6 +783,29 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	return array_merge($top, $own, $others);
 }
 
+/*  The choices of get_available_rules() for a select of the rules something is played by. Rules
+    that come out the same - a league filter that changes nothing in the rules of the club, say -
+    are one choice, named after all of them: what is played by is only the code, so a select can
+    not tell them apart, and picking one of their names would say it is those rules and not the
+    others. The choice stands where the first of them stood. */
+function merge_same_rules($choices)
+{
+	$merged = array();
+	foreach ($choices as $c)
+	{
+		$key = 'c' . $c->rules;
+		if (isset($merged[$key]))
+		{
+			$merged[$key]->name .= ', ' . $c->name;
+		}
+		else
+		{
+			$merged[$key] = clone $c;
+		}
+	}
+	return array_values($merged);
+}
+
 /*  A rules filter as an editor sends it, turned back into what is stored. The dialog posts the
     filter as form parameters, so what arrives is an array of strings where the filter holds
     true and false, and those two have to be read back as themselves before the whole thing is

@@ -107,6 +107,7 @@ class LeaguePageBase extends PageBase
 				new MenuItem('league_pairs.php?id=' . $this->id, get_label('Pairs'), get_label('[0] pairs', $this->name)),
 				new MenuItem(null, null, null),
 				new MenuItem('league_scorings.php?id=' . $this->id, get_label('Rules'), get_label('Game rules and scoring systems of [0]', $this->name)),
+				new MenuItem('league_tournament_schemas.php?id=' . $this->id, get_label('Tournament schemas'), get_label('Ready-made ways to set up a tournament in [0]', $this->name)),
 				// new MenuItem(null, null, null),
 				// new MenuItem('league_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name)),
 			));

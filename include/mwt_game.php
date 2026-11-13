@@ -118,8 +118,8 @@ function convert_mwt_game($mwt_game)
 			// num_players is how many players the tournament is laid out for. Nobody tells us for
 			// an imported one, and zero is what the rest of the code reads as "not said". It is
 			// NOT NULL with no default, so a strict MySQL will not put that zero there for us.
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, scoring_id, scoring_version, scoring_options, rules, flags, type, mwt_id, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
-			'MWT_' . $mwt_game->tournament_id, $club_id, $address_id, $start, $end - $start, LANG_ALL, $scoring_id, $scoring_version, '{}', $rules_code, $tournament_flags, TOURNAMENT_TYPE_FIIM_ONE_ROUND, $mwt_game->tournament_id);
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, scoring_id, scoring_version, scoring_options, rules, flags, mwt_id, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
+			'MWT_' . $mwt_game->tournament_id, $club_id, $address_id, $start, $end - $start, LANG_ALL, $scoring_id, $scoring_version, '{}', $rules_code, $tournament_flags, $mwt_game->tournament_id);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		$log_details = new stdClass();
 		$log_details->name = 'MWT_' . $mwt_game->tournament_id;
@@ -132,7 +132,7 @@ function convert_mwt_game($mwt_game)
 		$log_details->scoring_version = $scoring_version;
 		$log_details->rules_code = $rules_code;
 		$log_details->flags = $tournament_flags;
-		$log_details->type = TOURNAMENT_TYPE_FIIM_ONE_ROUND;
+
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
 		$round_name = get_label('main round');

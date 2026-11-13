@@ -18,14 +18,6 @@ require_once __DIR__ . '/geo.php';
 require_once __DIR__ . '/rounds.php'; // get_round_name()
 require_once __DIR__ . '/table_hiding.php';
 
-define('TOURNAMENT_TYPE_CUSTOM', 0);
-define('TOURNAMENT_TYPE_FIIM_ONE_ROUND', 1);
-define('TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3', 2);
-define('TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4', 3);
-define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3', 4);
-define('TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4', 5);
-define('TOURNAMENT_TYPE_CHAMPIONSHIP', 6);
-
 function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags, $tournament_page = false)
 {
 	global $_profile;
@@ -505,6 +497,32 @@ function create_tournament_round($address_id, $club_id, $start, $end, $notes, $l
 	return $round_id;
 }
 
+// Deletes a round nothing has been played in yet, with what was set up for it: who was seated in
+// it, its broadcasts, its comments. A round that has games, photos or videos is not deleted - the
+// tournament is under way, and those are not to be lost with it.
+function delete_tournament_round($event_id)
+{
+	list($round_name, $club_id, $tournament_id) = Db::record(get_label('round'), 'SELECT name, club_id, tournament_id FROM events WHERE id = ?', $event_id);
+	foreach (array('games', 'photo_albums', 'videos', 'bug_reports') as $table)
+	{
+		list($count) = Db::record(get_label('round'), 'SELECT count(*) FROM ' . $table . ' WHERE event_id = ?', $event_id);
+		if ($count > 0)
+		{
+			throw new Exc(get_label('Unable to delete [0] because it has already started.', $round_name));
+		}
+	}
+	foreach (array('event_regs', 'event_incomers', 'event_comments', 'event_extra_points', 'event_mailings', 'event_places', 'event_broadcasts', 'current_games', 'event_scores_cache') as $table)
+	{
+		Db::exec(get_label('round'), 'DELETE FROM ' . $table . ' WHERE event_id = ?', $event_id);
+	}
+	Db::exec(get_label('round'), 'DELETE FROM events WHERE id = ?', $event_id);
+
+	$log_details = new stdClass();
+	$log_details->name = $round_name;
+	$log_details->tournament_id = $tournament_id;
+	db_log(LOG_OBJECT_EVENT, 'round deleted', $log_details, $event_id, $club_id);
+}
+
 function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flags = NULL)
 {
 	if (is_null($flags) || is_null($lat) || is_null($lon))
@@ -560,25 +578,6 @@ function update_tournament_stats($tournament_id, $lat = NULL, $lon = NULL, $flag
 			'UPDATE tournaments SET num_regs = ?, rating_sum = ?, rating_sum_20 = ?, traveling_distance = ?, guest_coeff = ?'.
 			' WHERE id = ?', $counter, $rating_sum, $rating_sum_20, $traveling_distance, $guest_coeff, $tournament_id);
 	}
-}
-
-function show_tournament_type_select($tournament_type, $control_id, $on_change = null)
-{
-	$tournament_type = (int)$tournament_type;
-	echo '<select id="' . $control_id . '"';
-	if (!is_null($on_change))
-	{
-		echo ' onchange="' . $on_change . '"';
-	}
-	echo '>';
-	show_option(TOURNAMENT_TYPE_CUSTOM, $tournament_type, get_label('Custom tournament. I will set up everything manually.'));
-	show_option(TOURNAMENT_TYPE_FIIM_ONE_ROUND, $tournament_type, get_label('One round. (Mini-tournament).'));
-	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3, $tournament_type, get_label('Two rounds - main, and final. The final round has less than 4 games.'));
-	show_option(TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4, $tournament_type, get_label('Two rounds - main, and final. The final round has 4 games or more.'));
-	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3, $tournament_type, get_label('Three rounds - main, semi-final, and final. The final round has less than 4 games.'));
-	show_option(TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4, $tournament_type, get_label('Three rounds - main, semi-final, and final. The final round has 4 games or more.'));
-	show_option(TOURNAMENT_TYPE_CHAMPIONSHIP, $tournament_type, get_label('Seasonal championship.'));
-	echo '</select>';
 }
 
 ?>

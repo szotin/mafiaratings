@@ -186,6 +186,14 @@ require_once '../../include/api.php';
 </tr>
 
 <tr>
+	<td>Tournament Schema Operations</td>
+	<td><a href="tournament_schema.php?help"><?php echo PRODUCT_URL; ?>/api/ops/tournament_schema.php</a></td>
+	<td>
+		<p>Creating, editing, deleting and copying the tournament schemas of a league. A tournament schema is a ready-made way to set a tournament up: its rounds and the weight of their points, the rules, the scoring system with its options, the special awards, the hiding of the table, and whether it is a long-term tournament. A tournament takes one by op apply_schema of the tournament operations.</p>
+	</td>
+</tr>
+
+<tr>
 	<td>Advertisement Operations</td>
 	<td><a href="advert.php?help"><?php echo PRODUCT_URL; ?>/api/ops/advert.php</a></td>
 	<td>

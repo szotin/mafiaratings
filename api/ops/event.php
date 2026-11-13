@@ -1639,11 +1639,10 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('tournament'), 
-			// A tournament grown out of a single event follows no ready-made scheme, which is what
-			// the custom type means, and nobody has said how many players it is laid out for.
-			// Both columns are NOT NULL with no default and a strict MySQL wants them named.
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, type, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
-			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0, TOURNAMENT_TYPE_CUSTOM);
+			// Nobody has said how many players a tournament grown out of a single event is laid
+			// out for. The column is NOT NULL with no default and a strict MySQL wants it named.
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
+			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();

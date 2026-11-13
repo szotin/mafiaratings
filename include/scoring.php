@@ -593,7 +593,9 @@ define('SCORING_SELECT_FLAG_NO_GROUP_OPTION', 32);
 define('SCORING_SELECT_FLAG_NO_NORMALIZER', 64);
 define('SCORING_SELECT_FLAG_NO_OPTIONS', SCORING_SELECT_FLAG_NO_FLAGS_OPTION | SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION);
 
-function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $options, $options_separator, $on_change, $flags, $name = NULL)
+// $league_id is for a select of a league, with no club: the systems offered are then the league's
+// and the site's - see get_available_systems().
+function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $options, $options_separator, $on_change, $flags, $name = NULL, $league_id = NULL)
 {
 	if ($name == NULL)
 	{
@@ -605,7 +607,7 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 		echo '<a href="#" onclick="mr.showScoring(\'' . $name . '\')" title="' . get_label('Show scoring rules.') . '">' . get_label('Scoring system') . ':</a> ';
 	}
 	echo '<select id="' . $name . '-sel" name="' . $name . '_id" onChange="mr.onChangeScoring(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring system') . '">';
-	show_system_options('scorings', $club_id, $scoring_id);
+	show_system_options('scorings', $club_id, $scoring_id, $league_id);
 	echo '</select>';
 	if (($flags & SCORING_SELECT_FLAG_NO_VERSION) == 0)
 	{
@@ -672,12 +674,20 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 		
 		echo get_label('Scoring normalizer') . ': ';
 		echo '<select id="' . $name . '-norm-sel" name="' . $name . '-norm-sel" onChange="mr.onChangeNormalizer(\'' . $name . '\', 0, ' . $on_change . ')" title="' . get_label('Scoring normalizer') . '">';
-		// The default normalizer of the club first, if it has one; no normalization right after it.
-		$normalizers = get_available_systems('normalizers', $club_id, $normalizer_id);
+		// The default normalizer of the club - or of the league - first, if it has one; no
+		// normalization right after it.
+		$normalizers = get_available_systems('normalizers', $club_id, $normalizer_id, $league_id);
 		$first = 0;
-		if ($club_id != NULL && count($normalizers) > 0)
+		if (($club_id != NULL || $league_id != NULL) && count($normalizers) > 0)
 		{
-			list($club_normalizer_id) = Db::record(get_label('club'), 'SELECT normalizer_id FROM clubs WHERE id = ?', $club_id);
+			if ($club_id != NULL)
+			{
+				list($club_normalizer_id) = Db::record(get_label('club'), 'SELECT normalizer_id FROM clubs WHERE id = ?', $club_id);
+			}
+			else
+			{
+				list($club_normalizer_id) = Db::record(get_label('league'), 'SELECT normalizer_id FROM leagues WHERE id = ?', $league_id);
+			}
 			if ($club_normalizer_id != NULL && $normalizers[0]->id == $club_normalizer_id)
 			{
 				show_option($normalizers[0]->id, (int)$normalizer_id, $normalizers[0]->name);

@@ -11,6 +11,7 @@ require_once '../../include/image.php';
 require_once '../../include/game.php';
 require_once '../../include/mwt.php';
 require_once '../../include/seating.php';
+require_once '../../include/tournament_schema.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -64,103 +65,6 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 		$text_body = parse_tags($text_body, $tags);
 		send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);
 	}
-}
-
-function create_rounds($type, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $tournament_flags, $num_players = 0)
-{
-	// Scheme values for main round
-	$main_players = ($num_players > 0) ? $num_players : null;
-	$main_tables  = ($num_players >= 10) ? (int)floor($num_players / 10) : null;
-	$main_games   = ($num_players >= 10) ? (($num_players % 10 === 0) ? 12 : 10) : null;
-
-	// Scheme values for semi-final and other intermediate rounds
-	$mid_players = ($num_players >= 10) ? (int)(floor($num_players / 10) * 10) : null;
-	$mid_tables  = $main_tables;
-	$mid_games   = ($num_players >= 10) ? 2 : null;
-
-	// Scheme values for final
-	$final_players = 10;
-	$final_tables  = 1;
-
-	switch ($type)
-	{
-		case TOURNAMENT_TYPE_FIIM_ONE_ROUND:
-			$ops = new stdClass();
-			$ops->group = 'main';
-			if (isset($scoring_options->flags))
-			{
-				$ops->flags = $scoring_options->flags;
-			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
-			break;
-		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3:
-			$ops = new stdClass();
-			$ops->group = 'main';
-			$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
-			if (isset($scoring_options->flags))
-			{
-				$ops->flags |= $scoring_options->flags;
-			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
-			$ops->group = 'final';
-			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 2);
-			break;
-		case TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4:
-			$ops = new stdClass();
-			$ops->group = 'main';
-			$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
-			if (isset($scoring_options->flags))
-			{
-				$ops->flags |= $scoring_options->flags;
-			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
-			$ops->group = 'final';
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 4);
-			break;
-		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3:
-			$ops = new stdClass();
-			$ops->group = 'main';
-			$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
-			if (isset($scoring_options->flags))
-			{
-				$ops->flags |= $scoring_options->flags;
-			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags, $mid_players, $mid_tables, $mid_games);
-			$ops->group = 'final';
-			$ops->flags |= SCORING_OPTION_NO_NIGHT_KILLS;
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 2);
-			break;
-		case TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4:
-			$ops = new stdClass();
-			$ops->group = 'main';
-			$ops->flags = SCORING_OPTION_NO_GAME_DIFFICULTY;
-			if (isset($scoring_options->flags))
-			{
-				$ops->flags |= $scoring_options->flags;
-			}
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 0, $tournament_flags, $main_players, $main_tables, $main_games);
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 2, $tournament_flags, $mid_players, $mid_tables, $mid_games);
-			$ops->group = 'final';
-			create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, 1, $tournament_flags, $final_players, $final_tables, 4);
-			break;
-		default:
-			break;
-	}
-}
-
-function tournament_type_help_str()
-{
-	$str = 'Tournament type. Rounds for the tournament are created depending on this value. Possible values are:<ol>';
-	$str .= '<li value="' . TOURNAMENT_TYPE_CUSTOM . '">Custom tournament. No rounds created. They will be created manually in the future.</li>';
-	$str .= '<li value="' . TOURNAMENT_TYPE_FIIM_ONE_ROUND . '">Mini-tournament. FIIM tournament with only one round.</li>';
-	$str .= '<li value="' . TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS3 . '">Two rounds short. FIIM tournament with main round and final round. Final round has less than 4 games.</li>';
-	$str .= '<li value="' . TOURNAMENT_TYPE_FIIM_TWO_ROUNDS_FINALS4 . '">Two rounds long. FIIM tournament with main round and final round. Final round has 4 games or more.</li>';
-	$str .= '<li value="' . TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS3 . '">Two rounds short. FIIM tournament with main round, semi-final round, and final round. Final round has less than 4 games.</li>';
-	$str .= '<li value="' . TOURNAMENT_TYPE_FIIM_THREE_ROUNDS_FINALS4 . '">Two rounds long. FIIM tournament with main round, semi-final round, and final round. Final round has 4 games or more.</li>';
-	$str .= '<li value="' . TOURNAMENT_TYPE_CHAMPIONSHIP . '">Seasonal championship. No rounds created. They will be created manually in the future.</li>';
-	return $str;
 }
 
 function parse_id_from_url($url, $site_name)
@@ -276,7 +180,6 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Please enter [0].', get_label('tournament name')));
 		}
 		
-		$type = (int)get_optional_param('type', TOURNAMENT_TYPE_CUSTOM);
 		$fee = (int)get_optional_param('fee', -1);
 		if ($fee < 0)
 		{
@@ -400,8 +303,8 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, num_players, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags, type) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $club_id, $address_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags, $type);
+			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, num_players, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$name, $club_id, $address_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -428,11 +331,11 @@ class ApiPage extends OpsApiPageBase
 		$log_details->scoring_options = $scoring_options_str;
 		$log_details->rules_code = $rules_code;
 		$log_details->flags = $flags;
-		$log_details->type = $type;
 		$log_details->parent_series = json_encode($parent_series);
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
-		
-		create_rounds($type, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $players);
+
+		// No rounds yet: they are made on the Scheme tab of the preparation page, by hand or by a
+		// tournament schema of a league - see apply_schema below.
 
 		// create parent series records
 		foreach ($parent_series as $s)
@@ -468,7 +371,7 @@ class ApiPage extends OpsApiPageBase
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
 			$series_help->sub_param('stage', 'Which stage of the series this tournament belongs to, numbered the way tournaments number the rounds of their own playoff: ' . SERIES_STAGE_BASE . ' - the base stage, which is a qualifier of a series of tournaments and an ordinary tournament of a season, ' . SERIES_STAGE_FINAL . ' - the final, ' . SERIES_STAGE_SEMIFINAL . ' - the semifinal, ' . SERIES_STAGE_QUARTERFINAL . ' - the quarterfinal, and so on up to the number of stages the series has. A stage the series does not have falls back to ' . SERIES_STAGE_BASE . '. Only a manager of the series may set this; anybody else is ignored and the stage stays as it was.', 'the stage the series already has for this tournament, or ' . SERIES_STAGE_BASE . ' for a new one.');
-		$help->request_param('type', tournament_type_help_str(), '0');
+
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.');
 		$help->request_param('fee', 'Admission rate. When <0 - admission rate is unknown.', '0.');
@@ -512,8 +415,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_type, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id, $old_preparation_stage) =
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.type, t.rules, t.mwt_id, t.imafia_id, t.emo_id, t.preparation_stage FROM tournaments t' .
+		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id, $old_preparation_stage) =
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.rules, t.mwt_id, t.imafia_id, t.emo_id, t.preparation_stage FROM tournaments t' .
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -555,7 +458,6 @@ class ApiPage extends OpsApiPageBase
 			$normalizer_version = null;
 		}
 		$scoring_options = get_optional_param('scoring_options', $old_scoring_options);
-		$type = (int)get_optional_param('type', $old_type);
 		$rules_code = check_rules_code(get_optional_param('rules_code', $old_rules_code));
 		$preparation_stage = (int)get_optional_param('preparation_stage', $old_preparation_stage);
 
@@ -600,6 +502,11 @@ class ApiPage extends OpsApiPageBase
 		// What the table hides is set by set_hiding and hide_table, together with the tours the
 		// hiding starts from, which the flags do not hold.
 		$flags = ($flags & ~(TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK)) | ($old_flags & (TOURNAMENT_HIDE_TABLE_MASK | TOURNAMENT_HIDE_BONUS_MASK));
+		// Single games of the ordinary days are assigned only to a long-term tournament.
+		if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+		{
+			$flags &= ~TOURNAMENT_FLAG_SINGLE_GAME;
+		}
 
 		$address_id = get_optional_param('address_id', $old_address_id);
 		if ($address_id != $old_address_id)
@@ -798,52 +705,35 @@ class ApiPage extends OpsApiPageBase
 			$flags &= ~TOURNAMENT_FLAG_FINISHED;
 		}
 		
-		if ($type != $old_type)
+		if (
+			$rules_code != $old_rules_code ||
+			$scoring_id != $old_scoring_id || 
+			$scoring_version != $old_scoring_version || 
+			($old_flags & TOURNAMENT_FLAG_STREAMING) != ($flags & TOURNAMENT_FLAG_STREAMING))
 		{
-			list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE tournament_id = ?', $tournament_id);
-			if ($games_count > 0)
+			if ($flags & TOURNAMENT_FLAG_STREAMING)
 			{
-				throw new Exc(get_label('Unable to change tournament type because the tournament has already started.'));
+				Db::exec(get_label('round'), 'UPDATE events SET rules = ?, scoring_id = ?, scoring_version = ?, flags = flags | ' . EVENT_FLAG_STREAMING . ' WHERE tournament_id = ?', $rules_code, $scoring_id, $scoring_version, $tournament_id);
 			}
-			
-			Db::exec(get_label('round'), 'DELETE FROM event_regs WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('round'), 'DELETE FROM event_incomers WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
-			Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?', $tournament_id);
-			
-			create_rounds($type, $scoring_options, $address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $tournament_id, $rules_code, $flags, $num_players);
+			else
+			{
+				Db::exec(get_label('round'), 'UPDATE events SET rules = ?, scoring_id = ?, scoring_version = ?, flags = flags & ~' . EVENT_FLAG_STREAMING . ' WHERE tournament_id = ?', $rules_code, $scoring_id, $scoring_version, $tournament_id);
+			}
 		}
-		else
+		
+		if ($scoring_options != $old_scoring_options)
 		{
-			if (
-				$rules_code != $old_rules_code ||
-				$scoring_id != $old_scoring_id || 
-				$scoring_version != $old_scoring_version || 
-				($old_flags & TOURNAMENT_FLAG_STREAMING) != ($flags & TOURNAMENT_FLAG_STREAMING))
+			$ops = json_decode($scoring_options);
+			$old_ops = json_decode($old_scoring_options);
+			if (isset($ops->flags) && (!isset($old_ops->flags) || $ops->flags != $old_ops->flags))
 			{
-				if ($flags & TOURNAMENT_FLAG_STREAMING)
+				$query = new DbQuery('SELECT id, scoring_options FROM events WHERE tournament_id = ?', $tournament_id);
+				while ($row = $query->next())
 				{
-					Db::exec(get_label('round'), 'UPDATE events SET rules = ?, scoring_id = ?, scoring_version = ?, flags = flags | ' . EVENT_FLAG_STREAMING . ' WHERE tournament_id = ?', $rules_code, $scoring_id, $scoring_version, $tournament_id);
-				}
-				else
-				{
-					Db::exec(get_label('round'), 'UPDATE events SET rules = ?, scoring_id = ?, scoring_version = ?, flags = flags & ~' . EVENT_FLAG_STREAMING . ' WHERE tournament_id = ?', $rules_code, $scoring_id, $scoring_version, $tournament_id);
-				}
-			}
-			
-			if ($scoring_options != $old_scoring_options)
-			{
-				$ops = json_decode($scoring_options);
-				$old_ops = json_decode($old_scoring_options);
-				if (isset($ops->flags) && (!isset($old_ops->flags) || $ops->flags != $old_ops->flags))
-				{
-					$query = new DbQuery('SELECT id, scoring_options FROM events WHERE tournament_id = ?', $tournament_id);
-					while ($row = $query->next())
-					{
-						list ($round_id, $round_ops) = $row;
-						$round_ops = json_decode($round_ops);
-						$round_ops->flags = $ops->flags;
-						Db::exec(get_label('round'), 'UPDATE events SET scoring_options = ? WHERE id = ?', json_encode($round_ops), $round_id);
-					}
+					list ($round_id, $round_ops) = $row;
+					$round_ops = json_decode($round_ops);
+					$round_ops->flags = $ops->flags;
+					Db::exec(get_label('round'), 'UPDATE events SET scoring_options = ? WHERE id = ?', json_encode($round_ops), $round_id);
 				}
 			}
 		}
@@ -862,8 +752,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, type = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ?, preparation_stage = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $type, $mwt_id, $imafia_id, $emo_id, $rules_code, $preparation_stage, $tournament_id);
+			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ?, preparation_stage = ? WHERE id = ?',
+			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $mwt_id, $imafia_id, $emo_id, $rules_code, $preparation_stage, $tournament_id);
 		// Remembered before anything else is written: every statement has affected rows of its
 		// own, and the logging below is asking about this one.
 		$tournament_changed = (Db::affected_rows() > 0);
@@ -987,10 +877,7 @@ class ApiPage extends OpsApiPageBase
 			{
 				$log_details->parent_series = json_encode($parent_series);
 			}
-			if ($type != $old_type)
-			{
-				$log_details->type = $type;
-			}
+
 			if ($rules_code != $old_rules_code)
 			{
 				$log_details->rules_code = $rules_code;
@@ -1010,7 +897,7 @@ class ApiPage extends OpsApiPageBase
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
 			$series_help->sub_param('stage', 'Which stage of the series this tournament belongs to, numbered the way tournaments number the rounds of their own playoff: ' . SERIES_STAGE_BASE . ' - the base stage, which is a qualifier of a series of tournaments and an ordinary tournament of a season, ' . SERIES_STAGE_FINAL . ' - the final, ' . SERIES_STAGE_SEMIFINAL . ' - the semifinal, ' . SERIES_STAGE_QUARTERFINAL . ' - the quarterfinal, and so on up to the number of stages the series has. A stage the series does not have falls back to ' . SERIES_STAGE_BASE . '. Only a manager of the series may set this; anybody else is ignored and the stage stays as it was.', 'the stage the series already has for this tournament, or ' . SERIES_STAGE_BASE . ' for a new one.');
-		$help->request_param('type', tournament_type_help_str(), 'remains the same.');
+
 		$help->request_param('start', 'Tournament start date. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('end', 'Tournament end date. Exclusive. The preferred format is either timestamp or "yyyy-mm-dd". It tries to interpret any other date format but there is no guarantee it succeeds.', 'remains the same.');
 		$help->request_param('fee', 'Admission rate. Send -1 if unknown. Zero means free.', 'remains the same.');
@@ -2389,12 +2276,53 @@ class ApiPage extends OpsApiPageBase
 
 		$main_players = null;
 		$cleared = 0;
+		$weight_changed = false;
 		foreach ($rounds as $round)
 		{
 			$event_id = (int)$round->event_id;
 			$players  = isset($round->players) && $round->players > 0 ? (int)$round->players : null;
 			$tables   = isset($round->tables)  && $round->tables  > 0 ? (int)$round->tables  : null;
 			$games    = isset($round->games)   && $round->games   > 0 ? (int)$round->games   : null;
+
+			// The weight of the points of the round and its tournament group are kept in its
+			// scoring options, see tournament_round_scoring_options().
+			if (isset($round->weight) || isset($round->group))
+			{
+				$query = new DbQuery('SELECT scoring_options FROM events WHERE id = ? AND tournament_id = ?', $event_id, $tournament_id);
+				if ($row = $query->next())
+				{
+					$ops = json_decode($row[0]);
+					if (!is_object($ops))
+					{
+						$ops = new stdClass();
+					}
+					$old_ops = json_encode($ops);
+					if (isset($round->weight))
+					{
+						$weight = (float)$round->weight;
+						$weight = ($weight > 0) ? $weight : 1;
+						unset($ops->weight);
+						if (abs($weight - 1) > 0.0001)
+						{
+							$ops->weight = $weight;
+						}
+					}
+					if (isset($round->group))
+					{
+						$group = normalize_tournament_group($round->group, 0);
+						unset($ops->group);
+						if ($group != '')
+						{
+							$ops->group = $group;
+						}
+					}
+					if (json_encode($ops) != $old_ops)
+					{
+						Db::exec(get_label('round'), 'UPDATE events SET scoring_options = ? WHERE id = ?', json_encode($ops), $event_id);
+						$weight_changed = true;
+					}
+				}
+			}
 
 			// Read the scheme this round had before overwriting it, so the seating can be judged
 			// against what actually changed. Fetched rather than required: the update below has
@@ -2432,6 +2360,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET num_players = ? WHERE id = ?', $main_players, $tournament_id);
 		}
+		if ($weight_changed)
+		{
+			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+		}
 
 		Db::commit();
 
@@ -2444,8 +2377,137 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Set players/tables/games scheme for all tournament rounds at once. Also updates tournament num_players from the main round.');
 		$help->request_param('tournament_id', 'Tournament id.');
-		$help->request_param('rounds', 'JSON array of round objects: [{event_id, players, tables, games, is_main}, ...].');
+		$help->request_param('rounds', 'JSON array of round objects: [{event_id, players, tables, games, weight, group, is_main}, ...]. <q>weight</q> is what the points of the round are multiplied by; without it the weight stays as it is. <q>group</q> is the tournament group of the round: "pre", "main", "final", or "" for none; the stats the scoring needs, like the first night kill rate, are counted over each group apart. Without it the group stays as it is.');
 		$help->request_param('team_size', 'Team size. Defaults to 1 (individual tournament). If > 1, the tournament is a team tournament.', '1');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// add_round
+	//-------------------------------------------------------------------------------------------------------
+	// The next round of the scheme: the main round when the tournament has none, otherwise a rung of
+	// the playoff before the ones it has - the final first, then the semi-final, and so on.
+	function add_round_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+
+		Db::begin();
+		list($club_id, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules_code, $flags) = Db::record(get_label('tournament'),
+			'SELECT club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		if ($flags & TOURNAMENT_FLAG_LONG_TERM)
+		{
+			throw new Exc(get_label('A long-term tournament has no rounds.'));
+		}
+
+		$has_main = false;
+		$playoff = 0;
+		$query = new DbQuery('SELECT round FROM events WHERE tournament_id = ?', $tournament_id);
+		while ($row = $query->next())
+		{
+			$r = (int)$row[0];
+			if ($r == 0)
+			{
+				$has_main = true;
+			}
+			else
+			{
+				$playoff = max($playoff, $r);
+			}
+		}
+		$round_num = $has_main ? $playoff + 1 : 0;
+		$players = ($round_num == 1) ? 10 : null;
+		$tables = ($round_num == 1) ? 1 : null;
+
+		$ops = tournament_round_scoring_options($round_num, json_decode($scoring_options), 1);
+		$this->response['event_id'] = create_tournament_round($address_id, $club_id, $start, $start + $duration, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, json_encode($ops), $tournament_id, $rules_code, $round_num, $flags, $players, $tables, null);
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+		Db::commit();
+		$this->response['round'] = $round_num;
+	}
+
+	function add_round_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Add a round to a tournament that is not long-term. It is the main round when the tournament has none, otherwise the rung of the playoff before the ones it has: the final, then the semi-final, then the quarter-final, and so on.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->response_param('event_id', 'The id of the round.');
+		$help->response_param('round', 'Its number: 0 - the main round, 1 - the final, 2 - the semi-final, and so on.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// delete_round
+	//-------------------------------------------------------------------------------------------------------
+	// A round nothing has been played in. The playoff keeps going all the way down to the final, so
+	// the rungs before a deleted one move one step nearer the end: deleting the semi-final makes the
+	// quarter-final the semi-final.
+	function delete_round_op()
+	{
+		$event_id = (int)get_required_param('event_id');
+
+		Db::begin();
+		list($tournament_id, $round_num) = Db::record(get_label('round'), 'SELECT tournament_id, round FROM events WHERE id = ? AND tournament_id IS NOT NULL', $event_id);
+		$round_num = (int)$round_num;
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+
+		delete_tournament_round($event_id);
+		if ($round_num > 0)
+		{
+			$query = new DbQuery('SELECT id, round, name FROM events WHERE tournament_id = ? AND round > ? ORDER BY round', $tournament_id, $round_num);
+			while ($row = $query->next())
+			{
+				list($id, $r, $name) = $row;
+				list($games_count) = Db::record(get_label('game'), 'SELECT count(*) FROM games WHERE event_id = ?', $id);
+				if ($games_count > 0)
+				{
+					throw new Exc(get_label('Unable to delete [0] because it has already started.', $name));
+				}
+				Db::exec(get_label('round'), 'UPDATE events SET round = ?, name = ? WHERE id = ?', $r - 1, get_round_name($r - 1), $id);
+			}
+		}
+		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+		Db::commit();
+	}
+
+	function delete_round_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Delete a round of a tournament, with its registrations and broadcasts. A round that has games, photos or videos can not be deleted. The playoff keeps going down to the final: the rungs before the deleted one move one step nearer the end, so deleting the semi-final makes the quarter-final the semi-final.');
+		$help->request_param('event_id', 'The id of the round.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// apply_schema
+	//-------------------------------------------------------------------------------------------------------
+	function apply_schema_op()
+	{
+		$tournament_id = (int)get_required_param('tournament_id');
+		$schema_id = (int)get_optional_param('schema_id', 0);
+
+		Db::begin();
+		list($club_id) = Db::record(get_label('tournament'), 'SELECT club_id FROM tournaments WHERE id = ?', $tournament_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
+		if ($schema_id > 0)
+		{
+			list($scheme, $rules_id, $rules_league_id, $scoring_id, $normalizer_id) = Db::record(get_label('tournament schema'),
+				'SELECT ' . TOURNAMENT_SCHEMA_COLUMNS . ' FROM league_tournament_schemas WHERE id = ?', $schema_id);
+			$schema = tournament_schema_from_row($scheme, $rules_id, $rules_league_id, $scoring_id, $normalizer_id);
+		}
+		else
+		{
+			$schema = get_required_param('schema');
+		}
+		apply_tournament_schema($tournament_id, $schema);
+		Db::commit();
+	}
+
+	function apply_schema_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Set a tournament up by a tournament schema: its rounds and the weight of their points, the rules, the scoring system and its options, the normalizer, the special awards, the hiding of the table, and whether it is long-term. The rounds the tournament already has are kept where the schema has a round with the same number; the rest are deleted. Nothing remembers which schema it was. A tournament that has games can not take a schema.');
+		$help->request_param('tournament_id', 'Tournament id.');
+		$help->request_param('schema_id', 'Id of a tournament schema of a league - see <a href="tournament_schema.php?help">tournament_schema.php</a>.', '<q>schema</q> must be set.');
+		$help->request_param('schema', 'The schema itself, as json - the same object <a href="tournament_schema.php?help">tournament_schema.php</a> takes. Used only without <q>schema_id</q>.', '<q>schema_id</q> must be set.');
 		return $help;
 	}
 

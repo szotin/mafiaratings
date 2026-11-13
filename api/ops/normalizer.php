@@ -4,6 +4,7 @@ require_once '../../include/api.php';
 require_once '../../include/scoring.php';
 require_once '../../include/systems.php';
 require_once '../../include/names.php';
+require_once '../../include/tournament_schema.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -354,6 +355,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
+			list($normalizer_name) = Db::record(get_label('scoring normalizer'), 'SELECT name FROM normalizers WHERE id = ?', $normalizer_id);
+			check_not_in_tournament_schemas('normalizer_id', $normalizer_id, $normalizer_name);
 			Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET version = NULL WHERE id = ?', $normalizer_id);
 			Db::exec(get_label('scoring normalizer'), 'DELETE FROM normalizer_versions WHERE normalizer_id = ?', $normalizer_id);
 			Db::exec(get_label('scoring normalizer'), 'DELETE FROM normalizers WHERE id = ?', $normalizer_id);

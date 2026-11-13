@@ -65,6 +65,7 @@ DROP TABLE IF EXISTS `bug_reports`;
 DROP TABLE IF EXISTS `pairs`;
 DROP TABLE IF EXISTS `club_pairs`;
 DROP TABLE IF EXISTS `league_pairs`;
+DROP TABLE IF EXISTS `league_tournament_schemas`;
 DROP TABLE IF EXISTS `tournament_pairs`;
 DROP TABLE IF EXISTS `series_regs`;
 DROP TABLE IF EXISTS `users`;

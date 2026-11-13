@@ -7,6 +7,7 @@ require_once 'include/preparation.php';
 require_once 'include/table_hiding.php';
 require_once 'include/scoring.php';
 require_once 'include/rules.php';
+require_once 'include/tournament_schema.php';
 
 // The numbers are stored - tournaments.preparation_stage remembers the tab a tournament was left
 // on - so renumbering the tabs means moving the stored numbers too, the way db/alter210.sql and
@@ -34,7 +35,7 @@ class Page extends TournamentPageBase
 	private $tab;
 	private $tab_count;
 	private $rounds;
-	private $tournament_type;
+	private $long_term;            // a long-term tournament has no rounds of its own, see showSchemeTab()
 	private $scheme_players;
 	private $scheme_tables;
 	private $reg_players;
@@ -69,7 +70,8 @@ class Page extends TournamentPageBase
 		}
 
 		$this->prep_tournament_id = $this->id;
-		$query = new DbQuery('SELECT id, round, misc, players, tables, games FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
+		// The scoring options are past what the trait reads: the weight of the points of the round.
+		$query = new DbQuery('SELECT id, round, misc, players, tables, games, scoring_options FROM events WHERE tournament_id = ? ORDER BY round', $this->id);
 		$main_rounds = array();
 		$tmp_finals = array();
 		while ($row = $query->next())
@@ -89,9 +91,20 @@ class Page extends TournamentPageBase
 			$this->rounds[] = $tmp_finals[$i];
 		}
 
-		list($this->tournament_type, $preparation_stage) = Db::record(get_label('tournament'), 'SELECT type, preparation_stage FROM tournaments WHERE id = ?', $this->id);
+		list($preparation_stage) = Db::record(get_label('tournament'), 'SELECT preparation_stage FROM tournaments WHERE id = ?', $this->id);
 
-		$this->tab_count = PREP_TAB_SEATING + count($this->rounds);
+		// A long-term tournament is played on the ordinary days of its club. It is not seated, and
+		// its events are not rounds anybody lays out here, so it goes no further than the streams.
+		$this->long_term = ($this->flags & TOURNAMENT_FLAG_LONG_TERM) != 0;
+		if ($this->long_term)
+		{
+			$this->rounds = array();
+			$this->tab_count = PREP_TAB_STREAMS + 1;
+		}
+		else
+		{
+			$this->tab_count = PREP_TAB_SEATING + count($this->rounds);
+		}
 
 		$this->scheme_players = 0;
 		$this->scheme_tables = 0;
@@ -113,7 +126,7 @@ class Page extends TournamentPageBase
 			$this->id, USER_PERM_REFEREE, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
 		$this->regs_complete = ($this->reg_players >= $this->scheme_players && $this->reg_referees >= $this->scheme_tables);
 
-		$this->scheme_valid = !empty($this->rounds);
+		$this->scheme_valid = $this->long_term || !empty($this->rounds);
 		foreach ($this->rounds as $round_row)
 		{
 			$p = (int)$round_row[3];
@@ -467,57 +480,114 @@ class Page extends TournamentPageBase
 		echo '</table></p>';
 	}
 
+	// The leagues a tournament of this club takes a schema from, the one it is in first - the
+	// system of the club, see clubs.system_league_id - and their schemas.
+	// The leagues the tournament can take a schema from: only those that have schemas.
+	private function schemaLeagues()
+	{
+		$leagues = array();
+		foreach (get_tournament_schema_leagues($this->club_id) as $id => $l)
+		{
+			if (count($l->schemas) > 0)
+			{
+				$leagues[$id] = $l;
+			}
+		}
+		return $leagues;
+	}
+
+	// The scheme: a schema of a league to set the whole tournament up by, whether it is a
+	// long-term one, and the rounds. Taking a schema replaces the rounds, the rules, the scoring,
+	// the awards and the hiding of the table; it is not remembered, so the list always starts
+	// empty. The rounds are added, deleted and changed by hand as well. A long-term tournament
+	// has none: its games are played on the ordinary days of its club.
 	private function showSchemeTab()
 	{
-		if (empty($this->rounds))
-		{
-			echo '<p>' . get_label('This tournament has no rounds. Select a tournament type to create rounds automatically.') . '</p>';
-		}
+		$leagues = $this->schemaLeagues();
 
+		// No league is picked to start with; the list of schemas is there once one is.
 		echo '<p><table width="100%"><tr>' . $this->backCell() . '<td>';
-		show_tournament_type_select($this->tournament_type, 'tournament-type', 'changeTournamentType()');
+		if (count($leagues) > 0)
+		{
+			echo get_label('Tournament schema') . ': <select id="schema-league" onchange="schemaLeagueChanged()">';
+			show_option(0, 0, '');
+			foreach ($leagues as $l)
+			{
+				show_option($l->id, 0, $l->name);
+			}
+			echo '</select> <select id="schema-sel" onchange="schemaChanged()" style="display:none"></select>';
+		}
 		echo '</td><td align="right">';
 		$this->nextButton();
 		echo '</td></tr></table></p>';
 
-		if (empty($this->rounds))
+		echo '<p><table class="bordered light" width="100%"><tr><td>';
+		echo '<input type="checkbox" class="toggle" id="prep-long-term"' . ($this->long_term ? ' checked' : '') . ' onchange="longTermChanged(this.checked)"> ' . get_label('long term tournament. Like a seasonal club championship.');
+		if ($this->long_term)
+		{
+			echo '&emsp;&emsp;<input type="checkbox" class="toggle" id="prep-single-game"' . (($this->flags & TOURNAMENT_FLAG_SINGLE_GAME) ? ' checked' : '') .
+				' onchange="setTournamentFlag(' . TOURNAMENT_FLAG_SINGLE_GAME . ', this.checked)"> ' . get_label('single games from non-tournament events can be assigned to the tournament.');
+		}
+		echo '</td></tr></table></p>';
+
+		if ($this->long_term)
 		{
 			return;
+		}
+
+		if (empty($this->rounds))
+		{
+			echo '<p>' . get_label('This tournament has no rounds yet. Add them, or take a tournament schema of a league.') . '</p>';
 		}
 
 		$num_rounds = count($this->rounds);
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr class="th darker">';
+		echo '<td width="32" align="center"><button class="icon" onclick="addRound()" title="' . get_label('Add round') . '"><img src="images/create.png" border="0"></button></td>';
 		echo '<td>' . get_label('Round') . '</td>';
 		echo '<td>' . get_label('Players') . '</td>';
 		echo '<td>' . get_label('Tables') . '</td>';
 		echo '<td>' . get_label('Games per player') . '</td>';
+		echo '<td>' . get_label('Points weight') . '</td>';
+		echo '<td title="' . get_label('Tournament group') . '">' . get_label('Group') . '</td>';
 		echo '<td>' . get_label('Team size') . '</td>';
 		echo '</tr>';
 
 		$first_row = true;
 		foreach ($this->rounds as $row)
 		{
-			list($event_id, $round_num, $misc, $players, $tables, $games) = $row;
+			list($event_id, $round_num, $misc, $players, $tables, $games, $round_options) = $row;
+			$round_options = json_decode($round_options);
+			$weight = isset($round_options->weight) ? (float)$round_options->weight : 1;
+			$group = isset($round_options->group) ? normalize_tournament_group($round_options->group, $round_num) : '';
+			$round_name = get_round_name($round_num);
 
 			$players_val = is_null($players) ? '' : $players;
 			$tables_val  = is_null($tables)  ? '' : $tables;
 			$games_val   = is_null($games)   ? '' : $games;
 
-			$inp_base = ' type="number" style="width:60px;" oninput="schemeInputChanged(this)"';
+			$inp_base = ' type="number" style="width:60px;" oninput="schemeInputChanged(this)" onchange="saveScheme()"';
 			$players_int = ($players_val !== '') ? (int)$players_val : 0;
 			$max_tables = ($players_int >= 10) ? (int)floor($players_int / 10) : 0;
 			$inp_tables_max = ($max_tables > 0) ? ' max="' . $max_tables . '"' : '';
 			$is_main = ($round_num == 0) ? '1' : '0';
 			echo '<tr data-event-id="' . $event_id . '" data-is-main="' . $is_main . '">';
-			echo '<td><b>' . get_round_name($round_num) . '</b></td>';
+			echo '<td align="center"><button class="icon" onclick="deleteRound(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete [0]?', $round_name)) . '\')" title="' . get_label('Delete [0]', $round_name) . '"><img src="images/delete.png" border="0"></button></td>';
+			echo '<td><b>' . $round_name . '</b></td>';
 			echo '<td><input' . $inp_base . ' min="10" data-field="players" value="' . $players_val . '"></td>';
 			echo '<td><input' . $inp_base . ' min="1"' . $inp_tables_max . ' data-field="tables"  value="' . $tables_val  . '"></td>';
 			echo '<td><input' . $inp_base . ' min="1" data-field="games"   value="' . $games_val   . '"></td>';
+			echo '<td><input type="number" style="width:60px;" step="0.1" min="0.1" data-field="weight" value="' . $weight . '" onchange="saveScheme()"></td>';
+			echo '<td><select data-field="group" onchange="saveScheme()">';
+			foreach (tournament_group_names() as $value => $text)
+			{
+				show_option($value, $group, $text);
+			}
+			echo '</select></td>';
 			if ($first_row)
 			{
 				$rowspan = $num_rounds > 1 ? ' rowspan="' . $num_rounds . '"' : '';
-				echo '<td' . $rowspan . ' align="center"><input id="scheme-team-size" type="number" style="width:60px;" min="1" value="' . (int)$this->team_size . '"></td>';
+				echo '<td' . $rowspan . ' align="center"><input id="scheme-team-size" type="number" style="width:60px;" min="1" value="' . (int)$this->team_size . '" onchange="saveScheme()"></td>';
 				$first_row = false;
 			}
 			echo '</tr>';
@@ -528,10 +598,8 @@ class Page extends TournamentPageBase
 		// The number of players the tournament counts for is the players of its main round, which
 		// the scheme sets. Once it is over it can be corrected by those who actually played.
 		list ($tournament_flags) = Db::record(get_label('tournament'), 'SELECT flags FROM tournaments WHERE id = ?', $this->id);
-		echo '<p><table width="100%"><tr><td>';
-		echo '<input type="checkbox" class="toggle" id="prep-correct-players"' . (($tournament_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS) ? '' : ' checked') .
-			' onchange="setTournamentFlag(' . TOURNAMENT_FLAG_FORCE_NUM_PLAYERS . ', !this.checked)"> ' . get_label('correct number of players after the tournament is complete');
-		echo '</td><td align="right"><button id="prep-apply-btn" onclick="applyScheme()"' . (!$this->scheme_valid ? ' disabled' : '') . '>' . get_label('Apply') . '</button></td></tr></table></p>';
+		echo '<p><input type="checkbox" class="toggle" id="prep-correct-players"' . (($tournament_flags & TOURNAMENT_FLAG_FORCE_NUM_PLAYERS) ? '' : ' checked') .
+			' onchange="setTournamentFlag(' . TOURNAMENT_FLAG_FORCE_NUM_PLAYERS . ', !this.checked)"> ' . get_label('correct number of players after the tournament is complete') . '</p>';
 	}
 
 	// The rules the games are played by, the scoring and its normalizer, and the special awards.
@@ -553,7 +621,7 @@ class Page extends TournamentPageBase
 		echo '<p><table class="bordered light" width="100%">';
 		$rules_code = upgrade_rules_code($rules_code);
 		echo '<tr><td width="160">' . get_label('Rules') . ':</td><td><select id="prep-rules" onchange="rulesChanged()">';
-		foreach (get_available_rules($this->club_id, $club_name, $club_rules) as $r)
+		foreach (merge_same_rules(get_available_rules($this->club_id, $club_name, $club_rules)) as $r)
 		{
 			if (show_option($r->rules, $rules_code, $r->name))
 			{
@@ -735,12 +803,16 @@ class Page extends TournamentPageBase
 		// has registered, and this is the one tab a tournament played years ago still has a use
 		// for: its games can be tied to its recordings from here.
 		echo '<button' . ($this->tab == PREP_TAB_STREAMS ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_STREAMS . ')">' . get_label('Streams') . '</button>';
-		echo '<button class="prep-post-reg-tab' . ($this->tab == PREP_TAB_PAIRS ? ' active' : '') . '"' . $locked . ' onclick="goToTab(' . PREP_TAB_PAIRS . ')">' . get_label('Pairs') . '</button>';
-		foreach ($this->rounds as $i => $round_row)
+		// A long-term tournament is not seated, so it has neither the pairs nor the seatings.
+		if (!$this->long_term)
 		{
-			$tab_idx = PREP_TAB_SEATING + $i;
-			$round_name = get_round_name($round_row[1]);
-			echo '<button class="prep-post-reg-tab' . ($this->tab == $tab_idx ? ' active' : '') . '"' . $locked . ' onclick="goToTab(' . $tab_idx . ')">' . get_label('Seating for [0]', $round_name) . '</button>';
+			echo '<button class="prep-post-reg-tab' . ($this->tab == PREP_TAB_PAIRS ? ' active' : '') . '"' . $locked . ' onclick="goToTab(' . PREP_TAB_PAIRS . ')">' . get_label('Pairs') . '</button>';
+			foreach ($this->rounds as $i => $round_row)
+			{
+				$tab_idx = PREP_TAB_SEATING + $i;
+				$round_name = get_round_name($round_row[1]);
+				echo '<button class="prep-post-reg-tab' . ($this->tab == $tab_idx ? ' active' : '') . '"' . $locked . ' onclick="goToTab(' . $tab_idx . ')">' . get_label('Seating for [0]', $round_name) . '</button>';
+			}
 		}
 		echo '</div>';
 
@@ -762,10 +834,13 @@ class Page extends TournamentPageBase
 				$this->showStreamsTab();
 				break;
 			case PREP_TAB_PAIRS:
-				$this->showPairs();
+				if (!$this->long_term)
+				{
+					$this->showPairs();
+				}
 				break;
 			default:
-				if ($this->tab >= PREP_TAB_SEATING)
+				if ($this->tab >= PREP_TAB_SEATING && !$this->long_term)
 				{
 					$this->showSeatingTab($this->tab - PREP_TAB_SEATING);
 				}
@@ -872,14 +947,37 @@ class Page extends TournamentPageBase
 			});
 		}
 
-		function changeTournamentType()
+		// Long-term or not. A tournament stops being long-term with no single games assigned to it.
+		function longTermChanged(on)
 		{
 			json.post("api/ops/tournament.php",
 			{
 				op: "change",
 				tournament_id: <?php echo $this->id; ?>,
-				type: $('#tournament-type').val(),
+				flags: on ? <?php echo TOURNAMENT_FLAG_LONG_TERM; ?> : 0,
+				flags_mask: <?php echo TOURNAMENT_FLAG_LONG_TERM | TOURNAMENT_FLAG_SINGLE_GAME; ?>,
 			}, refr);
+		}
+
+		// The rounds are added and deleted on the server, which reloads the page; what was typed
+		// into the scheme is saved first, so that it is not lost with the reload.
+		function addRound()
+		{
+			applyScheme(function()
+			{
+				json.post('api/ops/tournament.php', { op: 'add_round', tournament_id: <?php echo $this->id; ?> }, refr);
+			});
+		}
+
+		function deleteRound(eventId, message)
+		{
+			dlg.yesNo(message, null, null, function()
+			{
+				applyScheme(function()
+				{
+					json.post('api/ops/tournament.php', { op: 'delete_round', event_id: eventId }, refr);
+				});
+			});
 		}
 
 		function createPair()
@@ -912,15 +1010,33 @@ class Page extends TournamentPageBase
 
 		function applyScheme(onSuccess)
 		{
+			if ($('tr[data-event-id]').length == 0)
+			{
+				// Nothing to save, and no team size to save it with either.
+				if (onSuccess)
+				{
+					onSuccess();
+				}
+				return;
+			}
 			var rounds = [];
 			$('tr[data-event-id]').each(function()
 			{
 				var row = $(this);
 				var round = { event_id: row.data('event-id'), is_main: row.data('is-main') == 1 };
+				round.group = row.find('select[data-field="group"]').val();
 				row.find('input[data-field]').each(function()
 				{
 					var val = $(this).val();
-					round[$(this).data('field')] = val === '' ? 0 : parseInt(val);
+					var field = $(this).data('field');
+					if (field == 'weight')
+					{
+						round.weight = val === '' ? 1 : parseFloat(val);
+					}
+					else
+					{
+						round[field] = val === '' ? 0 : parseInt(val);
+					}
 				});
 				rounds.push(round);
 			});
@@ -973,7 +1089,7 @@ class Page extends TournamentPageBase
 
 		function validateSchemeNext()
 		{
-			var valid = true;
+			var valid = <?php echo $this->long_term ? 'true' : '$(\'tr[data-event-id]\').length > 0'; ?>;
 			$('tr[data-event-id]').each(function()
 			{
 				var row = $(this);
@@ -986,9 +1102,19 @@ class Page extends TournamentPageBase
 				}
 			});
 			$('#prep-next-btn').prop('disabled', !valid);
-			$('#prep-apply-btn').prop('disabled', !valid);
 			$('#prep-tab-registrations').prop('disabled', !valid);
 			$('.prep-post-reg-tab').prop('disabled', !valid || !regsComplete);
+			return valid;
+		}
+
+		// The scheme is saved as soon as a field of it is changed - there is no button to apply it -
+		// but only while it holds: half typed in, it would only be refused.
+		function saveScheme()
+		{
+			if (validateSchemeNext())
+			{
+				applyScheme(function() {});
+			}
 		}
 
 		function nextStep()
@@ -1002,6 +1128,49 @@ class Page extends TournamentPageBase
 
 <?php if ($this->tab == PREP_TAB_SCHEME): ?>
 		validateSchemeNext();
+<?php
+			$leagues = $this->schemaLeagues();
+			$schemas = array();
+			foreach ($leagues as $l)
+			{
+				$schemas[$l->id] = $l->schemas;
+			}
+?>
+		// The schemas of each league offered, by league id.
+		var schemaLists = <?php echo json_encode((object)$schemas); ?>;
+
+		function schemaLeagueChanged()
+		{
+			var sel = $('#schema-sel');
+			sel.find('option').remove();
+			sel.append($('<option>').val(0).text(''));
+			var list = schemaLists[$('#schema-league').val()] || [];
+			for (var s of list)
+			{
+				sel.append($('<option>').val(s.id).text(s.name));
+			}
+			sel.val(0);
+			sel.toggle(list.length > 0);
+		}
+		schemaLeagueChanged();
+
+		// The schema is taken the moment it is picked, once that is confirmed. The list goes
+		// back to empty either way: nothing remembers which schema a tournament took.
+		function schemaChanged()
+		{
+			var sel = $('#schema-sel');
+			var schemaId = sel.val();
+			var name = sel.find('option:selected').text();
+			sel.val(0);
+			if (schemaId <= 0)
+			{
+				return;
+			}
+			dlg.yesNo('<?php echo addslashes(get_label('Are you sure you want to set the tournament up by [0]? Its rounds, rules, scoring, special awards and the hiding of the table will be replaced.', '#')); ?>'.replace('#', $('<div>').text(name).html()), null, null, function()
+			{
+				json.post('api/ops/tournament.php', { op: 'apply_schema', tournament_id: <?php echo $this->id; ?>, schema_id: schemaId }, refr);
+			});
+		}
 <?php endif; ?>
 <?php
 		if ($this->tab == PREP_TAB_TABLE)

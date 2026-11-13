@@ -2186,6 +2186,29 @@ $labelMenu = array (
 'System' => 'Система', // form/club_create.php, form/club_edit.php
 'Rules before [0]' => 'Правила до [0]', // api/ops/club.php
 'global league. The default rules and scoring systems of a global league are offered to every club, and it can create elite series that bring more rating points.' => 'глобальна ліга. Правила та системи підрахунку балів глобальної ліги за замовчуванням пропонуються кожному клубу, і вона може створювати елітні серії, які приносять більше рейтингових балів.', // form/league_accept.php, form/league_create.php, form/league_edit.php
+'tournament schema' => 'турнірна схема', // include/tournament_schema.php, api/ops/tournament.php, api/ops/tournament_schema.php, form/tournament_schema_edit.php
+'Tournament schema' => 'Турнірна схема', // tournament_preparation.php
+'Tournament schemas' => 'Турнірні схеми', // league_tournament_schemas.php, include/league.php
+'tournament schema name' => 'назву турнірної схеми', // api/ops/tournament_schema.php
+'Tournament schema name' => 'Назва турнірної схеми', // league_tournament_schemas.php, api/ops/tournament_schema.php, form/tournament_schema_edit.php
+'New tournament schema' => 'Нова турнірна схема', // league_tournament_schemas.php, form/tournament_schema_edit.php
+'Ready-made ways to set up a tournament in [0]' => 'Готові схеми турнірів [0]', // include/league.php
+'Copy from another league' => 'Скопіювати з іншої ліги', // league_tournament_schemas.php, form/tournament_schema_copy.php
+'Every tournament schema of the league is copied. Where this league already has a schema with the same name, its own one is kept.' => 'Копіюються всі турнірні схеми обраної ліги. Якщо тут вже є схема з такою самою назвою, залишається тутешня.', // form/tournament_schema_copy.php
+'Not all the schemas were copied: this league already has schemas with these names, and they are kept.' => 'Скопіювалися не всі схеми: у цій лізі вже є схеми з такими назвами, і їх залишено як є.', // league_tournament_schemas.php
+'Please select another league.' => 'Будь ласка, оберіть іншу лігу.', // api/ops/tournament_schema.php
+'rounds' => 'раунди', // include/tournament_schema.php
+'[0] players can not play at [1] tables.' => '[0] гравців не можуть грати за [1] столами.', // include/tournament_schema.php
+'Unable to apply a tournament schema because the tournament has already started.' => 'Неможливо застосувати турнірну схему, тому що турнір вже почався.', // include/tournament_schema.php
+'long-term tournament' => 'довгостроковий турнір', // include/tournament_schema.php
+'Unable to delete [0] because it has already started.' => 'Неможливо видалити [0], тому що він вже почався.', // include/tournament.php, api/ops/tournament.php
+'A long-term tournament has no rounds.' => 'У довгострокового турніру немає раундів.', // api/ops/tournament.php
+'This tournament has no rounds yet. Add them, or take a tournament schema of a league.' => 'У цього турніру ще немає раундів. Додайте їх або оберіть турнірну схему однієї з ліг.', // tournament_preparation.php
+'Add round' => 'Додати раунд', // tournament_preparation.php, form/tournament_schema_edit.php
+'Are you sure you want to set the tournament up by [0]? Its rounds, rules, scoring, special awards and the hiding of the table will be replaced.' => 'Ви впевнені, що хочете налаштувати турнір за схемою [0]? Його раунди, правила, підрахунок балів, спеціальні призи та приховування таблиці буде замінено.', // tournament_preparation.php
+'The rules of the club as they are' => 'Правила клубу без змін', // form/tournament_schema_edit.php
+'Unable to delete [0] because tournament schemas use it:' => 'Неможливо видалити «[0]»: на це посилаються турнірні схеми:', // include/tournament_schema.php
+'Group' => 'Група', // tournament_preparation.php, form/tournament_schema_edit.php
 );
 
 return $labelMenu;

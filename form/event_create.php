@@ -118,7 +118,7 @@ try
 	echo '</select></td></tr>';
 	
 	$rules_code = upgrade_rules_code($club->rules_code);
-	$rules = get_available_rules($club_id, $club->name, $club->rules_code);
+	$rules = merge_same_rules(get_available_rules($club_id, $club->name, $club->rules_code));
 	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
 	echo '<select id="form-rules">';
 	foreach ($rules as $r)

@@ -4,6 +4,7 @@ require_once '../../include/api.php';
 require_once '../../include/scoring.php';
 require_once '../../include/systems.php';
 require_once '../../include/names.php';
+require_once '../../include/tournament_schema.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -409,6 +410,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
+			list($scoring_name) = Db::record(get_label('scoring system'), 'SELECT name FROM scorings WHERE id = ?', $scoring_id);
+			check_not_in_tournament_schemas('scoring_id', $scoring_id, $scoring_name);
 			Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = NULL WHERE id = ?', $scoring_id);
 			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_versions WHERE scoring_id = ?', $scoring_id);
 			Db::exec(get_label('scoring system'), 'DELETE FROM scorings WHERE id = ?', $scoring_id);

@@ -413,6 +413,18 @@ CREATE TABLE `league_pairs` (
   `policy` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `league_tournament_schemas`;
+CREATE TABLE `league_tournament_schemas` (
+  `id` int(11) NOT NULL,
+  `league_id` int(11) NOT NULL,
+  `name` varchar(128) NOT NULL,
+  `scheme` text NOT NULL,
+  `rules_id` int(11) DEFAULT NULL,
+  `rules_league_id` int(11) DEFAULT NULL,
+  `scoring_id` int(11) NOT NULL,
+  `normalizer_id` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 DROP TABLE IF EXISTS `league_requests`;
 CREATE TABLE `league_requests` (
   `id` int(11) NOT NULL,
@@ -830,7 +842,6 @@ CREATE TABLE `tournaments` (
   `scoring_options` varchar(256) NOT NULL,
   `normalizer_id` int(11) DEFAULT NULL,
   `normalizer_version` int(11) DEFAULT NULL,
-  `type` int(11) NOT NULL,
   `num_players` int(11) NOT NULL,
   `fee` int(11) DEFAULT NULL,
   `currency_id` int(11) DEFAULT NULL,
@@ -1176,7 +1187,7 @@ INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `durat
 INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (2, 'Club Cup 2024', NULL, 1, 1284784660, 31536000, 7, '', 0, '"0002000010000"', 1, 1, 0, NULL, NULL, 5);
 
 -- Tournament (finished) and its link to the season
-INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `type`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 'Sample Tournament', 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, 0, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
+INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 'Sample Tournament', 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
 INSERT INTO `series_tournaments` (`tournament_id`, `series_id`, `stars`, `flags`, `fee`) VALUES (1, 1, 1, 0, NULL);
 
 -- Event (finished), belongs to the tournament
@@ -1848,6 +1859,17 @@ ALTER TABLE `league_pairs`
   ADD KEY `user2_id` (`user2_id`);
 
 --
+-- Indexes for table `league_tournament_schemas`
+--
+ALTER TABLE `league_tournament_schemas`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `league_name` (`league_id`,`name`),
+  ADD KEY `tournament_schema_rules` (`rules_id`),
+  ADD KEY `tournament_schema_rules_league` (`rules_league_id`),
+  ADD KEY `tournament_schema_scoring` (`scoring_id`),
+  ADD KEY `tournament_schema_normalizer` (`normalizer_id`);
+
+--
 -- Indexes for table `league_requests`
 --
 ALTER TABLE `league_requests`
@@ -2349,6 +2371,12 @@ ALTER TABLE `leagues`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `league_tournament_schemas`
+--
+ALTER TABLE `league_tournament_schemas`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `league_requests`
 --
 ALTER TABLE `league_requests`
@@ -2734,6 +2762,16 @@ ALTER TABLE `league_pairs`
   ADD CONSTRAINT `league_pair_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
   ADD CONSTRAINT `league_pair_user1` FOREIGN KEY (`user1_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `league_pair_user2` FOREIGN KEY (`user2_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `league_tournament_schemas`
+--
+ALTER TABLE `league_tournament_schemas`
+  ADD CONSTRAINT `tournament_schema_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
+  ADD CONSTRAINT `tournament_schema_rules` FOREIGN KEY (`rules_id`) REFERENCES `rules` (`id`),
+  ADD CONSTRAINT `tournament_schema_rules_league` FOREIGN KEY (`rules_league_id`) REFERENCES `leagues` (`id`),
+  ADD CONSTRAINT `tournament_schema_scoring` FOREIGN KEY (`scoring_id`) REFERENCES `scorings` (`id`),
+  ADD CONSTRAINT `tournament_schema_normalizer` FOREIGN KEY (`normalizer_id`) REFERENCES `normalizers` (`id`);
 
 --
 -- Constraints for table `league_requests`

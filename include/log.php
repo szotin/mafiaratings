@@ -33,6 +33,7 @@ define('LOG_OBJECT_OBJECTION', 'objection');
 define('LOG_OBJECT_SOUND', 'sound');
 define('LOG_OBJECT_CURRENCY', 'currency');
 define('LOG_OBJECT_EVENT_BROADCAST', 'event broadcast');
+define('LOG_OBJECT_TOURNAMENT_SCHEMA', 'tournament schema');
 
 function prepare_log_objects()
 {
@@ -55,6 +56,7 @@ function prepare_log_objects()
 		, LOG_OBJECT_SERIES => 'series_info.php?bck=1&id='
 		, LOG_OBJECT_EVENT => 'event.php?bck=1&id='
 		, LOG_OBJECT_EVENT_BROADCAST => NULL
+		, LOG_OBJECT_TOURNAMENT_SCHEMA => NULL
 		, LOG_OBJECT_GAME => 'view_game.php?bck=1&id='
 		, LOG_OBJECT_VIDEO => 'video.php?bck=1&id='
 		, LOG_OBJECT_PHOTO_ALBUM => 'album_photos.php?bck=1&id='

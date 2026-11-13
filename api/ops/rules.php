@@ -2,6 +2,7 @@
 
 require_once '../../include/api.php';
 require_once '../../include/rules.php';
+require_once '../../include/tournament_schema.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -218,6 +219,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('The default rules can not be deleted.'));
 		}
 
+		check_not_in_tournament_schemas('rules_id', $rules_id, $rules_name);
 		Db::exec(get_label('rules'), 'DELETE FROM rules WHERE id = ?', $rules_id);
 		db_log(LOG_OBJECT_RULES, 'deleted', NULL, $rules_id, $club_id, $league_id);
 		Db::commit();
