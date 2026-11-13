@@ -33,13 +33,13 @@ try
 		dialog_title(get_label('New tournament schema'));
 		$name = '';
 		// A new schema starts with what a tournament of the league usually is: one round, the
-		// rules of the league, its scoring and normalizer, the usual awards and nothing hidden.
-		list($league_scoring_id, $league_normalizer_id) = Db::record(get_label('league'), 'SELECT scoring_id, normalizer_id FROM leagues WHERE id = ?', $league_id);
+		// rules of the league, its scoring, no normalizer, the usual awards and nothing hidden.
+		list($league_scoring_id) = Db::record(get_label('league'), 'SELECT scoring_id FROM leagues WHERE id = ?', $league_id);
 		$schema = new stdClass();
 		$schema->rounds = array((object)array('round' => 0, 'games' => 10));
 		$schema->rules_league_id = $league_id;
 		$schema->scoring_id = (int)$league_scoring_id;
-		$schema->normalizer_id = (int)$league_normalizer_id;
+		$schema->normalizer_id = 0;
 		$schema->awards = TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK;
 		$schema = normalize_tournament_schema($schema);
 	}
