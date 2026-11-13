@@ -46,16 +46,13 @@ class Page extends TournamentPageBase
 
 	// Everything after the registrations waits for them to be complete. The streams tab is the
 	// one exception - what is set up there does not depend on who is coming - but the step off
-	// it does, because it leads to the pairs. See show_body().
+	// it does, because it leads to the pairs. See show_body(). The registrations themselves do not
+	// wait for the scheme: people can sign up while it is being worked out.
 	protected function nextDisabled()
 	{
 		if (!$this->regs_complete && $this->tab == PREP_TAB_REGISTRATIONS)
 		{
 			return true;
-		}
-		if (!$this->scheme_valid && $this->tab == PREP_TAB_TABLE)
-		{
-			return true; // the registrations it leads to wait for the scheme
 		}
 		return (!$this->scheme_valid || !$this->regs_complete) && $this->tab == PREP_TAB_STREAMS;
 	}
@@ -722,7 +719,6 @@ class Page extends TournamentPageBase
 		$this->hidingSelect('hide-bonus', $bonus_options, $bonus_mode, $has_round);
 		echo ' <span id="hide-bonus-tour-span"></span></td></tr>';
 		echo '</table></p>';
-		echo '<p><i>' . get_label('The games played before the moment the table is hidden from stay in it, and it says which moment it shows. Managers and referees can still see the actual table.') . '</i></p>';
 	}
 
 	private function hidingSelect($id, $options, $selected, $has_round)
@@ -796,8 +792,7 @@ class Page extends TournamentPageBase
 		echo '<button' . ($this->tab == PREP_TAB_SCHEME ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_SCHEME . ')">' . get_label('Scheme') . '</button>';
 		echo '<button' . ($this->tab == PREP_TAB_RULES ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_RULES . ')">' . get_label('Rules') . '</button>';
 		echo '<button' . ($this->tab == PREP_TAB_TABLE ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_TABLE . ')">' . get_label('Hiding the table') . '</button>';
-		$reg_disabled = !$this->scheme_valid ? ' disabled' : '';
-		echo '<button id="prep-tab-registrations"' . ($this->tab == PREP_TAB_REGISTRATIONS ? ' class="active"' : '') . $reg_disabled . ' onclick="goToTab(' . PREP_TAB_REGISTRATIONS . ')">' . get_label('Registrations') . '</button>';
+		echo '<button id="prep-tab-registrations"' . ($this->tab == PREP_TAB_REGISTRATIONS ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_REGISTRATIONS . ')">' . get_label('Registrations') . '</button>';
 		$locked = (!$this->scheme_valid || !$this->regs_complete) ? ' disabled' : '';
 		// Not held back with the rest of them. Where the streams are has nothing to do with who
 		// has registered, and this is the one tab a tournament played years ago still has a use
@@ -1102,7 +1097,7 @@ class Page extends TournamentPageBase
 				}
 			});
 			$('#prep-next-btn').prop('disabled', !valid);
-			$('#prep-tab-registrations').prop('disabled', !valid);
+
 			$('.prep-post-reg-tab').prop('disabled', !valid || !regsComplete);
 			return valid;
 		}
