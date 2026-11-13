@@ -807,7 +807,7 @@ $labelMenu = array (
 'Merge my accounts' => 'Объединить аккаунты', // include/page_base.php
 'log' => 'лог', // api/ops/user.php, api/ops/user.php
 'Duplicated accounts for [0]' => 'Дублированные аккаунты для [0]', // duplicated_users.php
-'Club system' => 'Система клубов', // form/club_create.php, form/club_edit.php
+'Parent club' => 'Родительский клуб', // form/club_create.php, form/club_edit.php
 'Remove all filters' => 'Удалить все фильтры', // club_log.php, log.php
 'Show actions of a specific user.' => 'Показать только действия определенного пользователя.', // club_log.php, log.php
 'Show details' => 'Показать подробности', // club_log.php, log.php
@@ -2183,6 +2183,8 @@ $labelMenu = array (
 'The default scoring system can not be deleted.' => 'Систему подсчёта баллов по умолчанию удалить нельзя.', // api/ops/scoring.php
 'The default scoring normalizer can not be deleted.' => 'Систему выравнивания баллов по умолчанию удалить нельзя.', // api/ops/normalizer.php
 'The default gaining system can not be deleted.' => 'Систему серийных баллов по умолчанию удалить нельзя.', // api/ops/gaining.php
+'System' => 'Система', // form/club_create.php, form/club_edit.php
+'Rules before [0]' => 'Правила до [0]', // api/ops/club.php
 'global league. The default rules and scoring systems of a global league are offered to every club, and it can create elite series that bring more rating points.' => 'глобальная лига. Правила и системы подсчёта баллов глобальной лиги по умолчанию предлагаются каждому клубу, и она может создавать элитные серии, которые приносят больше рейтинговых баллов.', // form/league_accept.php, form/league_create.php, form/league_edit.php
 );
 

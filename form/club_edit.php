@@ -26,8 +26,8 @@ try
 	
 	$club = $_profile->clubs[$id];
 
-	list ($url, $email, $phone, $fee, $currency_id, $flags) =
-		Db::record(get_label('club'), 'SELECT web_site, email, phone, fee, currency_id, flags FROM clubs WHERE id = ?', $id);
+	list ($url, $email, $phone, $fee, $currency_id, $flags, $system_league_id) =
+		Db::record(get_label('club'), 'SELECT web_site, email, phone, fee, currency_id, flags, system_league_id FROM clubs WHERE id = ?', $id);
 	if (is_null($currency_id))
 	{
 		list($currency_id) = Db::record(get_label('country'), 'SELECT co.currency_id FROM clubs c JOIN cities ci ON ci.id = c.city_id JOIN countries co ON co.id = ci.country_id WHERE c.id = ?', $id);
@@ -48,7 +48,23 @@ try
 	
 	echo '</tr>';
 	
-	echo '<tr><td>' . get_label('Club system') . ':</td><td>';
+	echo '<tr><td>' . get_label('Country') . ':</td><td>';
+	show_country_input('form-country', $club->country, 'form-city');
+	echo '</td></tr>';
+
+	echo '<tr><td>' . get_label('City') . ':</td><td>';
+	show_city_input('form-city', $club->city, 'form-country');
+	echo '</td></tr>';
+
+	// The system of the club. Changing it makes the defaults of the new one - of a league, or of the
+	// site (the parent club for a sub-club) for none - the defaults of the club; what the club had
+	// stays with it as its other rules and systems. Otherwise the defaults are set in Rules of the
+	// management menu of the club.
+	echo '<tr><td>' . get_label('System') . ':</td><td>';
+	show_system_league_select('form-system', $system_league_id);
+	echo '</td></tr>';
+
+	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
 	echo '<select id="form-parent">';
 	show_option(0, $club->parent_id, '');
 	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND id <> ? ORDER BY name', $club->id);
@@ -60,15 +76,14 @@ try
 	echo '</select>';
 	echo '</td></tr>';
 
-	echo '<tr><td>'.get_label('Web site').':</td><td><input id="form-url" class="longest" value="' . htmlspecialchars($url, ENT_QUOTES) . '"></td></tr>';
-	
 	echo '<tr><td valign="top">'.get_label('Languages').':</td><td>';
 	langs_checkboxes($club->langs);
 	echo '</td></tr>';
-	
+
+	echo '<tr><td>'.get_label('Web site').':</td><td><input id="form-url" class="longest" value="' . htmlspecialchars($url, ENT_QUOTES) . '"></td></tr>';
 	echo '<tr><td>'.get_label('Contact email').':</td><td><input class="longest" id="form-email" value="' . htmlspecialchars($email, ENT_QUOTES) . '"></td></tr>';
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td><input class="longest" id="form-phone" value="' . htmlspecialchars($phone, ENT_QUOTES) . '"></td></tr>';
-	
+
 	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
 	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
 	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"' . (is_null($fee)?' checked':'') .'> '.get_label('unknown');
@@ -80,17 +95,6 @@ try
 		show_option((int)$cid, $currency_id, $cname);
 	}
 	echo '</select></td></tr>';
-	
-	echo '<tr><td>' . get_label('Country') . ':</td><td>';
-	show_country_input('form-country', $club->country, 'form-city');
-	echo '</td></tr>';
-	
-	echo '<tr><td>' . get_label('City') . ':</td><td>';
-	show_city_input('form-city', $club->city, 'form-country');
-	echo '</td></tr>';
-	
-	// The rules, the scoring system and the normalizer of the club are its defaults, set in Rules
-	// of its management menu.
 
 	echo '</table>';
 	
@@ -126,6 +130,7 @@ try
 			, city: $("#form-city").val()
 			, country: $("#form-country").val()
 			, langs: languages
+			, system_league_id: $("#form-system").val()
 		},
 		onSuccess);
 	}

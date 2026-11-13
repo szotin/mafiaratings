@@ -278,4 +278,21 @@ function get_club_request_action($name, $club_id, $club_name, $parent_id, $paren
 	return get_label('Create a top level club [0]', $name);
 }
 
+// The system of a club (clubs.system_league_id): a global league whose defaults - rules and
+// systems - the club takes, see op create and op change in api/ops/club.php. The first, empty
+// option is none. The league already picked stays on the list even if it is no longer global.
+function show_system_league_select($id, $selected_id = 0)
+{
+	$selected_id = (int)$selected_id;
+	echo '<select id="' . $id . '">';
+	show_option(0, $selected_id, '');
+	$query = new DbQuery('SELECT id, name FROM leagues WHERE ((flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0 AND (flags & ' . LEAGUE_FLAG_CLOSED . ') = 0) OR id = ? ORDER BY name', $selected_id);
+	while ($row = $query->next())
+	{
+		list($league_id, $league_name) = $row;
+		show_option((int)$league_id, $selected_id, $league_name);
+	}
+	echo '</select>';
+}
+
 ?>

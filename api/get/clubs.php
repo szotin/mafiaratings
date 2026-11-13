@@ -116,7 +116,7 @@ class ApiPage extends GetApiPageBase
 		{
 			$club_pic = new Picture(CLUB_PICTURE);
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, ni.name, no.name, c.rules, c.scoring_id, c.normalizer_id, c.gaining_id FROM clubs c' . 
+				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, ni.name, no.name, c.rules, c.scoring_id, c.normalizer_id, c.gaining_id, c.system_league_id FROM clubs c' . 
 				' JOIN cities i ON i.id = c.city_id' .
 				' JOIN countries o ON o.id = i.country_id' .
 				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
@@ -131,11 +131,15 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$club = new stdClass();
-				list ($club->id, $club->name, $flags, $club->langs, $web, $email, $phone, $club->city_id, $club->city, $club->country, $rules_code, $club->scoring_id, $club->normalizer_id, $club->gaining_id) = $row;
+				list ($club->id, $club->name, $flags, $club->langs, $web, $email, $phone, $club->city_id, $club->city, $club->country, $rules_code, $club->scoring_id, $club->normalizer_id, $club->gaining_id, $system_league_id) = $row;
 				$club->id = (int)$club->id;
 				$club->scoring_id = (int)$club->scoring_id;
 				$club->normalizer_id = (int)$club->normalizer_id;
 				$club->gaining_id = (int)$club->gaining_id;
+				if ($system_league_id != NULL)
+				{
+					$club->system_league_id = (int)$system_league_id;
+				}
 				$club->rules = rules_code_to_object($rules_code);
 				$club->city_id = (int)$club->city_id;
 				$club->langs = (int)$club->langs;
@@ -161,7 +165,7 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.langs, c.web_site, c.email, c.phone, c.city_id, rules, scoring_id, normalizer_id, gaining_id FROM clubs c' . 
+				'SELECT c.id, c.name, c.langs, c.web_site, c.email, c.phone, c.city_id, rules, scoring_id, normalizer_id, gaining_id, system_league_id FROM clubs c' . 
 				' JOIN cities i ON i.id = c.city_id', $condition);
 			$query->add(' ORDER BY name');
 			if ($page_size > 0)
@@ -173,11 +177,15 @@ class ApiPage extends GetApiPageBase
 			while ($row = $query->next())
 			{
 				$club = new stdClass();
-				list ($club->id, $club->name, $club->langs, $web, $email, $phone, $club->city_id, $rules_code, $club->scoring_id, $club->normalizer_id, $club->gaining_id) = $row;
+				list ($club->id, $club->name, $club->langs, $web, $email, $phone, $club->city_id, $rules_code, $club->scoring_id, $club->normalizer_id, $club->gaining_id, $system_league_id) = $row;
 				$club->id = (int)$club->id;
 				$club->scoring_id = (int)$club->scoring_id;
 				$club->normalizer_id = (int)$club->normalizer_id;
 				$club->gaining_id = (int)$club->gaining_id;
+				if ($system_league_id != NULL)
+				{
+					$club->system_league_id = (int)$system_league_id;
+				}
 				$club->rules = rules_code_to_object($rules_code);
 				$club->city_id = (int)$club->city_id;
 				$club->langs = (int)$club->langs;
@@ -235,6 +243,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('scoring_id', 'Default scoring system of the club. It belongs to the club - see <a href="scorings.php?help">scorings.php</a>.');
 			$param->sub_param('normalizer_id', 'Default scoring normalizer of the club. It belongs to the club - see <a href="normalizers.php?help">normalizers.php</a>.');
 			$param->sub_param('gaining_id', 'Default gaining system of the club, for its series. It belongs to the club - see <a href="gainings.php?help">gainings.php</a>.');
+			$param->sub_param('system_league_id', 'The system of the club: the league whose default rules and systems the club took.', 'the club took the defaults of the site, or of its parent club');
 			api_rules_help($param->sub_param('rules', 'Default game rules of the club. Its other rules are listed by <a href="club_rules.php?help">club_rules.php</a>.'), true);
 		$help->response_param('count', 'Total number of clubs satisfying the request parameters.');
 		return $help;

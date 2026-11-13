@@ -96,7 +96,8 @@ CREATE TABLE `clubs` (
   `activated` int(11) NOT NULL,
   `fee` int(11) DEFAULT NULL,
   `currency_id` int(11) DEFAULT NULL,
-  `gaining_id` int(11) NOT NULL
+  `gaining_id` int(11) NOT NULL,
+  `system_league_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `club_info`;
@@ -1608,7 +1609,8 @@ ALTER TABLE `clubs`
   ADD KEY `end_sound_id` (`end_sound_id`),
   ADD KEY `normalizer_id` (`normalizer_id`),
   ADD KEY `currency_id` (`currency_id`),
-  ADD KEY `gaining_id` (`gaining_id`);
+  ADD KEY `gaining_id` (`gaining_id`),
+  ADD KEY `system_league_id` (`system_league_id`);
 
 --
 -- Indexes for table `club_info`
@@ -2521,6 +2523,7 @@ ALTER TABLE `clubs`
   ADD CONSTRAINT `club_normalizer` FOREIGN KEY (`normalizer_id`) REFERENCES `normalizers` (`id`),
   ADD CONSTRAINT `club_prompt_sound` FOREIGN KEY (`prompt_sound_id`) REFERENCES `sounds` (`id`),
   ADD CONSTRAINT `club_scoring` FOREIGN KEY (`scoring_id`) REFERENCES `scorings` (`id`),
+  ADD CONSTRAINT `club_system_league` FOREIGN KEY (`system_league_id`) REFERENCES `leagues` (`id`),
   ADD CONSTRAINT `parent_club` FOREIGN KEY (`parent_id`) REFERENCES `clubs` (`id`);
 
 --

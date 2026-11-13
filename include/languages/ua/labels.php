@@ -1313,7 +1313,7 @@ $labelMenu = array (
 'keep the deleted city names as possible alternatives to the replacement city name' => 'зберегти назву видаленого міста як альтернативу назві міста, що замінило його', // form/city_delete.php, form/city_delete.php
 'Confirm city' => 'Підтвердити місто', // form/city_edit.php, form/city_edit.php
 'Edit city' => 'Редагування міста', // form/city_edit.php, form/city_edit.php
-'Club system' => 'Система клубів', // form/club_create.php, form/club_edit.php, form/club_create.php, form/club_edit.php
+'Parent club' => 'Батьківський клуб', // form/club_create.php, form/club_edit.php
 'Join club' => 'Вступити в клуб', // form/club_membership.php, form/club_membership.php
 'Quit club [0]' => 'Вийти з клубу [0]', // form/club_membership.php, form/club_membership.php
 'Unsubscribe from [0] event notifications' => 'Відписатися від сповіщень про ігрові дні в [0]', // form/club_membership.php, form/club_membership.php
@@ -2183,6 +2183,8 @@ $labelMenu = array (
 'The default scoring system can not be deleted.' => 'Систему підрахунку балів за замовчуванням видалити неможливо.', // api/ops/scoring.php
 'The default scoring normalizer can not be deleted.' => 'Систему вирівнювання балів за замовчуванням видалити неможливо.', // api/ops/normalizer.php
 'The default gaining system can not be deleted.' => 'Систему серійних балів за замовчуванням видалити неможливо.', // api/ops/gaining.php
+'System' => 'Система', // form/club_create.php, form/club_edit.php
+'Rules before [0]' => 'Правила до [0]', // api/ops/club.php
 'global league. The default rules and scoring systems of a global league are offered to every club, and it can create elite series that bring more rating points.' => 'глобальна ліга. Правила та системи підрахунку балів глобальної ліги за замовчуванням пропонуються кожному клубу, і вона може створювати елітні серії, які приносять більше рейтингових балів.', // form/league_accept.php, form/league_create.php, form/league_edit.php
 );
 

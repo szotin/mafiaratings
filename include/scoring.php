@@ -513,6 +513,28 @@ function own_system($table, $id, $club_id, $league_id)
 	return copy_system($table, $id, $club_id, $league_id);
 }
 
+// What own_system() gives, unless the system the owner has now - $current_id - already holds the
+// same as the current version of $id: then it is kept rather than copied once more.
+function own_system_unless_same($table, $id, $current_id, $club_id, $league_id)
+{
+	list($key, $versions, $fields) = _system_table_info($table);
+	$field = explode(',', $fields)[0];
+	if ($id != NULL && $current_id != NULL)
+	{
+		$query = new DbQuery(
+			'SELECT a.' . $field . ' = b.' . $field . ' FROM ' . $table . ' sa' .
+			' JOIN ' . $versions . ' a ON a.' . $key . ' = sa.id AND a.version = sa.version' .
+			' JOIN ' . $table . ' sb ON sb.id = ?' .
+			' JOIN ' . $versions . ' b ON b.' . $key . ' = sb.id AND b.version = sb.version' .
+			' WHERE sa.id = ?', $current_id, $id);
+		if (($row = $query->next()) && $row[0])
+		{
+			return (int)$current_id;
+		}
+	}
+	return own_system($table, $id, $club_id, $league_id);
+}
+
 // Whether a system is the default of anyone - a club, a league, or the site.
 function is_default_system($table, $id)
 {

@@ -6,8 +6,7 @@ require_once '../include/url.php';
 require_once '../include/email.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
-require_once '../include/rules.php';
-require_once '../include/scoring.php';
+require_once '../include/club.php';
 
 initiate_session();
 
@@ -20,9 +19,22 @@ try
 
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140">'.get_label('Club name').':</td><td><input class="longest" id="form-name"> </td></tr>';
-	echo '<tr><td>'.get_label('Web site').':</td><td><input class="longest" id="form-url"> </td></tr>';
-				
-	echo '<tr><td>' . get_label('Club system') . ':</td><td>';
+
+	echo '<tr><td>' . get_label('Country') . ':</td><td>';
+	show_country_input('form-country', COUNTRY_DETECT, 'form-city');
+	echo '</td></tr>';
+
+	echo '<tr><td>' . get_label('City') . ':</td><td>';
+	show_city_input('form-city', CITY_DETECT, 'form-country');
+	echo '</td></tr>';
+
+	// The league whose defaults - rules and systems - the club starts from. Without one a sub-club
+	// starts from its parent, any other club from the defaults of the site.
+	echo '<tr><td>' . get_label('System') . ':</td><td>';
+	show_system_league_select('form-system');
+	echo '</td></tr>';
+
+	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
 	echo '<select id="form-parent">';
 	show_option(0, $profile->user_club_id, '');
 	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_CLOSED . ') = 0 ORDER BY name');
@@ -33,46 +45,21 @@ try
 	}
 	echo '</select>';
 	echo '</td></tr>';
-	
+
 	echo '<tr><td>'.get_label('Languages').':</td><td>';
 	langs_checkboxes($langs);
 	echo '</td></tr>';
-				
+
+	echo '<tr><td>'.get_label('Web site').':</td><td><input class="longest" id="form-url"> </td></tr>';
+
 	echo '<tr><td>'.get_label('Contact email').':</td><td>';
 	echo '<input class="longest" id="form-email" value="' . htmlspecialchars($email, ENT_QUOTES) . '">';
 	echo '</td></tr>';
-				
+
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td>';
 	echo '<input class="longest" id="form-phone">';
 	echo '</td></tr>';
-				
-	echo '<tr><td>' . get_label('Country') . ':</td><td>';
-	show_country_input('form-country', COUNTRY_DETECT, 'form-city');
-	echo '</td></tr>';
-	
-	echo '<tr><td>' . get_label('City') . ':</td><td>';
-	show_city_input('form-city', CITY_DETECT, 'form-country');
-	echo '</td></tr>';
-	
-	// A new club starts from the default rules of the site, or from any of the rules of the
-	// site and of the global leagues.
-	$rules_list = get_available_rules();
-	$rules_code = get_site_rules();
-	echo '<tr><td>' . get_label('Rules') . ':</td><td><select id="form-rules">';
-	foreach ($rules_list as $r)
-	{
-		if (show_option($r->rules, $rules_code, $r->name))
-		{
-			$rules_code = '';
-		}
-	}
-	echo '</select></td></tr>';
-	
-	// The same for the scoring system: the club gets its own copy of the one picked.
-	echo '<tr><td>' . get_label('Scoring system') . ':</td><td><select id="form-scoring">';
-	show_system_options('scorings', NULL, get_site_scoring_id());
-	echo '</select></td></tr>';
-	
+
 	echo '</table>';
 ?>	
 	<script>
@@ -90,8 +77,7 @@ try
 			, country: $("#form-country").val()
 			, city: $("#form-city").val()
 			, langs: languages
-			, rules_code: $("#form-rules").val()
-			, scoring_id: $("#form-scoring").val()
+			, system_league_id: $("#form-system").val()
 		},
 		onSuccess);
 	}
