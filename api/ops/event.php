@@ -2169,7 +2169,7 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
-	// import_dimtom
+	// import_seating
 	//-------------------------------------------------------------------------------------------------------
 	private function fill_seating_mapping($misc, $event_id, $tournament_id)
 	{
@@ -2295,9 +2295,17 @@ class ApiPage extends OpsApiPageBase
 		}
 	}
 
-	function import_dimtom_op()
+	// Both kinds of seating file arrive through here, and which kind it is is read out of the
+	// file itself. Our own sheet names the players in their seats and is taken at its word: see
+	// seating_to_text() in include/seating.php for what is in it and seating_export.php for
+	// where it comes from.
+	//
+	// A DimTom file is taken at its word as well when it names players this round knows - which
+	// is what one exported from here carries. Otherwise it says only how the games are arranged,
+	// and the site fits the registered players to the arrangement as well as it can.
+	function import_seating_op()
 	{
-		global $_profile, $_FILES;
+		global $_FILES;
 
 		$event_id = (int)get_required_param('event_id');
 		list($club_id, $tournament_id, $misc_str, $event_players, $event_tables, $event_games, $event_round) =
@@ -2329,12 +2337,73 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Failed to upload [0].', $src_filename));
 		}
 
-		$dimtom = file_get_contents($tmp_filename);
-		if ($dimtom === false)
+		$text = file_get_contents($tmp_filename);
+		if ($text === false)
 		{
 			throw new Exc(get_label('Failed to read [0].', $src_filename));
 		}
-		$dimtom = json_decode($dimtom);
+
+		// Told apart by what is in them rather than by their names: a name says nothing, and
+		// these are handed over as .txt often enough. A DimTom file is json and so opens with a
+		// brace, once whatever an editor may have put in front of it is out of the way; our own
+		// sheet opens with a nickname, and whether its columns are separated by tabs or by
+		// commas is seating_from_text()'s business, not this one's.
+		//
+		// The trimmed text is what the json reader is handed: a byte order mark in front of a
+		// json file is not part of the json, and json_decode refuses the whole file over it.
+		$start = ltrim($text, " \t\r\n\xEF\xBB\xBF");
+		if (substr($start, 0, 1) == '{')
+		{
+			$this->import_dimtom_seating($start, $src_filename, $event_id, $club_id, $tournament_id,
+				$misc_str, $event_players, $event_tables, $event_games, $event_round);
+		}
+		else
+		{
+			$this->import_text_seating($text, $event_id, $club_id, $tournament_id,
+				$misc_str, $event_players, $event_tables, $event_games);
+		}
+	}
+
+	// The name this went by while a DimTom file was the only kind there was.
+	function import_dimtom_op()
+	{
+		$this->import_seating_op();
+	}
+
+	// The seating being imported against the round it is going into. The two can honestly differ -
+	// a round set up for three tables and a sheet for four - and which of them is right is the
+	// organizer's to say, so the first ask puts the question and stops there; the next one comes
+	// back with update_event and moves the round to match. Returns false where the question has
+	// been put and there is nothing more to do this time round.
+	private function check_imported_dimensions($def, $event_id, &$event_players, &$event_tables, &$event_games)
+	{
+		if ($def->players == $event_players && $def->tables == $event_tables && $def->games == $event_games)
+		{
+			return true;
+		}
+
+		if (!get_optional_param('update_event', 0))
+		{
+			$changes = array();
+			if ($def->players != $event_players) { $changes[] = get_label('Players [0] instead of [1]', $def->players, $event_players); }
+			if ($def->tables  != $event_tables)  { $changes[] = get_label('Tables [0] instead of [1]',  $def->tables,  $event_tables); }
+			if ($def->games   != $event_games)   { $changes[] = get_label('Rounds [0] instead of [1]',  $def->games,   $event_games); }
+			$this->response['confirm'] = get_label('The seating you are importing does not match the round parameters. [0]. Do you want to apply it anyway?', implode('. ', $changes));
+			return false;
+		}
+
+		Db::exec(get_label('event'), 'UPDATE events SET players = ?, tables = ?, games = ? WHERE id = ?',
+			$def->players, $def->tables, $def->games, $event_id);
+		$event_players = $def->players;
+		$event_tables  = $def->tables;
+		$event_games   = $def->games;
+		return true;
+	}
+
+	private function import_dimtom_seating($text, $src_filename, $event_id, $club_id, $tournament_id,
+		$misc_str, $event_players, $event_tables, $event_games, $event_round)
+	{
+		$dimtom = json_decode($text);
 		if (is_null($dimtom))
 		{
 			throw new Exc(get_label('Invalid file [0].', $src_filename));
@@ -2352,30 +2421,31 @@ class ApiPage extends OpsApiPageBase
 			$rounds[] = $round;
 		}
 
+		// A DimTom file carries a list of its players, and a schedule made in DimTom itself
+		// calls them Player_01 and up - names that are nobody here, which is why such a file
+		// says only how the games are arranged and the site seats the registered players into
+		// it. But the list can hold real nicknames: that is what seating_to_dimtom() writes into
+		// it, so a seating exported from here, taken round through DimTom and brought back says
+		// who sits where exactly as our own sheet does. Then it is read as one.
+		$named_rows = $this->dimtom_named_rows($dimtom, $rounds, $event_id, $tournament_id, $misc_str);
+		if (!is_null($named_rows))
+		{
+			$this->import_named_seating($named_rows, $event_id, $club_id, $tournament_id,
+				$misc_str, $event_players, $event_tables, $event_games);
+			return;
+		}
+
 		// --- 2. Validate seating dimensions against event ---
 		$dimtomDef = new SeatingDef($rounds);
 		// Refuse malformed input: games == 0 (unequal play / total seats not divisible by 10),
-		// or tables * 10 > players (impossible — a player can occupy only one table per round).
+		// or tables * 10 > players (impossible - a player can occupy only one table per round).
 		if ($dimtomDef->games <= 0 || $dimtomDef->tables * 10 > $dimtomDef->players)
 		{
 			throw new Exc(get_label('The imported seating is invalid: [0] players, [1] tables, [2] games per player.', $dimtomDef->players, $dimtomDef->tables, $dimtomDef->games));
 		}
-		if ($dimtomDef->players != $event_players || $dimtomDef->tables != $event_tables || $dimtomDef->games != $event_games)
+		if (!$this->check_imported_dimensions($dimtomDef, $event_id, $event_players, $event_tables, $event_games))
 		{
-			if (!get_optional_param('update_event', 0))
-			{
-				$changes = array();
-				if ($dimtomDef->players != $event_players) { $changes[] = get_label('Players [0] instead of [1]', $dimtomDef->players, $event_players); }
-				if ($dimtomDef->tables  != $event_tables)  { $changes[] = get_label('Tables [0] instead of [1]',  $dimtomDef->tables,  $event_tables); }
-				if ($dimtomDef->games   != $event_games)   { $changes[] = get_label('Rounds [0] instead of [1]',  $dimtomDef->games,   $event_games); }
-				$this->response['confirm'] = get_label('The seating you are importing does not match the round parameters. [0]. Do you want to apply it anyway?', implode('. ', $changes));
-				return;
-			}
-			Db::exec(get_label('event'), 'UPDATE events SET players = ?, tables = ?, games = ? WHERE id = ?',
-				$dimtomDef->players, $dimtomDef->tables, $dimtomDef->games, $event_id);
-			$event_players = $dimtomDef->players;
-			$event_tables  = $dimtomDef->tables;
-			$event_games   = $dimtomDef->games;
+			return;
 		}
 
 		// --- 3. Load registered players and classify pairs (after dimensions are finalised) ---
@@ -2417,13 +2487,189 @@ class ApiPage extends OpsApiPageBase
 		$this->assign_seating_to_event($event_id, $misc, $hash, $rounds, $final_mapping);
 		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
 	}
-	
+
+	// Our own sheet: ten lines to a game, a column to a table, a nickname in every cell. Nothing
+	// here arranges anything - the file has already said who sits where, and that is the whole
+	// point of being able to hand one back - so unlike the DimTom import it does not renumber
+	// the seating, does not fit players to it and does not move a table to suit a judge.
+	private function import_text_seating($text, $event_id, $club_id, $tournament_id,
+		$misc_str, $event_players, $event_tables, $event_games)
+	{
+		// rows[game][table][seat], holding what each cell said. seating_from_text() has already
+		// insisted on the shape of it and says which line is at fault where it is wrong.
+		$rows = seating_from_text($text);
+		$this->import_named_seating($rows, $event_id, $club_id, $tournament_id,
+			$misc_str, $event_players, $event_tables, $event_games);
+	}
+
+	// A seating that says who sits where, whichever kind of file it came out of: our own sheet,
+	// or a DimTom schedule whose list of players holds nicknames. rows[game][table][seat] holds
+	// the name in each seat, and that is taken at its word - nothing here renumbers the seating,
+	// fits players to it or moves a table to suit a judge, because the file has already said
+	// where everybody sits and handing that back is the whole point of it.
+	private function import_named_seating($rows, $event_id, $club_id, $tournament_id,
+		$misc_str, $event_players, $event_tables, $event_games)
+	{
+		// Who the nicknames are, and then the sheet as places and a mapping - the two things
+		// every seating is stored as. Both live beside the format in include/seating.php, so that
+		// what writes a sheet and what reads one back are in one place.
+		list($by_name, $ids) = seating_round_players($event_id, $tournament_id, $misc_str);
+		list($rounds, $mapping, $unknown, $doubtful) =
+			seating_places_from_names($rows, $by_name, $ids);
+
+		if (!empty($unknown))
+		{
+			throw new Exc(get_label('Nobody playing this round is called [0].', implode(', ', $unknown)));
+		}
+		if (!empty($doubtful))
+		{
+			throw new Exc(get_label('More than one player of this round is called [0], so there is no telling which one the file means.', implode(', ', $doubtful)));
+		}
+
+		$def = new SeatingDef($rounds);
+		if ($def->games <= 0 || $def->tables * 10 > $def->players)
+		{
+			throw new Exc(get_label('The imported seating is invalid: [0] players, [1] tables, [2] games per player.', $def->players, $def->tables, $def->games));
+		}
+		if (!$this->check_imported_dimensions($def, $event_id, $event_players, $event_tables, $event_games))
+		{
+			return;
+		}
+
+		// The arrangement itself is named in the seatings table the way every other seating is,
+		// so that the optimizer and the version numbers downstream have something to talk about.
+		// The pairs to keep apart and the teams are read from the tournament and offered to it
+		// in this seating's own numbering - a seating cannot tell a teammate from somebody a
+		// player merely never met.
+		$user_to_index = array();
+		foreach ($mapping as $slot => $user_id)
+		{
+			if ($user_id > 0)
+			{
+				$user_to_index[(int)$user_id] = (int)$slot;
+			}
+		}
+		list($team_size, $teams_by_user) = is_null($tournament_id) ? array(1, array()) : tournament_teams($tournament_id);
+		$pairs_by_user = get_tournament_separate_pairs(is_null($tournament_id) ? 0 : $tournament_id, $club_id);
+
+		Db::begin();
+		$stored = ensure_seating_existance($rounds, $team_size,
+			teams_in_indexes($teams_by_user, $team_size, $user_to_index),
+			restrictions_in_indexes($pairs_by_user, $user_to_index));
+		if (is_null($stored->hash))
+		{
+			Db::rollback();
+			// The one way past the checks above and into this: everybody is seated ten to a
+			// table and nobody twice in a game, but they do not all play the same number of
+			// games. A round is one arrangement over all its tables, and that is not one.
+			throw new Exc(get_label('This seating does not work out: its players do not all play the same number of games.'));
+		}
+		Db::commit();
+
+		$misc = is_null($misc_str) ? new stdClass() : json_decode($misc_str);
+		if (is_null($misc)) { $misc = new stdClass(); }
+		$this->assign_seating_to_event($event_id, $misc, $stored->hash, $rounds, $mapping);
+		// Arranged by hand, as far as everything downstream is concerned: a sheet says who sits
+		// where, and offering to replace it with a better version out of the seatings table
+		// would throw away the very thing that was uploaded. See tournament_seating.php and the
+		// seating tab in include/preparation.php.
+		$misc->seating->manual = true;
+		Db::exec(get_label('event'), 'UPDATE events SET misc = ? WHERE id = ?', $misc, $event_id);
+	}
+
+	// The players of a DimTom file as a sheet of names - rows[game][table][seat] - or null where
+	// the file names nobody this round knows, which is the ordinary case for a schedule made in
+	// DimTom and the sign that the site should seat the players itself.
+	//
+	// The list is read as DimTom writes it, {"players":{"people":[{"id":0,"name":"..."}]}}, and
+	// also as the bare list some files carry. A number with no name against it becomes the
+	// #<number> that stands for a place nobody holds, the same as in our own sheet; a name that
+	// matches nobody is left in the sheet to be refused by name further on, rather than quietly
+	// seating somebody else.
+	private function dimtom_named_rows($dimtom, $rounds, $event_id, $tournament_id, $misc_str)
+	{
+		$people = null;
+		if (isset($dimtom->players->people) && is_array($dimtom->players->people))
+		{
+			$people = $dimtom->players->people;
+		}
+		else if (isset($dimtom->players) && is_array($dimtom->players))
+		{
+			$people = $dimtom->players;
+		}
+		if (is_null($people))
+		{
+			return NULL;
+		}
+
+		$names = array();
+		foreach ($people as $i => $person)
+		{
+			$id = (is_object($person) && isset($person->id)) ? (int)$person->id : (int)$i;
+			$name = (is_object($person) && isset($person->name)) ? trim((string)$person->name) : '';
+			if ($name != '')
+			{
+				$names[$id] = $name;
+			}
+		}
+		if (empty($names))
+		{
+			return NULL;
+		}
+
+		// Does the list name anybody playing this round at all? One name is enough to say that
+		// the file means its names to be read; Player_01 and its like match nobody, and such a
+		// file falls through to being arranged rather than obeyed.
+		list($by_name, $ids) = seating_round_players($event_id, $tournament_id, $misc_str);
+		$unknown = array();
+		$doubtful = array();
+		$found = 0;
+		foreach ($names as $name)
+		{
+			if (seating_player_by_cell($name, $by_name, $ids, $unknown, $doubtful) > 0)
+			{
+				++$found;
+			}
+		}
+		if ($found <= 0)
+		{
+			return NULL;
+		}
+
+		$rows = array();
+		foreach ($rounds as $round)
+		{
+			$tables = array();
+			foreach ($round as $table)
+			{
+				$seats = array();
+				foreach ($table as $number)
+				{
+					$number = (int)$number;
+					$seats[] = isset($names[$number]) ? $names[$number] : ('#' . ($number + 1));
+				}
+				$tables[] = $seats;
+			}
+			$rows[] = $tables;
+		}
+		return $rows;
+	}
+
+	function import_seating_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_REFEREE, 'Import seating for a round, either from https://dimtom.github.io/web_schedule or as the sheet of nicknames that seating_export.php hands out.');
+		$help->request_param('event_id', 'Event id.');
+		$help->request_param('file', 'Text file to be uploaded for multicast multipart/form-data. Either the json generated by https://dimtom.github.io/web_schedule, or a sheet of nicknames: one block per game, ten lines to a block - one for each number at the table - a column for each table, and a blank line between the blocks. The columns may be separated by tabs or by commas; which it is is read out of the file, and a cell holding a comma is quoted the way a spreadsheet quotes it. A seat nobody is registered for is written as #<number>. A DimTom file whose player list names players of this round is read the same way - everybody stays where the file puts them; one whose players are called Player_01 and up says only how the games are arranged, and the registered players are fitted to it.');
+		$help->request_param('update_event', 'Optional. If 1, move the round players/tables/games to match the seating file instead of returning a confirmation request.');
+		return $help;
+	}
+
 	function import_dimtom_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_REFEREE, 'Import seating from https://dimtom.github.io/web_schedule.');
+		$help = new ApiHelp(PERMISSION_REFEREE, 'The old name of import_seating, from when a https://dimtom.github.io/web_schedule file was the only kind there was. It does the same thing and reads the same two formats.');
 		$help->request_param('event_id', 'Event id.');
-		$help->request_param('file', 'Text file containing json to be uploaded for multicast multipart/form-data. The file must be generated by https://dimtom.github.io/web_schedule');
-		$help->request_param('update_event', 'Optional. If 1, update the event\'s players/tables/games to match the seating file instead of returning a confirmation request.');
+		$help->request_param('file', 'See import_seating.');
+		$help->request_param('update_event', 'Optional. If 1, move the round players/tables/games to match the seating file instead of returning a confirmation request.');
 		return $help;
 	}
 	

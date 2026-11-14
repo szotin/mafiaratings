@@ -3273,4 +3273,572 @@ function ensure_seating_existance($seating, $team_size = 1, $teams = null, $rest
 	return $result;
 }
 
+//-------------------------------------------------------------------------------------------------------
+// The seating of a round as a sheet of nicknames: what the Export button on the preparation page
+// hands out, and what the upload beside it understands again.
+//
+// One block to a game, ten lines to a block - one line for each number at the table - and a
+// column for each table, so a line is "whoever plays under this number", read across the tables.
+// A blank line stands between the blocks. The games are the games of the round and the columns
+// are its tables, which is the order the page shows them in.
+//
+// The columns are separated by tabs, or by commas where a CSV is asked for. It is the same
+// sheet either way, and the upload tells which it has been handed by looking at it.
+//
+// Players are written by name because that is what the file is for. It is opened in a
+// spreadsheet, read by a person, and sometimes rearranged there by hand before being handed
+// back, and a column of user ids is none of those things.
+//
+// A seat whose place in the seating nobody is registered for is written the way the page shows
+// it, as #<number>. The number is not decoration: two empty seats may be one absent player
+// taking both his games or two different players taking one each, and those are two different
+// arrangements, so the file has to keep them apart.
+//-------------------------------------------------------------------------------------------------------
+define('SEATING_TEXT_SEATS', 10);
+
+// $slot_names says what to write for each place in the seating. seating_slot_names() builds it
+// from a seating's mapping.
+//
+// $delimiter is what stands between the columns: a tab, which is what a spreadsheet takes
+// without asking anything, or a comma for the CSV that some of them would rather open. Nothing
+// else about the file changes, and the upload tells the two apart on its own.
+function seating_to_text($rounds, $slot_names, $delimiter = "\t")
+{
+	$blocks = array();
+	foreach ((array)$rounds as $round)
+	{
+		$lines = array();
+		for ($seat = 0; $seat < SEATING_TEXT_SEATS; ++$seat)
+		{
+			$cells = array();
+			foreach ((array)$round as $table)
+			{
+				$table = array_values((array)$table);
+				$slot = isset($table[$seat]) ? (int)$table[$seat] : -1;
+				$name = isset($slot_names[$slot]) ? $slot_names[$slot] : ('#' . ($slot + 1));
+				$cells[] = seating_text_cell($name, $delimiter);
+			}
+			$lines[] = implode($delimiter, $cells);
+		}
+		$blocks[] = implode("\r\n", $lines);
+	}
+
+	// CRLF and a byte order mark, because the file is made to be opened on the machine it is
+	// downloaded to: Excel on Windows reads a separated file without a mark as if it were in
+	// the local code page, which turns every Cyrillic nickname into rubbish.
+	// seating_from_text() takes the mark off again.
+	return "\xEF\xBB\xBF" . implode("\r\n\r\n", $blocks) . "\r\n";
+}
+
+// A nickname on its way into a cell. A comma is an ordinary thing to have in a nickname and the
+// separator of a CSV at the same time, so a cell holding one is wrapped in quotes with the
+// quotes inside it doubled - the rule every spreadsheet already follows. A cell that needs none
+// of that is left exactly as it is, which is nearly all of them.
+function seating_text_cell($value, $delimiter)
+{
+	// A cell is one line with single spaces in it, whatever the nickname holds. A tab inside a
+	// nickname would otherwise end up inside a CSV and make it look like a tab separated sheet,
+	// and a newline would break the line in two - both of which turn the file into something
+	// else entirely. The upload compares nicknames the same way, so a name that loses a tab
+	// here is still the name it was when the sheet comes back - see seating_name_key().
+	$collapsed = preg_replace('/\s+/u', ' ', $value);
+	$value = trim(is_null($collapsed) ? $value : $collapsed);
+
+	if (strpos($value, $delimiter) === false && strpos($value, '"') === false)
+	{
+		return $value;
+	}
+	return '"' . str_replace('"', '""', $value) . '"';
+}
+
+// A nickname as it is compared. Neither the case of it nor the spacing in it decides who
+// somebody is, and both sides of the sheet ask this same question - the names written into it
+// and the cells read back out - so that a nickname with odd spacing in it still finds its owner.
+function seating_name_key($name)
+{
+	$name = (string)$name;
+	$collapsed = preg_replace('/\s+/u', ' ', $name);
+	return mb_strtolower(trim(is_null($collapsed) ? $name : $collapsed), 'UTF-8');
+}
+
+// One line back into cells, undoing seating_text_cell(). A quote opens a quoted cell only at the
+// beginning of one: a nickname with a quote in the middle of it is left as written, which is
+// what it means in a file made by hand.
+function seating_split_line($line, $delimiter)
+{
+	$cells = array();
+	$cell = '';
+	$quoted = false;
+	$len = strlen($line);
+	for ($i = 0; $i < $len; ++$i)
+	{
+		$ch = $line[$i];
+		if ($quoted)
+		{
+			if ($ch != '"')
+			{
+				$cell .= $ch;
+			}
+			else if ($i + 1 < $len && $line[$i + 1] == '"')
+			{
+				$cell .= '"';
+				++$i;
+			}
+			else
+			{
+				$quoted = false;
+			}
+		}
+		else if ($ch == '"' && trim($cell) == '')
+		{
+			$quoted = true;
+			$cell = '';
+		}
+		else if ($ch == $delimiter)
+		{
+			$cells[] = $cell;
+			$cell = '';
+		}
+		else
+		{
+			$cell .= $ch;
+		}
+	}
+	$cells[] = $cell;
+	return $cells;
+}
+
+// The same seating as a DimTom file: the json that https://dimtom.github.io/web_schedule reads
+// and writes, so that a seating made here can be taken back to the tool that arranges them.
+//
+// DimTom knows players as numbers - a game is ten of them - and keeps the names it has for them
+// in a list of its own beside the schedule. A place in our mapping is exactly that number, so
+// the places become the numbers and the nicknames go into that list.
+//
+// Those nicknames are what makes the file worth bringing back. The upload reads the list, and
+// where it names players of the round it seats them exactly where the file puts them, the same
+// as our own sheet - see dimtom_named_rows() in api/ops/event.php. A schedule made in DimTom
+// itself calls its players Player_01 and up, who are nobody here; such a file says only how the
+// games are arranged, and the site fits the registered players into it.
+function seating_to_dimtom($rounds, $slot_names)
+{
+	$rounds = array_values((array)$rounds);
+
+	// The places that are really played, renumbered to 0..n-1 in order: DimTom counts its
+	// players from zero with no gaps, and a mapping with holes in it would otherwise claim more
+	// players than the seating seats.
+	$places = array();
+	foreach ($rounds as $round)
+	{
+		foreach ((array)$round as $table)
+		{
+			foreach ((array)$table as $seat)
+			{
+				$places[(int)$seat] = true;
+			}
+		}
+	}
+	$places = array_keys($places);
+	sort($places, SORT_NUMERIC);
+
+	$number = array();
+	$people = array();
+	foreach ($places as $place)
+	{
+		$number[$place] = count($people);
+		$people[] = array(
+			'id' => $number[$place],
+			'name' => isset($slot_names[$place]) ? $slot_names[$place] : ('#' . ($place + 1)));
+	}
+
+	$games = array();
+	$dimtom_rounds = array();
+	$tables = 0;
+	foreach ($rounds as $r => $round)
+	{
+		$game_ids = array();
+		foreach ((array)$round as $table)
+		{
+			$players = array();
+			foreach ((array)$table as $seat)
+			{
+				$players[] = $number[(int)$seat];
+			}
+			$game_ids[] = count($games);
+			$games[] = array('id' => count($games), 'players' => $players);
+		}
+		$tables = max($tables, count($game_ids));
+		$dimtom_rounds[] = array('id' => (int)$r, 'gameIds' => $game_ids);
+	}
+
+	// numAttempts is DimTom's name for the number of games a player gets. It works it out of a
+	// schedule the same way when it reads one - by counting how often a player turns up.
+	$players_count = count($people);
+	$attempts = $players_count > 0 ? (int)floor(count($games) * SEATING_TEXT_SEATS / $players_count) : 0;
+
+	$schedule = array(
+		'configuration' => array(
+			'numPlayers'  => $players_count,
+			'numTables'   => $tables,
+			'numRounds'   => count($dimtom_rounds),
+			'numGames'    => count($games),
+			'numAttempts' => $attempts,
+			'numTeams'    => 0),
+		'players' => array('people' => $people),
+		'rounds'  => $dimtom_rounds,
+		'games'   => $games);
+
+	// Written out as it reads: the file is handed to a person as often as to a program, and
+	// nicknames escaped into Вася help nobody.
+	return json_encode($schedule, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
+
+// What to write for each place in a seating: the player's nickname where somebody holds it, and
+// #<number> where nobody does. $names is user id => nickname, as seating_user_names() gives it.
+//
+// Where two players answer to the same nickname - which happens, and not rarely - the nickname
+// alone could not say which seat belonged to which of them, and the sheet would come back
+// meaning something other than what it said. Both of them are written as "nickname (id)"
+// instead, and only they: everybody whose nickname is his own keeps it plain. The upload reads
+// that form back; see seating_player_by_cell().
+//
+// Pass $by_name from seating_round_players() so that the two sides agree on which nicknames
+// those are. The seating alone is not enough to tell: a nickname can be shared with somebody
+// who is playing this round but is not seated in this arrangement, and he is still there when
+// the sheet comes back.
+function seating_slot_names($mapping, $names, $by_name = array())
+{
+	$holders = array();
+	foreach ((array)$mapping as $entry)
+	{
+		$uid = is_object($entry) ? (isset($entry->id) ? (int)$entry->id : 0) : (int)$entry;
+		if ($uid > 0 && isset($names[$uid]))
+		{
+			$holders[$uid] = $names[$uid];
+		}
+	}
+
+	$shared = array();
+	$seen = array();
+	foreach ($holders as $uid => $name)
+	{
+		$key = seating_name_key($name);
+		if (isset($seen[$key]))
+		{
+			$shared[$key] = true;   // two of the seated players answer to it
+		}
+		$seen[$key] = true;
+		if (isset($by_name[$key]) && $by_name[$key] == 0)
+		{
+			$shared[$key] = true;   // and so does somebody else playing this round
+		}
+	}
+
+	$slot_names = array();
+	foreach ((array)$mapping as $slot => $entry)
+	{
+		$slot = (int)$slot;
+		$uid = is_object($entry) ? (isset($entry->id) ? (int)$entry->id : 0) : (int)$entry;
+		if ($uid <= 0 || !isset($holders[$uid]))
+		{
+			$slot_names[$slot] = '#' . ($slot + 1);
+			continue;
+		}
+		$name = $holders[$uid];
+		$slot_names[$slot] = isset($shared[seating_name_key($name)]) ? ($name . ' (' . $uid . ')') : $name;
+	}
+	return $slot_names;
+}
+
+// A sheet in that format back into rows[game][table][seat], holding whatever each cell said.
+// Nothing here knows about players: a cell is a piece of text, and who it stands for is the
+// caller's business. This insists only on the shape of it - ten numbers to a game, every line
+// of a game as wide as its first, and no cell left blank - and says which line is at fault
+// where it is wrong.
+//
+// Blank lines separate the games, and any number of them does, so a file saved with a spare
+// newline at the end still reads.
+function seating_from_text($text)
+{
+	if (substr($text, 0, 3) == "\xEF\xBB\xBF")
+	{
+		$text = substr($text, 3);
+	}
+	$text = str_replace(array("\r\n", "\r"), "\n", $text);
+
+	// Tabs or commas, told apart by the file itself rather than by its name. A tab cannot be
+	// part of a nickname, so one anywhere in the file settles it; a comma can be, which is why
+	// the comma only gets its turn when there is no tab to be had. seating_text_cell() puts a
+	// cell that holds a comma in quotes and seating_split_line() reads those back, so a sheet
+	// written here survives the journey either way.
+	$delimiter = strpos($text, "\t") !== false ? "\t" : ',';
+
+	$rounds = array();
+	$block = array();      // the lines of the game being read, already split into cells
+	$block_at = 0;         // the line the game started on, to say where a bad one is
+
+	$close = function() use (&$rounds, &$block, &$block_at)
+	{
+		if (empty($block))
+		{
+			return;
+		}
+		if (count($block) != SEATING_TEXT_SEATS)
+		{
+			throw new Exc(get_label('Line [0]: the game starting here has [1] lines instead of [2] - one for each number at the table.',
+				$block_at, count($block), SEATING_TEXT_SEATS));
+		}
+		$round = array();
+		for ($t = 0; $t < count($block[0]); ++$t)
+		{
+			$table = array();
+			for ($seat = 0; $seat < SEATING_TEXT_SEATS; ++$seat)
+			{
+				$table[] = $block[$seat][$t];
+			}
+			$round[] = $table;
+		}
+		$rounds[] = $round;
+		$block = array();
+	};
+
+	$lines = explode("\n", $text);
+	for ($i = 0; $i < count($lines); ++$i)
+	{
+		$line_no = $i + 1;
+		if (trim($lines[$i]) == '')
+		{
+			$close();
+			continue;
+		}
+
+		$cells = seating_split_line($lines[$i], $delimiter);
+		foreach ($cells as $c => $cell)
+		{
+			$cells[$c] = trim($cell);
+			if ($cells[$c] == '')
+			{
+				throw new Exc(get_label('Line [0], column [1] is empty. Every seat has to say who takes it.', $line_no, $c + 1));
+			}
+		}
+		if (empty($block))
+		{
+			$block_at = $line_no;
+		}
+		else if (count($cells) != count($block[0]))
+		{
+			throw new Exc(get_label('Line [0] has [1] columns instead of [2] - every line of a game needs one column for each table.',
+				$line_no, count($cells), count($block[0])));
+		}
+		$block[] = $cells;
+	}
+	$close();
+
+	if (empty($rounds))
+	{
+		throw new Exc(get_label('There is no seating in this file.'));
+	}
+	return $rounds;
+}
+
+// Who the nicknames in a sheet may belong to, as array($by_name, $ids): the lower cased nickname
+// of everybody playing this round, to the player it belongs to and 0 where more than one of them
+// answers to it, and the set of their ids for the "nickname (id)" form.
+//
+// Only the people playing this round are listed. A nickname is not unique across the site, and a
+// stranger of the same name from another city would otherwise be seated at a table he has never
+// heard of.
+//
+// The players of the seating the round already carries count among them, which is what makes a
+// sheet that was exported, moved about in a spreadsheet and handed straight back read: whatever
+// the registrations happen to say, those people are demonstrably the ones playing. Pass the
+// round's misc for that; without it only the registrations are read.
+function seating_round_players($event_id, $tournament_id, $misc_str = NULL, $lang = NULL)
+{
+	global $_lang;
+
+	if (is_null($lang))
+	{
+		$lang = $_lang;
+	}
+
+	$ids = array();
+	$add = function($user_id) use (&$ids)
+	{
+		if ((int)$user_id > 0)
+		{
+			$ids[(int)$user_id] = true;
+		}
+	};
+
+	$query = new DbQuery('SELECT user_id FROM event_regs WHERE event_id = ?', $event_id);
+	while ($row = $query->next())
+	{
+		$add($row[0]);
+	}
+
+	if (!is_null($tournament_id) && (int)$tournament_id > 0)
+	{
+		// The same players the seating would have been generated for - see
+		// load_reg_users_and_pairs() in api/ops/event.php, which reads this very list.
+		$query = new DbQuery(
+			'SELECT user_id FROM tournament_regs'.
+			' WHERE tournament_id = ? AND (flags & ?) <> 0 AND (flags & ?) = 0',
+			$tournament_id, USER_PERM_PLAYER, USER_TOURNAMENT_FLAG_NOT_ACCEPTED);
+		while ($row = $query->next())
+		{
+			$add($row[0]);
+		}
+	}
+
+	if (!is_null($misc_str))
+	{
+		$misc = is_string($misc_str) ? json_decode($misc_str) : $misc_str;
+		if (!is_null($misc) && isset($misc->seating->mapping))
+		{
+			foreach ((array)$misc->seating->mapping as $entry)
+			{
+				$add(is_object($entry) ? (isset($entry->id) ? $entry->id : 0) : $entry);
+			}
+		}
+	}
+
+	if (empty($ids))
+	{
+		return array(array(), $ids);
+	}
+
+	// A name in the language the sheet was written in decides first. A player whose nickname in
+	// English happens to be another player's nickname in Russian is no real doubt about who is
+	// meant - the sheet was written out in one language, and in that language the two of them
+	// are different words. Only where the language in hand cannot tell two players apart is
+	// every other language consulted, which is what lets a sheet be handed back while the site
+	// is in a different one.
+	$note = function(&$map, $key, $user_id)
+	{
+		$map[$key] = (isset($map[$key]) && $map[$key] != $user_id) ? 0 : (int)$user_id;
+	};
+	$in_lang = array();
+	$other_langs = array();
+
+	$query = new DbQuery(
+		'SELECT u.id, n.name, n.langs FROM users u'.
+		' JOIN names n ON n.id = u.name_id'.
+		' WHERE u.id IN (' . implode(',', array_keys($ids)) . ')');
+	while ($row = $query->next())
+	{
+		$key = seating_name_key($row[1]);
+		if ($key == '')
+		{
+			continue;
+		}
+		if (((int)$row[2] & $lang) != 0)
+		{
+			$note($in_lang, $key, $row[0]);
+		}
+		else
+		{
+			$note($other_langs, $key, $row[0]);
+		}
+	}
+
+	// A 0 left in here means more than one player of this round answers to the nickname, and
+	// the sheet writes both of those as "nickname (id)" rather than leaving it to be guessed at.
+	$by_name = $in_lang;
+	foreach ($other_langs as $key => $user_id)
+	{
+		if (!isset($by_name[$key]))
+		{
+			$by_name[$key] = $user_id;
+		}
+	}
+	return array($by_name, $ids);
+}
+
+// The cells of a sheet turned into a seating the site can keep: rounds written in places, and a
+// mapping saying who holds each place - the same two things every other seating is stored as.
+// Every distinct cell becomes a place, in the order the cells are read.
+//
+// $by_name and $ids are what seating_round_players() gives.
+//
+// Comes back as array($rounds, $mapping, $unknown, $doubtful). The last two are the cells no
+// player could be found for and the cells more than one player answers to, so that the caller
+// can name all of them at once instead of stopping at the first.
+function seating_places_from_names($rows, $by_name, $ids)
+{
+	$place_of = array();
+	$mapping  = array();
+	$unknown  = array();
+	$doubtful = array();
+	$rounds   = array();
+
+	foreach ($rows as $game => $tables)
+	{
+		$round  = array();
+		$seated = array();
+		foreach ($tables as $table)
+		{
+			$seats = array();
+			foreach ($table as $cell)
+			{
+				if (!isset($place_of[$cell]))
+				{
+					$place = count($mapping);
+					$place_of[$cell] = $place;
+					$mapping[$place] = seating_player_by_cell($cell, $by_name, $ids, $unknown, $doubtful);
+				}
+				$place = $place_of[$cell];
+				if (isset($seated[$place]))
+				{
+					throw new Exc(get_label('[0] sits twice in game [1].', $cell, $game + 1));
+				}
+				$seated[$place] = true;
+				$seats[] = $place;
+			}
+			$round[] = $seats;
+		}
+		$rounds[] = $round;
+	}
+
+	return array($rounds, $mapping, array_keys($unknown), array_keys($doubtful));
+}
+
+// One cell of a sheet: the player it names, or 0 for a place nobody holds. It is read as a
+// nickname first, then as the #<number> of a place nobody is registered for, then as the
+// "nickname (id)" the export falls back on where two players share a nickname - in that order,
+// so that a player whose nickname genuinely looks like one of the other two still answers to it.
+//
+// A cell that names nobody is noted in $unknown or $doubtful and comes back as 0 as well, so
+// that the caller can gather all of them before saying anything.
+function seating_player_by_cell($cell, $by_name, $ids, &$unknown, &$doubtful)
+{
+	$key = seating_name_key($cell);
+	if (isset($by_name[$key]) && $by_name[$key] > 0)
+	{
+		return (int)$by_name[$key];
+	}
+
+	if (preg_match('/^#[0-9]+$/', $cell))
+	{
+		return 0;
+	}
+
+	// The id has to be one of this round's players: a number in brackets copied from somewhere
+	// else names nobody here, whatever it may name elsewhere on the site.
+	if (preg_match('/^(.*) \(([0-9]+)\)$/u', $cell, $m) && isset($ids[(int)$m[2]]))
+	{
+		return (int)$m[2];
+	}
+
+	if (isset($by_name[$key]))
+	{
+		$doubtful[$cell] = true;   // more than one player of this round answers to it
+	}
+	else
+	{
+		$unknown[$cell] = true;
+	}
+	return 0;
+}
+
 ?>

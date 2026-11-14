@@ -81,53 +81,64 @@ trait PreparationTabs
 				}, refr);
 			});
 		}
-		function swapPlayers(eventId, userId)
+		// Every way a seating that is already there can be rearranged, in one dialog with a tab
+		// for each: players, games, tables. A player clicked in the grid below arrives as the
+		// first of the two to exchange, and the dialog opens on the players tab, where he is.
+		function editSeating(eventId, userId)
 		{
-			var url = "form/seating_swap.php?event_id=" + eventId;
-			if (userId) url += "&player1_id=" + userId;
-			dlg.form(url, refr, 400);
+			var url = "form/seating_edit.php?event_id=" + eventId;
+			if (userId)
+			{
+				url += "&player1_id=" + userId;
+			}
+			dlg.form(url, refr, 650);
 		}
 
-		function swapGames(eventId)
+		function uploadSeating(eventId)
 		{
-			dlg.form("form/seating_games_swap.php?event_id=" + eventId, refr, 400);
-		}
-
-		function swapTables(eventId)
-		{
-			dlg.form("form/seating_tables_swap.php?event_id=" + eventId, refr, 400);
-		}
-
-		function uploadDimTom(eventId)
-		{
+			// Emptied first, so that choosing the same file again still counts as a change: a sheet
+			// that was refused and then mended comes back under the name it went out under.
+			document.getElementById('upload-' + eventId).value = '';
 			$('#upload-' + eventId).trigger('click');
 		}
 
-		function doUploadDimTom(eventId)
+		// A seating file may be asked about twice before it is applied, and the two questions
+		// belong to different sides. Whether to throw away a seating that is already there is
+		// asked here, before anything is sent, because only the page knows there is one to lose.
+		// Whether to move the round to fit a file made for a different number of tables comes
+		// back from the server, because only the server knows what the round is set up for.
+		function doUploadSeating(eventId, replace)
 		{
-			json.upload('api/ops/event.php',
+			if (!document.getElementById("upload-" + eventId).files[0])
 			{
-				op: "import_dimtom",
+				return;
+			}
+			if (replace)
+			{
+				dlg.yesNo('<?php echo addslashes(get_label('This round already has a seating. Replace it with the one in the file?')); ?>',
+					null, null, function() { sendSeating(eventId, 0); });
+				return;
+			}
+			sendSeating(eventId, 0);
+		}
+
+		function sendSeating(eventId, updateEvent)
+		{
+			var request =
+			{
+				op: "import_seating",
 				event_id: eventId,
 				file: document.getElementById("upload-" + eventId).files[0]
-			},
-			2097152,
-			function(data)
+			};
+			if (updateEvent)
+			{
+				request.update_event = 1;
+			}
+			json.upload('api/ops/event.php', request, 2097152, function(data)
 			{
 				if (data && isSet(data.confirm))
 				{
-					dlg.yesNo(data.confirm, null, null, function()
-					{
-						json.upload('api/ops/event.php',
-						{
-							op: "import_dimtom",
-							event_id: eventId,
-							update_event: 1,
-							file: document.getElementById("upload-" + eventId).files[0]
-						},
-						2097152,
-						refr);
-					});
+					dlg.yesNo(data.confirm, null, null, function() { sendSeating(eventId, 1); });
 				}
 				else
 				{
@@ -135,6 +146,19 @@ trait PreparationTabs
 				}
 			});
 		}
+
+		// The seating as a file to keep. The dialog asks which of the three kinds of file it is
+		// to be and sends the browser to the page that writes it; what comes back from there is
+		// marked as something to save rather than to show, so this page stays where it is. See
+		// form/seating_export.php and seating_export.php.
+		//
+		// Nothing on the page changes by saving a file, so the dialog closes onto what is
+		// already there instead of reloading it.
+		function exportSeating(eventId)
+		{
+			dlg.form('form/seating_export.php?event_id=' + eventId, function() {}, 400);
+		}
+
 <?php
 	}
 
@@ -185,52 +209,21 @@ trait PreparationTabs
 
 		$has_seating = !empty($misc->seating);
 
-		// How much there is to move around. A seating with a single game has no two games to
-		// swap and one with a single table no two tables, so those buttons would only open a
-		// dialog that refuses. Tables are counted as the least any game has: a few seatings do
-		// not run the same number throughout, and a table missing from some games cannot be
-		// swapped - see form/seating_tables_swap.php.
-		$games_count = 0;
-		$tables_count = 0;
-		if ($has_seating && isset($misc->seating->rounds) && is_array($misc->seating->rounds))
-		{
-			$games_count = count($misc->seating->rounds);
-			if ($games_count > 0)
-			{
-				$tables_count = PHP_INT_MAX;
-				foreach ($misc->seating->rounds as $round)
-				{
-					$tables_count = min($tables_count, is_array($round) ? count($round) : 0);
-				}
-			}
-		}
 		$url = 'https://dimtom.github.io/web_schedule';
 
-		echo '<input type="file" id="upload-' . $event_id . '" style="display:none" onchange="doUploadDimTom(' . $event_id . ')">';
-		// Back and Next in a row of their own, and what can be done to the seating under them.
-		// Clearing it stands apart at the right, away from the buttons that work on it.
-		$this->navBar();
-		echo '<p><table width="100%"><tr><td>';
-		if (!$has_seating)
+		// Whether a seating is already there is settled when the page is drawn, and the file
+		// picker carries it: by the time a file has been chosen there is nothing left to ask the page.
+		echo '<input type="file" id="upload-' . $event_id . '" style="display:none" onchange="doUploadSeating(' . $event_id . ', ' . ($has_seating ? 1 : 0) . ')">';
+		// What the seating is named in the seatings table, and whether a better version of it has
+		// turned up since. Looked up before anything is drawn, because both the Update button and
+		// the line under the buttons are made of it.
+		$stored_hash = null;
+		$current_version = null;
+		$has_improved = false;
+		if ($has_seating)
 		{
-			echo '<button onclick="makeSeating(' . $event_id . ')"><img src="images/create.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Make seating') . '</button>';
-			echo ' <button onclick="uploadDimTom(' . $event_id . ')" title="' . get_label('Import seating from [0]', $url) . '"><img src="images/save.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Upload seating file') . '</button>';
-		}
-		else
-		{
-			echo '<button onclick="swapPlayers(' . $event_id . ')"><img src="images/user_change.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap players') . '</button>';
-			if ($games_count > 1)
-			{
-				echo ' <button onclick="swapGames(' . $event_id . ')"><img src="images/table.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap games') . '</button>';
-			}
-			if ($tables_count > 1)
-			{
-				echo ' <button onclick="swapTables(' . $event_id . ')"><img src="images/table.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Swap tables') . '</button>';
-			}
-
 			$stored_hash    = isset($misc->seating->hash)    ? $misc->seating->hash    : null;
 			$stored_version = isset($misc->seating->version) ? $misc->seating->version : null;
-			$current_version = null;
 			// Arranged by hand: taking an improved version would replace the whole arrangement
 			// and throw the edit away, so that button is not offered. Same rule as on
 			// tournament_seating.php.
@@ -245,21 +238,57 @@ trait PreparationTabs
 				{
 					list($pr, $pvr, $tr, $tvr, $nr, $nvr) = $srow;
 					$current_version = ($pr - $pvr) . '.' . ($tr - $tvr) . '.' . ($nr - $nvr);
-					if (!$is_manual && !is_null($stored_version) && $stored_version !== $current_version && ($nr - $nvr) != 0)
-					{
-						$title = htmlspecialchars(get_label('An improved seating version [0] is available.', $current_version));
-						echo ' <button onclick="makeSeating(' . $event_id . ')" title="' . $title . '"><img src="images/refresh.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Update seating') . '</button>';
-					}
+					$has_improved = !$is_manual && !is_null($stored_version) && $stored_version !== $current_version && ($nr - $nvr) != 0;
 				}
 			}
 		}
+
+		// Back and Next in a row of their own, and what can be done to the seating under them,
+		// in one row: on the left what is done to the seating as a whole - thrown away, read in
+		// from a file, written out to one - and on the right the one button that opens the
+		// seating itself for rearranging. Three buttons all saying "swap" stood here before, and
+		// none of them said what the dialog behind it would ask; they are tabs of one dialog now,
+		// see form/seating_edit.php.
+		$this->navBar();
+		echo '<p><table width="100%"><tr><td>';
+
+		$buttons = array();
+		if (!$has_seating)
+		{
+			$buttons[] = '<button onclick="makeSeating(' . $event_id . ')"><img src="images/create.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Make seating') . '</button>';
+		}
+		else
+		{
+			$buttons[] = '<button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
+		}
+		// Uploading stands whether there is a seating or not. A file can be uploaded over one that
+		// is already there - that is how a sheet comes back after being moved about in a
+		// spreadsheet - and doUploadSeating asks before the old one is thrown away.
+		$buttons[] = '<button onclick="uploadSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Upload a seating: either a file from [0] or one exported from here.', $url)) . '"><img src="images/upload_file.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Upload seating file') . '</button>';
+		if ($has_seating)
+		{
+			$buttons[] = '<button onclick="exportSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Save the seating as a file: a sheet of nicknames to read and to hand back, or a schedule for [0].', 'DimTom')) . '"><img src="images/download.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Download seating file') . '</button>';
+		}
+		// Last, and only when there is one to take: a better version of this very arrangement has
+		// turned up in the seatings table since it was taken from there.
+		if ($has_improved)
+		{
+			$title = htmlspecialchars(get_label('An improved seating version [0] is available.', $current_version));
+			$buttons[] = '<button onclick="makeSeating(' . $event_id . ')" title="' . $title . '"><img src="images/refresh.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Update seating') . '</button>';
+		}
+		echo implode(' ', $buttons);
+
 		echo '</td><td align="right">';
 		if ($has_seating)
 		{
-			echo '<button onclick="clearSeating(' . $event_id . ', \'' . addslashes(get_label('Are you sure you want to delete the seating?')) . '\')"><img src="images/delete.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Clear seating') . '</button>';
+			echo '<button onclick="editSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Rearrange the seating: exchange two players, two games or two tables.')) . '"><img src="images/edit.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Edit seating') . '</button>';
 		}
 		echo '</td></tr></table></p><p>';
 
+		// Under the buttons, the two things that are said about the seating rather than done to
+		// it: the hash on the left, where a line of text begins, and the way to the seating page
+		// on the right, under the button that opens the same seating for rearranging.
+		echo '<table width="100%"><tr><td valign="bottom">';
 		if (!empty($misc->seating) && !is_null($stored_hash))
 		{
 			echo '<small style="color:gray"><a href="#" onclick="mr.optimizeSeating(null, \'' . addslashes($stored_hash) . '\'); return false;" title="' . get_label('Optimize seating') . '">' . htmlspecialchars($stored_hash);
@@ -267,7 +296,23 @@ trait PreparationTabs
 				echo ' &nbsp; v' . htmlspecialchars($current_version);
 			echo '</a></small>';
 		}
-		echo '</p>';
+		echo '</td><td align="right" valign="bottom">';
+		if (!empty($misc->seating))
+		{
+			// This tab shows the grid and nothing else. The tournament's own seating page has the
+			// pairs, the seat numbers and the statistics of all of it - and it opens in a tab of
+			// its own, so that the preparation is not left behind half way through.
+			//
+			// 14px rather than the 11px the site is set in: this is meant to be noticed and
+			// followed, unlike the hash beside it, which is for whoever knows what a hash is. The
+			// size is the one the tab buttons are drawn in - see .tab button in common.css.
+			$seating_url = 'tournament_seating.php?id=' . $this->prep_tournament_id . '&round_id=' . $event_id;
+			echo '<span style="font-size:14px">' .
+				get_label('On the [0] page you can look at the seating in more detail.',
+					'<a href="' . $seating_url . '" target="_blank">' . get_label('Seating') . '</a>') .
+				'</span>';
+		}
+		echo '</td></tr></table></p>';
 
 		if (empty($misc->seating))
 		{
@@ -354,7 +399,7 @@ trait PreparationTabs
 					if ($uid > 0 && isset($users[$uid]))
 					{
 						$u = $users[$uid];
-						echo '<td align="center" style="cursor:pointer" onclick="swapPlayers(' . $event_id . ', ' . $uid . ')">';
+						echo '<td align="center" style="cursor:pointer" onclick="editSeating(' . $event_id . ', ' . $uid . ')">';
 						echo '<table class="transp" width="100%">';
 						echo '<tr><td align="center">';
 						$pic->set($uid, $u->name, $u->tr_flags, 't' . $this->prep_tournament_id)->
