@@ -725,7 +725,7 @@ $labelMenu = array (
 'number of wins' => 'кількість перемог', // scoring.php, form/scoring_show.php, scoring.php, form/scoring_show.php
 'number of special role wins' => 'кількість перемог у спецролях', // scoring.php, form/scoring_show.php, scoring.php, form/scoring_show.php
 'times being killed first night' => 'кількість вбивств першої ночі', // scoring.php, form/scoring_show.php, scoring.php, form/scoring_show.php
-'Seating' => 'Розсадка', // event_preparation.php, seating.php, seating_export.php, seating_js.php, tournament_seating.php, include/preparation.php, include/tournament.php, event_preparation.php, seating.php, seating_export.php, seating_js.php, tournament_seating.php, include/preparation.php, include/tournament.php
+'Seating' => 'Розсадка', // event_preparation.php, seating.php, seating_export.php, seating_js.php, tournament_seating.php, include/tournament.php, event_preparation.php, seating.php, seating_export.php, seating_js.php, tournament_seating.php, include/tournament.php
 'email' => 'ел. лист', // send_emails.php, send_emails.php, unsubscribe.php, unsubscribe.php, view_event_mailing.php, view_event_mailing.php, include/email.php, api/ops/user.php, api/ops/user.php, api/ops/user.php, send_emails.php, send_emails.php, unsubscribe.php, unsubscribe.php, view_event_mailing.php, view_event_mailing.php, include/email.php, api/ops/user.php, api/ops/user.php, api/ops/user.php
 'Under construction' => 'В розробці', // series_competition.php, series_competition.php
 'future tournaments' => 'майбутні турніри', // series_finance.php, series_finance.php
@@ -2222,7 +2222,6 @@ $labelMenu = array (
 'Sheriff\'s check' => 'Перевірка шерифа', // plugins/obs/obs.php, plugins/obs/obs.php
 'Don\'s checks' => 'Перевірки дона', // streams.php, streams.php
 'Sheriff\'s checks' => 'Перевірки шерифа', // streams.php, streams.php
-'On the [0] page you can look at the seating in more detail.' => 'На сторінці [0] можна подивитися розсадку докладніше.', // include/preparation.php
 );
 
 return $labelMenu;

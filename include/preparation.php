@@ -285,10 +285,6 @@ trait PreparationTabs
 		}
 		echo '</td></tr></table></p><p>';
 
-		// Under the buttons, the two things that are said about the seating rather than done to
-		// it: the hash on the left, where a line of text begins, and the way to the seating page
-		// on the right, under the button that opens the same seating for rearranging.
-		echo '<table width="100%"><tr><td valign="bottom">';
 		if (!empty($misc->seating) && !is_null($stored_hash))
 		{
 			echo '<small style="color:gray"><a href="#" onclick="mr.optimizeSeating(null, \'' . addslashes($stored_hash) . '\'); return false;" title="' . get_label('Optimize seating') . '">' . htmlspecialchars($stored_hash);
@@ -296,23 +292,7 @@ trait PreparationTabs
 				echo ' &nbsp; v' . htmlspecialchars($current_version);
 			echo '</a></small>';
 		}
-		echo '</td><td align="right" valign="bottom">';
-		if (!empty($misc->seating))
-		{
-			// This tab shows the grid and nothing else. The tournament's own seating page has the
-			// pairs, the seat numbers and the statistics of all of it - and it opens in a tab of
-			// its own, so that the preparation is not left behind half way through.
-			//
-			// 14px rather than the 11px the site is set in: this is meant to be noticed and
-			// followed, unlike the hash beside it, which is for whoever knows what a hash is. The
-			// size is the one the tab buttons are drawn in - see .tab button in common.css.
-			$seating_url = 'tournament_seating.php?id=' . $this->prep_tournament_id . '&round_id=' . $event_id;
-			echo '<span style="font-size:14px">' .
-				get_label('On the [0] page you can look at the seating in more detail.',
-					'<a href="' . $seating_url . '" target="_blank">' . get_label('Seating') . '</a>') .
-				'</span>';
-		}
-		echo '</td></tr></table></p>';
+		echo '</p>';
 
 		if (empty($misc->seating))
 		{

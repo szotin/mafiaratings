@@ -863,7 +863,7 @@ $labelMenu = array (
 'Replace player' => 'Заменить игрока', // form/event_change_player.php, form/tournament_change_player.php
 'Change nickname in this event to' => 'Изменить ник для этого игрового дня', // form/event_change_player.php
 'Replace [0] in this event with' => 'Заменить [0] в этом игровом дне на', // form/event_change_player.php
-'Seating' => 'Рассадка', // event_preparation.php, seating.php, seating_export.php, seating_js.php, tournament_seating.php, include/preparation.php, include/tournament.php
+'Seating' => 'Рассадка', // event_preparation.php, seating.php, seating_export.php, seating_js.php, tournament_seating.php, include/tournament.php
 'View [0] code' => 'Посмотреть код [0]', // form/stats_calculator_view.php
 'Dates' => 'Даты', // include/datetime.php, form/series_create.php, form/series_edit.php, form/tournament_create.php, form/tournament_edit.php
 'extra points' => 'доп. баллы', // event_extra_points.php, scoring.php, series_extra_points.php, tournament_extra_points.php, form/scoring_show.php
@@ -2222,7 +2222,6 @@ $labelMenu = array (
 'Sheriff\'s check' => 'Проверка шерифа', // plugins/obs/obs.php
 'Don\'s checks' => 'Проверки дона', // streams.php
 'Sheriff\'s checks' => 'Проверки шерифа', // streams.php
-'On the [0] page you can look at the seating in more detail.' => 'На странице [0] можно посмотреть рассадку подробнее.', // include/preparation.php
 );
 
 return $labelMenu;
