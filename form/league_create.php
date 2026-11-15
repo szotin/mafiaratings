@@ -5,6 +5,7 @@ require_once '../include/languages.php';
 require_once '../include/url.php';
 require_once '../include/email.php';
 require_once '../include/security.php';
+require_once '../include/names.php';
 
 initiate_session();
 
@@ -16,7 +17,19 @@ try
 	$email = $_profile->user_email;
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="140">'.get_label('League name').':</td><td><input class="longest" id="form-name"> </td></tr>';
+	// An admin creates the league at once and gives it its names in every language. Anyone else sends
+	// a request, which keeps one name; the others are set when it is accepted or edited.
+	$is_admin = is_permitted(PERMISSION_ADMIN);
+	echo '<tr><td width="140" valign="top">'.get_label('League name').':</td><td>';
+	if ($is_admin)
+	{
+		Names::show_control(new Names(0, get_label('league name')));
+	}
+	else
+	{
+		echo '<input class="longest" id="form-name">';
+	}
+	echo '</td></tr>';
 	echo '<tr><td>'.get_label('Web site').':</td><td><input class="longest" id="form-url"> </td></tr>';
 				
 	echo '<tr><td>'.get_label('Languages').':</td><td>';
@@ -31,7 +44,7 @@ try
 	echo '<input class="longest" id="form-phone">';
 	echo '</td></tr>';
 	
-	if (is_permitted(PERMISSION_ADMIN))
+	if ($is_admin)
 	{
 		echo '<tr><td colspan="2">';
 		echo '<input type="checkbox" id="form-elite"> ' . get_label('global league. The default rules and scoring systems of a global league are offered to every club, and it can create elite series that bring more rating points.');
@@ -49,17 +62,26 @@ try
 		let flags = 0;
 		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_GLOBAL; ?>;
 		
-		json.post("api/ops/league.php",
+		let request =
 		{
 			op: 'create'
-			, name: $("#form-name").val()
 			, url: $("#form-url").val()
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()
 			, langs: languages
 			, flags: flags
-		},
-		onSuccess);
+		};
+<?php
+	if ($is_admin)
+	{
+		echo "\t\tnameControl.fillRequest(request);\n";
+	}
+	else
+	{
+		echo "\t\trequest.name = $(\"#form-name\").val();\n";
+	}
+?>
+		json.post("api/ops/league.php", request, onSuccess);
 	}
 	</script>
 <?php

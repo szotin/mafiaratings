@@ -754,13 +754,14 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	if ($club_id != null)
 	{
 		$query = new DbQuery(
-			'SELECT l.id, l.name, l.rules FROM leagues l' .
+			'SELECT l.id, nl.name, l.rules FROM leagues l' .
+			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN league_clubs lc ON lc.league_id = l.id AND lc.club_id = ?' .
 			' WHERE lc.club_id IS NOT NULL OR (l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0', $club_id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT id, name, rules FROM leagues WHERE (flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0');
+		$query = new DbQuery('SELECT l.id, n.name, l.rules FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE (l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0');
 	}
 	while ($row = $query->next())
 	{
@@ -770,8 +771,9 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	if ($club_id != null)
 	{
 		$query = new DbQuery(
-			'SELECT r.id, l.name, r.name, r.rules FROM rules r' .
+			'SELECT r.id, nl.name, r.name, r.rules FROM rules r' .
 			' JOIN leagues l ON l.id = r.league_id' .
+			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 			' JOIN league_clubs lc ON lc.league_id = r.league_id' .
 			' WHERE lc.club_id = ?', $club_id);
 		while ($row = $query->next())

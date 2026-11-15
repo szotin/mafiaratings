@@ -11,6 +11,13 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
+		global $_lang;
+
+		$lang = (int)get_optional_param('lang', $_lang);
+		if (!is_valid_lang($lang))
+		{
+			$lang = $_lang;
+		}
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
 		$league_id = (int)get_optional_param('league_id', -1);
@@ -29,14 +36,14 @@ class ApiPage extends GetApiPageBase
 		if ($name_contains != '')
 		{
 			$name_contains = '%' . $name_contains . '%';
-			$condition->add(' AND l.name LIKE(?)', $name_contains);
+			$condition->add(' AND l.name_id IN (SELECT id FROM names WHERE name LIKE(?))', $name_contains);
 		}
 		
 		if ($name_starts != '')
 		{
 			$name_starts1 = '% ' . $name_starts . '%';
 			$name_starts2 = $name_starts . '%';
-			$condition->add(' AND (l.name LIKE(?) OR l.name LIKE(?))', $name_starts1, $name_starts2);
+			$condition->add(' AND l.name_id IN (SELECT id FROM names WHERE name LIKE(?) OR name LIKE(?))', $name_starts1, $name_starts2);
 		}
 		
 		if ($league_id > 0)
@@ -97,8 +104,9 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT l.id, l.name, l.flags, l.langs, l.web_site, l.email, l.phone, l.rules, l.scoring_id, l.normalizer_id, l.gaining_id FROM leagues l', $condition);
-			$query->add(' ORDER BY l.name');
+				'SELECT l.id, nl.name, l.flags, l.langs, l.web_site, l.email, l.phone, l.rules, l.scoring_id, l.normalizer_id, l.gaining_id FROM leagues l' .
+				' JOIN names nl ON nl.id = l.name_id AND (nl.langs & ?) <> 0', $lang, $condition);
+			$query->add(' ORDER BY nl.name');
 			if ($page_size > 0)
 			{
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
@@ -145,8 +153,9 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT l.id, l.name, l.langs, l.web_site, l.email, l.phone, rules, scoring_id, normalizer_id, gaining_id FROM leagues l', $condition);
-			$query->add(' ORDER BY l.name');
+				'SELECT l.id, nl.name, l.langs, l.web_site, l.email, l.phone, l.rules, l.scoring_id, l.normalizer_id, l.gaining_id FROM leagues l' .
+				' JOIN names nl ON nl.id = l.name_id AND (nl.langs & ?) <> 0', $lang, $condition);
+			$query->add(' ORDER BY nl.name');
 			if ($page_size > 0)
 			{
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
@@ -203,11 +212,12 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('rules_code', 'Rules code. For example: <a href="leagues.php?rules_code=' . DEFAULT_RULES . '">' . PRODUCT_URL . '/api/get/leagues.php?rules_code=' . DEFAULT_RULES . '</a> returns all leagues where the rules with the code ' . DEFAULT_RULES . ' are allowed. Please check <a href="rules.php?help">' . PRODUCT_URL . '/api/get/rules.php?help</a> for the meaning of rules codes and getting rules list.', '-');
 		$help->request_param('count', 'Returns leagues count instead of the leagues themselves. For example: <a href="leagues.php?contains=an&count">/api/get/leagues.php?contains=an&count</a> returns how many leagues contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="leagues.php?page=1">/api/get/leagues.php?page=1</a> returns the second page of leagues by alphabet.', '-');
+		$help->request_param('lang', 'Language id for returned names. For example: <a href="leagues.php?lang=2">/api/get/leagues.php?lang=2</a> returns league names in Russian.' . valid_langs_help(), 'default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="leagues.php?page_size=32">/api/get/leagues.php?page_size=32</a> returns first 32 leagues; <a href="leagues.php?page_size=0">/api/get/leagues.php?page_size=0</a> returns leagues in one page; <a href="leagues.php">/api/get/leagues.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' leagues by alphabet.', '-');
 
 		$param = $help->response_param('leagues', 'The array of leagues. Leagues are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'League id.');
-			$param->sub_param('name', 'League name.');
+			$param->sub_param('name', 'League name in the language set by <q>lang</q>.');
 			$param->sub_param('icon', 'League icon URL.', 1);
 			$param->sub_param('picture', 'League picture URL.', 1);
 			$param->sub_param('langs', 'A bit combination of languages used in the league.' . valid_langs_help());

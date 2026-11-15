@@ -13,7 +13,7 @@ try
 	}
 	$league_id = $_REQUEST['league_id'];
 
-	list($name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+	list($name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 	$is_manager = is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id);
 	$can_add = false;
 	

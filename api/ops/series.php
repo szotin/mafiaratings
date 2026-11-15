@@ -42,7 +42,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 			$club_id = NULL;
-			list($owner_name, $owner_rules, $owner_langs, $owner_flags) = Db::record(get_label('league'), 'SELECT name, rules, langs, flags FROM leagues WHERE id = ?', $league_id);
+			list($owner_name, $owner_rules, $owner_langs, $owner_flags) = Db::record(get_label('league'), 'SELECT n.name, l.rules, l.langs, l.flags FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 		}
 		else
 		{
@@ -845,7 +845,7 @@ class ApiPage extends OpsApiPageBase
 
 		if ($new_league_id > 0)
 		{
-			list($new_owner_name, $new_owner_flags) = Db::record(get_label('league'), 'SELECT name, flags FROM leagues WHERE id = ?', $new_league_id);
+			list($new_owner_name, $new_owner_flags) = Db::record(get_label('league'), 'SELECT n.name, l.flags FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $new_league_id);
 			$new_owner = new SeriesOwner($new_league_id, NULL);
 			$is_elite_owner = ($new_owner_flags & LEAGUE_FLAG_GLOBAL) != 0;
 			$new_club_id = NULL;

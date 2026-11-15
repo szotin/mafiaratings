@@ -208,10 +208,13 @@ function tournament_schema_to_row($s)
 // or normalizer_id.
 function check_not_in_tournament_schemas($column, $id, $object_name)
 {
+	global $_lang;
+
 	$names = '';
 	$query = new DbQuery(
-		'SELECT l.name, s.name FROM league_tournament_schemas s JOIN leagues l ON l.id = s.league_id' .
-		' WHERE s.' . $column . ' = ? ORDER BY l.name, s.name', $id);
+		'SELECT nl.name, s.name FROM league_tournament_schemas s JOIN leagues l ON l.id = s.league_id' .
+		' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
+		' WHERE s.' . $column . ' = ? ORDER BY nl.name, s.name', $id);
 	while ($row = $query->next())
 	{
 		$names .= '<br>' . htmlspecialchars($row[0] . ': ' . $row[1], ENT_QUOTES);
@@ -461,12 +464,15 @@ function tournament_schema_summary($schema)
 // [league_id => {id, name, schemas => [{id, name}]}], by name.
 function get_tournament_schema_leagues($club_id)
 {
+	global $_lang;
+
 	$leagues = array();
 	$query = new DbQuery(
-		'SELECT DISTINCT l.id, l.name FROM leagues l' .
+		'SELECT DISTINCT l.id, nl.name FROM leagues l' .
+		' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 		' LEFT OUTER JOIN league_clubs lc ON lc.league_id = l.id AND lc.club_id = ?' .
 		' WHERE (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0 AND (lc.club_id IS NOT NULL OR (l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0)' .
-		' ORDER BY l.name', $club_id);
+		' ORDER BY nl.name', $club_id);
 	while ($row = $query->next())
 	{
 		$l = new stdClass();

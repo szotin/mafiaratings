@@ -378,7 +378,7 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	}
 	else if ($league_id != NULL)
 	{
-		list($league_name, $league_default_id) = Db::record(get_label('league'), 'SELECT name, ' . $column . ' FROM leagues WHERE id = ?', $league_id);
+		list($league_name, $league_default_id) = Db::record(get_label('league'), 'SELECT n.name, l.' . $column . ' FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 		if ($league_default_id != NULL)
 		{
 			$top[] = _system_choice($league_default_id, $league_name);
@@ -417,13 +417,14 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	if ($club_id != NULL)
 	{
 		$query = new DbQuery(
-			'SELECT l.' . $column . ', l.name FROM leagues l' .
+			'SELECT l.' . $column . ', nl.name FROM leagues l' .
+			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN league_clubs lc ON lc.league_id = l.id AND lc.club_id = ?' .
 			' WHERE l.' . $column . ' IS NOT NULL AND (lc.club_id IS NOT NULL OR (l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0)', $club_id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT ' . $column . ', name FROM leagues WHERE ' . $column . ' IS NOT NULL AND (flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0');
+		$query = new DbQuery('SELECT l.' . $column . ', n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.' . $column . ' IS NOT NULL AND (l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0');
 	}
 	while ($row = $query->next())
 	{
@@ -433,8 +434,9 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	if ($club_id != NULL)
 	{
 		$query = new DbQuery(
-			'SELECT s.id, l.name, s.name FROM ' . $table . ' s' .
+			'SELECT s.id, nl.name, s.name FROM ' . $table . ' s' .
 			' JOIN leagues l ON l.id = s.league_id' .
+			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 			' JOIN league_clubs lc ON lc.league_id = s.league_id' .
 			' WHERE lc.club_id = ? AND s.id <> IFNULL(l.' . $column . ', 0)', $club_id);
 		while ($row = $query->next())
@@ -460,10 +462,11 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	if ($current_id != NULL && $current_id > 0 && !isset($ids[(int)$current_id]))
 	{
 		$query = new DbQuery(
-			'SELECT s.id, s.name, nc.name, l.name FROM ' . $table . ' s' .
+			'SELECT s.id, s.name, nc.name, nl.name FROM ' . $table . ' s' .
 			' LEFT OUTER JOIN clubs c ON c.id = s.club_id' .
 			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
+			' LEFT OUTER JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 			' WHERE s.id = ?', $current_id);
 		if ($row = $query->next())
 		{
@@ -568,7 +571,7 @@ function get_default_system_name($table, $id)
 	{
 		return $row[0];
 	}
-	$query = new DbQuery('SELECT name FROM leagues WHERE ' . $column . ' = ? ORDER BY id LIMIT 1', $id);
+	$query = new DbQuery('SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.' . $column . ' = ? ORDER BY l.id LIMIT 1', $id);
 	if ($row = $query->next())
 	{
 		return $row[0];

@@ -379,7 +379,7 @@ CREATE TABLE `gate_sessions` (
 DROP TABLE IF EXISTS `leagues`;
 CREATE TABLE `leagues` (
   `id` int(11) NOT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `langs` int(11) NOT NULL,
   `web_site` varchar(256) NOT NULL,
   `email` varchar(256) NOT NULL,
@@ -1063,6 +1063,7 @@ INSERT INTO `names` (`id`, `langs`, `name`) VALUES
 (2, 16777215, 'US Dollar'),
 (3, 16777215, 'Sample City'),
 (4, 16777215, 'Sample Club'),
+(5, 16777215, 'Sample League'),
 (10, 16777215, 'admin'),
 (30, 16777215, 'shrek'),
 (40, 16777215, 'lilya'),
@@ -1173,7 +1174,7 @@ INSERT INTO `club_regs` (`user_id`, `club_id`, `flags`) VALUES
 
 -- Club, league, season(series), their links
 INSERT INTO `clubs` (`id`, `name_id`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`, `gaining_id`) VALUES (1, 4, 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, 2, 1284784660, NULL, NULL, 2);
-INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 2, 0, '{}', 3, 3);
+INSERT INTO `leagues` (`id`, `name_id`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 5, 7, '', 'league@example.com', '', 2, 0, '{}', 3, 3);
 INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`) VALUES (1, 1, 0);
 -- The default rules of the site: the rules of the site with no name - see db/alter212.sql.
 INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name`, `rules`) VALUES (1, NULL, NULL, '', '0002000010000');
@@ -1832,10 +1833,10 @@ ALTER TABLE `gate_sessions`
 --
 ALTER TABLE `leagues`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `name` (`name`),
   ADD KEY `scoring_id` (`scoring_id`),
   ADD KEY `normalizer_id` (`normalizer_id`),
-  ADD KEY `leagues_gaining` (`gaining_id`);
+  ADD KEY `leagues_gaining` (`gaining_id`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `league_clubs`
@@ -2741,7 +2742,8 @@ ALTER TABLE `gate_sessions`
 ALTER TABLE `leagues`
   ADD CONSTRAINT `league_normalizer` FOREIGN KEY (`normalizer_id`) REFERENCES `normalizers` (`id`),
   ADD CONSTRAINT `league_scoring` FOREIGN KEY (`scoring_id`) REFERENCES `scorings` (`id`),
-  ADD CONSTRAINT `leagues_gaining` FOREIGN KEY (`gaining_id`) REFERENCES `gainings` (`id`);
+  ADD CONSTRAINT `leagues_gaining` FOREIGN KEY (`gaining_id`) REFERENCES `gainings` (`id`),
+  ADD CONSTRAINT `league_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `league_clubs`

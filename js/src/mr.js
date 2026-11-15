@@ -1743,10 +1743,12 @@ var swfu = null;
 //--------------------------------------------------------------------------------------
 class NameControl
 {
-	constructor(values, controlId, varName)
+	// langNames are the three letter names of the languages by their codes - { en: "ENG", ... }.
+	constructor(values, controlId, varName, langNames)
 	{
 		this.controlId = controlId;
 		this.varName = varName;
+		this.langNames = langNames ? langNames : {};
 		this.langs = [];
 		if (values)
 		{
@@ -1798,16 +1800,17 @@ class NameControl
 			oldValues = this.getValues();
 		}
 		var html = 
-			'<table class="transp"><tr><td width="24"><img src="images/sync.png" width="20"></td><td><input id="' + this.controlId + 
+			'<table class="transp"><tr><td width="36" align="center"><img src="images/sync.png" width="20"></td><td><input id="' + this.controlId +
 			'"></td><td><button id="' + this.controlId + 
 			'-lang" class="icon" onMouseEnter="' + this.varName + 
 			'.showLangMenu()"><img src="images/create.png"></button></td></tr>';
 		for (const i in this.langs)
 		{
 			var code = this.langs[i];
-			html += 
-				'<tr><td><img src="images/' + code + 
-				'.png" width="20"></td><td><input id="' + this.controlId + 
+			var langName = this.langNames[code] ? this.langNames[code] : code.toUpperCase();
+			html +=
+				'<tr><td align="center"><b>' + langName +
+				'</b></td><td><input id="' + this.controlId +
 				'-' + code + 
 				'"></td><td><button class="icon" onClick="' + this.varName + 
 				'.removeLang(\'' + code + '\')"><img src="images/delete.png"></button></td></tr>';

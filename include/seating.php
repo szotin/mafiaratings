@@ -201,9 +201,10 @@ function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = 
 	// Priority 1: league pairs (multiple leagues possible; conflict resolved by min abs(policy))
 	$query = new DbQuery(
 		'SELECT u1.id, nu1.name, u1.flags, tu1.flags, cu1.flags,' .
-		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy, l.name' .
+		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy, nl.name' .
 		' FROM league_pairs p' .
 		' JOIN leagues l ON l.id = p.league_id' .
+		' JOIN names nl ON nl.id = l.name_id AND (nl.langs & ' . $lang . ') <> 0' .
 		' JOIN users u1 ON u1.id = p.user1_id' .
 		' JOIN users u2 ON u2.id = p.user2_id' .
 		' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & ' . $lang . ') <> 0' .

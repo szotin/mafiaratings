@@ -309,7 +309,7 @@ class ApiPage extends GetApiPageBase
 			$index = 0;
 			$tournament = $tournaments[0];
 			$query = new DbQuery(
-				'SELECT t.id, s.id, s.name, sol.id, sol.name, soc.id, nsoc.name, st.stars'.
+				'SELECT t.id, s.id, s.name, sol.id, nsol.name, soc.id, nsoc.name, st.stars'.
 				' FROM series_tournaments st'.
 				' JOIN tournaments t ON t.id = st.tournament_id'.
 				' JOIN series s ON s.id = st.series_id'.

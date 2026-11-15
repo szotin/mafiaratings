@@ -20,9 +20,10 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="80">' . get_label('League') . ':</td><td><select id="form-league">';
 	$query = new DbQuery(
-		'SELECT l.id, l.name, COUNT(s.id) FROM leagues l' .
+		'SELECT l.id, nl.name, COUNT(s.id) FROM leagues l' .
+		' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 		' LEFT OUTER JOIN league_tournament_schemas s ON s.league_id = l.id' .
-		' WHERE l.id <> ? GROUP BY l.id, l.name ORDER BY l.name', $league_id);
+		' WHERE l.id <> ? GROUP BY l.id, nl.name ORDER BY nl.name', $league_id);
 	$selected = 0;
 	while ($row = $query->next())
 	{

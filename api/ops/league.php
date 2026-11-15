@@ -9,6 +9,7 @@ require_once '../../include/scoring.php';
 require_once '../../include/gaining.php';
 require_once '../../include/image.php';
 require_once '../../include/rules.php';
+require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -23,36 +24,42 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('league'), 'UPDATE leagues SET scoring_id = ?, normalizer_id = ?, gaining_id = ? WHERE id = ?', $scoring_id, $normalizer_id, $gaining_id, $league_id);
 	}
 
-	private function check_name($name, $league_id = 0)
+	// The names of the league: "name" for all languages and "name_xx" for a language that has its
+	// own, taken from the request - or, when $request_name is set, that one name for all languages.
+	// Names checks the ones of the languages and that none of them is used by another league; the
+	// one for all languages is checked here. A name waiting in a league request is taken too, unless
+	// this is that request being accepted.
+	private function get_names($league_id = 0, $request_name = NULL, $request_id = 0)
 	{
-		if ($name == '')
+		if (is_null($request_name))
 		{
-			throw new Exc(get_label('Please enter [0].', get_label('league name')));
-		}
-
-		check_name($name, get_label('league name'));
-
-		if ($league_id > 0)
-		{
-			$query = new DbQuery('SELECT name FROM leagues WHERE name = ? AND id <> ?', $name, $league_id);
+			$names = new Names(0, get_label('league name'), 'leagues', $league_id);
 		}
 		else
 		{
-			$query = new DbQuery('SELECT name FROM leagues WHERE name = ?', $name);
+			$names = new Names(-1, get_label('league name'), 'leagues', $league_id, NULL, trim($request_name));
 		}
-		if ($query->next())
+
+		if (count($names->names) > 0)
 		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('League name'), $name));
+			$name = trim($names->names[0]->name);
+			if ($name == '')
+			{
+				throw new Exc(get_label('Please enter [0].', get_label('league name')));
+			}
+			check_name($name, get_label('league name'));
+			$names->names[0]->name = $name;
 		}
-		
-		if ($league_id >= 0)
+
+		foreach ($names->names as $n)
 		{
-			$query = new DbQuery('SELECT name FROM league_requests WHERE name = ?', $name);
+			$query = new DbQuery('SELECT name FROM league_requests WHERE name = ? AND id <> ?', $n->name, $request_id);
 			if ($query->next())
 			{
-				throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('League name'), $name));
+				throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('League name'), $n->name));
 			}
 		}
+		return $names;
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -63,7 +70,6 @@ class ApiPage extends OpsApiPageBase
 		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
-		$name = trim(get_required_param('name'));
 
 		$url = get_optional_param('url');
 		$phone = get_optional_param('phone');
@@ -82,20 +88,27 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		$this->check_name($name);
+		$names = $this->get_names();
+		if (count($names->names) == 0)
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('league name')));
+		}
+		// The name for all languages. A request keeps only this one - see accept_op.
+		$name = $names->names[0]->name;
 		if ($_profile->is_admin())
 		{
 			// Admin does not have to send a confirmation request. The league is confirmed instantly.
-			
+			$name_id = $names->get_id();
 			Db::exec(
 				get_label('league'),
-				'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-				$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
+				'INSERT INTO leagues (name_id, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
+				$name_id, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
 			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 			self::own_systems($league_id);
-			
+
 			$log_details = new stdClass();
-			$log_details->name = $name;
+			$log_details->name = $names->to_string();
+			$log_details->name_id = $name_id;
 			$log_details->langs = $langs;
 			$log_details->flags = NEW_LEAGUE_FLAGS;
 			$log_details->url = $url;
@@ -156,7 +169,8 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_USER, 'Create league. If user is admin, league is just created. If not, league request is created and email is sent to admin. Admin has to accept it.');
-		$help->request_param('name', 'League name.');
+		Names::help($help, 'League', false);
+		$help->request_param('name_xx', 'A request of a user who is not an admin keeps only <q>name</q>; the names for other languages are set when the league is accepted or edited.', '-');
 		$help->request_param('url', 'League web site URL.');
 		$help->request_param('langs', 'Languages used in the league. A bit combination of language ids.' . valid_langs_help());
 		$help->request_param('email', 'League email.', 'user email is used.');
@@ -175,13 +189,14 @@ class ApiPage extends OpsApiPageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
 		Db::begin();
-		list($old_name, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_rules, $old_flags) = Db::record(get_label('league'),
-			'SELECT name, web_site, email, phone, langs, scoring_id, normalizer_id, gaining_id, rules, flags FROM leagues c WHERE id = ?', $league_id);
-			
-		$name = get_optional_param('name', $old_name);
-		if ($name != $old_name)
+		list($old_name_id, $old_url, $old_email, $old_phone, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_rules, $old_flags) = Db::record(get_label('league'),
+			'SELECT name_id, web_site, email, phone, langs, scoring_id, normalizer_id, gaining_id, rules, flags FROM leagues WHERE id = ?', $league_id);
+
+		$names = $this->get_names($league_id);
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
 		{
-			$this->check_name($name, $league_id);
+			$name_id = $old_name_id;
 		}
 		
 		$url = check_url(get_optional_param('url', $old_url));
@@ -251,14 +266,15 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('league'), 
-			'UPDATE leagues SET name = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, normalizer_id = ?, gaining_id = ?, rules = ?, flags = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $scoring_id, $normalizer_id, $gaining_id, $rules, $flags, $league_id);
+			'UPDATE leagues SET name_id = ?, web_site = ?, langs = ?, email = ?, phone = ?, scoring_id = ?, normalizer_id = ?, gaining_id = ?, rules = ?, flags = ? WHERE id = ?',
+			$name_id, $url, $langs, $email, $phone, $scoring_id, $normalizer_id, $gaining_id, $rules, $flags, $league_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
-			if ($name != $old_name)
+			if ($name_id != $old_name_id)
 			{
-				$log_details->name = $name;
+				$log_details->name = $names->to_string();
+				$log_details->name_id = $name_id;
 			}
 			if ($url != $old_url)
 			{
@@ -310,7 +326,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER, 'Change league record.');
 		$help->request_param('league_id', 'League id.');
-		$help->request_param('name', 'League name.', 'remains the same.');
+		Names::help($help, 'League', true);
 		$help->request_param('url', 'League web site URL.', 'remains the same.');
 		$help->request_param('langs', 'Languages used in the league. A bit combination of language ids.' . valid_langs_help(), 'remains the same.');
 		$help->request_param('email', 'League email.', 'remains the same.');
@@ -337,30 +353,39 @@ class ApiPage extends OpsApiPageBase
 		$flags = ($flags & LEAGUE_EDITABLE_MASK) + (NEW_LEAGUE_FLAGS & ~LEAGUE_EDITABLE_MASK);
 		
 		Db::begin();
-		list($url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone) = Db::record(
+		list($request_name, $url, $langs, $user_id, $user_name, $user_email, $user_lang, $user_flags, $email, $phone) = Db::record(
 			get_label('league'),
-			'SELECT l.web_site, l.langs, l.user_id, nu.name, u.email, u.def_lang, u.flags, l.email, l.phone FROM league_requests l' .
+			'SELECT l.name, l.web_site, l.langs, l.user_id, nu.name, u.email, u.def_lang, u.flags, l.email, l.phone FROM league_requests l' .
 				' JOIN users u ON l.user_id = u.id' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 				' WHERE l.id = ?',
 			$request_id);
-			
-		if (isset($_REQUEST['name']))
+
+		// The admin may give the league other names than the one requested - see accept_op_help.
+		$names = $this->get_names(0, isset($_REQUEST['name']) ? NULL : $request_name, $request_id);
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
 		{
-			$name = $_REQUEST['name'];
+			throw new Exc(get_label('Please enter [0].', get_label('league name')));
 		}
-		$this->check_name($name, -1);
-		
+		// The name in the email is in the language of the email.
+		$name = $names->get_name($user_lang);
+		if ($name == '')
+		{
+			$name = $names->names[0]->name;
+		}
+
 		Db::exec(
 			get_label('league'),
-			'INSERT INTO leagues (name, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-			$name, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
+			'INSERT INTO leagues (name_id, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
+			$name_id, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
 
 		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
 		self::own_systems($league_id);
-		
+
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $name_id;
 		$log_details->langs = $langs;
 		$log_details->flags = NEW_LEAGUE_FLAGS;
 		$log_details->url = $url;
@@ -403,7 +428,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_ADMIN, 'Accept league. Admin accepts league request created by a user. The user becomes the a manager of the league. An email is sent to the user notifying that the league is accepted.');
 		$help->request_param('request_id', 'Id of the user request');
-		$help->request_param('name', 'Name of the league. If set, it is used as a new name for this league instead of the one used in request.', 'name from the request is used');
+		$help->request_param('name', 'Name of the league for all languages. If set, it is used instead of the one used in the request, and names for other languages can be set as "name_xx" where xx is a two letter language code, as in <q>create</q>.' . valid_lang_codes_help(), 'name from the request is used for all languages');
 		$help->response_param('league_id', 'League id.');
 		return $help;
 	}
@@ -693,7 +718,7 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($flags & LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED)
 			{
-				list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
+				list($league_langs) = Db::record(get_label('league'), 'SELECT langs FROM leagues WHERE id = ?', $league_id);
 				$query = new DbQuery(
 					'SELECT u.id, nu.name, u.email, u.def_lang'.
 					' FROM league_managers l'.
@@ -712,6 +737,7 @@ class ApiPage extends OpsApiPageBase
 						}
 					}
 					list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
+					list($league_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & ?) <> 0 WHERE l.id = ?', $user_lang, $league_id);
 					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/club_add_league.php';
 					
 					$tags = array(
@@ -731,7 +757,7 @@ class ApiPage extends OpsApiPageBase
 			
 			if ($flags & LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED)
 			{
-				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+				list($league_langs) = Db::record(get_label('league'), 'SELECT langs FROM leagues WHERE id = ?', $league_id);
 				$query = new DbQuery(
 					'SELECT u.id, nu.name, u.email, u.def_lang'.
 					' FROM club_regs uc'.
@@ -750,6 +776,7 @@ class ApiPage extends OpsApiPageBase
 						}
 					}
 					list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
+					list($league_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & ?) <> 0 WHERE l.id = ?', $user_lang, $league_id);
 					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/league_add_club.php';
 					
 					$tags = array(
@@ -809,7 +836,7 @@ class ApiPage extends OpsApiPageBase
 		$flags = $old_flags;
 		if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 		{
-			list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
+			list($league_langs) = Db::record(get_label('league'), 'SELECT langs FROM leagues WHERE id = ?', $league_id);
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
 				' FROM league_managers l'.
@@ -828,6 +855,7 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 				list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
+				list($league_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & ?) <> 0 WHERE l.id = ?', $user_lang, $league_id);
 				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/league_remove_club.php';
 				
 				$tags = array(
@@ -848,7 +876,7 @@ class ApiPage extends OpsApiPageBase
 		
 		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
-			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+			list($league_langs) = Db::record(get_label('league'), 'SELECT langs FROM leagues WHERE id = ?', $league_id);
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
 				' FROM club_regs uc'.
@@ -867,6 +895,7 @@ class ApiPage extends OpsApiPageBase
 					}
 				}
 				list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
+				list($league_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & ?) <> 0 WHERE l.id = ?', $user_lang, $league_id);
 				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/club_remove_league.php';
 				
 				if (!empty($message))

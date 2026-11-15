@@ -29,7 +29,7 @@ try
 	echo '<tr><td width="120">' . get_label('New owner') . ':</td><td><select id="form-owner" onchange="onOwnerChange()">';
 
 	echo '<optgroup label="' . get_label('Leagues') . '">';
-	$query = new DbQuery('SELECT id, name FROM leagues WHERE (flags & ' . LEAGUE_FLAG_CLOSED . ') = 0 ORDER BY name');
+	$query = new DbQuery('SELECT l.id, n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0 ORDER BY n.name');
 	while ($row = $query->next())
 	{
 		list($id, $name) = $row;

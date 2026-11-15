@@ -148,7 +148,7 @@ class ClubPageBase extends PageBase
 
 	protected function show_title()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$menu = array
 		(
@@ -248,7 +248,7 @@ class ClubPageBase extends PageBase
 			$this->club_pic->show(ICONS_DIR, true, 48);
 			echo '</td>';
 		}
-		$query = new DbQuery('SELECT l.id, l.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id WHERE c.flags = 0 AND c.club_id = ? ORDER BY l.name', $this->id);
+		$query = new DbQuery('SELECT l.id, nl.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0 WHERE c.flags = 0 AND c.club_id = ? ORDER BY nl.name', $this->id);
 		while ($row = $query->next())
 		{
 			list($league_id, $league_name, $league_flags) = $row;
@@ -285,10 +285,12 @@ function get_club_request_action($name, $club_id, $club_name, $parent_id, $paren
 // option is none. The league already picked stays on the list even if it is no longer global.
 function show_system_league_select($id, $selected_id = 0)
 {
+	global $_lang;
+
 	$selected_id = (int)$selected_id;
 	echo '<select id="' . $id . '">';
 	show_option(0, $selected_id, '');
-	$query = new DbQuery('SELECT id, name FROM leagues WHERE ((flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0 AND (flags & ' . LEAGUE_FLAG_CLOSED . ') = 0) OR id = ? ORDER BY name', $selected_id);
+	$query = new DbQuery('SELECT l.id, n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE ((l.flags & ' . LEAGUE_FLAG_GLOBAL . ') <> 0 AND (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0) OR l.id = ? ORDER BY n.name', $selected_id);
 	while ($row = $query->next())
 	{
 		list($league_id, $league_name) = $row;

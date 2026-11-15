@@ -44,7 +44,7 @@ try
 		$schema = normalize_tournament_schema($schema);
 	}
 
-	list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+	list($league_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 
 	// The rules a schema of the league refers to: the rules of the league, its default and its
 	// named ones, or none - the rules of the club as they are. "l<league id>" is the default rules
@@ -63,7 +63,7 @@ try
 		$selected_rules = 'r' . $schema->rules_id;
 		if (!isset($rules_choices[$selected_rules]))
 		{
-			$query = new DbQuery('SELECT l.name, r.name FROM rules r JOIN leagues l ON l.id = r.league_id WHERE r.id = ?', $schema->rules_id);
+			$query = new DbQuery('SELECT nl.name, r.name FROM rules r JOIN leagues l ON l.id = r.league_id JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0 WHERE r.id = ?', $schema->rules_id);
 			if ($row = $query->next())
 			{
 				$rules_choices[$selected_rules] = $row[0] . ': ' . $row[1];
@@ -75,7 +75,7 @@ try
 		$selected_rules = 'l' . $schema->rules_league_id;
 		if (!isset($rules_choices[$selected_rules]))
 		{
-			$query = new DbQuery('SELECT name FROM leagues WHERE id = ?', $schema->rules_league_id);
+			$query = new DbQuery('SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $schema->rules_league_id);
 			if ($row = $query->next())
 			{
 				$rules_choices[$selected_rules] = $row[0];

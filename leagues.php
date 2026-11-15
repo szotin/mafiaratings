@@ -85,7 +85,7 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
@@ -148,8 +148,9 @@ class Page extends GeneralPageBase
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
-			'SELECT l.id, l.name, l.flags, l.web_site FROM leagues l', $condition);
-		$query->add(' ORDER BY l.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+			'SELECT l.id, nl.name, l.flags, l.web_site FROM leagues l' .
+			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0', $condition);
+		$query->add(' ORDER BY nl.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		
 		$league_pic = new Picture(LEAGUE_PICTURE);
 			

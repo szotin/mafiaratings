@@ -300,7 +300,7 @@ class ApiPage extends OpsApiPageBase
 		{
 			if ($system_league_id > 0)
 			{
-				list($system_name, $rules_filter, $new_scoring_id, $new_normalizer_id, $new_gaining_id) = Db::record(get_label('league'), 'SELECT name, rules, scoring_id, normalizer_id, gaining_id FROM leagues WHERE id = ?', $system_league_id);
+				list($system_name, $rules_filter, $new_scoring_id, $new_normalizer_id, $new_gaining_id) = Db::record(get_label('league'), 'SELECT n.name, l.rules, l.scoring_id, l.normalizer_id, l.gaining_id FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $system_league_id);
 				$rules_code = correct_rules(upgrade_rules_code($rules_code), $rules_filter);
 			}
 			else if ($parent_id > 0)

@@ -34,7 +34,7 @@ try
 	else if ($league_id > 0)
 	{
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($owner_name, $owner_flags, $owner_langs, $default_gaining_id) = Db::record(get_label('league'), 'SELECT name, flags, langs, gaining_id FROM leagues WHERE id = ?', $league_id);
+		list($owner_name, $owner_flags, $owner_langs, $default_gaining_id) = Db::record(get_label('league'), 'SELECT n.name, l.flags, l.langs, l.gaining_id FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 		$owner_pic = new Picture(LEAGUE_PICTURE);
 		$owner_id = $league_id;
 		$owner_is_elite = ($owner_flags & LEAGUE_FLAG_GLOBAL) != 0;

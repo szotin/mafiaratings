@@ -2,6 +2,7 @@
 
 require_once '../include/session.php';
 require_once '../include/league.php';
+require_once '../include/names.php';
 
 initiate_session();
 
@@ -30,7 +31,10 @@ try
 		
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120">' . get_label('User') . ':</td><td><a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td></tr>';
-	echo '<tr><td>' . get_label('League name') . ':</td><td><input class="longest" id="form-name" value="' . $name . '"></td></tr>';
+	// The request has one name; the admin may add the names for other languages.
+	echo '<tr><td valign="top">' . get_label('League name') . ':</td><td>';
+	Names::show_control(new Names(-1, get_label('league name'), NULL, 0, NULL, $name));
+	echo '</td></tr>';
 	echo '<tr><td>' . get_label('Web site') . ':</td><td><a href="' . $url . '" target="_blank">' . $url . '</a></td></tr>';
 	echo '<tr><td>'.get_label('Languages').':</td><td>' . get_langs_str($langs, ', ') . '</td><tr>';
 	echo '<tr><td>'.get_label('Contact email').':</td><td><a href="mailto:' . $email . '">' . $email . '</a></td><tr>';
@@ -51,14 +55,14 @@ try
 		let flags = 0;
 		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_GLOBAL; ?>;
 		
-		json.post("api/ops/league.php",
+		let request =
 		{
 			op: "accept"
 			, request_id: <?php echo $id; ?>
-			, name: $("#form-name").val()
 			, flags: flags
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(request);
+		json.post("api/ops/league.php", request, onSuccess);
 	}
 	</script>
 <?php

@@ -49,7 +49,7 @@ class LeaguePageBase extends PageBase
 	
 	protected function prepare()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 	
 		if (!isset($_REQUEST['id']))
 		{
@@ -62,7 +62,9 @@ class LeaguePageBase extends PageBase
 		list ($this->name, $this->flags, $this->url, $this->langs, $this->email, $this->phone, $this->scoring_id, $rules) = 
 			Db::record(
 				get_label('league'),
-				'SELECT l.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules FROM leagues l WHERE l.id = ?', $this->id);
+				'SELECT nl.name, l.flags, l.web_site, l.langs, l.email, l.phone, l.scoring_id, l.rules FROM leagues l' .
+				' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
+				' WHERE l.id = ?', $this->id);
 		$this->rules_filter = json_decode($rules);
 	}
 

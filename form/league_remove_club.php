@@ -19,7 +19,7 @@ try
 	}
 	$club_id = $_REQUEST['club_id'];
 	
-	list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+	list($league_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 	list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 	
 	dialog_title(get_label('Resign [0] from [1]', $club_name, $league_name));

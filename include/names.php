@@ -356,14 +356,19 @@ class Names
 	
 	static function show_control($names = NULL, $control_id = 'form-name', $var_name = 'nameControl')
 	{
-		echo '<ul id="' . $control_id . '-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
+		// Languages are shown by their three letter codes, the way the language menu of the page shows them.
+		$lang_names = '';
+		$delim = '';
+		echo '<ul id="' . $control_id . '-menu" style="display:none;position:absolute;width:42px;text-align:left;z-index:2147483647;">';
 		$lang = LANG_NO;
 		while (($lang = get_next_lang($lang)) != LANG_NO)
 		{
 			$lang_code = get_lang_code($lang);
-			echo '<li><a href="javascript:' . $var_name . '.addLang(\'' . $lang_code . '\')">';
-			echo '<img src="images/' . $lang_code . '.png" width="20">';
+			echo '<li><a href="javascript:' . $var_name . '.addLang(\'' . $lang_code . '\')" title="' . get_lang_str($lang) . '">';
+			echo get_short_lang_str($lang);
 			echo '</a></li>';
+			$lang_names .= $delim . $lang_code . ':' . json_encode(get_short_lang_str($lang), JSON_UNESCAPED_UNICODE);
+			$delim = ', ';
 		}
 		echo '</ul><div id="' . $control_id . '-div"></div><script>';
 		if (!is_null($names) && count($names->names) > 0)
@@ -385,7 +390,7 @@ class Names
 		{
 			$values_var = 'null';
 		}
-		echo 'var ' . $var_name . ' = new NameControl(' . $values_var . ', "' . $control_id . '", "' . $var_name . '");';
+		echo 'var ' . $var_name . ' = new NameControl(' . $values_var . ', "' . $control_id . '", "' . $var_name . '", {' . $lang_names . '});';
 		echo '</script>';
 	}
 	

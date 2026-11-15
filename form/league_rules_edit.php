@@ -33,7 +33,7 @@ try
 		$league_id = (int)$_REQUEST['league_id'];
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		
-		list($league_rules, $league_name) = Db::record(get_label('league'), 'SELECT rules, name FROM leagues WHERE id = ?', $league_id);
+		list($league_rules, $league_name) = Db::record(get_label('league'), 'SELECT l.rules, n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 		if (isset($_REQUEST['create']))
 		{
 			// New rules start as the default filter of the league.

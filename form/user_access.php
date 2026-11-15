@@ -53,7 +53,7 @@ try
 	{
 		$league_id = (int)$_REQUEST['league_id'];
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
-		list($name, $user_flags) = Db::record(get_label('league'), 'SELECT l.name, lm.flags FROM league_managers lm JOIN leagues l ON l.id = lm.league_id WHERE lm.league_id = ? AND lm.user_id = ?', $league_id, $user_id);
+		list($name, $user_flags) = Db::record(get_label('league'), 'SELECT nl.name, lm.flags FROM league_managers lm JOIN leagues l ON l.id = lm.league_id JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0 WHERE lm.league_id = ? AND lm.user_id = ?', $league_id, $user_id);
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
 	}
 	else if (isset($_REQUEST['club_id']))

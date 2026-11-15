@@ -22,7 +22,7 @@ try
 	else if (isset($_REQUEST['league_id']))
 	{
 		$league_id = (int)$_REQUEST['league_id'];
-		list ($name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+		list ($name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 	}
 	else

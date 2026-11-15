@@ -4,6 +4,7 @@ require_once '../include/session.php';
 require_once '../include/league.php';
 require_once '../include/image.php';
 require_once '../include/url.php';
+require_once '../include/names.php';
 
 initiate_session();
 
@@ -22,11 +23,17 @@ try
 		throw new FatalExc(get_label('No permissions'));
 	}
 	
-	list ($name, $url, $email, $phone, $langs, $flags) =
-		Db::record(get_label('league'), 'SELECT name, web_site, email, phone, langs, flags FROM leagues WHERE id = ?', $id);
-		
+	list ($name_id, $name, $url, $email, $phone, $langs, $flags) =
+		Db::record(get_label('league'),
+			'SELECT l.name_id, n.name, l.web_site, l.email, l.phone, l.langs, l.flags'.
+			' FROM leagues l'.
+			' JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0'.
+			' WHERE l.id = ?', $id);
+
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="140">' . get_label('League name') . ':</td><td><input class="longest" id="form-league_name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
+	echo '<tr><td width="140" valign="top">' . get_label('League name') . ':</td><td>';
+	Names::show_control(new Names($name_id, get_label('league name')));
+	echo '</td>';
 	
 	echo '<td align="center" valign="top" rowspan="8">';
 	start_upload_logo_button($id);
@@ -72,18 +79,18 @@ try
 		let flags = 0;
 		if ($("#form-elite").attr('checked')) flags |= <?php echo LEAGUE_FLAG_GLOBAL; ?>;
 		let languages = mr.getLangs();
-		json.post("api/ops/league.php",
+		let request =
 		{
 			op: "change"
 			, league_id: <?php echo $id; ?>
-			, name: $("#form-league_name").val()
 			, url: $("#form-url").val()
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()
 			, langs: languages
 			, flags: flags
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(request);
+		json.post("api/ops/league.php", request, onSuccess);
 	}
 	
 	function uploadLogo(leagueId, onSuccess)

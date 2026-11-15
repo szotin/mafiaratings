@@ -66,7 +66,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else if ($league_id != NULL)
 		{
-			list($owner_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
+			list($owner_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
 			$query = new DbQuery('SELECT id FROM rules WHERE league_id = ? AND name = ? AND id <> ?', $league_id, $name, $rules_id);
 		}
 		else
