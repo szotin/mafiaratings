@@ -22,7 +22,11 @@ try
 		' FROM users u'.
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 		' WHERE u.id = ?', $user_id);
-	
+
+	// Someone editing another user's account can do it only as a manager of that user's main club.
+	// Quitting the main club leaves the user without one, so such an editor loses the right to edit the account.
+	$keeps_rights = !is_null($_profile) && ($_profile->user_id == $user_id || $_profile->is_admin());
+
 	$club_pic = new Picture(CLUB_PICTURE);
 	echo '<p>' . get_label('Join club') . ': <select id="form-join-club" onChange="joinClub()">';
 	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND id NOT IN(SELECT club_id FROM club_regs WHERE user_id = ?) ORDER BY name', $user_id);
@@ -38,8 +42,9 @@ try
 	while ($row = $query->next())
 	{
 		list ($c_id, $c_name, $c_flags, $uc_flags) = $row;
-		echo '<tr><td class="darker" width="90">';
-		echo '<button class="icon" onclick="quitClub(' . $c_id . ')" title="' . get_label('Quit club [0]', $c_name) . '"><img src="images/delete.png" border="0"></button>';
+		$loses_rights = (!$keeps_rights && $c_id == $club_id) ? 1 : 0;
+		echo '<tr><td class="darker" width="60">';
+		echo '<button class="icon" onclick="quitClub(' . $c_id . ', ' . $loses_rights . ')" title="' . get_label('Quit club [0]', $c_name) . '"><img src="images/delete.png" border="0"></button>';
 		if ($uc_flags & USER_CLUB_FLAG_SUBSCRIBED)
 		{
 			echo '<button class="icon" onclick="subscribe(' . $c_id . ', 0)" title="' . get_label('Unsubscribe from [0] event notifications', $c_name) . '" checked';
@@ -49,14 +54,6 @@ try
 			echo '<button class="icon" onclick="subscribe(' . $c_id . ', 1)" title="' . get_label('Subscribe to [0] event notifications', $c_name) . '"';
 		}
 		echo '><img src="images/email.png"></button>';
-		if ($c_id == $club_id)
-		{
-			echo '<button class="icon" onclick="mainClub(0)" title="' . get_label('Revoke [0] as a main club of [1]', $c_name, $user_name) . '"><img src="images/accept.png"></button>';
-		}
-		else
-		{
-			echo '<button class="icon" onclick="mainClub(' . $c_id . ')" title="' . get_label('Set [0] as a main club of [1]', $c_name, $user_name) . '"><img src="images/empty.png"></button>';
-		}
 		echo '</td><td><table class="transp" width="100%"><tr><td width="48">';
 		$club_pic->set($c_id, $c_name, $c_flags);
 		$club_pic->show(ICONS_DIR, false, 36);

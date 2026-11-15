@@ -548,8 +548,18 @@ class ApiPage extends OpsApiPageBase
 		list ($count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_regs WHERE user_id = ? AND club_id = ?', $user_id, $club_id);
 		if ($count == 0)
 		{
+			// The first club the user joins becomes their main club.
+			list ($membership_count) = Db::record(get_label('membership'), 'SELECT count(*) FROM club_regs WHERE user_id = ?', $user_id);
 			Db::exec(get_label('membership'), 'INSERT INTO club_regs (user_id, club_id, flags) values (?, ?, ?)', $user_id, $club_id, $flags);
 			db_log(LOG_OBJECT_USER, 'joined club', NULL, $user_id, $club_id);
+			if ($membership_count == 0)
+			{
+				Db::exec(get_label('user'), 'UPDATE users SET club_id = ? WHERE id = ?', $club_id, $user_id);
+				if ($user_id == $owner_id)
+				{
+					$_profile->user_club_id = $club_id;
+				}
+			}
 			if ($user_id == $owner_id)
 			{
 				$_profile->update_clubs();
@@ -595,9 +605,15 @@ class ApiPage extends OpsApiPageBase
 		{
 			db_log(LOG_OBJECT_USER, 'left club', NULL, $user_id, $club_id);
 		}
+		// Quitting the main club leaves the user without a main club.
+		Db::exec(get_label('user'), 'UPDATE users SET club_id = NULL WHERE id = ? AND club_id = ?', $user_id, $club_id);
 		Db::commit();
 		if ($user_id == $owner_id)
 		{
+			if ($_profile->user_club_id == $club_id)
+			{
+				$_profile->user_club_id = NULL;
+			}
 			$_profile->update_clubs();
 		}
 		

@@ -43,7 +43,7 @@ try
 	echo '</td>';
 	
 	
-	echo '</td><td width="140" align="center" valign="top" rowspan="9">';
+	echo '</td><td width="140" align="center" valign="top" rowspan="10">';
 	start_upload_logo_button($user_id);
 	echo get_label('Change picture') . '<br>';
 	$user_pic = new Picture(USER_PICTURE);
@@ -76,6 +76,7 @@ try
 	echo '</td></tr>';
 	
 	echo '<tr><td class="dark" valign="top">' . get_label('Clubs') . ':</td><td class="light"><div id="form-clubs"></div></td></tr>';
+	echo '<tr><td class="dark">' . get_label('Main club') . ':</td><td class="light"><div id="form-main-club-div"></div></td></tr>';
 	
 	echo '<tr><td class="dark" valign="top">' . get_label('Gender') . ':</td><td class="light">';
 	if ($user_flags & USER_FLAG_MALE)
@@ -127,13 +128,23 @@ try
 ?>
 	<script>
 	
+	var formDlgId = dlg.curId();
+
 	function refreshClubMembership()
 	{
 		http.get("form/club_membership.php?user_id=<?php echo $user_id; ?>", function(html) { $("#form-clubs").html(html); });
+		http.get("form/user_main_club.php?user_id=<?php echo $user_id; ?>", function(html) { $("#form-main-club-div").html(html); });
 	}
 
 	refreshClubMembership();
-	
+
+	// Called when the editor has just taken away their own right to edit this account: nothing else can be saved from this dialog.
+	function leaveForm()
+	{
+		dlg.close(formDlgId);
+		refr();
+	}
+
 	function joinClub()
 	{
 		json.post("api/ops/club.php",
@@ -145,9 +156,9 @@ try
 		refreshClubMembership);
 	}
 	
-	function quitClub(clubId)
+	function quitClub(clubId, losesRights)
 	{
-		dlg.yesNo("<?php echo get_label("Are you sure you want to quit club?"); ?>", null, null, function()
+		function quit(onSuccess)
 		{
 			json.post("api/ops/club.php",
 			{
@@ -155,8 +166,25 @@ try
 				, user_id: <?php echo $user_id; ?>
 				, club_id: clubId
 			},
-			refreshClubMembership);
-		});
+			onSuccess);
+		}
+
+		if (losesRights)
+		{
+			// Quitting the main club leaves the account without a main club, and with it the editor's right to edit it.
+			// So the rest of the form is saved first, while the right is still there.
+			dlg.yesNo(<?php echo json_encode(get_label('This is the main club of [0]. After quitting it you will no longer be able to edit the account of [0]. Are you sure you want to do this?', $user_name)); ?>, null, null, function()
+			{
+				json.post("api/ops/user.php", buildRequest(), function() { quit(leaveForm); });
+			});
+		}
+		else
+		{
+			dlg.yesNo("<?php echo get_label("Are you sure you want to quit club?"); ?>", null, null, function()
+			{
+				quit(refreshClubMembership);
+			});
+		}
 	}
 	
 	function subscribe(clubId, subs)
@@ -171,12 +199,28 @@ try
 		refreshClubMembership);
 	}
 	
-	function mainClub(clubId)
+	function setMainClub()
 	{
-		json.post("api/ops/user.php", { op: 'edit', user_id: <?php echo $user_id; ?>, club_id: clubId }, refreshClubMembership);
+		var select = $("#form-main-club");
+		var clubId = select.val();
+		if (select.find("option:selected").data("lose"))
+		{
+			// The editor manages only the current main club, so after this change they cannot edit the account any more.
+			// The whole form is saved in the same request, while the right is still there.
+			dlg.yesNo(<?php echo json_encode(get_label('After this change you will no longer be able to edit the account of [0]. Are you sure you want to do this?', $user_name)); ?>, null, null, function()
+			{
+				var request = buildRequest();
+				request.club_id = clubId;
+				json.post("api/ops/user.php", request, leaveForm, refreshClubMembership);
+			}, refreshClubMembership);
+		}
+		else
+		{
+			json.post("api/ops/user.php", { op: 'edit', user_id: <?php echo $user_id; ?>, club_id: clubId }, refreshClubMembership, refreshClubMembership);
+		}
 	}
-	
-	function commit(onSuccess)
+
+	function buildRequest()
 	{
 		var languages = mr.getLangs();
 		var request =
@@ -194,7 +238,12 @@ try
 			, admin_notify: ($("#form-admin_notify").attr('checked') ? 1 : 0)
 		};
 		nameControl.fillRequest(request);
-		json.post("api/ops/user.php", request, onSuccess);
+		return request;
+	}
+
+	function commit(onSuccess)
+	{
+		json.post("api/ops/user.php", buildRequest(), onSuccess);
 	}
 	
 	function uploadLogo(userId, onSuccess)
