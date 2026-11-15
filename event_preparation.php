@@ -5,14 +5,17 @@ require_once 'include/pages.php';
 require_once 'include/seating.php';
 require_once 'include/preparation.php';
 require_once 'include/event_mailing.php';
+require_once 'include/scoring.php';
+require_once 'include/rules.php';
 
 // An event has one round, so it has one seating, where a tournament has one per round and its
 // pairs in between - the two pages do not line up and each numbers its own tabs.
 define('EPREP_TAB_MAILING', 0);
 define('EPREP_TAB_SCHEME', 1);
-define('EPREP_TAB_REGISTRATIONS', 2);
-define('EPREP_TAB_STREAMS', 3);
-define('EPREP_TAB_SEATING', 4);
+define('EPREP_TAB_RULES', 2);
+define('EPREP_TAB_REGISTRATIONS', 3);
+define('EPREP_TAB_STREAMS', 4);
+define('EPREP_TAB_SEATING', 5);
 
 // What a mailing was sent about, for the list of them.
 function event_mailing_type_name($type)
@@ -140,6 +143,80 @@ class Page extends EventPageBase
 
 		echo '<p align="right"><button id="prep-apply-btn" onclick="applyScheme()"' .
 			(!$this->scheme_valid ? ' disabled' : '') . '>' . get_label('Apply') . '</button></p>';
+	}
+
+	// The rules the games are played by, the scoring, and the special awards. Each is saved the
+	// moment it is changed, the same way the tournament's own Rules tab saves them.
+	//
+	// A round of a tournament plays by the tournament's rules and is scored by its scoring - that
+	// is what makes it a round of it rather than an event of its own - so those two are shown as
+	// they are and cannot be changed here. They are changed on the tournament's preparation page,
+	// which hands them down to every round. The awards are the round's own, the way they are its
+	// own in the form.
+	private function showRulesTab()
+	{
+		list ($flags, $rules_code, $scoring_id, $scoring_version, $scoring_options, $club_name, $club_rules) = Db::record(get_label('event'),
+			'SELECT e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, c.name, c.rules' .
+			' FROM events e JOIN clubs c ON c.id = e.club_id WHERE e.id = ?', $this->id);
+		$flags = (int)$flags;
+		// Changing any of this is a manager's, so a referee reading the page sees it and cannot
+		// touch it - the change operation would refuse them anyway.
+		$of_tournament = ($this->prep_tournament_id > 0);
+		$disabled = ($of_tournament || !$this->can_edit) ? ' disabled' : '';
+		$awards_disabled = $this->can_edit ? '' : ' disabled';
+
+		$this->navBar();
+
+		echo '<p><table class="bordered light" width="100%">';
+		$rules_code = upgrade_rules_code($rules_code);
+		echo '<tr><td width="160">' . get_label('Rules') . ':</td><td><select id="prep-rules"' . $disabled . ' onchange="rulesChanged()">';
+		foreach (merge_same_rules(get_available_rules($this->club_id, $club_name, $club_rules)) as $r)
+		{
+			if (show_option($r->rules, $rules_code, $r->name))
+			{
+				$rules_code = '';
+			}
+		}
+		if (!empty($rules_code))
+		{
+			show_option($rules_code, $rules_code, get_label('Custom...'));
+		}
+		echo '</select></td></tr>';
+
+		// The options under the scoring system each stand on a line of their own, with room
+		// between them, like the awards below.
+		echo '<tr><td valign="top">' . get_label('Scoring system') . ':</td><td>';
+		show_scoring_select($this->club_id, $scoring_id, $scoring_version, 0, 0, json_decode($scoring_options), '<div style="height:12px"></div>', 'scoringChanged', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'prep-scoring');
+		echo '</td></tr>';
+
+		// One award a line, all of them alike. Leaving the sheriff out of the best red, and the
+		// don out of the best black, is a part of that award, so it stands on its line and is
+		// there only while the award is on.
+		$awards = array(
+			array(EVENT_FLAG_AWARD_MVP, get_label('MVP'), 0, ''),
+			array(EVENT_FLAG_AWARD_RED, get_label('best red player'), EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED, get_label('exclude the sheriff games')),
+			array(EVENT_FLAG_AWARD_BLACK, get_label('best black player'), EVENT_FLAG_AWARD_NO_DON_IN_BLACK, get_label('exclude the don games')),
+			array(EVENT_FLAG_AWARD_SHERIFF, get_label('best sheriff'), 0, ''),
+			array(EVENT_FLAG_AWARD_DON, get_label('best don'), 0, ''));
+		echo '<tr><td valign="top">' . get_label('Special awards') . ':</td><td>';
+		echo '<table class="transp">';
+		foreach ($awards as $award)
+		{
+			list ($flag, $text, $sub_flag, $sub_text) = $award;
+			echo '<tr><td style="padding: 6px 24px 6px 0;" nowrap><input type="checkbox" class="toggle"' . (($flags & $flag) ? ' checked' : '') . $awards_disabled .
+				' onchange="awardChanged(this, ' . $flag . ', ' . $sub_flag . ')"> ' . $text . '</td>';
+			echo '<td style="padding: 6px 0;">';
+			if ($sub_flag != 0)
+			{
+				echo '<span id="award-sub-' . $sub_flag . '"' . (($flags & $flag) ? '' : ' style="display:none"') . '>' .
+					'<input type="checkbox" class="toggle"' . (($flags & $sub_flag) ? ' checked' : '') . $awards_disabled .
+					' onchange="setEventFlag(' . $sub_flag . ', this.checked)"> ' . $sub_text . '</span>';
+			}
+			echo '</td></tr>';
+		}
+		echo '</table>';
+		echo '</td></tr>';
+		echo '</table></p>';
 	}
 
 	// Who is coming to this event. A round of a tournament keeps its own list too: the
@@ -339,6 +416,7 @@ class Page extends EventPageBase
 		echo '<div class="tab">';
 		$tabs = array(
 			EPREP_TAB_SCHEME => get_label('Scheme'),
+			EPREP_TAB_RULES => get_label('Rules'),
 			EPREP_TAB_REGISTRATIONS => get_label('Registrations'),
 			EPREP_TAB_STREAMS => get_label('Streams'),
 			EPREP_TAB_SEATING => get_label('Seating'));
@@ -361,6 +439,9 @@ class Page extends EventPageBase
 		{
 			case EPREP_TAB_MAILING:
 				$this->showMailingTab();
+				break;
+			case EPREP_TAB_RULES:
+				$this->showRulesTab();
 				break;
 			case EPREP_TAB_REGISTRATIONS:
 				$this->showRegistrationsTab();
@@ -403,6 +484,67 @@ class Page extends EventPageBase
 		{
 			goToTab(<?php echo $this->tab + 1; ?>);
 		}
+
+		// One flag of the event on or off, the others left as they are.
+		function setEventFlag(flag, on)
+		{
+			json.post("api/ops/event.php",
+			{
+				op: "change",
+				event_id: <?php echo $this->id; ?>,
+				flags: on ? flag : 0,
+				flags_mask: flag,
+			});
+		}
+
+		// An award, and the part of it that is shown only while it is on.
+		function awardChanged(box, flag, subFlag)
+		{
+			setEventFlag(flag, box.checked);
+			if (subFlag)
+			{
+				$('#award-sub-' + subFlag).toggle(box.checked);
+			}
+		}
+
+		function rulesChanged()
+		{
+			json.post("api/ops/event.php",
+			{
+				op: "change",
+				event_id: <?php echo $this->id; ?>,
+				rules_code: $('#prep-rules').val(),
+			});
+		}
+
+		// Called by the scoring select whenever anything in it is changed - the scoring, its
+		// version or its options - with all of them.
+		function scoringChanged(s)
+		{
+			json.post("api/ops/event.php",
+			{
+				op: "change",
+				event_id: <?php echo $this->id; ?>,
+				scoring_id: s.sId,
+				scoring_version: s.sVer,
+				scoring_options: JSON.stringify(s.ops),
+			});
+		}
+<?php if ($this->tab == EPREP_TAB_RULES && ($this->prep_tournament_id > 0 || !$this->can_edit)): ?>
+
+		// A round is scored by the scoring of its tournament, so the select is shut the way the
+		// event form used to shut it, while the options under it stay open - those are the
+		// round's own. A referee changes nothing here at all.
+		$(function()
+		{
+<?php if (!$this->can_edit): ?>
+			$('[id^="prep-scoring"]').prop('disabled', true);
+<?php else: ?>
+			$('#prep-scoring-sel').prop('disabled', true);
+			$('#prep-scoring-ver').prop('disabled', true);
+<?php endif; ?>
+		});
+<?php endif; ?>
 
 		// A tournament keeps a scheme for every round at once and has an operation of its own
 		// for it; a round of one is saved through that very operation, with the round named,

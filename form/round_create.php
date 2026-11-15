@@ -58,10 +58,10 @@ try
 	
 	echo '<tr><td>'.get_label('Round name').':</td><td><input id="form-name" value="' . get_label('main round') . '"></td></tr>';
 	
-	echo '<tr><td>' . get_label('Scoring system') . ':</td><td>';
-	show_scoring_select($club_id, $scoring_id, $scoring_version, 0, 0, json_decode($scoring_options), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
-	echo '</td></tr>';
-		
+	// A round is played by the rules of its tournament and scored by its scoring - see the create
+	// op in api/ops/event.php, which takes both off the tournament. The scoring options are the
+	// round's own and are set on the Rules tab of its preparation, as the awards are.
+
 	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
@@ -98,13 +98,10 @@ try
 	echo '<tr><td colspan="2">';
 		
 	echo '<input type="checkbox" id="form-all_mod" checked> '.get_label('everyone can referee games.');
-	echo '<br><input type="checkbox" id="form-streaming"';
-	if ($tournament_flags & TOURNAMENT_FLAG_STREAMING)
-	{
-		echo ' checked';
-	}
-	echo '> '.get_label('video streaming games.');
-	// A round starts out the way its tournament stands, and can be set apart afterwards.
+	// Whether the games are streamed is set on the streams page of the round - see streams.php.
+	// It still starts out the way its tournament stands, which commit() below sees to.
+	//
+	// The roles start out the way the tournament stands too, and can be set apart afterwards.
 	echo '<br><input type="checkbox" id="form-show-roles"';
 	if (($tournament_flags & TOURNAMENT_FLAG_HIDE_ROLES) == 0)
 	{
@@ -116,14 +113,6 @@ try
 	echo '</table>';
 ?>	
 	<script>
-	$('#form-scoring-sel').prop("disabled", true);
-	$('#form-scoring-ver').prop("disabled", true);
-	var scoringOptions = '<?php echo $scoring_options; ?>';
-	function onScoringChange(s)
-	{
-		scoringOptions = JSON.stringify(s.ops);
-	}
-	
 	var old_address_value = "<?php echo $selected_address; ?>";
 	function newAddressChange()
 	{
@@ -195,8 +184,10 @@ try
 		
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
-		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
 		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo EVENT_FLAG_HIDE_ROLES; ?>;
+<?php if ($tournament_flags & TOURNAMENT_FLAG_STREAMING): ?>
+		_flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
+<?php endif; ?>
 		
 		var params =
 		{
@@ -207,7 +198,6 @@ try
 			, name: $("#form-name").val()
 			, duration: strToTimespan($("#form-duration").val())
 			, address_id: _addr
-			, scoring_options: scoringOptions
 			, notes: $("#form-notes").val()
 			, flags: _flags
 			, langs: _langs

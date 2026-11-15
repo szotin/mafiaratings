@@ -117,23 +117,10 @@ try
 	}
 	echo '</select></td></tr>';
 	
-	$rules_code = upgrade_rules_code($club->rules_code);
-	$rules = merge_same_rules(get_available_rules($club_id, $club->name, $club->rules_code));
-	echo '<tr><td>' . get_label('Rules') . ':</td><td>';
-	echo '<select id="form-rules">';
-	foreach ($rules as $r)
-	{
-		if (show_option($r->rules, $rules_code, $r->name))
-		{
-			$rules_code = '';
-		}
-	}
-	echo '</select></td></tr>';
-	
-	echo '<tr><td valign="top">' . get_label('Scoring system') . '</td><td>';
-	show_scoring_select($club_id, $club->scoring_id, 0, 0, 0, new stdClass(), '<br>', 'onScoringChange', SCORING_SELECT_FLAG_NO_PREFIX | SCORING_SELECT_FLAG_NO_NORMALIZER, 'form-scoring');
-	echo '</td></tr>';
-	
+	// The rules, the scoring and the special awards are set on the Rules tab of the preparation
+	// page. A new event starts with the club's rules and scoring, and with MVP, best red and best
+	// black - what this form used to offer with those three ticked. See api/ops/event.php, which
+	// falls back to the club for the two it is not told, and commit() below for the awards.
 	if (is_valid_lang($club->langs))
 	{
 		echo '<input type="hidden" id="form-langs" value="' . $club->langs . '">';
@@ -144,18 +131,6 @@ try
 		langs_checkboxes(LANG_ALL, $club->langs, NULL, '<br>', 'form-');
 		echo '</td></tr>';
 	}
-	
-	echo '<tr><td>'.get_label('Special awards').':</td><td>';
-	echo '<table class="transp" width="100%">';
-	echo '<tr><td colspan="2"><input type="checkbox" id="form-award-mvp" checked> ' . get_label('MVP') . '</td></tr>';
-	echo '<tr><td><input type="checkbox" id="form-award-red" checked> ' . get_label('best red player') . '</td>';
-	echo '<td><input type="checkbox" id="form-award-black" checked> ' . get_label('best black player') . '</td></tr>';
-	echo '<tr><td><input type="checkbox" id="form-award-sheriff"> ' . get_label('best sheriff') . '</td>';
-	echo '<td><input type="checkbox" id="form-award-don"> ' . get_label('best don') . '</td></tr>';
-	echo '<tr><td><p><input type="checkbox" id="form-award-no-sheriff"> ' . get_label('exclude the sheriff games from the "best red" award') . '</p></td>';
-	echo '<td><p><input type="checkbox" id="form-award-no-don"> ' . get_label('exclude the don games from the "best black" award') . '</p></td></tr>';
-	echo '</table>';
-	echo '</td></tr>';
 	
 		
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
@@ -168,7 +143,9 @@ try
 	{
 		echo '<br><input type="checkbox" id="form-pin"> '.get_label('pin to the main page.');
 	}
-	echo '<br><input type="checkbox" id="form-streaming"> '.get_label('video streaming games.');
+	// Whether the games are streamed is set on the streams page of the event - see streams.php.
+	// A new event starts not streamed, which is what this form used to offer unticked.
+	//
 	// An event of its own is played where the players have their phones on them, so this starts off.
 	echo '<br><input type="checkbox" id="form-show-roles"> '.get_label('show the roles in the stream.');
 
@@ -205,15 +182,6 @@ try
 		}
 	}
 	
-	var scoringId = -1;
-	var scoringVersion = 0;
-	var scoringOptions = {};
-	function onScoringChange(s)
-	{
-		scoringId = s.sId;
-		scoringVersion = s.sVer;
-		scoringOptions = JSON.stringify(s.ops);
-	}
 	
 	function multipleChange()
 	{
@@ -242,30 +210,11 @@ try
 			roundHtml += '<option value="2"' + (roundVal == 2 ? ' selected' : '') + '><?php echo get_label('semi-final'); ?></option>';
 			roundHtml += '<option value="3"' + (roundVal == 3 ? ' selected' : '') + '><?php echo get_label('quoter-final'); ?></option>';
 			roundHtml += '</select>';
-			
-			$("#form-scoring-group-div").show();
-			json.get("api/get/tournaments.php?tournament_id=" + tid, function(obj)
-			{
-				var t = obj.tournaments[0];
-				if (typeof t != "object")
-					return;
-				$("#form-rules").val(t.rules.code).prop('disabled', true);
-				$("#form-scoring-sel").val(t.scoring_id).prop('disabled', true);
-				$("#form-scoring-ver").val(t.scoring_version).prop('disabled', true);
-				//console.log(t);
-			});
 		}
 		else
 		{
 			roundHtml = '<input type="hidden" id="form-round">';
 			roundVal = 0;
-			
-			$("#form-scoring-group").val('');
-			mr.onChangeScoring('form-scoring', 0, onScoringChange);
-			$("#form-scoring-group-div").hide();
-			$("#form-rules").prop('disabled', false);
-			$("#form-scoring-sel").prop('disabled', false);
-			$("#form-scoring-ver").prop('disabled', false);
 		}
 		$("#form-round-span").html(roundHtml);
 	}
@@ -354,9 +303,9 @@ try
 				$("#form-addr_id").val(e.address_id);
 				$("#form-fee").val(e.fee);
 				$("#form-currency").val(e.currency_id);
-				$("#form-rules").val(e.rules.code);
-				$("#form-scoring-sel").val(e.scoring_id);
-				$("#form-scoring-ver").val(e.scoring_version);
+				// The rules and the scoring are not on this form any more, so there is nothing
+				// here to copy them into - the new event starts with the club's and is set up on
+				// the Rules tab of its preparation.
 				$("#form-notes").val(e.notes);
 				mr.setLangs(e.langs, "form-");
 				addressClick();
@@ -384,20 +333,14 @@ try
 		var _langs = mr.getLangs('form-');
 		var _addr = $("#form-addr_id").val();
 		
-		var _flags = 0;
+		// The awards a new event starts with - the three this form used to offer ticked. They
+		// are changed on the Rules tab of its preparation from here on.
+		var _flags = <?php echo EVENT_FLAG_AWARD_MVP | EVENT_FLAG_AWARD_RED | EVENT_FLAG_AWARD_BLACK; ?>;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if ($("#form-fun").attr('checked')) _flags |= <?php echo EVENT_FLAG_FUN; ?>;
 		if ($("#form-pin").attr('checked')) _flags |= <?php echo EVENT_FLAG_PINNED; ?>;
-		if ($("#form-streaming").attr('checked')) _flags |= <?php echo EVENT_FLAG_STREAMING; ?>;
 		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo EVENT_FLAG_HIDE_ROLES; ?>;
-		if ($("#form-award-mvp").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_MVP; ?>;
-		if ($("#form-award-red").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_RED; ?>;
-		if ($("#form-award-black").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_BLACK; ?>;
-		if ($("#form-award-sheriff").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_SHERIFF; ?>;
-		if ($("#form-award-don").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_DON; ?>;
-		if ($("#form-award-no-sheriff").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_NO_SHERIFF_IN_RED; ?>;
-		if ($("#form-award-no-don").attr('checked')) _flags |= <?php echo EVENT_FLAG_AWARD_NO_DON_IN_BLACK; ?>;
-		
+
 		var params =
 		{
 			op: "create",
@@ -409,10 +352,6 @@ try
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
 			address_id: _addr,
-			rules_code: $("#form-rules").val(),
-			scoring_id: scoringId,
-			scoring_version: scoringVersion,
-			scoring_options: scoringOptions,
 			notes: $("#form-notes").val(),
 			flags: _flags,
 			langs: _langs,

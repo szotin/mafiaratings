@@ -190,7 +190,15 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		if (!is_null($tournament_id))
 		{
-			list ($scoring_id, $scoring_version, $rules_code) = Db::record(get_label('tournament'), 'SELECT scoring_id, scoring_version, rules FROM tournaments WHERE id = ?', $tournament_id);
+			// A round plays by the rules of its tournament and is scored by its scoring. The
+			// options of that scoring come from the tournament as well unless the caller names
+			// its own - the forms do not, since a round is set up on its preparation page.
+			$tournament_options = NULL;
+			list ($scoring_id, $scoring_version, $rules_code, $tournament_options) = Db::record(get_label('tournament'), 'SELECT scoring_id, scoring_version, rules, scoring_options FROM tournaments WHERE id = ?', $tournament_id);
+			if (!isset($_REQUEST['scoring_options']) && !empty($tournament_options))
+			{
+				$scoring_options = $tournament_options;
+			}
 		}
 		else if ($scoring_version < 0)
 		{
@@ -441,7 +449,11 @@ class ApiPage extends OpsApiPageBase
 		$update_flags = (int)get_optional_param('update_flags', 0);
 		
 		$flags = (int)get_optional_param('flags', $old_flags);
-		$flags = ($flags & EVENT_EDITABLE_MASK) + ($old_flags & ~EVENT_EDITABLE_MASK);
+		// The settings of an event are no longer all on one form: the preparation page sets some
+		// of the flags on its tabs, and the form the rest. Each says which ones it means, and the
+		// others stay as they are.
+		$flags_mask = (int)get_optional_param('flags_mask', EVENT_EDITABLE_MASK) & EVENT_EDITABLE_MASK;
+		$flags = ($flags & $flags_mask) + ($old_flags & ~$flags_mask);
 		if (!is_permitted(PERMISSION_ADMIN))
 		{
 			$flags = ($flags & ~EVENT_ADMIN_EDITABLE_MASK) + ($old_flags & EVENT_ADMIN_EDITABLE_MASK);
@@ -748,6 +760,7 @@ class ApiPage extends OpsApiPageBase
 					<li value="2">the event should not be shown in the list of past events on the site.</li>
 					<li value="4">all registered users can moderate games.</li>
 				</0l>', 'remain the same.');
+		$help->request_param('flags_mask', 'Which of the flags the flags parameter sets. The others remain the same.', 'all of the flags that can be edited.');
 		$help->request_param('langs', 'Languages on this event. A bit combination of language ids.' . valid_langs_help(), 'remain the same.');
 		$help->request_param('address_id', 'Address id of the event.', '<q>address</q> is used to create new address.');
 		$help->request_param('address', 'When <q>address_id</q> is not set, <?php echo PRODUCT_NAME; ?> creates new address. This is the address line to create.', 'address remains the same');
