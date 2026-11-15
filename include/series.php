@@ -733,18 +733,30 @@ class SeriesOwner
 }
 
 // Joins both possible owners of the series aliased as $series_alias. The owner that is not set
-// on the row comes back as NULLs, which is why both joins have to be outer ones.
-function series_owner_join($series_alias = 's')
+// on the row comes back as NULLs, which is why both joins have to be outer ones. The name of an
+// owning club is in $lang, the language of the page by default.
+function series_owner_join($series_alias = 's', $lang = 0)
 {
+	global $_lang;
+
+	if ($lang <= 0)
+	{
+		$lang = isset($_lang) ? (int)$_lang : 0;
+	}
+	if ($lang <= 0)
+	{
+		$lang = LANG_DEFAULT;
+	}
 	return
 		' LEFT OUTER JOIN leagues sol ON sol.id = ' . $series_alias . '.league_id' .
-		' LEFT OUTER JOIN clubs soc ON soc.id = ' . $series_alias . '.club_id';
+		' LEFT OUTER JOIN clubs soc ON soc.id = ' . $series_alias . '.club_id' .
+		' LEFT OUTER JOIN names nsoc ON nsoc.id = soc.name_id AND (nsoc.langs & ' . (int)$lang . ') <> 0';
 }
 
 // The six columns SeriesOwner::from_row() expects, in order.
 function series_owner_fields()
 {
-	return 'sol.id, sol.name, sol.flags, soc.id, soc.name, soc.flags';
+	return 'sol.id, sol.name, sol.flags, soc.id, nsoc.name, soc.flags';
 }
 
 // Series icons fall back to the icon of their owner, and the fallback picture type differs

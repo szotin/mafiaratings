@@ -22,10 +22,11 @@ try
 	
 	$event_id = (int)$_REQUEST['id'];
 	list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $scoring_id, $scoring_version, $scoring_options, $round_num, $standings_settings) = Db::record(get_label('event'), 
-		'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, e.scoring_id, e.scoring_version, e.scoring_options, e.round, e.standings_settings'.
+		'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.scoring_id, e.scoring_version, e.scoring_options, e.round, e.standings_settings'.
 		' FROM events e'.
 		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 		' JOIN clubs c ON c.id = e.club_id'.
+		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 		' WHERE e.id = ?', $event_id);
 
 	$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
@@ -161,11 +162,12 @@ try
 			
 				echo '<center><h2>' . get_label('The event hasn\'t started yet. Current ratings:') . '</h2></center>';
 				$query = new DbQuery(
-					'SELECT u.id, nu.name, r.nickname, ' . USER_INITIAL_RATING . ' + u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, r.flags, tu.flags, cu.flags' . 
+					'SELECT u.id, nu.name, r.nickname, ' . USER_INITIAL_RATING . ' + u.rating, u.games, u.games_won, u.flags, c.id, nc.name, c.flags, r.flags, tu.flags, cu.flags' . 
 						' FROM event_regs r' . 
 						' JOIN users u ON r.user_id = u.id' .
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+						' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = ?' .
 						' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 						' WHERE r.event_id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
@@ -178,10 +180,11 @@ try
 				if (count($players) == 0)
 				{
 					$query = new DbQuery(
-						'SELECT u.id, nu.name, nu.name, ' . USER_INITIAL_RATING . ' + u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags, NULL, NULL, cu.flags'.
+						'SELECT u.id, nu.name, nu.name, ' . USER_INITIAL_RATING . ' + u.rating, u.games, u.games_won, u.flags, c.id, nc.name, c.flags, NULL, NULL, cu.flags'.
 						' FROM users u' . 
 						' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+						' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 						' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = c.id' .
 						' WHERE c.id = ? ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $page_size,
 						$club_id);

@@ -41,8 +41,8 @@ class Page extends UserPageBase
 {
 	protected function show_body()
 	{
-		global $_profile;
-		
+		global $_profile, $_lang;
+
 		$prev_club_id = 0;
 		$role_titles = array(
 			get_label('Total'),
@@ -80,7 +80,8 @@ class Page extends UserPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM clubs c' . 
+			'SELECT c.id, nc.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM clubs c' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN games g ON g.club_id = c.id' .
 				' JOIN club_regs u ON u.club_id = c.id' .
 				' JOIN players p ON p.user_id = u.user_id AND p.game_id = g.id' .
@@ -117,7 +118,8 @@ class Page extends UserPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM clubs c' . 
+			'SELECT c.id, nc.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM clubs c' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN games g ON g.club_id = c.id' .
 				' JOIN players p ON p.game_id = g.id' .
 				' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND c.id NOT IN (SELECT u.club_id FROM club_regs u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
@@ -155,7 +157,8 @@ class Page extends UserPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, u.flags FROM clubs c' .
+			'SELECT c.id, nc.name, c.flags, c.web_site, u.flags FROM clubs c' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN club_regs u ON u.club_id = c.id' .
 			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT g.club_id FROM players p, games g WHERE p.game_id = g.id AND p.user_id = u.user_id) ORDER BY u.flags DESC', $this->id);
 		while ($row = $query->next())

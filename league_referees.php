@@ -168,13 +168,14 @@ class Page extends LeaguePageBase
 		
 		$moders = array();
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, COUNT(DISTINCT g.tournament_id), SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, c.name, c.flags' . 
+			'SELECT u.id, nu.name, u.flags, COUNT(DISTINCT g.tournament_id), SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, nc.name, c.flags' .
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' JOIN series_tournaments st ON st.tournament_id = g.tournament_id'.
 				' JOIN series s ON s.id = st.series_id' .
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id',
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0',
 				$condition);
  		$query->add(' GROUP BY u.id ORDER BY count(g.id) DESC, u.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())

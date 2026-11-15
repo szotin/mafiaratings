@@ -37,7 +37,7 @@ try
 	else
 	{
 		$club = new stdClass();
-		list($club->name, $club->langs, $club->club_flags, $club->timezone) = Db::record(get_label('club'), 'SELECT c.name, c.langs, c.flags, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+		list($club->name, $club->langs, $club->club_flags, $club->timezone) = Db::record(get_label('club'), 'SELECT nc.name, c.langs, c.flags, ct.timezone FROM clubs c JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 	}
 	
 	if ($game_id != NULL)

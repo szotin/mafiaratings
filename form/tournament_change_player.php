@@ -22,7 +22,7 @@ try
 	$user_id = (int)$_REQUEST['user_id'];
 	
 	list ($tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
-		Db::record(get_label('tournament'), 'SELECT t.name, t.flags, c.id, c.name, c.flags FROM tournaments t JOIN clubs c ON c.id = t.club_id WHERE t.id = ?', $tournament_id);
+		Db::record(get_label('tournament'), 'SELECT t.name, t.flags, c.id, nc.name, c.flags FROM tournaments t JOIN clubs c ON c.id = t.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 	if ($user_id > 0)
 	{
 		list($user_name, $user_flags) = Db::record(get_label('user'), 

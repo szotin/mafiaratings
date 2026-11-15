@@ -59,7 +59,7 @@ try
 	else if (isset($_REQUEST['club_id']))
 	{
 		$club_id = (int)$_REQUEST['club_id'];
-		list($name, $user_flags) = Db::record(get_label('club'), 'SELECT c.name, cu.flags FROM club_regs cu JOIN clubs c ON c.id = cu.club_id WHERE cu.club_id = ? AND cu.user_id = ?', $club_id, $user_id);
+		list($name, $user_flags) = Db::record(get_label('club'), 'SELECT nc.name, cu.flags FROM club_regs cu JOIN clubs c ON c.id = cu.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE cu.club_id = ? AND cu.user_id = ?', $club_id, $user_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));
 	}

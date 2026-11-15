@@ -900,7 +900,7 @@ class ApiPage extends OpsApiPageBase
 				
 			if (!is_null($club_id))
 			{
-				list ($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+				list ($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 				$log_details->club_id = $club_id;
 				$log_details->club = $club_name;
 			}
@@ -1063,7 +1063,7 @@ class ApiPage extends OpsApiPageBase
 			else
 			{
 				list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
-				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+				list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 				throw new Exc(get_label('[0] is not a member of [1]', $user_name, $club_name));
 			}
 

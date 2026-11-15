@@ -405,7 +405,8 @@ class ApiPage extends OpsApiPageBase
 			$club = new stdClass();
 			list($club->id, $club->timezone, $club->country_id, $club->city_id) = 
 				Db::record(get_label('club'), 
-					'SELECT c.id, ct.timezone, crn.name, ctn.name, c.rules, c.name, c.langs FROM clubs c ' .
+					'SELECT c.id, ct.timezone, crn.name, ctn.name, c.rules, nc.name, c.langs FROM clubs c ' .
+					'JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
 					'JOIN names ctn ON ctn.id = ct.name_id AND (ctn.langs & '.$_lang.') <> 0 ' .

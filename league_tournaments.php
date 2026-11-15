@@ -76,6 +76,7 @@ class Page extends LeaguePageBase
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities i ON i.id = a.city_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
@@ -169,7 +170,7 @@ class Page extends LeaguePageBase
 		
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT DISTINCT t.id, t.name, t.flags, t.start_time, t.duration, i.timezone, c.id, c.name, c.flags, t.langs, t.num_players, a.id, a.address, a.flags, ni.name,' .
+			'SELECT DISTINCT t.id, t.name, t.flags, t.start_time, t.duration, i.timezone, c.id, nc.name, c.flags, t.langs, t.num_players, a.id, a.address, a.flags, ni.name,' .
 			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',

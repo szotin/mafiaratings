@@ -213,11 +213,14 @@ class Page extends GeneralPageBase
 	
 	private function show_events($condition)
 	{
+		global $_lang;
+
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
+			'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 			' JOIN clubs c ON e.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0', $condition);
 		$query->add(' ORDER BY e.flags & ' . EVENT_FLAG_PINNED .' DESC, e.start_time + e.duration, e.name, e.id LIMIT ' . EVENTS_ROW_COUNT * EVENTS_COLUMN_COUNT);
@@ -264,12 +267,13 @@ class Page extends GeneralPageBase
 	
 	private function select_tournaments($condition, $limit)
 	{
-		global $_profile;
+		global $_profile, $_lang;
 
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.flags, a.address, a.name FROM tournaments t' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0', $condition);
 		// The tournaments a league has entered into one of its series, plus whatever the visitor's
@@ -645,8 +649,9 @@ class Page extends GeneralPageBase
 	
 		// adverts
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, ct.timezone, n.id, n.timestamp, n.message FROM news n' . 
+			'SELECT c.id, nc.name, c.flags, ct.timezone, n.id, n.timestamp, n.message FROM news n' .
 				' JOIN clubs c ON c.id = n.club_id' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN cities ct ON ct.id = c.city_id WHERE n.expires >= UNIX_TIMESTAMP() AND n.timestamp <= UNIX_TIMESTAMP()', $condition);
 		$query->add(' ORDER BY n.timestamp DESC LIMIT 3');
 		
@@ -689,12 +694,13 @@ class Page extends GeneralPageBase
 		$this->show_changes(15, 1);
 		
 		// ratings
-		$query = new DbQuery('SELECT u.id, nu.name, ni.name, u.rating, u.games, u.games_won, u.flags, c.id, c.name, c.flags'. 
+		$query = new DbQuery('SELECT u.id, nu.name, ni.name, u.rating, u.games, u.games_won, u.flags, c.id, nc.name, c.flags'.
 								' FROM users u'.
 								' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 								' JOIN cities i ON i.id = u.city_id'.
 								' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 								' LEFT OUTER JOIN clubs c ON c.id = u.club_id '.
+								' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 								' WHERE u.games > 0');
 		switch($ccc_type)
 		{

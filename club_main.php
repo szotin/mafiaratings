@@ -569,7 +569,7 @@ class Page extends ClubPageBase
 		}
 		
 		// sub clubs
-		$query = new DbQuery('SELECT id, name, flags FROM clubs WHERE parent_id = ?', $this->id);
+		$query = new DbQuery('SELECT c.id, n.name, c.flags FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.parent_id = ?', $this->id);
 		if ($row = $query->next())
 		{
 			$subclubs_count = 0;

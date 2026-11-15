@@ -11,7 +11,7 @@ class Page extends GeneralPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$expired = 0;
 		if (isset($_REQUEST['expired']))
@@ -31,7 +31,7 @@ class Page extends GeneralPageBase
 		echo '> ' . get_label('show expired adverts');
 		echo '</td></tr></table></p>';
 		
-		$condition = new SQL(' FROM news n JOIN clubs c ON c.id = n.club_id JOIN cities ct ON ct.id = c.city_id');
+		$condition = new SQL(' FROM news n JOIN clubs c ON c.id = n.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 JOIN cities ct ON ct.id = c.city_id');
 		$delim = ' WHERE ';
 		
 		if (!$expired)
@@ -64,7 +64,7 @@ class Page extends GeneralPageBase
 		list ($count) = Db::record(get_label('advert'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		$query = new DbQuery('SELECT c.id, c.name, c.flags, ct.timezone, n.id, n.timestamp, n.message', $condition);
+		$query = new DbQuery('SELECT c.id, nc.name, c.flags, ct.timezone, n.id, n.timestamp, n.message', $condition);
 		$query->add(' ORDER BY n.timestamp DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		echo '<table class="bordered light" width="100%">';

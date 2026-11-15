@@ -121,8 +121,9 @@ class ApiPage extends GetApiPageBase
 			if (isset($player->id) && $player->id > 0)
 			{
 				list($event_reg_flags, $tournament_reg_flags, $club_reg_flags, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $player->city, $player->country) = Db::record(get_label('user'), 
-					'SELECT eu.flags, tu.flags, cu.flags, u.flags, c.id, c.name, c.flags, ni.name, no.name FROM users u' .
+					'SELECT eu.flags, tu.flags, cu.flags, u.flags, c.id, nc.name, c.flags, ni.name, no.name FROM users u' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+					' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
 					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
@@ -313,9 +314,10 @@ class ApiPage extends GetApiPageBase
 			if ($game->moderator->id > 0)
 			{
 				list($game->moderator->name, $event_reg_flags, $tournament_reg_flags, $club_reg_flags, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $game->moderator->city, $game->moderator->country) = Db::record(get_label('user'), 
-					'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, nu.name, u.flags, c.id, c.name, c.flags, ni.name, no.name' .
+					'SELECT eu.nickname, eu.flags, tu.flags, cu.flags, nu.name, u.flags, c.id, nc.name, c.flags, ni.name, no.name' .
 					' FROM users u' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+					' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
 					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
@@ -626,11 +628,12 @@ class ApiPage extends GetApiPageBase
 		}
 
 		$query = new DbQuery(
-			'SELECT g.game, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, c.name, c.flags, ni.name, no.name, e.misc'.
+			'SELECT g.game, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, nc.name, c.flags, ni.name, no.name, e.misc'.
 			' FROM current_games g'.
 			' JOIN events e ON e.id = g.event_id'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON a.id = e.address_id'.
 			' JOIN cities i ON i.id = a.city_id' .
 			' JOIN countries o ON o.id = i.country_id' .

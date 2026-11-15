@@ -156,11 +156,12 @@ class Page extends GeneralPageBase
 		
 		$condition = $this->common_condition();
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.rating as rating, u.red_rating, u.black_rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags, ni.name FROM users u' . 
+			'SELECT u.id, nu.name, u.rating as rating, u.red_rating, u.black_rating, u.games as games, u.games_won as won, u.flags, c.id, nc.name, c.flags, ni.name FROM users u' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN cities i ON i.id = u.city_id'.
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
-			' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
+			' LEFT OUTER JOIN clubs c ON u.club_id = c.id'.
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0', $condition);
 		$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	
 		if ($this->user_id > 0)
 		{

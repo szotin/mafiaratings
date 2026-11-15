@@ -96,7 +96,7 @@ class Page extends GeneralPageBase
 		echo '<td colspan="4">' . get_label('User name') . '</td><td width="40"></td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.email, u.flags, c.id, c.name, c.flags, ni.name' . 
+			'SELECT u.id, nu.name, u.email, u.flags, c.id, nc.name, c.flags, ni.name' .
 			', SUM(IF((uc.flags & ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_PLAYER . ', 1, 0))' . 
 			', SUM(IF((uc.flags & ' . (USER_PERM_REFEREE | USER_PERM_MANAGER) . ') = ' . USER_PERM_REFEREE . ', 1, 0))' . 
 			', SUM(IF((uc.flags & ' . USER_PERM_MANAGER . ') <> 0, 1, 0))' . 
@@ -105,7 +105,8 @@ class Page extends GeneralPageBase
 			' JOIN cities i ON i.id = u.city_id'.
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN club_regs uc ON uc.user_id = u.id' .
-			' LEFT OUTER JOIN clubs c ON c.id = u.club_id', $condition);
+			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0', $condition);
 		$query->add(' GROUP BY u.id ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		while ($row = $query->next())
 		{

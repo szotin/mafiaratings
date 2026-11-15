@@ -155,9 +155,11 @@ class Page extends EventPageBase
 	// own in the form.
 	private function showRulesTab()
 	{
+		global $_lang;
+
 		list ($flags, $rules_code, $scoring_id, $scoring_version, $scoring_options, $club_name, $club_rules) = Db::record(get_label('event'),
-			'SELECT e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, c.name, c.rules' .
-			' FROM events e JOIN clubs c ON c.id = e.club_id WHERE e.id = ?', $this->id);
+			'SELECT e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, nc.name, c.rules' .
+			' FROM events e JOIN clubs c ON c.id = e.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE e.id = ?', $this->id);
 		$flags = (int)$flags;
 		// Changing any of this is a manager's, so a referee reading the page sees it and cannot
 		// touch it - the change operation would refuse them anyway.
@@ -247,7 +249,7 @@ class Page extends EventPageBase
 		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, c.name, c.flags, cu.club_id, cu.flags, ni.name' .
+			'SELECT u.id, nu.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, nc.name, c.flags, cu.club_id, cu.flags, ni.name' .
 			' FROM event_regs eu' .
 			' JOIN users u ON eu.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
@@ -255,6 +257,7 @@ class Page extends EventPageBase
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' JOIN events e ON e.id = eu.event_id' .
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = e.tournament_id AND tu.user_id = eu.user_id' .
 			' LEFT OUTER JOIN club_regs cu ON cu.club_id = e.club_id AND cu.user_id = eu.user_id' .
 			' WHERE eu.event_id = ?' .

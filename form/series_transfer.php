@@ -47,7 +47,7 @@ try
 	echo '</optgroup>';
 
 	echo '<optgroup label="' . get_label('Clubs') . '">';
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_CLOSED . ') = 0 ORDER BY name');
+	$query = new DbQuery('SELECT c.id, n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 ORDER BY n.name');
 	while ($row = $query->next())
 	{
 		list($id, $name) = $row;

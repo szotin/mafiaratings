@@ -27,7 +27,8 @@ class Page extends SeriesPageBase
 		// league afterwards, and then it is on the series twice over.
 		$clubs = array();
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, ni.name FROM clubs c' .
+			'SELECT c.id, nc.name, c.flags, ni.name FROM clubs c' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $_lang . ') <> 0' .
 			' JOIN cities i ON i.id = c.city_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
 			' WHERE c.id IN (SELECT club_id FROM series_clubs WHERE series_id = ?)', $this->id);
@@ -35,7 +36,7 @@ class Page extends SeriesPageBase
 		{
 			$query->add(' AND c.id NOT IN (' . implode(',', array_keys($permanent)) . ')');
 		}
-		$query->add(' ORDER BY c.name');
+		$query->add(' ORDER BY nc.name');
 		while ($row = $query->next())
 		{
 			$clubs[] = $row;
@@ -46,11 +47,12 @@ class Page extends SeriesPageBase
 		if (count($permanent) > 0)
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.flags, ni.name FROM clubs c' .
+				'SELECT c.id, nc.name, c.flags, ni.name FROM clubs c' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $_lang . ') <> 0' .
 				' JOIN cities i ON i.id = c.city_id' .
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
 				' WHERE c.id IN (' . implode(',', array_keys($permanent)) . ')');
-			$query->add(' ORDER BY c.name');
+			$query->add(' ORDER BY nc.name');
 			while ($row = $query->next())
 			{
 				$permanent_clubs[] = $row;

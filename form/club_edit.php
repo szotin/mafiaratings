@@ -6,6 +6,7 @@ require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/image.php';
 require_once '../include/url.php';
+require_once '../include/names.php';
 
 initiate_session();
 
@@ -26,8 +27,8 @@ try
 	
 	$club = $_profile->clubs[$id];
 
-	list ($url, $email, $phone, $fee, $currency_id, $flags, $system_league_id) =
-		Db::record(get_label('club'), 'SELECT web_site, email, phone, fee, currency_id, flags, system_league_id FROM clubs WHERE id = ?', $id);
+	list ($name_id, $url, $email, $phone, $fee, $currency_id, $flags, $system_league_id) =
+		Db::record(get_label('club'), 'SELECT name_id, web_site, email, phone, fee, currency_id, flags, system_league_id FROM clubs WHERE id = ?', $id);
 	if (is_null($currency_id))
 	{
 		list($currency_id) = Db::record(get_label('country'), 'SELECT co.currency_id FROM clubs c JOIN cities ci ON ci.id = c.city_id JOIN countries co ON co.id = ci.country_id WHERE c.id = ?', $id);
@@ -35,7 +36,9 @@ try
 	$currency_id = (int)$currency_id;
 		
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="140">' . get_label('Club name') . ':</td><td><input class="longest" id="form-club_name" value="' . htmlspecialchars($club->name, ENT_QUOTES) . '"></td>';
+	echo '<tr><td width="140" valign="top">' . get_label('Club name') . ':</td><td>';
+	Names::show_control(new Names($name_id, get_label('club name')));
+	echo '</td>';
 	
 	echo '<td align="center" valign="top" rowspan="10">';
 	start_upload_logo_button($id);
@@ -67,7 +70,12 @@ try
 	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
 	echo '<select id="form-parent">';
 	show_option(0, $club->parent_id, '');
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND id <> ? ORDER BY name', $club->id);
+	$query = new DbQuery(
+		'SELECT c.id, nc.name'.
+		' FROM clubs c'.
+		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
+		' WHERE c.parent_id IS NULL AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND c.id <> ?'.
+		' ORDER BY nc.name', $club->id);
 	while ($row = $query->next())
 	{
 		list($c_id, $c_name) = $row;
@@ -116,12 +124,11 @@ try
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("api/ops/club.php",
+		var request =
 		{
 			op: "change"
 			, club_id: <?php echo $id; ?>
 			, parent_id: $("#form-parent").val()
-			, name: $("#form-club_name").val()
 			, url: $("#form-url").val()
 			, email: $("#form-email").val()
 			, phone: $("#form-phone").val()
@@ -131,8 +138,9 @@ try
 			, country: $("#form-country").val()
 			, langs: languages
 			, system_league_id: $("#form-system").val()
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(request);
+		json.post("api/ops/club.php", request, onSuccess);
 	}
 	
 	function uploadLogo(clubId, onSuccess)

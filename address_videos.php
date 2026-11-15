@@ -30,7 +30,7 @@ class Page extends AddressPageBase
 	
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$langs = $this->club_langs;
 		if (isset($_REQUEST['langs']))
@@ -62,9 +62,10 @@ class Page extends AddressPageBase
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
-			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM videos v' .
+			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM videos v' .
 			' JOIN events e ON e.id = v.event_id' .
 			' JOIN clubs c ON c.id = e.club_id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 			' WHERE e.address_id = ?', $this->id, $condition);
 		$query->add(' ORDER BY v.video_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);

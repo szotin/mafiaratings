@@ -170,13 +170,14 @@ class UserPageBase extends PageBase
 
 		list ($this->name, $this->email, $this->flags, $this->games_moderated, $this->reg_date, $this->langs, $this->city, $this->country, $this->club_id, $this->club, $this->club_flags, $this->mwt_id, $this->imafia_id, $this->emo_id) = 
 			Db::record(get_label('user'),
-				'SELECT nu.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, c.name, c.flags, u.mwt_id, u.imafia_id, u.emo_id FROM users u' .
+				'SELECT nu.name, u.email, u.flags, u.games_moderated, u.reg_time, u.languages, ni.name, no.name, c.id, nc.name, c.flags, u.mwt_id, u.imafia_id, u.emo_id FROM users u' .
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN cities i ON i.id = u.city_id' .
 					' JOIN countries o ON o.id = i.country_id' .
 					' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 					' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+					' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 					' WHERE u.id = ?',
 				$this->id);
 		$this->title = $this->name;

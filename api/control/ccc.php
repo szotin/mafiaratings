@@ -56,7 +56,7 @@ class CCCContext
 			return;
 		}
 		
-		$query = new DbQuery('SELECT c.id, i.id, i.country_id, i.area_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE c.name = ?', $term);
+		$query = new DbQuery('SELECT c.id, i.id, i.country_id, i.area_id FROM clubs c JOIN cities i ON i.id = c.city_id WHERE c.name_id IN (SELECT id FROM names WHERE name = ?)', $term);
 		if ($row = $query->next())
 		{
 			list($this->club_id, $this->city_id, $this->country_id, $this->region_id) = $row;
@@ -206,7 +206,7 @@ class ApiPage extends ControlApiPageBase
 		if (($flags & CCCF_NO_CLUBS) == 0)
 		{
 			$category = get_label('Clubs');
-			$query = new DbQuery('SELECT c.id, c.name FROM clubs c');
+			$query = new DbQuery('SELECT c.id, nc.name FROM clubs c JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0');
 			switch ($context->defined)
 			{
 			case DEFINED_CITY:
@@ -222,11 +222,11 @@ class ApiPage extends ControlApiPageBase
 			default:
 				if ($term != '')
 				{
-					$query->add(' WHERE c.name LIKE(?)', $term);
+					$query->add(' WHERE c.name_id IN (SELECT id FROM names WHERE name LIKE(?))', $term);
 				}
 				break;
 			}
-			$query->add(' ORDER BY (SELECT count(*) FROM games WHERE club_id = c.id) DESC, c.name LIMIT ' . COUNT_LIMIT);
+			$query->add(' ORDER BY (SELECT count(*) FROM games WHERE club_id = c.id) DESC, nc.name LIMIT ' . COUNT_LIMIT);
 			
 			while ($row = $query->next())
 			{

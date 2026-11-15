@@ -48,6 +48,7 @@ class Page extends SeriesPageBase
 			' JOIN cities i ON i.id = a.city_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON t.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' LEFT OUTER JOIN currencies cu ON cu.id = s.currency_id' .
 			' WHERE st.series_id = ?', $this->id);
@@ -88,7 +89,7 @@ class Page extends SeriesPageBase
 		$order_by = ' ORDER BY t.start_time + t.duration, t.id';
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name, st.flags, st.fee, s.fee, cu.pattern, t.num_players,' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name, st.flags, st.fee, s.fee, cu.pattern, t.num_players,' .
 			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players',
 			$condition);
 		$query->add($order_by);

@@ -41,13 +41,14 @@ class Page extends SeriesPageBase
 		$user_pic = new Picture(USER_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, sr.flags, c.id, c.name, c.flags, ni.name' .
+			'SELECT u.id, nu.name, u.flags, sr.flags, c.id, nc.name, c.flags, ni.name' .
 			' FROM series_regs sr' .
 			' JOIN users u ON u.id = sr.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
 			' JOIN cities i ON i.id = u.city_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $_lang . ') <> 0' .
 			' WHERE sr.series_id = ?' .
 			' ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);

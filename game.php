@@ -175,9 +175,10 @@ class Page extends PageBase
 		$club_pic = new Picture(CLUB_PICTURE);
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, e.id, e.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name' .
+			'SELECT c.id, nc.name, c.flags, e.id, e.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name' .
 			' FROM events e' .
 			' JOIN clubs c ON e.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
@@ -242,12 +243,15 @@ class Page extends PageBase
 	
 	private function select_table()
 	{
+		global $_lang;
+		
 		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 			Db::record(get_label('event'), 
-			'SELECT e.misc, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
+			'SELECT e.misc, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags'.
 			' FROM events e'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' WHERE e.id = ?', $this->event_id);
 		if (!is_null($tournament_name))
 		{
@@ -347,10 +351,11 @@ class Page extends PageBase
 		
 		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 			Db::record(get_label('event'), 
-			'SELECT e.misc, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
+			'SELECT e.misc, e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags'.
 			' FROM events e'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' WHERE e.id = ?', $this->event_id);
 		if (!is_null($tournament_name))
 		{
@@ -536,16 +541,17 @@ class Page extends PageBase
 	
 	private function game()
 	{
-		global $_profile;
+		global $_lang, $_profile;
 		
 		if ($this->event_id > 0)
 		{
 			list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 				Db::record(get_label('event'), 
-				'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags'.
+				'SELECT e.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags'.
 				' FROM events e'.
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 				' JOIN clubs c ON c.id = e.club_id'.
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 				' WHERE e.id = ?', $this->event_id);
 			check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $this->event_id, $tournament_id);
 		}
@@ -709,11 +715,12 @@ class Page extends PageBase
 		$game_count = 0;
 		$column_count = 0;
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, c.name, c.flags, g.table_num, g.game_num'.
+			'SELECT e.id, e.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags, g.table_num, g.game_num'.
 			' FROM current_games g'.
 			' JOIN events e ON e.id = g.event_id'. 
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' WHERE g.user_id = ?'.
 			' ORDER BY g.event_id, g.table_num, g.game_num',
 			$_profile->user_id);

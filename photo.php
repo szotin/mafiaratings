@@ -179,12 +179,13 @@ class Page extends PageBase
 			$this->club_id, $this->club_name) = 
 				Db::record(
 					get_label('photo'), 
-					'SELECT u.id, nu.name, p.viewers, a.id, a.name, a.event_id, a.user_id, a.viewers, c.id, c.name'.
-					' FROM photos p' . 
+					'SELECT u.id, nu.name, p.viewers, a.id, a.name, a.event_id, a.user_id, a.viewers, c.id, nc.name'.
+					' FROM photos p' .
 					' JOIN users u ON p.user_id = u.id' .
 					' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 					' JOIN photo_albums a ON p.album_id = a.id' .
 					' JOIN clubs c ON c.id = a.club_id' .
+					' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 					' WHERE p.id = ? AND ',
 					$this->id, PhotoAlbum::photo_viewers_condition());
 	}

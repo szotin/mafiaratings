@@ -104,6 +104,8 @@ function obs_next_game_num($event_id, $table_num, $state)
 // would, rather than beside an empty tile.
 function obs_logo($pic, $id, $name, $flags, $club_id)
 {
+	global $_lang;
+
 	$pic->set($id, $name, $flags);
 	if ($pic->has_image())
 	{
@@ -112,7 +114,7 @@ function obs_logo($pic, $id, $name, $flags, $club_id)
 
 	if ($club_id > 0)
 	{
-		list ($club_name, $club_flags) = Db::record(get_label('club'), 'SELECT name, flags FROM clubs WHERE id = ?', $club_id);
+		list ($club_name, $club_flags) = Db::record(get_label('club'), 'SELECT n.name, c.flags FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 		$club = new Picture(CLUB_PICTURE);
 		$club->set((int)$club_id, $club_name, (int)$club_flags);
 		if ($club->has_image())
@@ -352,10 +354,11 @@ function obs_players($user_ids, $event_id, $tournament_id, $club_id)
 
 	$players = array();
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.flags, eu.flags, tu.flags, cu.flags, uc.id, uc.name, uc.flags, o.code, nn.name'.
+		'SELECT u.id, nu.name, u.flags, eu.flags, tu.flags, cu.flags, uc.id, nuc.name, uc.flags, o.code, nn.name'.
 		' FROM users u'.
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 		' LEFT OUTER JOIN clubs uc ON uc.id = u.club_id'.
+		' LEFT OUTER JOIN names nuc ON nuc.id = uc.name_id AND (nuc.langs & '.$_lang.') <> 0'.
 		' JOIN cities i ON i.id = u.city_id'.
 		' JOIN countries o ON o.id = i.country_id'.
 		' JOIN names nn ON nn.id = o.name_id AND (nn.langs & '.$_lang.') <> 0'.

@@ -116,7 +116,7 @@ try
 
 	$event_emails = array();
 	$query = new DbQuery(
-		'SELECT ee.id, ee.type, ee.langs, ee.flags, e.id, e.name, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name'.
+		'SELECT ee.id, ee.type, ee.langs, ee.flags, e.id, e.name, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name_id'.
 		' FROM event_mailings ee' . 
 		' JOIN events e ON e.id = ee.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' . 
@@ -134,9 +134,9 @@ try
 			$mailing_id, $mailing_type, $mailing_langs, $mailing_flags,
 			$event_id, $event_name, $event_start_time, $event_notes, $event_langs,
 			$addr_id, $addr, $addr_url, $timezone, $club_id,
-			$club_name) = $row;
-			
-		// echo '<br>$mailing_id=' . $mailing_id . '<br>$mailing_lang=' . $mailing_lang . '<br>$event_langs=' . $event_langs . '<br>$event_id=' . $event_id . '<br>$club_name=' . $club_name . '<br>';
+			$club_name_id) = $row;
+
+		// echo '<br>$mailing_id=' . $mailing_id . '<br>$mailing_lang=' . $mailing_lang . '<br>$event_langs=' . $event_langs . '<br>$event_id=' . $event_id . '<br>$club_name_id=' . $club_name_id . '<br>';
 		
 		$count = 0;
 		$to_flags = ($mailing_flags & MAILING_FLAG_TO_ALL);
@@ -153,7 +153,6 @@ try
 			$common_tags['address_url'] = new Tag($addr_url);
 			$common_tags['address_id'] = new Tag($addr_id);
 			$common_tags['address_image'] = new Tag($image_base . $addr_id . '.jpg');
-			$common_tags['club_name'] = new Tag($club_name);
 			$common_tags['club_id'] = new Tag($club_id);
 			$common_tags['accept_btn'] = new Tag('<input type="submit" name="accept" value="#">');
 			$common_tags['decline_btn'] = new Tag('<input type="submit" name="decline" value="#">');
@@ -220,6 +219,9 @@ try
 					$common_tags['event_date'] = new Tag(format_date($event_start_time, $timezone, false, $user_lang));
 					$common_tags['event_time'] = new Tag(date('H:i', $event_start_time));
 					$common_tags['langs'] = new Tag(get_langs_str($event_langs, ', ', LOWERCASE, $user_lang));
+					// The club's name is written in the language of the email, like the date and the languages.
+					list ($club_name) = Db::record(get_label('club'), 'SELECT name FROM names WHERE id = ? AND (langs & ?) <> 0', $club_name_id, $user_lang);
+					$common_tags['club_name'] = new Tag($club_name);
 					for ($i = 0; $i < count($event_emails[$email_id]); ++$i)
 					{
 						$event_emails[$email_id][$i] = parse_tags($event_emails[$email_id][$i], $common_tags);

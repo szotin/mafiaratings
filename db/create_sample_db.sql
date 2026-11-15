@@ -80,7 +80,7 @@ CREATE TABLE `city_names` (
 DROP TABLE IF EXISTS `clubs`;
 CREATE TABLE `clubs` (
   `id` int(11) NOT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `langs` int(11) NOT NULL,
   `flags` int(11) NOT NULL,
   `web_site` varchar(256) NOT NULL,
@@ -1062,6 +1062,7 @@ INSERT INTO `names` (`id`, `langs`, `name`) VALUES
 (1, 16777215, 'Sample Country'),
 (2, 16777215, 'US Dollar'),
 (3, 16777215, 'Sample City'),
+(4, 16777215, 'Sample Club'),
 (10, 16777215, 'admin'),
 (30, 16777215, 'shrek'),
 (40, 16777215, 'lilya'),
@@ -1171,7 +1172,7 @@ INSERT INTO `club_regs` (`user_id`, `club_id`, `flags`) VALUES
 (25, 1, 17);
 
 -- Club, league, season(series), their links
-INSERT INTO `clubs` (`id`, `name`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`, `gaining_id`) VALUES (1, 'Sample Club', 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, 2, 1284784660, NULL, NULL, 2);
+INSERT INTO `clubs` (`id`, `name_id`, `langs`, `flags`, `web_site`, `city_id`, `email`, `phone`, `scoring_id`, `parent_id`, `rules`, `prompt_sound_id`, `end_sound_id`, `normalizer_id`, `activated`, `fee`, `currency_id`, `gaining_id`) VALUES (1, 4, 7, 0, '', 1, 'club@example.com', '', 1, NULL, '0002000010000', NULL, NULL, 2, 1284784660, NULL, NULL, 2);
 INSERT INTO `leagues` (`id`, `name`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 'Sample League', 7, '', 'league@example.com', '', 2, 0, '{}', 3, 3);
 INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`) VALUES (1, 1, 0);
 -- The default rules of the site: the rules of the site with no name - see db/alter212.sql.
@@ -1612,16 +1613,16 @@ ALTER TABLE `city_names`
 --
 ALTER TABLE `clubs`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `club_name` (`name`),
   ADD KEY `city_id` (`city_id`),
   ADD KEY `system_id` (`scoring_id`),
-  ADD KEY `parent_id` (`parent_id`,`name`),
+  ADD KEY `parent_id` (`parent_id`),
   ADD KEY `prompt_sound_id` (`prompt_sound_id`),
   ADD KEY `end_sound_id` (`end_sound_id`),
   ADD KEY `normalizer_id` (`normalizer_id`),
   ADD KEY `currency_id` (`currency_id`),
   ADD KEY `gaining_id` (`gaining_id`),
-  ADD KEY `system_league_id` (`system_league_id`);
+  ADD KEY `system_league_id` (`system_league_id`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `club_info`
@@ -2547,6 +2548,7 @@ ALTER TABLE `clubs`
   ADD CONSTRAINT `club_city` FOREIGN KEY (`city_id`) REFERENCES `cities` (`id`),
   ADD CONSTRAINT `club_currency` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
   ADD CONSTRAINT `club_end_sound` FOREIGN KEY (`end_sound_id`) REFERENCES `sounds` (`id`),
+  ADD CONSTRAINT `club_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`),
   ADD CONSTRAINT `club_gaining` FOREIGN KEY (`gaining_id`) REFERENCES `gainings` (`id`),
   ADD CONSTRAINT `club_normalizer` FOREIGN KEY (`normalizer_id`) REFERENCES `normalizers` (`id`),
   ADD CONSTRAINT `club_prompt_sound` FOREIGN KEY (`prompt_sound_id`) REFERENCES `sounds` (`id`),

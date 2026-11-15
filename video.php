@@ -36,6 +36,8 @@ class Page extends PageBase
 	
 	protected function prepare()
 	{
+		global $_lang;
+
 		if (!isset($_REQUEST['id']))
 		{
 			throw new Exc(get_label('Unknown [0]', get_label('club')));
@@ -46,8 +48,9 @@ class Page extends PageBase
 			$this->video, $this->title, $this->post_time, $this->video_time, $this->club_id, $this->club_name, $this->club_flags, 
 			$this->event_id, $this->event_name, $this->event_flags, $this->tour_id, $this->tour_name, $this->tour_flags, $this->game_id, $this->lang, $this->user_id, $this->vtime) = 
 			Db::record(get_label('video'), 
-				'SELECT v.video, v.name, v.post_time, v.video_time, c.id, c.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
+				'SELECT v.video, v.name, v.post_time, v.video_time, c.id, nc.name, c.flags, e.id, e.name, e.flags, t.id, t.name, t.flags, g.id, v.lang, v.user_id, v.vtime FROM videos v ' .
 				' JOIN clubs c ON c.id = v.club_id' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 				' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .

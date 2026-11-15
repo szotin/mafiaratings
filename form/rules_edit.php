@@ -8,11 +8,13 @@ initiate_session();
 
 function show_rules_select($club_id, $rules_code)
 {
+	global $_lang;
+	
 	$club_rules_code = null;
 	$club_name = null;
 	if ($club_id != null)
 	{
-		list ($club_rules_code, $club_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+		list ($club_rules_code, $club_name) = Db::record(get_label('club'), 'SELECT c.rules, n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 	}
 	
 	$found = false;
@@ -356,7 +358,7 @@ try
 		// default rules of their owner.
 		if ($club_id > 0)
 		{
-			list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+			list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT c.rules, n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		}
 		else
@@ -395,7 +397,7 @@ try
 	}
 	else
 	{
-		list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT rules, name FROM clubs WHERE id = ?', $club_id);
+		list($rules_code, $rules_name) = Db::record(get_label('club'), 'SELECT c.rules, n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));

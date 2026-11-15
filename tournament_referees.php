@@ -131,11 +131,12 @@ class Page extends TournamentPageBase
 		
 		$moders = array();
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+			'SELECT u.id, nu.name, u.flags, SUM(IF(g.result = ' . GAME_RESULT_TOWN . ', 1, 0)) AS civ, SUM(IF(g.result = ' . GAME_RESULT_MAFIA . ', 1, 0)) AS maf, SUM(IF(g.result = ' . GAME_RESULT_TIE . ', 1, 0)) AS tie, c.id, nc.name, c.flags, tu.flags, cu.flags' . 
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON g.moderator_id = u.id' .
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = g.tournament_id AND tu.user_id = u.id' .
 				' LEFT OUTER JOIN club_regs cu ON cu.club_id = g.club_id AND cu.user_id = u.id',
 				$condition);

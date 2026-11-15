@@ -359,6 +359,8 @@ function _sort_system_choices(&$choices)
     at the end so that it can stay selected. */
 function get_available_systems($table, $club_id = NULL, $current_id = NULL, $league_id = NULL)
 {
+	global $_lang;
+
 	list($column) = _system_table_info($table);
 	$site_default_id = get_site_system_id($table);
 
@@ -367,7 +369,7 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	$league_default_id = NULL;
 	if ($club_id != NULL)
 	{
-		list($club_name, $club_default_id) = Db::record(get_label('club'), 'SELECT name, ' . $column . ' FROM clubs WHERE id = ?', $club_id);
+		list($club_name, $club_default_id) = Db::record(get_label('club'), 'SELECT n.name, c.' . $column . ' FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 		if ($club_default_id != NULL)
 		{
 			$club_default_id = (int)$club_default_id;
@@ -458,8 +460,9 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	if ($current_id != NULL && $current_id > 0 && !isset($ids[(int)$current_id]))
 	{
 		$query = new DbQuery(
-			'SELECT s.id, s.name, c.name, l.name FROM ' . $table . ' s' .
+			'SELECT s.id, s.name, nc.name, l.name FROM ' . $table . ' s' .
 			' LEFT OUTER JOIN clubs c ON c.id = s.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
 			' WHERE s.id = ?', $current_id);
 		if ($row = $query->next())
@@ -557,8 +560,10 @@ function is_default_system($table, $id)
 // its own name is not shown or edited. Returns that name, or NULL when $id is not a default system.
 function get_default_system_name($table, $id)
 {
+	global $_lang;
+
 	list($column) = _system_table_info($table);
-	$query = new DbQuery('SELECT name FROM clubs WHERE ' . $column . ' = ? ORDER BY id LIMIT 1', $id);
+	$query = new DbQuery('SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.' . $column . ' = ? ORDER BY c.id LIMIT 1', $id);
 	if ($row = $query->next())
 	{
 		return $row[0];
@@ -1560,7 +1565,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 	// Create players array
 	$players = array();
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.flags, u.languages, c.id, c.name, c.flags, COUNT(g.id)' .
+		'SELECT u.id, nu.name, u.flags, u.languages, c.id, nc.name, c.flags, COUNT(g.id)' .
 		', SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0))' .
 		', SUM(p.won)' .
 		', SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0))' .
@@ -1571,6 +1576,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN events e ON e.id = g.event_id' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' .
 			' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
 			' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .
@@ -2125,7 +2131,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 	
     $players = array();
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.flags, u.languages, c.id, c.name, c.flags,' .
+		'SELECT u.id, nu.name, u.flags, u.languages, c.id, nc.name, c.flags,' .
 		' COUNT(g.id), COUNT(DISTINCT g.event_id),' .
 		' SUM(IF(p.kill_round = 1 AND p.kill_type = ' . KILL_TYPE_NIGHT . ' AND p.role < 2, 1, 0)),' .
 		' SUM(p.won), SUM(IF(p.won > 0 AND (p.role = 1 OR p.role = 3), 1, 0)),' .
@@ -2137,6 +2143,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 			' JOIN cities ct ON ct.id = u.city_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
 			' LEFT OUTER JOIN cities ct1 ON ct1.id = tu.city_id' .
 			' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .

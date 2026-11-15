@@ -94,11 +94,12 @@ class Snapshot
 		if ($query->next())
 		{
 			$query = new DbQuery(
-				'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, un.name, u.flags, c.id, c.name, c.flags'.
+				'SELECT p.user_id, (p.rating_before + p.rating_earned) as rating, un.name, u.flags, c.id, nc.name, c.flags'.
 					' FROM players p'.
 					' JOIN users u ON u.id = p.user_id'.
 					' JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0'.
 					' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
+					' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 					' WHERE p.game_id = ('.
 						' SELECT p1.game_id'.
 						' FROM players p1 '.
@@ -111,9 +112,10 @@ class Snapshot
 		else
 		{
 			$query = new DbQuery(
-				'SELECT u.id, u.rating, un.name, u.flags, c.id, c.name, c.flags' . 
-				' FROM users u' . 
-				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' . 
+				'SELECT u.id, u.rating, un.name, u.flags, c.id, nc.name, c.flags' .
+				' FROM users u' .
+				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0' .
 				' WHERE u.reg_time <= ?' . 
 				' ORDER BY u.rating DESC, u.games_won DESC, u.games DESC, u.id' . 
@@ -151,10 +153,11 @@ class Snapshot
 			$ids .= ', ' . $this->top100[$i]->id;
 		}
 		
-		$query = new DbQuery('SELECT u.id, un.name, u.flags, c.id, c.name, c.flags 
-								FROM users u 
+		$query = new DbQuery('SELECT u.id, un.name, u.flags, c.id, nc.name, c.flags
+								FROM users u
 								JOIN names un ON un.id = u.name_id AND (un.langs & '.$_lang.') <> 0
-								LEFT OUTER JOIN clubs c ON c.id = u.club_id 
+								LEFT OUTER JOIN clubs c ON c.id = u.club_id
+								LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0
 								WHERE u.id IN (' . $ids . ')');
 		while ($row = $query->next())
 		{

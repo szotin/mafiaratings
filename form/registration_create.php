@@ -46,7 +46,7 @@ try
 	}
 	else
 	{
-		list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+		list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 	}
 
 	if (isset($event_id) || isset($tournament_id))

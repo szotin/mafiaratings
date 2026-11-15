@@ -274,7 +274,7 @@ class Names
 				$n2 = $this->names[$j];
 				if ($n1->name == $n2->name)
 				{
-					$this->names = array_slice($this->names, $j, 1);
+					array_splice($this->names, $j, 1);
 					$n1->langs |= $n2->langs;
 				}
 				else
@@ -296,7 +296,7 @@ class Names
 			
 			$match_count = 0;
 			$query1 = new DbQuery('SELECT name, langs FROM names WHERE id = ?', $id);
-			while ($row1 = $query->next())
+			while ($row1 = $query1->next())
 			{
 				list($name, $langs) = $row1;
 				foreach ($this->names as $n)

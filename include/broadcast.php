@@ -1502,15 +1502,16 @@ function broadcast_tile_club($tile, $club_id, $club_name, $club_flags)
 // all shown at once.
 function broadcast_video_tiles($scope, $past, $now)
 {
-	global $_page;
+	global $_page, $_lang;
 
 	$past_expr = broadcast_past_expr($now);
 	$query = new DbQuery(
 		'SELECT b.event_id, e.name, e.tournament_id, t.name, b.day_num, b.table_num, b.part_num, b.url, ' .
-			broadcast_started_expr($now) . ', c.id, c.name, c.flags' .
+			broadcast_started_expr($now) . ', c.id, nc.name, c.flags' .
 		' FROM event_broadcasts b JOIN events e ON e.id = b.event_id' .
 		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 		' LEFT OUTER JOIN clubs c ON c.id = e.club_id' .
+		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 		' WHERE ' . ($past ? $past_expr : ('NOT ' . $past_expr)) . ' AND ', $scope->condition);
 	if ($past)
 	{
@@ -1649,6 +1650,8 @@ function broadcast_competition($owner, $param, $name, $tournament_id, $event_id,
 // says when it went on the air and when it came off it.
 function broadcast_live_competitions($scope)
 {
+	global $_lang;
+
 	$live = array();
 
 	if ($scope->kind == BROADCAST_SCOPE_TOURNAMENT)
@@ -1684,9 +1687,10 @@ function broadcast_live_competitions($scope)
 	// begun, and nobody has marked it over or called it off.
 	$now = time();
 	$query = new DbQuery(
-		'SELECT DISTINCT t.id, t.name, t.start_time, c.id, c.name, c.flags' .
+		'SELECT DISTINCT t.id, t.name, t.start_time, c.id, nc.name, c.flags' .
 		' FROM events e JOIN tournaments t ON t.id = e.tournament_id' .
 		' LEFT OUTER JOIN clubs c ON c.id = t.club_id' .
+		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 		' WHERE t.start_time <= ' . $now .
 		' AND (t.flags & ' . (TOURNAMENT_FLAG_FINISHED | TOURNAMENT_FLAG_CANCELED) . ') = 0 AND ', $scope->condition);
 	$query->add(' ORDER BY t.start_time, t.id');
@@ -1698,8 +1702,9 @@ function broadcast_live_competitions($scope)
 	}
 
 	$query = new DbQuery(
-		'SELECT e.id, e.name, e.start_time, c.id, c.name, c.flags FROM events e' .
+		'SELECT e.id, e.name, e.start_time, c.id, nc.name, c.flags FROM events e' .
 		' LEFT OUTER JOIN clubs c ON c.id = e.club_id' .
+		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 		' WHERE e.tournament_id IS NULL' .
 		' AND e.start_time <= ' . $now .
 		' AND (e.flags & ' . (EVENT_FLAG_FINISHED | EVENT_FLAG_CANCELED) . ') = 0 AND ', $scope->condition);

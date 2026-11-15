@@ -40,14 +40,14 @@ class ApiPage extends GetApiPageBase
 		if ($name_contains != '')
 		{
 			$name_contains = '%' . $name_contains . '%';
-			$condition->add(' AND c.name LIKE(?)', $name_contains);
+			$condition->add(' AND c.name_id IN (SELECT id FROM names WHERE name LIKE(?))', $name_contains);
 		}
 		
 		if ($name_starts != '')
 		{
 			$name_starts1 = '% ' . $name_starts . '%';
 			$name_starts2 = $name_starts . '%';
-			$condition->add(' AND (c.name LIKE(?) OR c.name LIKE(?))', $name_starts1, $name_starts2);
+			$condition->add(' AND c.name_id IN (SELECT id FROM names WHERE name LIKE(?) OR name LIKE(?))', $name_starts1, $name_starts2);
 		}
 		
 		if ($club_id > 0)
@@ -116,12 +116,13 @@ class ApiPage extends GetApiPageBase
 		{
 			$club_pic = new Picture(CLUB_PICTURE);
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, ni.name, no.name, c.rules, c.scoring_id, c.normalizer_id, c.gaining_id, c.system_league_id FROM clubs c' . 
+				'SELECT c.id, nc.name, c.flags, c.langs, c.web_site, c.email, c.phone, c.city_id, ni.name, no.name, c.rules, c.scoring_id, c.normalizer_id, c.gaining_id, c.system_league_id FROM clubs c' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0' .
 				' JOIN cities i ON i.id = c.city_id' .
 				' JOIN countries o ON o.id = i.country_id' .
 				' JOIN names no ON no.id = o.name_id AND (no.langs & ?) <> 0' .
-				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0', $lang, $lang, $condition);
-			$query->add(' ORDER BY c.name');
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ?) <> 0', $lang, $lang, $lang, $condition);
+			$query->add(' ORDER BY nc.name');
 			if ($page_size > 0)
 			{
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
@@ -165,9 +166,10 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, c.langs, c.web_site, c.email, c.phone, c.city_id, rules, scoring_id, normalizer_id, gaining_id, system_league_id FROM clubs c' . 
-				' JOIN cities i ON i.id = c.city_id', $condition);
-			$query->add(' ORDER BY name');
+				'SELECT c.id, nc.name, c.langs, c.web_site, c.email, c.phone, c.city_id, c.rules, c.scoring_id, c.normalizer_id, c.gaining_id, c.system_league_id FROM clubs c' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & ?) <> 0' .
+				' JOIN cities i ON i.id = c.city_id', $lang, $condition);
+			$query->add(' ORDER BY nc.name');
 			if ($page_size > 0)
 			{
 				$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);
@@ -223,14 +225,14 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('scoring_id', 'Scoring id. For example: <a href="clubs.php?scoring_id=21">' . PRODUCT_URL . '/api/get/clubs.php?scoring_id=21</a> returns all clubs using VaWaCa scoring.', '-');
 		$help->request_param('normalizer_id', 'Scoring normalizer id. Returns the club whose default scoring normalizer it is - each club has its own.', '-');
 		$help->request_param('gaining_id', 'Gaining system id. Returns the club whose default gaining system it is - each club has its own.', '-');
-		$help->request_param('lang', 'Language id for returned names. For example: <a href="clubs.php?lang=2">/api/get/clubs.php?lang=2</a> returns club names in Russian.' . valid_langs_help(), 'default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.');
+		$help->request_param('lang', 'Language id for returned names. For example: <a href="clubs.php?lang=2">/api/get/clubs.php?lang=2</a> returns club, city and country names in Russian.' . valid_langs_help(), 'default language for the logged in account is used. If not logged in the system tries to guess the language by ip address.');
 		$help->request_param('count', 'Returns clubs count instead of the clubs themselves. For example: <a href="clubs.php?contains=an&count">/api/get/clubs.php?contains=an&count</a> returns how many clubs contain "an" in their name.', '-');
 		$help->request_param('page', 'Page number. For example: <a href="clubs.php?page=1">/api/get/clubs.php?page=1</a> returns the second page of clubs by alphabet.', '-');
 		$help->request_param('page_size', 'Page size. Default page_size is ' . API_DEFAULT_PAGE_SIZE . '. For example: <a href="clubs.php?page_size=32">/api/get/clubs.php?page_size=32</a> returns first 32 clubs; <a href="clubs.php?page_size=0">/api/get/clubs.php?page_size=0</a> returns clubs in one page; <a href="clubs.php">/api/get/clubs.php</a> returns first ' . API_DEFAULT_PAGE_SIZE . ' clubs by alphabet.', '-');
 
 		$param = $help->response_param('clubs', 'The array of clubs. Clubs are always sorted in alphabetical order. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Club id.');
-			$param->sub_param('name', 'Club name.');
+			$param->sub_param('name', 'Club name in the language set by <q>lang</q>.');
 			$param->sub_param('icon', 'Club icon URL.', 1);
 			$param->sub_param('picture', 'Club picture URL.', 1);
 			$param->sub_param('langs', 'A bit combination of languages used in the club.' . valid_langs_help());

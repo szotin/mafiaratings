@@ -42,7 +42,8 @@ try
 		$club = new stdClass();
 		list ($club->country, $club->city, $club->rules_code, $club->name, $club->langs) = 
 			Db::record(get_label('club'), 
-				'SELECT ncr.name, nct.name, c.rules, c.name, c.langs FROM clubs c ' .
+				'SELECT ncr.name, nct.name, c.rules, nc.name, c.langs FROM clubs c ' .
+				'JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 ' .
 				'JOIN cities ct ON ct.id = c.city_id ' .
 				'JOIN countries cr ON cr.id = ct.country_id ' .
 				'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 ' .

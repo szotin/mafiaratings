@@ -118,10 +118,11 @@ class Page extends GeneralPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT l.id, u.id, nu.name, l.time, l.obj, l.obj_id, l.ip, l.message, l.page, (l.details IS NOT NULL), c.id, c.name, lg.id, lg.name FROM log l' .
+			'SELECT l.id, u.id, nu.name, l.time, l.obj, l.obj_id, l.ip, l.message, l.page, (l.details IS NOT NULL), c.id, nc.name, lg.id, lg.name FROM log l' .
 				' LEFT OUTER JOIN users u ON u.id = l.user_id' .
 				' LEFT OUTER JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON c.id = l.club_id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN leagues lg ON lg.id = l.league_id',
 			$condition);
 		$query->add(' ORDER BY l.time DESC, l.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

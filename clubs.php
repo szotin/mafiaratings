@@ -99,12 +99,13 @@ class Page extends GeneralPageBase
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, c.web_site, ni.name, u.flags, (SELECT count(*) FROM games g WHERE g.club_id = c.id) as games FROM clubs c' .
+			'SELECT c.id, nc.name, c.flags, c.web_site, ni.name, u.flags, (SELECT count(*) FROM games g WHERE g.club_id = c.id) as games FROM clubs c' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN club_regs u ON u.user_id = ? AND u.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id' .
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0',
 			$user_id, $condition);
-		$query->add(' ORDER BY ISNULL(u.flags), games DESC, c.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		$query->add(' ORDER BY ISNULL(u.flags), games DESC, nc.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 			
 		if ($_profile != NULL && !$closed)
 		{

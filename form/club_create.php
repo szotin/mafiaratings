@@ -7,6 +7,7 @@ require_once '../include/email.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/club.php';
+require_once '../include/names.php';
 
 initiate_session();
 
@@ -18,7 +19,9 @@ try
 	$email = $_profile->user_email;
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="140">'.get_label('Club name').':</td><td><input class="longest" id="form-name"> </td></tr>';
+	echo '<tr><td width="140" valign="top">'.get_label('Club name').':</td><td>';
+	Names::show_control(new Names(0, get_label('club name')));
+	echo '</td></tr>';
 
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', COUNTRY_DETECT, 'form-city');
@@ -37,7 +40,12 @@ try
 	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
 	echo '<select id="form-parent">';
 	show_option(0, $profile->user_club_id, '');
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE parent_id IS NULL AND (flags & ' . CLUB_FLAG_CLOSED . ') = 0 ORDER BY name');
+	$query = new DbQuery(
+		'SELECT c.id, nc.name'.
+		' FROM clubs c'.
+		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
+		' WHERE c.parent_id IS NULL AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0'.
+		' ORDER BY nc.name');
 	while ($row = $query->next())
 	{
 		list($c_id, $c_name) = $row;
@@ -66,10 +74,9 @@ try
 	function commit(onSuccess)
 	{
 		var languages = mr.getLangs();
-		json.post("api/ops/club.php",
+		var request =
 		{
 			op: 'create'
-			, name: $("#form-name").val()
 			, parent_id: $("#form-parent").val()
 			, url: $("#form-url").val()
 			, email: $("#form-email").val()
@@ -78,8 +85,9 @@ try
 			, city: $("#form-city").val()
 			, langs: languages
 			, system_league_id: $("#form-system").val()
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(request);
+		json.post("api/ops/club.php", request, onSuccess);
 	}
 	</script>
 <?php

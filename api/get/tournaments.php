@@ -202,9 +202,10 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, c.name, c.flags, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules, ct.timezone FROM tournaments t' . 
+				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, nc.name, c.flags, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules, ct.timezone FROM tournaments t' .
 				' JOIN addresses a ON a.id = t.address_id' .
 				' JOIN clubs c ON c.id = t.club_id' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$lang.') <> 0' .
 				' JOIN cities ct ON ct.id = a.city_id', $condition);
 			$query->add(' ORDER BY t.start_time DESC, t.id DESC');
 			if ($page_size > 0)
@@ -308,11 +309,11 @@ class ApiPage extends GetApiPageBase
 			$index = 0;
 			$tournament = $tournaments[0];
 			$query = new DbQuery(
-				'SELECT t.id, s.id, s.name, sol.id, sol.name, soc.id, soc.name, st.stars'.
+				'SELECT t.id, s.id, s.name, sol.id, sol.name, soc.id, nsoc.name, st.stars'.
 				' FROM series_tournaments st'.
 				' JOIN tournaments t ON t.id = st.tournament_id'.
 				' JOIN series s ON s.id = st.series_id'.
-				series_owner_join().
+				series_owner_join('s', $lang).
 				' WHERE t.id IN ('.$tournaments_list.') '.
 				' ORDER BY t.start_time DESC, t.id DESC');
 			while ($row = $query->next())

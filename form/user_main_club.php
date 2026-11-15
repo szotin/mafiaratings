@@ -26,12 +26,12 @@ try
 	if ($membership_count > 0)
 	{
 		// The clubs the user is a member of. The current main club is listed even if the user is not a member of it, so the select shows what is actually set.
-		$query = new DbQuery('SELECT id, name FROM clubs WHERE id IN (SELECT club_id FROM club_regs WHERE user_id = ?) OR id = ? ORDER BY name', $user_id, $club_id);
+		$query = new DbQuery('SELECT c.id, n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id IN (SELECT club_id FROM club_regs WHERE user_id = ?) OR c.id = ? ORDER BY n.name', $user_id, $club_id);
 	}
 	else
 	{
 		// Not a member of any club: choosing one makes the user its member.
-		$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_CLOSED . ') = 0 OR id = ? ORDER BY name', $club_id);
+		$query = new DbQuery('SELECT c.id, n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 OR c.id = ? ORDER BY n.name', $club_id);
 	}
 
 	echo '<select id="form-main-club" onChange="setMainClub()">';

@@ -341,10 +341,11 @@ class ApiPage extends GetApiPageBase
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.flags, u.languages,' .
 				' (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos, SUM(p.rating_earned) as rating, count(*) as games,' .
-				' SUM(p.won) as won, c.id, c.name' .
+				' SUM(p.won) as won, c.id, nc.name' .
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN players p ON p.user_id = u.id' .
 				' JOIN games g ON p.game_id = g.id AND (g.flags & '.GAME_FLAG_CANCELED.') = 0', $condition); 
 			$query->add(' GROUP BY u.id ');
@@ -356,10 +357,11 @@ class ApiPage extends GetApiPageBase
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.flags, u.languages,'.
 				' (SELECT count(*) FROM users u1 WHERE u1.red_rating >= u.red_rating) as pos,'.
-				' u.red_rating as rating, u.games as games, u.games_won as won, c.id, c.name'.
+				' u.red_rating as rating, u.games as games, u.games_won as won, c.id, nc.name'.
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0', $condition);
 			$count_query = new DbQuery(
 				'SELECT count(*)'.
 				' FROM users u'.
@@ -369,10 +371,11 @@ class ApiPage extends GetApiPageBase
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.flags, u.languages,'.
 				' (SELECT count(*) FROM users u1 WHERE u1.black_rating >= u.black_rating) as pos,'.
-				' u.black_rating as rating, u.games as games, u.games_won as won, c.id, c.name'.
+				' u.black_rating as rating, u.games as games, u.games_won as won, c.id, nc.name'.
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0', $condition);
 			$count_query = new DbQuery(
 				'SELECT count(*)'.
 				' FROM users u'.
@@ -382,10 +385,11 @@ class ApiPage extends GetApiPageBase
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.flags, u.languages,'.
 				' (SELECT count(*) FROM users u1 WHERE u1.rating >= u.rating) as pos,'.
-				' u.rating as rating, u.games as games, u.games_won as won, c.id, c.name'.
+				' u.rating as rating, u.games as games, u.games_won as won, c.id, nc.name'.
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' LEFT OUTER JOIN clubs c ON u.club_id = c.id', $condition);
+				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0', $condition);
 			$count_query = new DbQuery(
 				'SELECT count(*)'.
 				' FROM users u'.

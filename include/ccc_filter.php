@@ -67,7 +67,7 @@ class CCCFilter
 				}
 				else
 				{
-					list ($this->value) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $this->id);
+					list ($this->value) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $this->id);
 				}
 				break;
 			case CCCF_CITY:

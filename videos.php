@@ -16,7 +16,7 @@ class Page extends GeneralPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$video_type = -1;
 		if (isset($_REQUEST['vtype']))
@@ -102,8 +102,9 @@ class Page extends GeneralPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, c.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM videos v' .
+			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM videos v' .
 			' JOIN clubs c ON c.id = v.club_id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN events e ON e.id = v.event_id' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 			' WHERE TRUE', $condition);

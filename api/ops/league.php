@@ -694,7 +694,6 @@ class ApiPage extends OpsApiPageBase
 			if ($flags & LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED)
 			{
 				list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
-				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 				$query = new DbQuery(
 					'SELECT u.id, nu.name, u.email, u.def_lang'.
 					' FROM league_managers l'.
@@ -712,6 +711,7 @@ class ApiPage extends OpsApiPageBase
 							$user_lang = LANG_RUSSIAN;
 						}
 					}
+					list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
 					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/club_add_league.php';
 					
 					$tags = array(
@@ -732,7 +732,6 @@ class ApiPage extends OpsApiPageBase
 			if ($flags & LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED)
 			{
 				list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
-				list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 				$query = new DbQuery(
 					'SELECT u.id, nu.name, u.email, u.def_lang'.
 					' FROM club_regs uc'.
@@ -750,6 +749,7 @@ class ApiPage extends OpsApiPageBase
 							$user_lang = LANG_RUSSIAN;
 						}
 					}
+					list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
 					list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/league_add_club.php';
 					
 					$tags = array(
@@ -810,7 +810,6 @@ class ApiPage extends OpsApiPageBase
 		if (!is_permitted(PERMISSION_LEAGUE_MANAGER, $league_id))
 		{
 			list($league_name, $league_langs) = Db::record(get_label('league'), 'SELECT name, langs FROM leagues WHERE id = ?', $league_id);
-			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
 				' FROM league_managers l'.
@@ -828,6 +827,7 @@ class ApiPage extends OpsApiPageBase
 						$user_lang = LANG_RUSSIAN;
 					}
 				}
+				list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
 				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/league_remove_club.php';
 				
 				$tags = array(
@@ -849,7 +849,6 @@ class ApiPage extends OpsApiPageBase
 		if (!is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 		{
 			list($league_name) = Db::record(get_label('league'), 'SELECT name FROM leagues WHERE id = ?', $league_id);
-			list($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
 				' FROM club_regs uc'.
@@ -867,6 +866,7 @@ class ApiPage extends OpsApiPageBase
 						$user_lang = LANG_RUSSIAN;
 					}
 				}
+				list($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
 				list($subj, $body, $text_body) = include '../../include/languages/' . get_lang_code($user_lang) . '/email/club_remove_league.php';
 				
 				if (!empty($message))

@@ -223,9 +223,10 @@ function get_tournament_pairs($tournament_id, $club_id, $lang, $accepted_only = 
 	// Priority 2: club pairs
 	$query = new DbQuery(
 		'SELECT u1.id, nu1.name, u1.flags, tu1.flags, cu1.flags,' .
-		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy, c.name' .
+		' u2.id, nu2.name, u2.flags, tu2.flags, cu2.flags, p.policy, nc.name' .
 		' FROM club_pairs p' .
 		' JOIN clubs c ON c.id = p.club_id' .
+		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $lang . ') <> 0' .
 		' JOIN users u1 ON u1.id = p.user1_id' .
 		' JOIN users u2 ON u2.id = p.user2_id' .
 		' JOIN names nu1 ON nu1.id = u1.name_id AND (nu1.langs & ' . $lang . ') <> 0' .

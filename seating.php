@@ -192,15 +192,18 @@ class Page extends GeneralPageBase
 	// in a column, if the link were ever moved into one.
 	private function showTournaments()
 	{
+		global $_lang;
+
 		// Everything here is the event's own: its date, its address for the timezone that date is
 		// read in, and its club. A tournament's rounds run on different days, and a round can be
 		// held somewhere other than where the tournament is registered - the tournament's date
 		// would be the same for every row and wrong for most of them.
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, e.id, e.round, e.start_time, ct.timezone'.
+			'SELECT t.id, t.name, t.flags, c.id, nc.name, c.flags, e.id, e.round, e.start_time, ct.timezone'.
 			' FROM events e'.
 			' JOIN tournaments t ON t.id = e.tournament_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' JOIN addresses a ON a.id = e.address_id'.
 			' JOIN cities ct ON ct.id = a.city_id'.
 			' WHERE e.misc LIKE ? AND JSON_UNQUOTE(JSON_EXTRACT(e.misc, \'$.seating.hash\')) = ?'.

@@ -712,9 +712,11 @@ function _sort_rules_choices(&$choices)
     filters are put over the default rules of the site, and there is no first entry. */
 function get_available_rules($club_id = null, $club_name = null, $club_rules = null)
 {
+	global $_lang;
+
 	if ($club_id != null && ($club_name == null || $club_rules == null))
 	{
-		list($club_name, $club_rules) = Db::record(get_label('club'), 'SELECT name, rules FROM clubs WHERE id = ?', $club_id);
+		list($club_name, $club_rules) = Db::record(get_label('club'), 'SELECT n.name, c.rules FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 	}
 	$base = $club_id != null ? upgrade_rules_code($club_rules) : get_site_rules();
 

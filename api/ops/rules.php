@@ -52,6 +52,8 @@ class ApiPage extends OpsApiPageBase
 	// called), and the owner has no other rules by that name.
 	private static function check_name($club_id, $league_id, $name, $rules_id = 0)
 	{
+		global $_lang;
+
 		if ($name == '')
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('Rules name')));
@@ -59,7 +61,7 @@ class ApiPage extends OpsApiPageBase
 
 		if ($club_id != NULL)
 		{
-			list($owner_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+			list($owner_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 			$query = new DbQuery('SELECT id FROM rules WHERE club_id = ? AND name = ? AND id <> ?', $club_id, $name, $rules_id);
 		}
 		else if ($league_id != NULL)

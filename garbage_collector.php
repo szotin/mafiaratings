@@ -205,7 +205,8 @@ class GarbageCollector extends Updater
 		Db::begin();
 		
 		$query = new DbQuery(
-			'SELECT c.id, c.name FROM clubs c'.
+			'SELECT c.id, nc.name FROM clubs c'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.LANG_ENGLISH.') <> 0'.
 			' WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0'.
 			' AND c.id > ?'.
 			' AND c.activated < UNIX_TIMESTAMP() - '.CLUB_IDLE_TIME.
@@ -237,13 +238,14 @@ class GarbageCollector extends Updater
 					}
 				}
 				list($subj, $body, $text_body) = include 'include/languages/' . get_lang_code($user_lang) . '/email/club_closed.php';
-				
+				list($user_club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & ?) <> 0 WHERE c.id = ?', $user_lang, $club_id);
+
 				$tags = array(
 					'root' => new Tag(get_server_url()),
 					'user_id' => new Tag($user_id),
 					'user_name' => new Tag($user_name),
 					'club_id' => new Tag($club_id),
-					'club_name' => new Tag($club_name));
+					'club_name' => new Tag($user_club_name));
 				$body = parse_tags($body, $tags);
 				$text_body = parse_tags($text_body, $tags);
 				send_email($user_email, $body, $text_body, $subj, admin_unsubscribe_url($user_id), $user_lang);

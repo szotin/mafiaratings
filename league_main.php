@@ -173,8 +173,8 @@ class Page extends LeaguePageBase
 	
 	protected function show_body()
 	{
-		global $_profile;
-		
+		global $_profile, $_lang;
+
 		$this->tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$this->series_pic = new Picture(SERIES_PICTURE);
 		
@@ -184,12 +184,13 @@ class Page extends LeaguePageBase
 		// tournaments
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.flags, a.address, a.name' . 
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.flags, a.address, a.name' .
 			' FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND s.league_id = ?' .
@@ -212,11 +213,12 @@ class Page extends LeaguePageBase
 		
 		// clubs
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, COUNT(DISTINCT g.tournament_id) as _t, COUNT(DISTINCT p.user_id) as _p FROM players p' . 
+			'SELECT c.id, nc.name, c.flags, COUNT(DISTINCT g.tournament_id) as _t, COUNT(DISTINCT p.user_id) as _p FROM players p' .
 			' JOIN games g ON g.id = p.game_id' .
 			' JOIN series_tournaments st ON st.tournament_id = g.tournament_id' .
 			' JOIN series s ON s.id = st.series_id' .
-			' JOIN clubs c ON c.id = g.club_id WHERE s.league_id = ? GROUP BY c.id ORDER BY _t DESC, _p DESC LIMIT ' . MAX_CLUBS, $this->id);
+			' JOIN clubs c ON c.id = g.club_id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE s.league_id = ? GROUP BY c.id ORDER BY _t DESC, _p DESC LIMIT ' . MAX_CLUBS, $this->id);
 		
 		$number = 1;
 		if ($row = $query->next())

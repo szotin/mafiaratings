@@ -170,12 +170,13 @@ class Page extends TournamentPageBase
 		}
 
 		$sel =
-			'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, cr.flags, ni.name, u.club_id, c.name, c.flags FROM tournament_regs tr' .
+			'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, cr.flags, ni.name, u.club_id, nc.name, c.flags FROM tournament_regs tr' .
 			' JOIN users u ON u.id = tr.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
 			' JOIN cities i ON i.id = u.city_id' .
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
 			' LEFT JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $_lang . ') <> 0' .
 			// The club holding the tournament can keep a photo of a player of its own, and that
 			// is the row it is marked in. Without it the list falls back to the account picture
 			// and so says something different from the photo dialog, which reads all three.
@@ -195,12 +196,13 @@ class Page extends TournamentPageBase
 		if ($this->team_size > 1)
 		{
 			$sel_team =
-				'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, cr.flags, ni.name, u.club_id, c.name, c.flags, tr.team_id, t.name FROM tournament_regs tr' .
+				'SELECT tr.user_id, nu.name, u.email, u.flags, tr.flags, cr.flags, ni.name, u.club_id, nc.name, c.flags, tr.team_id, t.name FROM tournament_regs tr' .
 				' JOIN users u ON u.id = tr.user_id' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
 				' JOIN cities i ON i.id = u.city_id' .
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & ' . $_lang . ') <> 0' .
 				' LEFT JOIN clubs c ON c.id = u.club_id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $_lang . ') <> 0' .
 				' LEFT JOIN club_regs cr ON cr.user_id = u.id AND cr.club_id = ' . (int)$this->club_id .
 				' LEFT JOIN tournament_teams t ON t.id = tr.team_id' .
 				' WHERE tr.tournament_id = ?';
@@ -604,8 +606,10 @@ class Page extends TournamentPageBase
 	// every round as well - see the change op in api/ops/tournament.php.
 	private function showRulesTab()
 	{
+		global $_lang;
+
 		list ($flags, $rules_code, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $club_name, $club_rules) = Db::record(get_label('tournament'),
-			'SELECT t.flags, t.rules, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, c.name, c.rules FROM tournaments t JOIN clubs c ON c.id = t.club_id WHERE t.id = ?', $this->id);
+			'SELECT t.flags, t.rules, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, nc.name, c.rules FROM tournaments t JOIN clubs c ON c.id = t.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $_lang . ') <> 0 WHERE t.id = ?', $this->id);
 		$flags = (int)$flags;
 		if (is_null($normalizer_id))
 		{

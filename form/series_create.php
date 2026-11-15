@@ -26,7 +26,7 @@ try
 	if ($club_id > 0)
 	{
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		list($owner_name, $owner_flags, $owner_langs, $default_gaining_id) = Db::record(get_label('club'), 'SELECT name, flags, langs, gaining_id FROM clubs WHERE id = ?', $club_id);
+		list($owner_name, $owner_flags, $owner_langs, $default_gaining_id) = Db::record(get_label('club'), 'SELECT n.name, c.flags, c.langs, c.gaining_id FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 		$owner_pic = new Picture(CLUB_PICTURE);
 		$owner_id = $club_id;
 		$owner_is_elite = false;

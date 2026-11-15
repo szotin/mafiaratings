@@ -177,12 +177,13 @@ class Page extends SeriesPageBase
 		$cs_tournaments = '';
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, c.id, c.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, t.duration, ct.timezone, COUNT(p1.user_id), p.main_points + p.bonus_points + p.shot_points, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff'.
+			'SELECT t.id, t.name, t.flags, c.id, nc.name, c.flags, s.stars, s.flags, p.place, n.name, t.start_time, t.duration, ct.timezone, COUNT(p1.user_id), p.main_points + p.bonus_points + p.shot_points, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff'.
 			' FROM tournament_places p'.
 			' JOIN tournaments t ON t.id = p.tournament_id'.
 			' JOIN tournament_places p1 ON p1.tournament_id = t.id'.
 			' JOIN series_tournaments s ON s.tournament_id = t.id AND s.series_id = ?'.
 			' JOIN clubs c ON c.id = t.club_id'.
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' JOIN addresses a ON a.id = t.address_id'.
 			' JOIN cities ct ON ct.id = a.city_id'.
 			' JOIN names n ON n.id = ct.name_id AND (n.langs & '.$_lang.') <> 0'.
@@ -654,9 +655,10 @@ class Page extends SeriesPageBase
 		echo '</td><td width="48">'.get_label('Club').'</td><td width="240">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
 		
 		$query = new DbQuery(
-			'SELECT g.id, c.id, c.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, g.table_num, g.game_num FROM players p' .
+			'SELECT g.id, c.id, nc.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, e.name, e.flags, t.id, t.name, t.flags, a.id, a.name, a.flags, g.table_num, g.game_num FROM players p' .
 			' JOIN games g ON g.id = p.game_id' .
 			' JOIN clubs c ON c.id = g.club_id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN events e ON e.id = g.event_id' .
 			' JOIN tournaments t ON t.id = g.tournament_id' .
 			' JOIN series_tournaments s ON s.tournament_id = g.tournament_id' .

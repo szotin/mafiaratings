@@ -42,13 +42,14 @@ try
 		$games_count_query->add(' AND g.club_id = ?', $club_id);
 	}
 		
-	$query = new DbQuery('SELECT DISTINCT u.id, nu.name, u.flags, c.id, c.name, a.id, na.name, ct.id, nct.name, IF(nu.name = ?, 0, IF(LOCATE(?, nu.name) = 1, 1, 2)) as mtch, (', $name, $name, $games_count_query);
+	$query = new DbQuery('SELECT DISTINCT u.id, nu.name, u.flags, c.id, nc.name, a.id, na.name, ct.id, nct.name, IF(nu.name = ?, 0, IF(LOCATE(?, nu.name) = 1, 1, 2)) as mtch, (', $name, $name, $games_count_query);
 	$query->add(
 			') as games_count' .
 			' FROM names n'.
 			' JOIN users u ON u.name_id = n.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = u.city_id' .
 			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 ' .
 			' LEFT OUTER JOIN cities a ON a.id = ct.area_id' .

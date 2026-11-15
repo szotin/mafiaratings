@@ -410,7 +410,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		$tournament_id = (int)get_required_param('tournament_id');
 		
 		Db::begin();
@@ -429,7 +429,7 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			$club = new stdClass();
-			list($club->name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+			list($club->name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 		}
 		
 		$name = get_optional_param('name', $old_name);

@@ -24,7 +24,7 @@ class Page extends UserPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$filter = FLAG_FILTER_DEFAULT;
@@ -46,7 +46,8 @@ class Page extends UserPageBase
 			' JOIN games g ON g.event_id = e.id' .
 			' JOIN players p ON p.game_id = g.id' .
 			' JOIN addresses a ON e.address_id = a.id' .
-			' JOIN clubs c ON e.club_id = c.id' . 
+			' JOIN clubs c ON e.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
 			' LEFT OUTER JOIN event_places ep ON ep.event_id = e.id AND ep.user_id = p.user_id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
@@ -102,7 +103,7 @@ class Page extends UserPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, c.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
+			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);
 		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

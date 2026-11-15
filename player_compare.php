@@ -100,6 +100,8 @@ function role_select($form_name, $role_name, $role, $together = false)
 
 function get_player_info($id)
 {
+	global $_lang;
+
 	if ($id > 0)
 	{
 		return Db::record(get_label('user'), 'SELECT name, flags FROM users WHERE id = ?', $id);
@@ -107,7 +109,7 @@ function get_player_info($id)
 	
 	if ($id < 0)
 	{
-		list ($name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', -$id);
+		list ($name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', -$id);
 		$name = get_label('Average player of [0]', $name);
 	}
 	else

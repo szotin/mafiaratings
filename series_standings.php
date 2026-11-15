@@ -109,11 +109,12 @@ class Page extends SeriesPageBase
 		echo '</tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, p.place, p.score, c.id, c.name, c.flags' .
+			'SELECT u.id, nu.name, u.flags, p.place, p.score, c.id, nc.name, c.flags' .
 			' FROM series_places p' .
 			' JOIN users u ON u.id = p.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & ' . $_lang . ') <> 0' .
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & ' . $_lang . ') <> 0' .
 			' WHERE p.series_id = ? AND p.cut_stages = 0' .
 			' ORDER BY p.place' .
 			' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
@@ -303,11 +304,12 @@ class Page extends SeriesPageBase
 		echo '</tr>';
 
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.flags, p.place, p.score, p.tournaments, p.games, p.wins, p.total_cut_off, p.cut_off, p.stage, c.id, c.name, c.flags'.
+			'SELECT u.id, nu.name, u.flags, p.place, p.score, p.tournaments, p.games, p.wins, p.total_cut_off, p.cut_off, p.stage, c.id, nc.name, c.flags'.
 			' FROM series_places p'.
 			' JOIN users u ON u.id = p.user_id'.
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' WHERE p.series_id = ? AND p.cut_stages = ?'.
 			' ORDER BY p.place'.
 			' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,

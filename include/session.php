@@ -154,24 +154,26 @@ class Profile
 		if ($this->is_admin())
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ', c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.fee, c.currency_id, c.parent_id FROM clubs c' .
+				'SELECT c.id, nc.name, ' . (USER_PERM_PLAYER | USER_PERM_REFEREE | USER_PERM_MANAGER) . ', c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.fee, c.currency_id, c.parent_id FROM clubs c' .
+					' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 					' JOIN cities i ON c.city_id = i.id ' .
 					' JOIN names ni ON i.name_id = ni.id AND (ni.langs & '.$_lang.') <> 0' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' JOIN names no ON o.name_id = no.id AND (no.langs & '.$_lang.') <> 0' .
-					' ORDER BY c.name');
+					' ORDER BY nc.name');
 		}
 		else
 		{
 			$query = new DbQuery(
-				'SELECT c.id, c.name, uc.flags, c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.fee, c.currency_id, c.parent_id FROM club_regs uc' .
+				'SELECT c.id, nc.name, uc.flags, c.flags, c.langs, i.id, ni.name, i.country_id, no.name, i.timezone, c.rules, c.scoring_id, c.normalizer_id, c.fee, c.currency_id, c.parent_id FROM club_regs uc' .
 					' JOIN clubs c ON c.id = uc.club_id' .
+					' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 					' JOIN cities i ON i.id = c.city_id' .
 					' JOIN names ni ON i.name_id = ni.id AND (ni.langs & '.$_lang.') <> 0' .
 					' JOIN countries o ON i.country_id = o.id ' .
 					' JOIN names no ON o.name_id = no.id AND (no.langs & '.$_lang.') <> 0' .
 					' WHERE uc.user_id = ?' .
-					' ORDER BY c.name', $this->user_id);
+					' ORDER BY nc.name', $this->user_id);
 		}
 		if ($query)
 		{

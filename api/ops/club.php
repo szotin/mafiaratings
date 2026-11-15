@@ -9,32 +9,29 @@ require_once '../../include/address.php';
 require_once '../../include/event.php';
 require_once '../../include/url.php';
 require_once '../../include/scoring.php';
+require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
-	private function check_name($name, $club_id = -1)
+	// The names of the club from the request: "name" for all languages and "name_xx" for a language
+	// that has its own. Names checks the ones of the languages and that none of them is used by
+	// another club; the one for all languages is checked here.
+	private function get_names($club_id = 0)
 	{
-		if ($name == '')
+		$names = new Names(0, get_label('club name'), 'clubs', $club_id);
+		if (count($names->names) > 0)
 		{
-			throw new Exc(get_label('Please enter [0].', get_label('club name')));
+			$name = trim($names->names[0]->name);
+			if ($name == '')
+			{
+				throw new Exc(get_label('Please enter [0].', get_label('club name')));
+			}
+			check_name($name, get_label('club name'));
+			$names->names[0]->name = $name;
 		}
-
-		check_name($name, get_label('club name'));
-
-		if ($club_id > 0)
-		{
-			$query = new DbQuery('SELECT name FROM clubs WHERE name = ? AND id <> ?', $name, $club_id);
-		}
-		else
-		{
-			$query = new DbQuery('SELECT name FROM clubs WHERE name = ?', $name);
-		}
-		if ($query->next())
-		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Club name'), $name));
-		}
+		return $names;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -45,8 +42,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile, $_lang;
 		
 		check_permissions(PERMISSION_USER);
-		$name = trim(get_required_param('name'));
-		$this->check_name($name);
+		$names = $this->get_names();
 
 		$parent_id = (int)get_optional_param('parent_id', 0);
 		$url = get_optional_param('url');
@@ -110,10 +106,15 @@ class ApiPage extends OpsApiPageBase
 		{
 			$system_league_id = NULL;
 		}
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('club name')));
+		}
 		Db::exec(
 			get_label('club'),
-			'INSERT INTO clubs (name, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id, gaining_id, system_league_id, activated, currency_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?)',
-			$name, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id, $scoring_id, $normalizer_id, $gaining_id, $system_league_id, $currency_id);
+			'INSERT INTO clubs (name_id, langs, rules, flags, web_site, email, phone, city_id, parent_id, scoring_id, normalizer_id, gaining_id, system_league_id, activated, currency_id) VALUES (?, ?, ?, ' . NEW_CLUB_FLAGS . ', ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP(), ?)',
+			$name_id, $langs, $rules_code, $url, $email, $phone, $city_id, $parent_id, $scoring_id, $normalizer_id, $gaining_id, $system_league_id, $currency_id);
 		list($club_id) = Db::record(get_label('club'), 'SELECT LAST_INSERT_ID()');
 		$scoring_id = own_system('scorings', $scoring_id, $club_id, NULL);
 		$normalizer_id = own_system('normalizers', $normalizer_id, $club_id, NULL);
@@ -121,7 +122,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('club'), 'UPDATE clubs SET scoring_id = ?, normalizer_id = ?, gaining_id = ? WHERE id = ?', $scoring_id, $normalizer_id, $gaining_id, $club_id);
 		
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $name_id;
 		$log_details->langs = $langs;
 		$log_details->rules_code = $rules_code;
 		if (!is_null($system_league_id))
@@ -170,7 +172,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('system_league_id', 'The system of the club: the league whose defaults the club starts from - its rules (the default rules of the site, or of the parent club, put through the rules filter of the league) and copies of its default scoring system, normalizer and gaining system. The club keeps it as its system.', 'a sub-club starts from the defaults of its parent club, any other club from the defaults of the site.');
 		$help->request_param('rules_code', 'Default rules of the club.', 'the default rules of the site are used. Ignored for a sub-club, which starts from the rules of its parent.');
 		$help->request_param('scoring_id', 'Default scoring system of the club; the club gets its own copy.', 'the default scoring system of the site is used. Ignored for a sub-club.');
-		$help->request_param('name', 'Club name.');
+		Names::help($help, 'Club', false);
 		$help->request_param('url', 'Club web site URL.');
 		$help->request_param('langs', 'Languages used in the club. A bit combination of language ids.' . valid_langs_help(), 'user profile languages are used.');
 		$help->request_param('email', 'Club email.', 'user email is used.');
@@ -186,22 +188,23 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function change_op()
 	{
-		global $_profile, $_FILES;
-		
+		global $_profile, $_FILES, $_lang;
+
 		$club_id = (int)get_required_param('club_id');
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		
+
 		Db::begin();
-		list($old_name, $old_parent_id, $old_url, $old_email, $old_phone, $old_fee, $old_currency_id, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_system_league_id, $old_city_id, $old_flags, $old_rules_code, $timezone) = Db::record(get_label('club'),
-			'SELECT c.name, c.parent_id, c.web_site, c.email, c.phone, c.fee, c.currency_id, c.langs, c.scoring_id, c.normalizer_id, c.gaining_id, c.system_league_id, ct.id, c.flags, c.rules, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
+		list($old_name_id, $old_parent_id, $old_url, $old_email, $old_phone, $old_fee, $old_currency_id, $old_langs, $old_scoring_id, $old_normalizer_id, $old_gaining_id, $old_system_league_id, $old_city_id, $old_flags, $old_rules_code, $timezone) = Db::record(get_label('club'),
+			'SELECT c.name_id, c.parent_id, c.web_site, c.email, c.phone, c.fee, c.currency_id, c.langs, c.scoring_id, c.normalizer_id, c.gaining_id, c.system_league_id, ct.id, c.flags, c.rules, ct.timezone FROM clubs c JOIN cities ct ON ct.id = c.city_id WHERE c.id = ?', $club_id);
 		$old_system_league_id = (int)$old_system_league_id;
 			
-		$name = get_optional_param('name', $old_name);
-		if ($name != $old_name)
+		$names = $this->get_names($club_id);
+		$name_id = $names->get_id();
+		if ($name_id <= 0)
 		{
-			$this->check_name($name, $club_id);
+			$name_id = $old_name_id;
 		}
-		
+
 		$old_parent_id = (int)$old_parent_id;
 		$parent_id = (int)get_optional_param('parent_id', $old_parent_id);
 		$url = check_url(get_optional_param('url', $old_url));
@@ -302,7 +305,11 @@ class ApiPage extends OpsApiPageBase
 			}
 			else if ($parent_id > 0)
 			{
-				list($system_name, $rules_code, $new_scoring_id, $new_normalizer_id, $new_gaining_id) = Db::record(get_label('club'), 'SELECT name, rules, scoring_id, normalizer_id, gaining_id FROM clubs WHERE id = ?', $parent_id);
+				list($system_name, $rules_code, $new_scoring_id, $new_normalizer_id, $new_gaining_id) = Db::record(get_label('club'),
+					'SELECT n.name, c.rules, c.scoring_id, c.normalizer_id, c.gaining_id'.
+					' FROM clubs c'.
+					' JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0'.
+					' WHERE c.id = ?', $parent_id);
 				$rules_code = upgrade_rules_code($rules_code);
 			}
 			else
@@ -334,15 +341,16 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('club'), 
-			'UPDATE clubs SET activated = UNIX_TIMESTAMP(), name = ?, web_site = ?, langs = ?, email = ?, phone = ?, fee = ?, currency_id = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, gaining_id = ?, system_league_id = ?, flags = ?, rules = ? WHERE id = ?',
-			$name, $url, $langs, $email, $phone, $fee, $currency_id, $city_id, $scoring_id, $normalizer_id, $gaining_id, $system_league_id > 0 ? $system_league_id : NULL, $flags, $rules_code, $club_id);
+			'UPDATE clubs SET activated = UNIX_TIMESTAMP(), name_id = ?, web_site = ?, langs = ?, email = ?, phone = ?, fee = ?, currency_id = ?, city_id = ?, scoring_id = ?, normalizer_id = ?, gaining_id = ?, system_league_id = ?, flags = ?, rules = ? WHERE id = ?',
+			$name_id, $url, $langs, $email, $phone, $fee, $currency_id, $city_id, $scoring_id, $normalizer_id, $gaining_id, $system_league_id > 0 ? $system_league_id : NULL, $flags, $rules_code, $club_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 			$log_details = new stdClass();
-			if ($old_name != $name)
+			if ($old_name_id != $name_id)
 			{
-				$log_details->name = $name;
+				$log_details->name = $names->to_string();
+				$log_details->name_id = $name_id;
 			}
 			if ($old_url != $url)
 			{
@@ -432,7 +440,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change club record.');
 		$help->request_param('club_id', 'Club id.');
-		$help->request_param('name', 'Club name.', 'remains the same.');
+		Names::help($help, 'Club', true);
 		$help->request_param('parent_id', 'Id of the parent club. 0 or negative for changing to top level club.', 'remains the same');
 		$help->request_param('system_league_id', 'The system of the club: a league, or 0 for none. When it changes the club takes the defaults of the new one - of a league its rules (the rules of the club put through the rules filter of the league) and copies of its default scoring system, normalizer and gaining system; of none the defaults of the parent club for a sub-club, of the site for any other club. The former default systems stay with the club as its other systems; the former default rules, if they change, are kept as named rules of the club. When it changes it overrides <q>rules_code</q>, <q>scoring_id</q>, <q>normalizer_id</q> and <q>gaining_id</q>.', 'remains the same, and so do the defaults.');
 		$help->request_param('url', 'Club web site URL.', 'remains the same.');

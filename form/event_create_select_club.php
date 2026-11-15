@@ -21,11 +21,11 @@ try
 		
 	if (is_permitted(PERMISSION_ADMIN))
 	{
-		$query = new DbQuery('SELECT id, name, flags FROM clubs WHERE (flags & ' . CLUB_FLAG_CLOSED . ') = 0 ORDER BY name');
+		$query = new DbQuery('SELECT c.id, n.name, c.flags FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 ORDER BY n.name');
 	}
 	else
 	{
-		$query = new DbQuery('SELECT c.id, c.name, c.flags FROM club_regs cu JOIN clubs c ON c.id = cu.club_id WHERE cu.user_id = ? AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND (cu.flags & ' . USER_PERM_REFEREE . ') <> 0 ORDER BY c.name', $_profile->user_id);
+		$query = new DbQuery('SELECT c.id, nc.name, c.flags FROM club_regs cu JOIN clubs c ON c.id = cu.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE cu.user_id = ? AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND (cu.flags & ' . USER_PERM_REFEREE . ') <> 0 ORDER BY nc.name', $_profile->user_id);
 	}				
 	
 	echo '<table class="dialog_form" width="100%"><tr>';

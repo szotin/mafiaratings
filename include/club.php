@@ -128,13 +128,15 @@ class ClubPageBase extends PageBase
 		list ($this->name, $this->flags, $this->url, $this->langs, $this->rules_code, $this->email, $this->phone, $this->fee, $this->currency_id, $this->currency_pattern, $this->country, $this->city, $this->memb_flags, $this->scoring_id, $this->timezone, $this->parent_id, $this->parent_name, $this->parent_flags) = 
 			Db::record(
 				get_label('club'),
-				'SELECT c.name, c.flags, c.web_site, c.langs, c.rules, c.email, c.phone, c.fee, c.currency_id, cu.pattern, ncr.name, nct.name, u.flags, c.scoring_id, ct.timezone, p.id, p.name, p.flags FROM clubs c ' .
+				'SELECT nc.name, c.flags, c.web_site, c.langs, c.rules, c.email, c.phone, c.fee, c.currency_id, cu.pattern, ncr.name, nct.name, u.flags, c.scoring_id, ct.timezone, p.id, np.name, p.flags FROM clubs c ' .
+					'JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 ' .
 					'JOIN cities ct ON ct.id = c.city_id ' .
 					'JOIN countries cr ON cr.id = ct.country_id ' .
 					'JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 ' .
 					'JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 ' .
 					'LEFT OUTER JOIN club_regs u ON u.club_id = c.id AND u.user_id = ? ' .
 					'LEFT OUTER JOIN clubs p ON c.parent_id = p.id ' .
+					'LEFT OUTER JOIN names np ON np.id = p.name_id AND (np.langs & '.$_lang.') <> 0 ' .
 					'LEFT OUTER JOIN currencies cu ON c.currency_id = cu.id ' .
 					'WHERE c.id = ?',
 				$user_id, $this->id);

@@ -79,7 +79,7 @@ class Page extends UserPageBase
 		$timezone = get_timezone();
 		
 		// Achievements
-		$query = new DbQuery('SELECT t.id, t.name, t.flags, t.start_time, t.duration, c.id, c.name, c.flags, tp.place, (SELECT MAX(stars) FROM series_tournaments WHERE tournament_id = t.id) as stars FROM tournament_places tp JOIN tournaments t ON t.id = tp.tournament_id JOIN clubs c ON c.id = t.club_id WHERE tp.user_id = ? ORDER BY tp.importance DESC, tp.place', $this->id);
+		$query = new DbQuery('SELECT t.id, t.name, t.flags, t.start_time, t.duration, c.id, nc.name, c.flags, tp.place, (SELECT MAX(stars) FROM series_tournaments WHERE tournament_id = t.id) as stars FROM tournament_places tp JOIN tournaments t ON t.id = tp.tournament_id JOIN clubs c ON c.id = t.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE tp.user_id = ? ORDER BY tp.importance DESC, tp.place', $this->id);
 		if ($row = $query->next())
 		{
 			$tournament_pic = new Picture(TOURNAMENT_PICTURE);

@@ -26,7 +26,7 @@ class Page extends AddressPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -42,7 +42,8 @@ class Page extends AddressPageBase
 		
 		$condition = new SQL(
 			' FROM events e' . 
-			' JOIN clubs c ON c.id = e.club_id' . 
+			' JOIN clubs c ON c.id = e.club_id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON a.id = e.address_id' . 
 			' JOIN cities ct ON ct.id = a.city_id' . 
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' . 
@@ -93,7 +94,7 @@ class Page extends AddressPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 
 		$query = new DbQuery(
-			'SELECT c.id, c.name, c.flags, e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, ' .
+			'SELECT c.id, nc.name, c.flags, e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, ' .
 				' (SELECT count(*) FROM games WHERE event_id = e.id) as games,' .
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',

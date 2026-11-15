@@ -19,7 +19,7 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function create_op()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		$league_id = (int)get_optional_param('league_id', -1);
 		$club_id = (int)get_optional_param('club_id', -1);
 		if ($league_id > 0 && $club_id > 0)
@@ -34,7 +34,7 @@ class ApiPage extends OpsApiPageBase
 			// A club has no rules filter the way a league does - it has a plain rules code. Both
 			// are accepted by show_rules(), so the code is stored as is and the series rulebook
 			// shows exactly the rules of the club.
-			list($owner_name, $owner_rules, $owner_langs) = Db::record(get_label('club'), 'SELECT name, rules, langs FROM clubs WHERE id = ?', $club_id);
+			list($owner_name, $owner_rules, $owner_langs) = Db::record(get_label('club'), 'SELECT n.name, c.rules, c.langs FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 			$owner_rules = json_encode($owner_rules);
 			$owner_flags = 0;
 		}
@@ -825,6 +825,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function transfer_op()
 	{
+		global $_lang;
+
 		$series_id = (int)get_required_param('series_id');
 		$new_league_id = (int)get_optional_param('league_id', 0);
 		$new_club_id = (int)get_optional_param('club_id', 0);
@@ -850,7 +852,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list($new_owner_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $new_club_id);
+			list($new_owner_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $new_club_id);
 			$new_owner = new SeriesOwner(NULL, $new_club_id);
 			$is_elite_owner = false;
 			$new_league_id = NULL;
@@ -985,6 +987,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function add_club_op()
 	{
+		global $_lang;
+
 		$series_id = (int)get_required_param('series_id');
 		$club_id = (int)get_required_param('club_id');
 
@@ -993,7 +997,7 @@ class ApiPage extends OpsApiPageBase
 		$owner = new SeriesOwner($league_id, $owner_club_id);
 		check_series_permissions($owner, $series_id);
 
-		list ($club_name) = Db::record(get_label('club'), 'SELECT name FROM clubs WHERE id = ?', $club_id);
+		list ($club_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 
 		// The clubs that are on the series by ownership are already there and cannot be invited.
 		$permanent_clubs = get_series_permanent_clubs($owner);

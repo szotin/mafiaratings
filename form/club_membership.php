@@ -29,7 +29,7 @@ try
 
 	$club_pic = new Picture(CLUB_PICTURE);
 	echo '<p>' . get_label('Join club') . ': <select id="form-join-club" onChange="joinClub()">';
-	$query = new DbQuery('SELECT id, name FROM clubs WHERE (flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND id NOT IN(SELECT club_id FROM club_regs WHERE user_id = ?) ORDER BY name', $user_id);
+	$query = new DbQuery('SELECT c.id, n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0 AND c.id NOT IN(SELECT club_id FROM club_regs WHERE user_id = ?) ORDER BY n.name', $user_id);
 	show_option(0, 0, '');
 	while ($row = $query->next())
 	{
@@ -38,7 +38,7 @@ try
 	}
 	echo '</select></p>';
 	echo '<table class="bordered dark" width="100%">';
-	$query = new DbQuery('SELECT c.id, c.name, c.flags, u.flags FROM club_regs u JOIN clubs c ON c.id = club_id WHERE u.user_id = ? ORDER BY c.name', $user_id);
+	$query = new DbQuery('SELECT c.id, nc.name, c.flags, u.flags FROM club_regs u JOIN clubs c ON c.id = u.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE u.user_id = ? ORDER BY nc.name', $user_id);
 	while ($row = $query->next())
 	{
 		list ($c_id, $c_name, $c_flags, $uc_flags) = $row;

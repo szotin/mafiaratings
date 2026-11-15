@@ -22,7 +22,7 @@ class Page extends UserPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$filter = FLAG_FILTER_DEFAULT;
@@ -46,6 +46,7 @@ class Page extends UserPageBase
 			' LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = tp.user_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = a.city_id' . 
 			' WHERE tp.user_id = ? AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0', $this->id);
 		$ccc_id = $ccc_filter->get_id();
@@ -91,7 +92,7 @@ class Page extends UserPageBase
 		
 		$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, c.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
+			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
 			$condition);
 		$query->add(' GROUP BY t.id ' . $order_by . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

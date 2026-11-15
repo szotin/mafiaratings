@@ -76,7 +76,7 @@ try
 	}
 	else if ($obj == EMAIL_OBJ_EVENT_INVITATION)
 	{
-		list ($club_id, $club_name) = Db::record(get_label('email'), 'SELECT c.id, c.name FROM event_mailings em JOIN events e ON e.id = em.event_id JOIN clubs c ON c.id = e.club_id WHERE em.id = ?', $obj_id);
+		list ($club_id, $club_name) = Db::record(get_label('email'), 'SELECT c.id, nc.name FROM event_mailings em JOIN events e ON e.id = em.event_id JOIN clubs c ON c.id = e.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE em.id = ?', $obj_id);
 		if (isset($_REQUEST['undo']))
 		{
 			Db::exec(get_label('user'), 'UPDATE club_regs SET flags = (flags | ' . USER_CLUB_FLAG_SUBSCRIBED . ') WHERE user_id = ? AND club_id = ?', $user_id, $club_id);

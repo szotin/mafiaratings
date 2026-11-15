@@ -79,10 +79,11 @@ class Page extends ClubPageBase
 		
 		$condition = new SQL(' WHERE u.club_id = ? AND u.games > 0', $this->id);
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.rating as rating, u.red_rating, u.black_rating, u.games as games, u.games_won as won, u.flags, c.id, c.name, c.flags, cu.flags' .
+			'SELECT u.id, nu.name, u.rating as rating, u.red_rating, u.black_rating, u.games as games, u.games_won as won, u.flags, c.id, nc.name, c.flags, cu.flags' .
 				' FROM users u' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN clubs c ON u.club_id = c.id' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN club_regs cu ON cu.club_id = c.id AND cu.user_id = u.id',
 				$condition);
 		$count_query = new DbQuery('SELECT count(*) FROM users u', $condition);	

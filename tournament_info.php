@@ -29,12 +29,13 @@ class Page extends TournamentPageBase
 		if ($games_count > 0)
 		{
 			$query = new DbQuery(
-				'SELECT DISTINCT u.id, nu.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags, nc.name, ct.lat, ct.lon, tu.rating' . 
+				'SELECT DISTINCT u.id, nu.name, u.flags, c.id, ncl.name, c.flags, tu.flags, cu.flags, nc.name, ct.lat, ct.lon, tu.rating' . 
 				' FROM players p' . 
 				' JOIN users u ON u.id = p.user_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN games g ON p.game_id = g.id' . 
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
+				' LEFT OUTER JOIN names ncl ON ncl.id = c.name_id AND (ncl.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
 				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 				' JOIN cities ct ON ct.id = tu.city_id' .
@@ -46,11 +47,12 @@ class Page extends TournamentPageBase
 			}
 			
 			$query = new DbQuery(
-				'SELECT DISTINCT u.id, nu.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags' . 
+				'SELECT DISTINCT u.id, nu.name, u.flags, c.id, ncl.name, c.flags, tu.flags, cu.flags' . 
 				' FROM games g' . 
 				' JOIN users u ON u.id = g.moderator_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
+				' LEFT OUTER JOIN names ncl ON ncl.id = c.name_id AND (ncl.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id' .
 				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = g.club_id' .
 				' WHERE g.tournament_id = ? ORDER BY nu.name', $this->id);
@@ -62,11 +64,12 @@ class Page extends TournamentPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT u.id, nu.name, u.flags, c.id, c.name, c.flags, tu.flags, cu.flags, nc.name, ct.lat, ct.lon, tu.rating' . 
+				'SELECT u.id, nu.name, u.flags, c.id, ncl.name, c.flags, tu.flags, cu.flags, nc.name, ct.lat, ct.lon, tu.rating' . 
 				' FROM tournament_regs tu' . 
 				' JOIN users u ON tu.user_id = u.id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN clubs c ON u.club_id = c.id' . 
+				' LEFT OUTER JOIN names ncl ON ncl.id = c.name_id AND (ncl.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = ?' .
 				' JOIN cities ct ON ct.id = tu.city_id' .
 				' JOIN names nc ON nc.id = ct.name_id AND (nc.langs & '.$_lang.') <> 0'.

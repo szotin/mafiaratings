@@ -26,13 +26,14 @@ class Page extends LeaguePageBase
 
 		$user_pic = new Picture(USER_PICTURE);
 		$query = new DbQuery(
-			'SELECT u.id, nu.name, u.email, u.flags, m.flags, c.id, c.name, c.flags, ni.name' .
+			'SELECT u.id, nu.name, u.email, u.flags, m.flags, c.id, nc.name, c.flags, ni.name' .
 			' FROM league_managers m' .
 			' JOIN users u ON m.user_id = u.id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN cities i ON i.id = u.city_id'.
 			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN clubs c ON u.club_id = c.id' .
+			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' WHERE m.league_id = ?' .
 			' ORDER BY nu.name LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE,
 			$this->id);
