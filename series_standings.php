@@ -244,7 +244,7 @@ class Page extends SeriesPageBase
 
 		$parent_series = array();
 		$query = new DbQuery(
-			'SELECT s.id, ns.name, s.flags, ' . series_owner_fields() . ', ss.stars, g.gaining'.
+			'SELECT s.id, ns.name, s.flags, ' . series_owner_fields() . ', ss.stars, g.gaining, s.start_time, s.max_stars'.
 			' FROM series_series ss'.
 			' JOIN series s ON s.id = ss.parent_id'.
 			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0'.
@@ -254,9 +254,9 @@ class Page extends SeriesPageBase
 		while ($row = $query->next())
 		{
 			$s = new stdClass();
-			list($s->id, $s->name, $s->flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $s->stars, $gaining) = $row;
+			list($s->id, $s->name, $s->flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $s->stars, $gaining, $start_time, $max_stars) = $row;
 			$s->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-			$s->gaining = json_decode($gaining);
+			$s->gaining = set_gaining_series_type(json_decode($gaining), series_type($start_time, $max_stars));
 			$parent_series[] = $s;
 		}
 		$parent_series_pic = new SeriesPicture();

@@ -31,6 +31,11 @@ class ApiPage extends GetApiPageBase
 		
 		list($gaining) = Db::record('gaining', 'SELECT gaining FROM gaining_versions WHERE gaining_id = ? AND version = ?;', $gaining_id, $gaining_version);
 		$gaining = json_decode($gaining);
+		// What seriesType says in the formulas; a season unless asked otherwise.
+		if (isset($_REQUEST['series_type']))
+		{
+			set_gaining_series_type($gaining, (int)$_REQUEST['series_type']);
+		}
 		
 		$players = 20;
 		if (isset($_REQUEST['players']))
@@ -98,6 +103,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('gaining_version', 'Gaining system version.  For example: <a href="gaining_points.php?gaining_id=3&gaining_version=1">/api/get/gaining_points.php?gaining_id=3&gaining_version=1</a> returns gaining points for a 1 star tournament with 20 players using AML gaining system version 1.', '-');
 		$help->request_param('stars', 'Number of stars. For example: <a href="gaining_points.php?gaining_id=3&stars=3">/api/get/gaining_points.php?gaining_id=3&stars=3</a> returns gaining points for a 3 star tournament with 20 players using AML gaining system.', '1 star.');
 		$help->request_param('players', 'Number of players. For example: <a href="gaining_points.php?gaining_id=3&stars=2&players=40">/api/get/gaining_points.php?gaining_id=3&&stars=2&players=40</a> returns gaining points for a 2 star tournament with 40 players using AML gaining system.', '20 players.');
+		$help->request_param('series_type', 'The type of the series the system counts for, which is what <i>seriesType</i> says in its formulas: 0 - a series of tournaments, 1 - a season, 2 - a recurring tournament.', 'a season.');
 		$help->request_param('series', 'When 1, gaining points are returned for sub-series. For example: <a href="gaining_points.php?gaining_id=1&stars=2&players=40&series">/api/get/gaining_points.php?gaining_id=1&stars=2&players=40&series</a> returns gaining points for a 2 star sub-series with 40 players using MWT gaining system.', 'results for common tournament are returned.');
 
 		$help->response_param('points', 'The array of numbers. Size of the array is number of players. Index 0 is num points for the first place; 1 - for the second; 2 - third; etc...');

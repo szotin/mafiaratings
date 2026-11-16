@@ -298,6 +298,14 @@ return array
 	<h3>Examples</h3>
 		<p><code>currentStage = maxCurrentStage ? 2 : 1</code> twice as much for a competition of the final stage.<br>
 		<code>maxCurrentStage = 0 ? score() : table(currentStage, place-1)</code> the plain result while the series has no ladder, and a row of the table per stage once it has one.</p>',
+
+	'seriesType' =>
+	'<h3>Description</h3>
+		<p><code>seriesType</code></p>
+		<p>The type of the series this system is counting for: 0 - a series of tournaments, 1 - a season, 2 - a recurring tournament. It is the series the system belongs to, not the competition being counted. Lets one system count differently for different types of series. A plain value, written without brackets.</p>
+	<h3>Examples</h3>
+		<p><code>seriesType = 2 ? 1 : table(stars-1, place-1)</code> one point for every tournament of a recurring tournament, and the table for the others.<br>
+		<code>seriesType = 1 ? score() : score() / 2</code> half the result outside of a season.</p>',
 );
 
 ?>

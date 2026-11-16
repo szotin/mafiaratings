@@ -84,7 +84,8 @@ class Page extends SeriesPageBase
 		{
 			list($this->gaining) =  Db::record(get_label('gaining'), 'SELECT gaining FROM gaining_versions WHERE gaining_id = ? AND version = ?', $this->gaining_id, $this->gaining_version);
 		}
-		$this->gaining = json_decode($this->gaining);
+		// A system picked to look at counts here for this series all the same.
+		$this->gaining = set_gaining_series_type(json_decode($this->gaining), $this->type);
 		
 		$this->user_id = 0;
 		if (!isset($_REQUEST['user_id']))

@@ -89,7 +89,28 @@ function get_gaining_functions()
 		new EvFuncParam('stage'),
 		new EvFuncParam('maxStage'),
 		new EvFuncParam('currentStage'),
-		new EvFuncParam('maxCurrentStage'));
+		new EvFuncParam('maxCurrentStage'),
+		new EvFuncParam('seriesType'));
+}
+
+// seriesType in a gaining formula: the type of the series the system is counting for - see
+// series_type() in series.php. The numbers are those of SERIES_TYPE_SERIES, SERIES_TYPE_SEASON and
+// SERIES_TYPE_RECURRING, repeated here because this file does not include series.php.
+define('GAINING_SERIES_TYPE_SERIES', 0);
+define('GAINING_SERIES_TYPE_SEASON', 1);
+define('GAINING_SERIES_TYPE_RECURRING', 2);
+
+// Tells a decoded gaining system which type of series it is counting for, so that seriesType in its
+// formulas says so. Whatever reads a gaining system for a series calls this once the json is
+// decoded: a system that is not told is taken to be counting for a season, the most common type.
+function set_gaining_series_type($gaining, $series_type)
+{
+	if (is_object($gaining))
+	{
+		$gaining->__series_type = (int)$series_type;
+		unset($gaining->__cache);
+	}
+	return $gaining;
 }
 
 // $competition_vars are the values that are the same for everybody in this competition, so they
@@ -127,6 +148,7 @@ function get_gaining_points($competition_id, $gaining, $stars, $place, $score, $
 		$evaluator->set_var('ratingSum20', $rating_sum20);
 		$evaluator->set_var('travelingDistance', $trav_dist);
 		$evaluator->set_var('guestCoef', $guest_coef);
+		$evaluator->set_var('seriesType', isset($gaining->__series_type) ? $gaining->__series_type : GAINING_SERIES_TYPE_SEASON);
 		if (is_array($competition_vars))
 		{
 			foreach ($competition_vars as $name => $value)
@@ -184,6 +206,7 @@ function prepare_gaining_evaluator($gaining, $key, $stars, $num_players, $place,
 	$evaluator->set_var('maxStage', 1);
 	$evaluator->set_var('currentStage', 0);
 	$evaluator->set_var('maxCurrentStage', 1);
+	$evaluator->set_var('seriesType', isset($gaining->__series_type) ? $gaining->__series_type : GAINING_SERIES_TYPE_SEASON);
 	$evaluator->set_var('stageScores', array($score, $score));
 	if (isset($gaining->vars))
 	{

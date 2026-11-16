@@ -1057,13 +1057,13 @@ class CompleteCompetitions extends Updater
 		$count = 0;
 		Db::begin();
 		$top_query = new DbQuery(
-			'SELECT s.id, s.flags, s.stages, g.gaining FROM series s' .
+			'SELECT s.id, s.flags, s.stages, g.gaining, s.start_time, s.max_stars FROM series s' .
 			' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version' .
 			' WHERE (s.flags & ' . SERIES_FLAG_DIRTY  . ') <> 0 LIMIT ' . $items_count);
 		while ($row = $top_query->next())
 		{
-			list($series_id, $series_flags, $series_stages, $gaining) = $row;
-			$gaining = json_decode($gaining);
+			list($series_id, $series_flags, $series_stages, $gaining, $series_start, $series_max_stars) = $row;
+			$gaining = set_gaining_series_type(json_decode($gaining), series_type($series_start, $series_max_stars));
 			$stages = series_stage_count($series_stages);
 			$max_tournaments = isset($gaining->maxTournaments) ? $gaining->maxTournaments : 0;
 

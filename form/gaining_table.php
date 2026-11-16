@@ -64,6 +64,13 @@ try
 		$series = (bool)$_REQUEST['series'];
 	}
 
+	// The type of the series the system would be counting for - what seriesType says in its formulas.
+	// A season unless asked otherwise, as for a system that has not been told.
+	if (isset($_REQUEST['series_type']))
+	{
+		set_gaining_series_type($gaining, (int)$_REQUEST['series_type']);
+	}
+
 	// One row per place means every row is a different player, so there is no single result to hand
 	// them all. It stays at zero, and a formula that reads it is previewed on that footing.
 	$score = 0;
