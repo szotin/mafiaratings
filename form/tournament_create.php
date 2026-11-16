@@ -152,6 +152,7 @@ try
 			// Only the series this tournament can be part of: one where tournaments are played,
 			// and not one that is private to somebody else.
 			, can_enter: <?php echo SERIES_FLAG_PLAYS_TOURNAMENTS; ?>
+			, page_size: 0
 		},
 		function(series)
 		{

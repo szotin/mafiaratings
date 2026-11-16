@@ -178,94 +178,119 @@ try
 			// Only the series this tournament can be part of: one where tournaments are played,
 			// and not one that is private to somebody else.
 			, can_enter: <?php echo SERIES_FLAG_PLAYS_TOURNAMENTS; ?>
+			, page_size: 0
 		},
-		function(series)
+		function(offered)
 		{
-			var html = '<table class="dialog_form" width="100%"><tr>';
-			var sl = new Object();
-			for (i = 0; i < series.series.length; ++i)
+			// Plus the series the tournament is in already, whatever the filters above say of them.
+			// The list below is what the save posts, so a series missing from it would be quietly
+			// taken off - and a tournament can be in a series its club is not in the league of, or
+			// whose dates were changed after it was entered.
+			json.post("api/get/series.php", { tournament_id: <?php echo $tournament_id; ?>, canceled: 1, page_size: 0 }, function(own)
 			{
-				var s = series.series[i];
-				if (seriesList[s.id])
+				var ids = {};
+				for (var i = 0; i < offered.series.length; ++i)
 				{
-					sl[s.id] = seriesList[s.id];
+					ids[offered.series[i].id] = true;
 				}
-				else
+				for (var i = 0; i < own.series.length; ++i)
 				{
-					sl[s.id] =
+					if (!ids[own.series[i].id])
 					{
-						id: s.id,
-						selected: false,
-						stars: 0,
-						stage: <?php echo SERIES_STAGE_BASE; ?>
-					};
-				}
-				
-				// Not every series rates its tournaments, and not every series is a ladder. A
-				// series that does neither asks nothing beyond whether the tournament is in it.
-				//
-				// The ladder is the shape of the competition, so only a manager of the series is
-				// shown it. For anybody else the stage simply stays what it is - the op ignores a
-				// stage sent by them, so saving the tournament cannot undo it.
-				var hasStars = (s.max_stars > 0);
-				var hasStages = (s.stages > 1);
-				var mayEditStage = (hasStages && s.is_manager);
-
-				html += '<tr><td width="80" align="center"><img src="' + s.icon + '" width="48"><br><b>' + s.name + '</td>';
-
-				html += '<td><input type="checkbox" id="form-p-' + s.id + '" onclick="seriesParticipantClick(' + s.id + ')"'
-				if (sl[s.id].selected)
-				{
-					html += ' checked';
-				}
-				html += '> <?php echo get_label('participate'); ?>';
-
-				html += '</td>';
-
-				html += '<td align="center" nowrap>';
-				if (mayEditStage)
-				{
-					html += '<select id="form-stage-' + s.id + '" onchange="stageChanged(' + s.id + ')">';
-					for (var j = 0; j < s.stage_names.length; ++j)
-					{
-						html += '<option value="' + s.stage_names[j].stage + '"';
-						if (s.stage_names[j].stage == sl[s.id].stage)
-						{
-							html += ' selected';
-						}
-						html += '>' + s.stage_names[j].name + '</option>';
-					}
-					html += '</select>';
-					if (hasStars)
-					{
-						html += '<br>';
+						offered.series.push(own.series[i]);
 					}
 				}
+				showSeries(offered);
+			});
+		});
+	}
+
+	function showSeries(series)
+	{
+		var html = '<table class="dialog_form" width="100%"><tr>';
+		var sl = new Object();
+		for (i = 0; i < series.series.length; ++i)
+		{
+			var s = series.series[i];
+			if (seriesList[s.id])
+			{
+				sl[s.id] = seriesList[s.id];
+			}
+			else
+			{
+				sl[s.id] =
+				{
+					id: s.id,
+					selected: false,
+					stars: 0,
+					stage: <?php echo SERIES_STAGE_BASE; ?>
+				};
+			}
+			
+			// Not every series rates its tournaments, and not every series is a ladder. A
+			// series that does neither asks nothing beyond whether the tournament is in it.
+			//
+			// The ladder is the shape of the competition, so only a manager of the series is
+			// shown it. For anybody else the stage simply stays what it is - the op ignores a
+			// stage sent by them, so saving the tournament cannot undo it.
+			var hasStars = (s.max_stars > 0);
+			var hasStages = (s.stages > 1);
+			var mayEditStage = (hasStages && s.is_manager);
+
+			html += '<tr><td width="80" align="center"><img src="' + s.icon + '" width="48"><br><b>' + s.name + '</td>';
+
+			html += '<td><input type="checkbox" id="form-p-' + s.id + '" onclick="seriesParticipantClick(' + s.id + ')"'
+			if (sl[s.id].selected)
+			{
+				html += ' checked';
+			}
+			html += '> <?php echo get_label('participate'); ?>';
+
+			html += '</td>';
+
+			html += '<td align="center" nowrap>';
+			if (mayEditStage)
+			{
+				html += '<select id="form-stage-' + s.id + '" onchange="stageChanged(' + s.id + ')">';
+				for (var j = 0; j < s.stage_names.length; ++j)
+				{
+					html += '<option value="' + s.stage_names[j].stage + '"';
+					if (s.stage_names[j].stage == sl[s.id].stage)
+					{
+						html += ' selected';
+					}
+					html += '>' + s.stage_names[j].name + '</option>';
+				}
+				html += '</select>';
 				if (hasStars)
 				{
-					html += '<div id="form-stars-' + s.id + '" class="stars"></div>';
+					html += '<br>';
 				}
-				html += '</td></tr>';
 			}
-			html += '</table>';
-			$('#form-series').html(html);
-
-			seriesList = sl;
-			for (i = 0; i < series.series.length; ++i)
+			if (hasStars)
 			{
-				var s = series.series[i];
-				if (s.max_stars < 1)
-				{
-					continue; // no star control was drawn for it
-				}
-				$("#form-stars-" + s.id).rate(
-				{
-					max_value: s.max_stars,
-					step_size: 1,
-					initial_value: seriesList[s.id].stars,
-				}).on("change", function(ev, data) { starsChanged(this, data.to); });
+				html += '<div id="form-stars-' + s.id + '" class="stars"></div>';
 			}
-		});
+			html += '</td></tr>';
+		}
+		html += '</table>';
+		$('#form-series').html(html);
+
+		seriesList = sl;
+		for (i = 0; i < series.series.length; ++i)
+		{
+			var s = series.series[i];
+			if (s.max_stars < 1)
+			{
+				continue; // no star control was drawn for it
+			}
+			$("#form-stars-" + s.id).rate(
+			{
+				max_value: s.max_stars,
+				step_size: 1,
+				initial_value: seriesList[s.id].stars,
+			}).on("change", function(ev, data) { starsChanged(this, data.to); });
+		}
 	}
 	setSeries();
 	
