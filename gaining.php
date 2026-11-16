@@ -97,6 +97,9 @@ class Page extends PageBase
 			echo '<span id="system-name-box" style="display:inline-block; vertical-align:middle;">';
 			Names::show_control(new Names($this->name_id, get_label('Gaining system name')));
 			echo '</span><script>';
+			// The language menu is shown over the page, not inside the table of the editor, whose cells would draw
+			// their borders around its items.
+			echo '$("#form-name-menu").appendTo("body");';
 			echo '$(document).on("input", "#form-name-div input", function() { dirty(true); });';
 			echo '$(document).on("click", "#form-name-div button.icon", function() { dirty(true); });';
 			echo '</script>';
