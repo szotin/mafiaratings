@@ -24,12 +24,6 @@ function dirty(isDirty)
     return _isDirty;
 }
 
-function onNormalizerNameChange()
-{
-	_data.name = $("#normalizer-name").val();
-	dirty(true);
-}
-
 function setNormalizerVersion(version)
 {
 	if (_data.version != version)
@@ -642,7 +636,7 @@ function refreshNormalizerEditor(isDirty)
 		}
 		else
 		{
-			html += '<label for="normalizer-name">' + str.name + ': </label><input id="normalizer-name" value="' + name.replace(/"/g, '&quot;') + '" onChange="onNormalizerNameChange()"><label for="normalizer-name"> ' + str.version + ': </label>';
+			html += str.name + ': <span id="system-name-slot"></span> ' + str.version + ': ';
 		}
 		html += versionSelectHtml() + '</td></tr>';
 	}
@@ -695,7 +689,12 @@ function refreshNormalizerEditor(isDirty)
 	
     html += '</table>';
     
+    // The name of a system that is not a default one is edited in the name control of the page (Names::show_control,
+    // languages and all), drawn in #system-name-box. The editor gives it its place in the row of the name and keeps it
+    // across redrawing - redrawing would destroy it, so it is taken out first and put back after.
+    var nameBox = $('#system-name-box').detach();
     $("#normalizer-editor").html(html);
+    $('#system-name-slot').replaceWith(nameBox);
     dirty(isDirty);
 }
 

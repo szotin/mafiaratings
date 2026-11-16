@@ -9,6 +9,7 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
+		global $_lang;
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
 		$gaining_id = (int)get_optional_param('gaining_id', -1);
@@ -29,14 +30,14 @@ class ApiPage extends GetApiPageBase
 			if ($name_contains != '')
 			{
 				$name_contains = '%' . $name_contains . '%';
-				$condition->add(' AND s.name LIKE(?)', $name_contains);
+				$condition->add(' AND s.name_id IN (SELECT id FROM names WHERE name LIKE(?))', $name_contains);
 			}
 			
 			if ($name_starts != '')
 			{
 				$name_starts1 = '% ' . $name_starts . '%';
 				$name_starts2 = $name_starts . '%';
-				$condition->add(' AND (s.name LIKE(?) OR s.name LIKE(?))', $name_starts1, $name_starts2);
+				$condition->add(' AND s.name_id IN (SELECT id FROM names WHERE name LIKE(?) OR name LIKE(?))', $name_starts1, $name_starts2);
 			}
 		
 			// A gaining system with neither owner set is global - visible to every league and club.
@@ -78,10 +79,11 @@ class ApiPage extends GetApiPageBase
 		$gainings = array();
 		$query = new DbQuery(
 			// Whether it is the default system of its owner: the club, the league or the site.
-			'SELECT s.id, s.name, s.league_id, s.club_id, v.version, v.gaining,' .
+			'SELECT s.id, ns.name, s.league_id, s.club_id, v.version, v.gaining,' .
 			' (s.flags & ' . SYSTEM_FLAG_SITE_DEFAULT . ') <> 0 OR EXISTS (SELECT 1 FROM clubs c WHERE c.gaining_id = s.id) OR EXISTS (SELECT 1 FROM leagues l WHERE l.gaining_id = s.id)' .
-			' FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id', $condition);
-		$query->add(' ORDER BY s.name, v.version');
+			' FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0', $condition);
+		$query->add(' ORDER BY ns.name, v.version');
 		if ($page_size > 0)
 		{
 			$query->add(' LIMIT ' . ($page * $page_size) . ',' . $page_size);

@@ -40,7 +40,9 @@ try
 	}
 		
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="200">'.get_label('Scoring normalizer name').':</td><td><input id="form-name"></td></tr>';
+	echo '<tr><td width="200" valign="top">'.get_label('Scoring normalizer name').':</td><td>';
+	Names::show_control(new Names(0, get_label('Scoring normalizer name'), NULL, 0, NULL, 'name', false));
+	echo '</td></tr>';
 	
 	echo '<tr><td>'.get_label('Copy all rules from') . ':</td><td><select id="form-copy">';
 	show_option(0, 0, '');
@@ -57,11 +59,11 @@ try
 		var params =
 		{
 			op: 'create'
-			, name: $("#form-name").val()
 			, copy_id: $("#form-copy").val()
 			, club_id: <?php echo $club_id; ?>
 			, league_id: <?php echo $league_id; ?>
 		};
+		nameControl.fillRequest(params);
 		json.post("api/ops/normalizer.php", params, onSuccess);
 	}
 	</script>

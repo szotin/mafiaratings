@@ -17,11 +17,11 @@ try
 	if (isset($_REQUEST['version']))
 	{
 		$gaining_version = (int)$_REQUEST['version'];
-		list($gaining, $name, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? AND v.version = ?', $gaining_id, $gaining_version);
+		list($gaining, $name, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, ns.name, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE v.gaining_id = ? AND v.version = ?', $gaining_id, $gaining_version);
 	}
 	else
 	{
-		list($gaining, $name, $gaining_version, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, s.name, v.version, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id WHERE v.gaining_id = ? ORDER BY version DESC LIMIT 1', $gaining_id);
+		list($gaining, $name, $gaining_version, $league_id) = Db::record(get_label('gaining'), 'SELECT v.gaining, ns.name, v.version, s.league_id FROM gaining_versions v JOIN gainings s ON s.id = v.gaining_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE v.gaining_id = ? ORDER BY version DESC LIMIT 1', $gaining_id);
 		$gaining_version = (int)$gaining_version;
 	}
 	$gaining = json_decode($gaining);

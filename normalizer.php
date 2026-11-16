@@ -10,6 +10,7 @@ class Page extends PageBase
 	private $normalizer_id;
 	private $used_versions;
 	private $normalizer_name;
+	private $name_id;
 	private $name_fixed;
 	private $normalizer_version;
 	private $current_version;
@@ -17,6 +18,8 @@ class Page extends PageBase
 	
 	protected function prepare()
 	{
+		global $_lang;
+
 		parent::prepare();
 		
 		if (!isset($_REQUEST['id']))
@@ -25,7 +28,7 @@ class Page extends PageBase
 		}
 		$normalizer_id = (int)$_REQUEST['id'];
 		
-		list($this->normalizer_id, $this->normalizer_name, $this->current_version, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT id, name, version, club_id, league_id FROM normalizers WHERE id = ?', $normalizer_id);
+		list($this->normalizer_id, $this->name_id, $this->normalizer_name, $this->current_version, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT s.id, s.name_id, ns.name, s.version, s.club_id, s.league_id FROM normalizers s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE s.id = ?', $normalizer_id);
 		if (is_null($club_id))
 		{
 			if (is_null($league_id))
@@ -82,6 +85,17 @@ class Page extends PageBase
 		echo ' <button onclick="editJson()">' . get_label('Edit json') . '</button>';
 		echo '</p>';
 		echo '<script src="' . versioned_asset('js/normalizer_editor.js') . '"></script>';
+		if (!$this->name_fixed)
+		{
+			// The names of the system, edited here rather than in the editor, which only gives them a place. Typing in
+			// them or dropping a language is an edit to save like any other.
+			echo '<span id="system-name-box" style="display:inline-block; vertical-align:middle;">';
+			Names::show_control(new Names($this->name_id, get_label('Scoring normalizer name')));
+			echo '</span><script>';
+			echo '$(document).on("input", "#form-name-div input", function() { dirty(true); });';
+			echo '$(document).on("click", "#form-name-div button.icon", function() { dirty(true); });';
+			echo '</script>';
+		}
 		echo '<div id="normalizer-editor"></div>';
 	}
 	
@@ -285,7 +299,7 @@ class Page extends PageBase
 			};
 			if (!data.nameFixed)
 			{
-				params.name = data.name;
+				nameControl.fillRequest(params);
 			}
 			json.post("api/ops/normalizer.php", params, function(response)
 			{

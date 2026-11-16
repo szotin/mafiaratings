@@ -59,30 +59,6 @@ function check_scoring($scoring)
 
 class ApiPage extends OpsApiPageBase
 {
-	// The name is unique among the systems of the same owner. The default system of a club is
-	// often a copy of one of the site under the same name, so the site's do not count.
-	private function check_name($name, $club_id, $league_id, $id = -1)
-	{
-		if ($name == '')
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('scoring system name')));
-		}
-
-		check_name($name, get_label('scoring system name'));
-
-		$query = new DbQuery('SELECT name FROM scorings WHERE name = ? AND club_id <=> ? AND league_id <=> ?', $name, $club_id, $league_id);
-		
-		if ($id > 0)
-		{
-			$query->add(' AND id <> ?', $id);
-		}
-		
-		if ($query->next())
-		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Scoring system name'), $name));
-		}
-	}
-
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -115,7 +91,6 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$copy_id = (int)get_optional_param('copy_id', -1);
-		$name = trim(get_required_param('name'));
 		$scoring = get_optional_param('scoring', '{}');
 		if (is_string($scoring))
 		{
@@ -126,9 +101,9 @@ class ApiPage extends OpsApiPageBase
 		$scoring = json_encode($scoring);
 		
 		Db::begin();
-		$this->check_name($name, $club_id, $league_id);
+		$names = get_system_names('scorings', get_label('Scoring system name'), $club_id, $league_id);
 		
-		Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
+		Db::exec(get_label('scoring system'), 'INSERT INTO scorings (club_id, league_id, name_id, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $names->get_id());
 		list ($scoring_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		
 		if ($copy_id > 0)
@@ -144,7 +119,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = 1 WHERE id = ?', $scoring_id);
 		
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $names->get_id();
 		$log_details->version = 1;
 		$log_details->scoring = $scoring;
 		db_log(LOG_OBJECT_SCORING_SYSTEM, 'created', $log_details, $scoring_id, $club_id, $league_id);
@@ -157,7 +133,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create scoring system in the club. Or create a global scoring system. "Global" means that it can be used in any club. Creating global scoring system requires <em>admin</em> permissions.');
 		$help->request_param('club_id', 'Club id.', 'global scoring system is created.');
 		$help->request_param('league_id', 'League id.', 'global scoring system is created.');
-		$help->request_param('name', 'Scoring system name.');
+		Names::help($help, 'Scoring system', false);
 		$help->request_param('copy_id', 'Id of the existing scoring system to be used as an initial template. If set, the latest version of scoring rules from this system are copied to the new system.', 'parameter <q>scoring</q> is used to create the new system.');
 		api_scoring_help($help->request_param('scoring', 'Scoring rules:', 'empty scoring system is created.'));
 		$help->response_param('scoring_id', 'Id of the newly created scoring system.');
@@ -174,7 +150,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $league_id, $old_name) = Db::record(get_label('scoring system'), 'SELECT club_id, league_id, name FROM scorings WHERE id = ?', $scoring_id);
+		list ($club_id, $league_id, $old_name_id) = Db::record(get_label('scoring system'), 'SELECT club_id, league_id, name_id FROM scorings WHERE id = ?', $scoring_id);
 		if (!is_null($club_id))
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
@@ -192,9 +168,14 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_ADMIN);
 		}
 		
-		// A default system is called by the name of its owner, so its own name stays as it is.
-		$name = is_default_system('scorings', $scoring_id) ? $old_name : trim(get_optional_param('name', $old_name));
-		$this->check_name($name, $club_id, $league_id, $scoring_id);
+		// A default system is called by the name of its owner, so its own names stay as they are; so do
+		// the names of any system when the request has none.
+		$name_id = $old_name_id;
+		if (!is_default_system('scorings', $scoring_id) && isset($_REQUEST['name']))
+		{
+			$names = get_system_names('scorings', get_label('Scoring system name'), $club_id, $league_id, $scoring_id);
+			$name_id = $names->get_id();
+		}
 		
 		list ($current_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $scoring_id);
 		
@@ -229,11 +210,12 @@ class ApiPage extends OpsApiPageBase
 		// change even when its contents are a copy.
 		$changed = (!$exists || $old_scoring != $scoring);
 		
-		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name = ? WHERE id = ?', $name, $scoring_id);
+		Db::exec(get_label('scoring system'), 'UPDATE scorings SET name_id = ? WHERE id = ?', $name_id, $scoring_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
-			$log_details->name = $name;
+			$log_details->name = (new Names($name_id, get_label('Scoring system name')))->to_string();
+			$log_details->name_id = $name_id;
 			db_log(LOG_OBJECT_SCORING_SYSTEM, 'changed', $log_details, $scoring_id, $club_id, $league_id);
 		}
 		
@@ -285,7 +267,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change a scoring system. Which version is written is up to the <em>scoring_version</em> parameter: an existing one is rewritten where it is, and every tournament and round already scored on it is marked to be counted again; one number above the highest version there is creates that version and makes it the current one, leaving everything scored on the older versions as it was.');
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) updating requires <em>admin</em> permissions.');
-		$help->request_param('name', 'Scoring system name.', 'remains the same.');
+		Names::help($help, 'Scoring system', true);
 		$help->request_param('scoring_version', 'The version to write. An existing version is rewritten where it is, and whatever was scored on it is counted again. One number above the highest version there is creates that version and makes it current. Any other number is refused.', 'is the current version.');
 		api_scoring_help($help->request_param('scoring', 'Scoring rules:', 'remain the same.'));
 		$help->response_param('scoring_version', 'The version the change landed on.');
@@ -381,6 +363,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function delete_op()
 	{
+		global $_lang;
+
 		$scoring_id = (int)get_required_param('scoring_id');
 		
 		list ($club_id, $league_id) = Db::record(get_label('scoring system'), 'SELECT club_id, league_id FROM scorings WHERE id = ?', $scoring_id);
@@ -410,7 +394,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list($scoring_name) = Db::record(get_label('scoring system'), 'SELECT name FROM scorings WHERE id = ?', $scoring_id);
+			list($scoring_name) = Db::record(get_label('scoring system'), 'SELECT n.name FROM scorings s JOIN names n ON n.id = s.name_id AND (n.langs & '.$_lang.') <> 0 WHERE s.id = ?', $scoring_id);
 			check_not_in_tournament_schemas('scoring_id', $scoring_id, $scoring_name);
 			Db::exec(get_label('scoring system'), 'UPDATE scorings SET version = NULL WHERE id = ?', $scoring_id);
 			Db::exec(get_label('scoring system'), 'DELETE FROM scoring_versions WHERE scoring_id = ?', $scoring_id);

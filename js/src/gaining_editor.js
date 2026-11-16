@@ -182,12 +182,6 @@ function geLeavesCorrect(node)
 //--------------------------------------------------------------------------------------
 // name, version, formulas
 //--------------------------------------------------------------------------------------
-function geNameChange()
-{
-	_data.name = $("#gaining-name").val();
-	dirty(true);
-}
-
 function gePointsChange(which)
 {
 	_data.gaining[which] = $("#gaining-" + which).val();
@@ -570,7 +564,7 @@ function refreshGainingEditor(isDirty)
 	}
 	else
 	{
-		html += '<input id="gaining-name" value="' + geEscape(_data.name) + '" oninput="geNameChange()">';
+		html += '<span id="system-name-slot"></span>';
 	}
 	html += ' &emsp; ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
 	html += geSectionEnd();
@@ -617,7 +611,12 @@ function refreshGainingEditor(isDirty)
 	html += geVarsHtml('vars', _data.strings.vars, _data.strings.varsHelp);
 	html += geTableHtml();
 
+	// The name of a system that is not a default one is edited in the name control of the page (Names::show_control,
+	// languages and all), drawn in #system-name-box. The editor gives it its place in the row of the name and keeps it
+	// across redrawing - redrawing would destroy it, so it is taken out first and put back after.
+	var nameBox = $('#system-name-box').detach();
 	$("#gaining-editor").html(html);
+	$('#system-name-slot').replaceWith(nameBox);
 	dirty(isDirty);
 	refreshGainingPreview();
 }

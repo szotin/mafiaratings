@@ -10,30 +10,6 @@ define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
-	// The name is unique among the normalizers of the same owner. The default normalizer of a club
-	// is often a copy of one of the site under the same name, so the site's do not count.
-	private function check_name($name, $club_id, $league_id, $id = -1)
-	{
-		if ($name == '')
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('Scoring normalizer name')));
-		}
-
-		check_name($name, get_label('Scoring normalizer name'));
-
-		$query = new DbQuery('SELECT name FROM normalizers WHERE name = ? AND club_id <=> ? AND league_id <=> ?', $name, $club_id, $league_id);
-		
-		if ($id > 0)
-		{
-			$query->add(' AND id <> ?', $id);
-		}
-		
-		if ($query->next())
-		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Scoring normalizer name'), $name));
-		}
-	}
-
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -66,7 +42,6 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		$copy_id = (int)get_optional_param('copy_id', -1);
-		$name = trim(get_required_param('name'));
 		$normalizer = get_optional_param('normalizer', '{}');
 		if (!is_string($normalizer))
 		{
@@ -78,9 +53,9 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		$this->check_name($name, $club_id, $league_id);
+		$names = get_system_names('normalizers', get_label('Scoring normalizer name'), $club_id, $league_id);
 		
-		Db::exec(get_label('scoring normalizer'), 'INSERT INTO normalizers (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
+		Db::exec(get_label('scoring normalizer'), 'INSERT INTO normalizers (club_id, league_id, name_id, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $names->get_id());
 		list ($normalizer_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		
 		if ($copy_id > 0)
@@ -96,7 +71,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET version = 1 WHERE id = ?', $normalizer_id);
 
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $names->get_id();
 		$log_details->version = 1;
 		$log_details->normalizer = $normalizer;
 		db_log(LOG_OBJECT_SCORING_NORMALIZER, 'created', $log_details, $normalizer_id, $club_id, $league_id);
@@ -109,7 +85,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create scoring normalizer in the club. Or create a global scoring normalizer. "Global" means that it can be used in any club. Creating global scoring normalizer requires <em>admin</em> permissions.');
 		$help->request_param('club_id', 'Club id.', 'global scoring normalizer is created.');
 		$help->request_param('league_id', 'League id.', 'global scoring normalizer is created.');
-		$help->request_param('name', 'Scoring normalizer name.');
+		Names::help($help, 'Scoring normalizer', false);
 		$help->request_param('copy_id', 'Id of the existing scoring normalizer to be used as an initial template.', 'parameter <q>normalizer</q> is used to create the new system.');
 		api_normalizer_help($help->request_param('normalizer', 'Normalizer rules:', 'empty scoring normalizer is created.'));
 		$help->response_param('normalizer_id', 'Id of the newly created scoring normalizer.');
@@ -125,7 +101,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $league_id, $old_name) = Db::record(get_label('scoring normalizer'), 'SELECT club_id, league_id, name FROM normalizers WHERE id = ?', $normalizer_id);
+		list ($club_id, $league_id, $old_name_id) = Db::record(get_label('scoring normalizer'), 'SELECT club_id, league_id, name_id FROM normalizers WHERE id = ?', $normalizer_id);
 		if (!is_null($club_id))
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
@@ -143,9 +119,14 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_ADMIN);
 		}
 		
-		// A default system is called by the name of its owner, so its own name stays as it is.
-		$name = is_default_system('normalizers', $normalizer_id) ? $old_name : trim(get_optional_param('name', $old_name));
-		$this->check_name($name, $club_id, $league_id, $normalizer_id);
+		// A default system is called by the name of its owner, so its own names stay as they are; so do
+		// the names of any system when the request has none.
+		$name_id = $old_name_id;
+		if (!is_default_system('normalizers', $normalizer_id) && isset($_REQUEST['name']))
+		{
+			$names = get_system_names('normalizers', get_label('Scoring normalizer name'), $club_id, $league_id, $normalizer_id);
+			$name_id = $names->get_id();
+		}
 		
 		list ($current_version) = Db::record(get_label('scoring normalizer'), 'SELECT version FROM normalizers WHERE id = ?', $normalizer_id);
 		
@@ -181,11 +162,12 @@ class ApiPage extends OpsApiPageBase
 		// change even when its contents are a copy.
 		$changed = (!$exists || $old_normalizer != $normalizer);
 		
-		Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET name = ? WHERE id = ?', $name, $normalizer_id);
+		Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET name_id = ? WHERE id = ?', $name_id, $normalizer_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
-			$log_details->name = $name;
+			$log_details->name = (new Names($name_id, get_label('Scoring normalizer name')))->to_string();
+			$log_details->name_id = $name_id;
 			db_log(LOG_OBJECT_SCORING_NORMALIZER, 'changed', $log_details, $normalizer_id, $club_id, $league_id);
 		}
 		
@@ -231,7 +213,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Change a scoring normalizer. Which version is written is up to the <em>normalizer_version</em> parameter: an existing one is rewritten where it is, and every tournament normalized by it is marked to be counted again; one number above the highest version there is creates that version and makes it the current one, leaving the tournaments on the older versions as they were.');
 		$help->request_param('normalizer_id', 'Scoring normalizer id. If the scoring normalizer is global (shared between clubs) updating requires <em>admin</em> permissions.');
-		$help->request_param('name', 'Scoring normalizer name.', 'remains the same.');
+		Names::help($help, 'Scoring normalizer', true);
 		api_normalizer_help($help->request_param('normalizer', 'Normalizer rules:', 'remain the same.'));
 		$help->request_param('normalizer_version', 'The version to write. An existing version is rewritten where it is, and every tournament normalized by it is counted again. One number above the highest version there is creates that version and makes it current. Any other number is refused.', 'is the current version.');
 		$help->response_param('normalizer_version', 'The version the change landed on.');
@@ -326,6 +308,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function delete_op()
 	{
+		global $_lang;
+
 		$normalizer_id = (int)get_required_param('normalizer_id');
 		
 		list ($club_id, $league_id) = Db::record(get_label('Scoring normalizer'), 'SELECT club_id, league_id FROM normalizers WHERE id = ?', $normalizer_id);
@@ -355,7 +339,7 @@ class ApiPage extends OpsApiPageBase
 		}
 		else
 		{
-			list($normalizer_name) = Db::record(get_label('scoring normalizer'), 'SELECT name FROM normalizers WHERE id = ?', $normalizer_id);
+			list($normalizer_name) = Db::record(get_label('scoring normalizer'), 'SELECT n.name FROM normalizers s JOIN names n ON n.id = s.name_id AND (n.langs & '.$_lang.') <> 0 WHERE s.id = ?', $normalizer_id);
 			check_not_in_tournament_schemas('normalizer_id', $normalizer_id, $normalizer_name);
 			Db::exec(get_label('scoring normalizer'), 'UPDATE normalizers SET version = NULL WHERE id = ?', $normalizer_id);
 			Db::exec(get_label('scoring normalizer'), 'DELETE FROM normalizer_versions WHERE normalizer_id = ?', $normalizer_id);

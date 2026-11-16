@@ -38,33 +38,6 @@ class ApiPage extends OpsApiPageBase
 		}
 	}
 
-	private function check_name($name, $league_id, $club_id, $id = -1)
-	{
-		global $_profile;
-
-		if ($name == '')
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('gaining system name')));
-		}
-
-		check_name($name, get_label('gaining system name'));
-
-		// The name is unique among the systems of the same owner. The default system of a club or
-		// a league is often a copy of one of the site under the same name, so the site's do not
-		// count.
-		$query = new DbQuery('SELECT name FROM gainings WHERE name = ? AND league_id <=> ? AND club_id <=> ?', $name, $league_id, $club_id);
-
-		if ($id > 0)
-		{
-			$query->add(' AND id <> ?', $id);
-		}
-
-		if ($query->next())
-		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Gaining system name'), $name));
-		}
-	}
-
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -75,7 +48,6 @@ class ApiPage extends OpsApiPageBase
 		$this->check_owner($league_id, $club_id);
 
 		$copy_id = (int)get_optional_param('copy_id', -1);
-		$name = trim(get_required_param('name'));
 		$gaining = get_optional_param('gaining', '{}');
 		if (is_string($gaining))
 		{
@@ -86,9 +58,9 @@ class ApiPage extends OpsApiPageBase
 		$gaining = json_encode($gaining);
 		
 		Db::begin();
-		$this->check_name($name, $league_id, $club_id);
+		$names = get_system_names('gainings', get_label('Gaining system name'), $club_id, $league_id);
 
-		Db::exec(get_label('gaining system'), 'INSERT INTO gainings (league_id, club_id, name, version) VALUES (?, ?, ?, NULL)', $league_id, $club_id, $name);
+		Db::exec(get_label('gaining system'), 'INSERT INTO gainings (league_id, club_id, name_id, version) VALUES (?, ?, ?, NULL)', $league_id, $club_id, $names->get_id());
 		list ($gaining_id) = Db::record(get_label('note'), 'SELECT LAST_INSERT_ID()');
 		
 		if ($copy_id > 0)
@@ -104,7 +76,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('gaining system'), 'UPDATE gainings SET version = 1 WHERE id = ?', $gaining_id);
 		
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $names->get_id();
 		$log_details->version = 1;
 		$log_details->gaining = $gaining;
 		db_log(LOG_OBJECT_GAINING_SYSTEM, 'created', $log_details, $gaining_id, $club_id, $league_id);
@@ -117,7 +90,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Create gaining system in a league or in a club. Or create a global gaining system. "Global" means that it can be used anywhere. Creating global gaining system requires <em>admin</em> permissions.');
 		$help->request_param('league_id', 'League id.', 'global gaining system is created.');
 		$help->request_param('club_id', 'Club id. Pass either this or <q>league_id</q>, not both.', 'global gaining system is created.');
-		$help->request_param('name', 'gaining system name.');
+		Names::help($help, 'Gaining system', false);
 		$help->request_param('copy_id', 'Id of the existing gaining system to be used as an initial template. If set, the latest version of gaining rules from this system are copied to the new system.', 'parameter <q>gaining</q> is used to create the new system.');
 		api_gaining_help($help->request_param('gaining', 'gaining rules:', 'empty gaining system is created.'));
 		$help->response_param('gaining_id', 'Id of the newly created gaining system.');
@@ -133,7 +106,7 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($league_id, $club_id, $old_name) = Db::record(get_label('gaining system'), 'SELECT league_id, club_id, name FROM gainings WHERE id = ?', $gaining_id);
+		list ($league_id, $club_id, $old_name_id) = Db::record(get_label('gaining system'), 'SELECT league_id, club_id, name_id FROM gainings WHERE id = ?', $gaining_id);
 		if (!is_null($club_id))
 		{
 			check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
@@ -147,9 +120,14 @@ class ApiPage extends OpsApiPageBase
 			check_permissions(PERMISSION_ADMIN);
 		}
 
-		// A default system is called by the name of its owner, so its own name stays as it is.
-		$name = is_default_system('gainings', $gaining_id) ? $old_name : trim(get_optional_param('name', $old_name));
-		$this->check_name($name, $league_id, $club_id, $gaining_id);
+		// A default system is called by the name of its owner, so its own names stay as they are; so do
+		// the names of any system when the request has none.
+		$name_id = $old_name_id;
+		if (!is_default_system('gainings', $gaining_id) && isset($_REQUEST['name']))
+		{
+			$names = get_system_names('gainings', get_label('Gaining system name'), $club_id, $league_id, $gaining_id);
+			$name_id = $names->get_id();
+		}
 		
 		list ($current_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $gaining_id);
 		
@@ -190,11 +168,12 @@ class ApiPage extends OpsApiPageBase
 			Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE gaining_id = ? AND gaining_version = ?', $gaining_id, $version);
 		}
 
-		Db::exec(get_label('gaining system'), 'UPDATE gainings SET name = ? WHERE id = ?', $name, $gaining_id);
+		Db::exec(get_label('gaining system'), 'UPDATE gainings SET name_id = ? WHERE id = ?', $name_id, $gaining_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details = new stdClass();
-			$log_details->name = $name;
+			$log_details->name = (new Names($name_id, get_label('Gaining system name')))->to_string();
+			$log_details->name_id = $name_id;
 			db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, $club_id, $league_id);
 		}
 		
@@ -244,7 +223,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Change a gaining system. Which version is written is up to the <em>gaining_version</em> parameter: an existing one is rewritten where it is, and every series using it is marked to be counted again; one number above the highest version there is creates that version and makes it the current one, leaving the series on the older versions as they were.');
 		$help->request_param('gaining_id', 'gaining system id. If the gaining system is global (shared between leagues) updating requires <em>admin</em> permissions.');
-		$help->request_param('name', 'gaining system name.', 'remains the same.');
+		Names::help($help, 'Gaining system', true);
 		api_gaining_help($help->request_param('gaining', 'gaining rules:', 'remain the same.'));
 		$help->request_param('gaining_version', 'The version to write. An existing version is rewritten where it is, and every series using it is counted again. One number above the highest version there is creates that version and makes it current. Any other number is refused.', 'is the current version.');
 		$help->response_param('gaining_version', 'The version the change landed on.');

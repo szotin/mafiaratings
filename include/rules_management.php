@@ -183,6 +183,7 @@ class RulesManagement
 	// The default system first - it is edited, never deleted - then the others.
 	private function show_scorings()
 	{
+		global $_lang;
 		list($default_id) = $this->default_systems();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createScoringSystem(' . $this->scoring_owner_args() . ')" title="' . get_label('New scoring system') . '">';
@@ -194,8 +195,8 @@ class RulesManagement
 		echo '<a onclick="mr.editScoringSystem(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
 		echo '</td><td><a href="javascript:showScoring(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td></tr>';
 
-		$query = new DbQuery('SELECT id, name, version FROM scorings WHERE ', $this->owner_condition());
-		$query->add(' AND id <> ? ORDER BY name', $default_id);
+		$query = new DbQuery('SELECT s.id, ns.name, s.version FROM scorings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
+		$query->add(' AND s.id <> ? ORDER BY ns.name', $default_id);
 		while ($row = $query->next())
 		{
 			list ($id, $name, $version) = $row;
@@ -211,6 +212,7 @@ class RulesManagement
 	// normalization is for a tournament to choose, not for its club or league.
 	private function show_normalizers()
 	{
+		global $_lang;
 		list($scoring_id, $default_id) = $this->default_systems();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createNormalizer(' . $this->scoring_owner_args() . ')" title="' . get_label('New scoring normalizer') . '">';
@@ -224,8 +226,8 @@ class RulesManagement
 		}
 		echo '</td><td>' . get_label('[default]') . '</td></tr>';
 
-		$query = new DbQuery('SELECT id, name, version FROM normalizers WHERE ', $this->owner_condition());
-		$query->add(' AND id <> ? ORDER BY name', (int)$default_id);
+		$query = new DbQuery('SELECT s.id, ns.name, s.version FROM normalizers s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
+		$query->add(' AND s.id <> ? ORDER BY ns.name', (int)$default_id);
 		while ($row = $query->next())
 		{
 			list ($id, $name, $version) = $row;
@@ -240,6 +242,7 @@ class RulesManagement
 	// The default system first - it is edited, never deleted - then the others.
 	private function show_gainings()
 	{
+		global $_lang;
 		list($scoring_id, $normalizer_id, $default_id) = $this->default_systems();
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createGainingSystem(' . $this->gaining_owner_args() . ')" title="' . get_label('New gaining system') . '">';
@@ -249,8 +252,8 @@ class RulesManagement
 		echo '<tr><td class="dark" align="center">';
 		echo '<a onclick="mr.editGainingSystem(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
 		echo '</td><td><a href="javascript:showGaining(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td></tr>';
-		$query = new DbQuery('SELECT id, name, version FROM gainings WHERE ', $this->owner_condition());
-		$query->add(' AND id <> ? ORDER BY name', $default_id);
+		$query = new DbQuery('SELECT s.id, ns.name, s.version FROM gainings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
+		$query->add(' AND s.id <> ? ORDER BY ns.name', $default_id);
 		while ($row = $query->next())
 		{
 			list ($id, $name, $version) = $row;

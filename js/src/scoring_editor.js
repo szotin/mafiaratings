@@ -554,12 +554,6 @@ function sortingHtml()
     return html;
 }
 
-function onScoringNameChange()
-{
-	_data.name = $("#scoring-name").val();
-	dirty(true);
-}
-
 function setScoringVersion(version)
 {
 	if (_data.version != version)
@@ -597,7 +591,7 @@ function refreshScoringEditor(isDirty)
 		}
 		else
 		{
-			html += '<input id="scoring-name" value="' + name.replace(/"/g, '&quot;') + '" oninput="onScoringNameChange()">';
+			html += '<span id="system-name-slot"></span>';
 		}
 		html += ' ' + _data.strings.version + ': ' + versionSelectHtml() + '</td></tr>';
 	}
@@ -609,7 +603,12 @@ function refreshScoringEditor(isDirty)
 	html += sortingHtml();
 	html += '</table>';
     
+    // The name of a system that is not a default one is edited in the name control of the page (Names::show_control,
+    // languages and all), drawn in #system-name-box. The editor gives it its place in the row of the name and keeps it
+    // across redrawing - redrawing would destroy it, so it is taken out first and put back after.
+    var nameBox = $('#system-name-box').detach();
     $("#scoring-editor").html(html);
+    $('#system-name-slot').replaceWith(nameBox);
     
     for (var sectionName in _data.sections)
     {

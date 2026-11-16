@@ -10,6 +10,7 @@ class Page extends PageBase
 	private $scoring_id;
 	private $used_versions;
 	private $scoring_name;
+	private $name_id;
 	private $name_fixed;
 	private $scoring_version;
 	private $current_version;
@@ -17,6 +18,8 @@ class Page extends PageBase
 	
 	protected function prepare()
 	{
+		global $_lang;
+
 		parent::prepare();
 		
 		if (!isset($_REQUEST['id']))
@@ -25,7 +28,7 @@ class Page extends PageBase
 		}
 		$scoring_id = (int)$_REQUEST['id'];
 		
-		list($this->scoring_id, $this->scoring_name, $this->current_version, $club_id, $league_id) = Db::record(get_label('scoring system'), 'SELECT id, name, version, club_id, league_id FROM scorings WHERE id = ?', $scoring_id);
+		list($this->scoring_id, $this->name_id, $this->scoring_name, $this->current_version, $club_id, $league_id) = Db::record(get_label('scoring system'), 'SELECT s.id, s.name_id, ns.name, s.version, s.club_id, s.league_id FROM scorings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE s.id = ?', $scoring_id);
 		if (is_null($club_id))
 		{
 			if (is_null($league_id))
@@ -103,6 +106,17 @@ class Page extends PageBase
 		echo '</ul>';
 		
 		echo '<script src="' . versioned_asset('js/scoring_editor.js') . '"></script>';
+		if (!$this->name_fixed)
+		{
+			// The names of the system, edited here rather than in the editor, which only gives them a place. Typing in
+			// them or dropping a language is an edit to save like any other.
+			echo '<span id="system-name-box" style="display:inline-block; vertical-align:middle;">';
+			Names::show_control(new Names($this->name_id, get_label('Scoring system name')));
+			echo '</span><script>';
+			echo '$(document).on("input", "#form-name-div input", function() { dirty(true); });';
+			echo '$(document).on("click", "#form-name-div button.icon", function() { dirty(true); });';
+			echo '</script>';
+		}
 		echo '<div id="scoring-editor"></div>';
 	}
 	
@@ -280,7 +294,7 @@ class Page extends PageBase
 			};
 			if (!data.nameFixed)
 			{
-				params.name = data.name;
+				nameControl.fillRequest(params);
 			}
 			json.post("api/ops/scoring.php", params, function(response)
 			{

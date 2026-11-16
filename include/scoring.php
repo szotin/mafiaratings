@@ -388,15 +388,15 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	$own = array();
 	if ($club_id != NULL)
 	{
-		$query = new DbQuery('SELECT id, name, club_id FROM ' . $table . ' WHERE (club_id = ? AND id <> ?) OR (club_id IS NULL AND league_id IS NULL)', $club_id, (int)$club_default_id);
+		$query = new DbQuery('SELECT s.id, ns.name, s.club_id FROM ' . $table . ' s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE (s.club_id = ? AND s.id <> ?) OR (s.club_id IS NULL AND s.league_id IS NULL)', $club_id, (int)$club_default_id);
 	}
 	else if ($league_id != NULL)
 	{
-		$query = new DbQuery('SELECT id, name, league_id FROM ' . $table . ' WHERE (league_id = ? AND club_id IS NULL AND id <> ?) OR (club_id IS NULL AND league_id IS NULL)', $league_id, (int)$league_default_id);
+		$query = new DbQuery('SELECT s.id, ns.name, s.league_id FROM ' . $table . ' s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE (s.league_id = ? AND s.club_id IS NULL AND s.id <> ?) OR (s.club_id IS NULL AND s.league_id IS NULL)', $league_id, (int)$league_default_id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT id, name, club_id FROM ' . $table . ' WHERE club_id IS NULL AND league_id IS NULL');
+		$query = new DbQuery('SELECT s.id, ns.name, s.club_id FROM ' . $table . ' s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE s.club_id IS NULL AND s.league_id IS NULL');
 	}
 	while ($row = $query->next())
 	{
@@ -434,7 +434,8 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	if ($club_id != NULL)
 	{
 		$query = new DbQuery(
-			'SELECT s.id, nl.name, s.name FROM ' . $table . ' s' .
+			'SELECT s.id, nl.name, ns.name FROM ' . $table . ' s' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			' JOIN leagues l ON l.id = s.league_id' .
 			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 			' JOIN league_clubs lc ON lc.league_id = s.league_id' .
@@ -462,7 +463,8 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	if ($current_id != NULL && $current_id > 0 && !isset($ids[(int)$current_id]))
 	{
 		$query = new DbQuery(
-			'SELECT s.id, s.name, nc.name, nl.name FROM ' . $table . ' s' .
+			'SELECT s.id, ns.name, nc.name, nl.name FROM ' . $table . ' s' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN clubs c ON c.id = s.club_id' .
 			' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
@@ -486,14 +488,15 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 }
 
 // A copy of the current version of a scoring system ($table = 'scorings') or a normalizer
-// ($table = 'normalizers'), owned by a club or by a league, under the same name. This is how a
-// club or a league gets its own default system. Returns the id of the copy.
+// ($table = 'normalizers'), owned by a club or by a league, under the same names - the copy shares the set of
+// names of the system it is copied from. This is how a club or a league gets its own default system. Returns
+// the id of the copy.
 function copy_system($table, $source_id, $club_id, $league_id)
 {
 	list($key, $versions, $fields) = _system_table_info($table);
 
-	list($name, $version) = Db::record(get_label('scoring system'), 'SELECT name, version FROM ' . $table . ' WHERE id = ?', $source_id);
-	Db::exec(get_label('scoring system'), 'INSERT INTO ' . $table . ' (club_id, league_id, name, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name);
+	list($name_id, $version) = Db::record(get_label('scoring system'), 'SELECT name_id, version FROM ' . $table . ' WHERE id = ?', $source_id);
+	Db::exec(get_label('scoring system'), 'INSERT INTO ' . $table . ' (club_id, league_id, name_id, version) VALUES (?, ?, ?, NULL)', $club_id, $league_id, $name_id);
 	list($id) = Db::record(get_label('scoring system'), 'SELECT LAST_INSERT_ID()');
 	if ($version != NULL)
 	{
@@ -557,6 +560,34 @@ function is_default_system($table, $id)
 	}
 	$query = new DbQuery('SELECT id FROM leagues WHERE ' . $column . ' = ? LIMIT 1', $id);
 	return $query->next() ? true : false;
+}
+
+// The names of a system of $table ('scorings', 'normalizers' or 'gainings') from the request: name, and name_xx
+// for the languages that have their own. $label is what the name is called in the messages. Every name is checked
+// the way a system name always was - it is given, it holds only the characters a name may have, and no other
+// system of the same owner has it in a language it is for. The default system of a club or a league is often a
+// copy of one of the site under the same names, so the site's do not count.
+function get_system_names($table, $label, $club_id, $league_id, $id = -1)
+{
+	$names = new Names(0, $label, NULL, 0, NULL, 'name', true);
+	if (count($names->names) == 0 || $names->names[0]->name == '')
+	{
+		throw new Exc(get_label('Please enter [0].', $label));
+	}
+	check_name($names->names[0]->name, $label);
+
+	foreach ($names->names as $n)
+	{
+		$query = new DbQuery(
+			'SELECT s.id FROM ' . $table . ' s JOIN names n ON n.id = s.name_id' .
+			' WHERE n.name = ? AND (n.langs & ?) <> 0 AND s.club_id <=> ? AND s.league_id <=> ? AND s.id <> ?',
+			$n->name, $n->langs, $club_id, $league_id, $id);
+		if ($query->next())
+		{
+			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', $label, $n->name));
+		}
+	}
+	return $names;
 }
 
 // A default system is called by the name of its owner - the club, the league, or the site - and

@@ -303,7 +303,7 @@ CREATE TABLE `gainings` (
   `id` int(11) NOT NULL,
   `league_id` int(11) DEFAULT NULL,
   `club_id` int(11) DEFAULT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `version` int(11) DEFAULT NULL,
   `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -535,7 +535,7 @@ CREATE TABLE `normalizers` (
   `id` int(11) NOT NULL,
   `club_id` int(11) DEFAULT NULL,
   `league_id` int(11) DEFAULT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `version` int(11) DEFAULT NULL,
   `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -668,7 +668,7 @@ DROP TABLE IF EXISTS `scorings`;
 CREATE TABLE `scorings` (
   `id` int(11) NOT NULL,
   `club_id` int(11) DEFAULT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `league_id` int(11) DEFAULT NULL,
   `version` int(11) DEFAULT '1',
   `flags` int(11) NOT NULL DEFAULT '0'
@@ -1068,6 +1068,10 @@ INSERT INTO `names` (`id`, `langs`, `name`) VALUES
 (7, 16777215, 'Sample Tournament'),
 (8, 16777215, 'Season 2024'),
 (9, 16777215, 'Club Cup 2024'),
+(11, 16777215, 'Sample Scoring'),
+(12, 16777215, 'ФИИМ'),
+(13, 16777215, 'Mafia Ratings'),
+(14, 16777215, 'Sample Gaining'),
 (10, 16777215, 'admin'),
 (30, 16777215, 'shrek'),
 (40, 16777215, 'lilya'),
@@ -1100,10 +1104,10 @@ INSERT INTO `city_names` (`city_id`, `name`) VALUES (1, 'Sample City');
 INSERT INTO `addresses` (`id`, `name`, `club_id`, `address`, `map_url`, `flags`, `city_id`, `lat`, `lon`) VALUES (1, 'Sample Venue', 1, '123 Main St', '', 0, 1, 40.7128, -74.006);
 
 -- Scoring (reused verbatim from the site 'mafiaratings' scoring, id 45 v1)
-INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`) VALUES (1, 1, 'Sample Scoring', NULL, 1);
+INSERT INTO `scorings` (`id`, `club_id`, `name_id`, `league_id`, `version`) VALUES (1, 1, 11, NULL, 1);
 -- The default scoring system of a league is its own (db/alter213.sql): the sample league has a
 -- copy of the sample club's.
-INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`) VALUES (2, NULL, 'Sample Scoring', 1, 1);
+INSERT INTO `scorings` (`id`, `club_id`, `name_id`, `league_id`, `version`) VALUES (2, NULL, 11, 1, 1);
 INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) VALUES (1, 1, '{\"night1\":[{\"matter\":260,\"roles\":3,\"points\":\"max(min(counter(0,1)*1.2\\/counter(0,0)-0.18,0.3),0)\"}],\"counters\":[{\"matter\":1},{\"matter\":256,\"roles\":3}],\"main\":[{\"matter\":1,\"points\":1}],\"extra\":[{\"matter\":4194304,\"points\":\"bonus\",\"mvp\":true},{\"matter\":1,\"points\":\"mr_points\",\"mvp\":true,\"name\":\"MR\"}],\"penalty\":[{\"matter\":1,\"points\":\"matter(12) || matter(13) || matter(14) ? -0.8 : (matter(25) ? -1 : 0)\",\"mvp\":true}]}'
 , 3312);
 INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) SELECT 2, 1, `scoring`, `functions` FROM `scoring_versions` WHERE `scoring_id` = 1 AND `version` = 1;
@@ -1113,15 +1117,15 @@ INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`)
 -- has in production, where db/alter213.sql gave ФИИМ to the league ФИИМ and the site kept a copy
 -- of it as its default. Definition copied verbatim from db/alter106.sql, which created this scoring in
 -- production. functions = 0: the formula uses plain numbers only, no scoring functions.
-INSERT INTO `scorings` (`id`, `club_id`, `name`, `league_id`, `version`, `flags`) VALUES (19, NULL, 'ФИИМ', NULL, 1, 1);
+INSERT INTO `scorings` (`id`, `club_id`, `name_id`, `league_id`, `version`, `flags`) VALUES (19, NULL, 12, NULL, 1, 1);
 INSERT INTO `scoring_versions` (`scoring_id`, `version`, `scoring`, `functions`) VALUES (19, 1, '{\"main\":[{\"matter\":2,\"points\":1}],\"prima_nocta\":[{\"matter\":1024,\"roles\":3,\"points\":0.4},{\"matter\":2048,\"roles\":3,\"points\":0.25}],\"penalty\":[{\"matter\":4096,\"points\":-0.5},{\"matter\":8192,\"points\":-0.5}]}', 0);
 
 -- Gaining (formula reused verbatim from gaining 'Серийник', id 4 v1). This row is the default
 -- gaining system of the site (flags 1, see get_site_gaining_id() in include/scoring.php): what a
 -- new club or league gets its own copy of. Gainings 2 and 3 are those copies, the defaults of the
 -- sample club and the sample league - see db/alter214.sql.
-INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name`, `version`, `flags`) VALUES (1, NULL, NULL, 'Sample Gaining', 1, 1);
-INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name`, `version`, `flags`) VALUES (2, NULL, 1, 'Sample Gaining', 1, 0), (3, 1, NULL, 'Sample Gaining', 1, 0);
+INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name_id`, `version`, `flags`) VALUES (1, NULL, NULL, 14, 1, 1);
+INSERT INTO `gainings` (`id`, `league_id`, `club_id`, `name_id`, `version`, `flags`) VALUES (2, NULL, 1, 14, 1, 0), (3, 1, NULL, 14, 1, 0);
 INSERT INTO `gaining_versions` (`gaining_id`, `version`, `gaining`, `functions`) VALUES (1, 1, '{\"maxTournaments\":1,\"points\":\"table(stars-1, place-1)\",\"table\":[[20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1],[40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21],[60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41]]}'
 , 576);
 INSERT INTO `gaining_versions` (`gaining_id`, `version`, `gaining`, `functions`) SELECT `g`.`id`, 1, `v`.`gaining`, `v`.`functions` FROM `gaining_versions` `v` JOIN `gainings` `g` ON `g`.`id` IN (2, 3) WHERE `v`.`gaining_id` = 1 AND `v`.`version` = 1;
@@ -1185,7 +1189,7 @@ INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name_id`, `rules`) VALUES (1
 -- The default normalizer of the site (flags 1, see get_site_normalizer_id() in include/scoring.php)
 -- and the copies of it that the sample club and the sample league have as their own defaults -
 -- see db/alter213.sql.
-INSERT INTO `normalizers` (`id`, `club_id`, `league_id`, `name`, `version`, `flags`) VALUES (1, NULL, NULL, 'Mafia Ratings', 1, 1), (2, 1, NULL, 'Mafia Ratings', 1, 0), (3, NULL, 1, 'Mafia Ratings', 1, 0);
+INSERT INTO `normalizers` (`id`, `club_id`, `league_id`, `name_id`, `version`, `flags`) VALUES (1, NULL, NULL, 13, 1, 1), (2, 1, NULL, 13, 1, 0), (3, NULL, 1, 13, 1, 0);
 INSERT INTO `normalizer_versions` (`normalizer_id`, `version`, `normalizer`) VALUES (1, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}'), (2, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}'), (3, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}');
 INSERT INTO `league_managers` (`league_id`, `user_id`) VALUES (1, 1);
 INSERT INTO `series` (`id`, `name_id`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (1, 8, 1, NULL, 1284784660, 31536000, 7, '', 0, '{}', 1, 1, 0, NULL, NULL, 5);
@@ -1783,8 +1787,9 @@ ALTER TABLE `event_scores_cache`
 --
 ALTER TABLE `gainings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `league_id` (`league_id`,`name`),
-  ADD KEY `club_id` (`club_id`,`name`);
+  ADD KEY `league_id` (`league_id`),
+  ADD KEY `club_id` (`club_id`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `gaining_versions`
@@ -1948,9 +1953,10 @@ ALTER TABLE `news`
 --
 ALTER TABLE `normalizers`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `club_id` (`club_id`,`name`),
-  ADD KEY `league_id` (`league_id`,`name`),
-  ADD KEY `id` (`id`,`version`);
+  ADD KEY `club_id` (`club_id`),
+  ADD KEY `league_id` (`league_id`),
+  ADD KEY `id` (`id`,`version`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `normalizer_versions`
@@ -2037,9 +2043,10 @@ ALTER TABLE `rebuild_ratings`
 --
 ALTER TABLE `scorings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `club_id` (`club_id`,`name`),
+  ADD KEY `club_id` (`club_id`),
   ADD KEY `league_id` (`league_id`),
-  ADD KEY `id` (`id`,`version`);
+  ADD KEY `id` (`id`,`version`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `scoring_versions`
@@ -2700,7 +2707,8 @@ ALTER TABLE `event_scores_cache`
 --
 ALTER TABLE `gainings`
   ADD CONSTRAINT `gaining_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
-  ADD CONSTRAINT `gaining_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`);
+  ADD CONSTRAINT `gaining_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
+  ADD CONSTRAINT `gaining_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `gaining_versions`
@@ -2838,7 +2846,8 @@ ALTER TABLE `news`
 ALTER TABLE `normalizers`
   ADD CONSTRAINT `normalizer_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
   ADD CONSTRAINT `normalizer_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
-  ADD CONSTRAINT `normalizer_version` FOREIGN KEY (`id`,`version`) REFERENCES `normalizer_versions` (`normalizer_id`, `version`);
+  ADD CONSTRAINT `normalizer_version` FOREIGN KEY (`id`,`version`) REFERENCES `normalizer_versions` (`normalizer_id`, `version`),
+  ADD CONSTRAINT `normalizer_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `normalizer_versions`
@@ -2903,7 +2912,8 @@ ALTER TABLE `rebuild_ratings`
 ALTER TABLE `scorings`
   ADD CONSTRAINT `system_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
   ADD CONSTRAINT `system_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
-  ADD CONSTRAINT `system_version` FOREIGN KEY (`id`,`version`) REFERENCES `scoring_versions` (`scoring_id`, `version`);
+  ADD CONSTRAINT `system_version` FOREIGN KEY (`id`,`version`) REFERENCES `scoring_versions` (`scoring_id`, `version`),
+  ADD CONSTRAINT `scoring_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `scoring_versions`

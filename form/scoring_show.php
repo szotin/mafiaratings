@@ -17,11 +17,11 @@ try
 	if (isset($_REQUEST['version']))
 	{
 		$scoring_version = (int)$_REQUEST['version'];
-		list($scoring, $name, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? AND v.version = ?', $scoring_id, $scoring_version);
+		list($scoring, $name, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, ns.name, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE v.scoring_id = ? AND v.version = ?', $scoring_id, $scoring_version);
 	}
 	else
 	{
-		list($scoring, $name, $scoring_version, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, s.name, v.version, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id WHERE v.scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
+		list($scoring, $name, $scoring_version, $club_id, $league_id) = Db::record(get_label('scoring'), 'SELECT v.scoring, ns.name, v.version, s.club_id, s.league_id FROM scoring_versions v JOIN scorings s ON s.id = v.scoring_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE v.scoring_id = ? ORDER BY version DESC LIMIT 1', $scoring_id);
 		$scoring_version = (int)$scoring_version;
 	}
 	$scoring = json_decode($scoring);
@@ -36,11 +36,11 @@ try
 			if (isset($_REQUEST['nver']))
 			{
 				$normalizer_version = (int)$_REQUEST['nver'];
-				list($normalizer, $name, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, s.name, s.club_id, s.league_id FROM normalizer_versions v JOIN normalizers s ON s.id = v.normalizer_id WHERE v.normalizer_id = ? AND v.version = ?', $normalizer_id, $normalizer_version);
+				list($normalizer, $name, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, ns.name, s.club_id, s.league_id FROM normalizer_versions v JOIN normalizers s ON s.id = v.normalizer_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE v.normalizer_id = ? AND v.version = ?', $normalizer_id, $normalizer_version);
 			}
 			else
 			{
-				list($normalizer, $name, $normalizer_version, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, s.name, v.version, s.club_id, s.league_id FROM normalizer_versions v JOIN normalizers s ON s.id = v.normalizer_id WHERE v.normalizer_id = ? ORDER BY version DESC LIMIT 1', $normalizer_id);
+				list($normalizer, $name, $normalizer_version, $club_id, $league_id) = Db::record(get_label('scoring normalizer'), 'SELECT v.normalizer, ns.name, v.version, s.club_id, s.league_id FROM normalizer_versions v JOIN normalizers s ON s.id = v.normalizer_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE v.normalizer_id = ? ORDER BY version DESC LIMIT 1', $normalizer_id);
 				$normalizer_version = (int)$normalizer_version;
 			}
 			$normalizer = json_decode($normalizer);
