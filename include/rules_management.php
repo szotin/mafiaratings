@@ -102,6 +102,44 @@ class RulesManagement
 		return array((int)$scoring_id, $normalizer_id == NULL ? NULL : (int)$normalizer_id, (int)$gaining_id);
 	}
 
+	// The header of the column saying which systems are deprecated - see SYSTEM_FLAG_DEPRECATED.
+	// The rules are many where a system is one, so they are told about in words of their own.
+	private function deprecated_header($is_rules = false)
+	{
+		if ($is_rules)
+		{
+			$title = get_label('Deprecated rules go on being played wherever they are played already, but they are not offered for anything new.');
+			$label = get_label('Deprecated rules');
+		}
+		else
+		{
+			$title = get_label('A deprecated system goes on being used wherever it is used already, but it is not offered for anything new.');
+			$label = get_label('Deprecated');
+		}
+		echo '<td width="80" align="center" title="' . $title . '">' . $label . '</td>';
+	}
+
+	// The cell of that column for one system; the default one gets none - it can not be deprecated.
+	private function deprecated_cell($kind, $id, $flags)
+	{
+		echo '<td align="center">';
+		if (!is_null($id))
+		{
+			echo '<input type="checkbox" class="toggle" onclick="deprecateSystem(\'' . $kind . '\', ' . (int)$id . ', this)"' . (((int)$flags & SYSTEM_FLAG_DEPRECATED) ? ' checked' : '') . '>';
+		}
+		echo '</td>';
+	}
+
+	// The name of a system in its list: greyed out when it is deprecated.
+	private static function system_name($name, $flags)
+	{
+		if ((int)$flags & SYSTEM_FLAG_DEPRECATED)
+		{
+			return '<span style="color:#888;">' . $name . '</span>';
+		}
+		return $name;
+	}
+
 	private function tab_button($tab, $label)
 	{
 		echo '<button ' . ($this->tab == $tab ? 'class="active" ' : '') . 'onclick="goTo({view:' . $tab . '})">' . $label . '</button>';
@@ -145,7 +183,9 @@ class RulesManagement
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="createRules()" title="' . get_label('New rules') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
-		echo '<td>' . get_label('Rules name') . '</td></tr>';
+		echo '<td>' . get_label('Rules name') . '</td>';
+		$this->deprecated_header(true);
+		echo '</tr>';
 
 		if ($this->club_id != NULL)
 		{
@@ -165,17 +205,23 @@ class RulesManagement
 		{
 			echo '<a href="#" onclick="' . $edit_default . '" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
 		}
-		echo '</td><td>' . get_label('[default]') . '</td></tr>';
+		echo '</td><td>' . get_label('[default]') . '</td>';
+		$this->deprecated_cell('rules', NULL, 0);
+		echo '</tr>';
 
-		$query = new DbQuery('SELECT r.id, n.name FROM rules r JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('r'));
+		$query = new DbQuery('SELECT r.id, n.name, r.flags FROM rules r JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('r'));
 		$query->add(' ORDER BY n.name');
 		while ($row = $query->next())
 		{
-			list ($id, $name) = $row;
+			list ($id, $name, $flags) = $row;
+			// The rules keep the flag in their own column, as the first bit - see RULES_FLAG_DEPRECATED.
+			$flags = ((int)$flags & RULES_FLAG_DEPRECATED) ? SYSTEM_FLAG_DEPRECATED : 0;
 			echo '<tr><td class="dark" align="center">';
 			echo '<a href="#" onclick="deleteRules(' . $id . ', \'' . addslashes(get_label('Are you sure you want to delete rules [0]?', $name)) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 			echo '<a href="#" onclick="editRules(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-			echo '</td><td>' . $name . '</td></tr>';
+			echo '</td><td>' . self::system_name($name, $flags) . '</td>';
+			$this->deprecated_cell('rules', $id, $flags);
+			echo '</tr>';
 		}
 		echo '</table>';
 	}
@@ -188,22 +234,28 @@ class RulesManagement
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createScoringSystem(' . $this->scoring_owner_args() . ')" title="' . get_label('New scoring system') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
-		echo '<td>' . get_label('Scoring system name') . '</td></tr>';
+		echo '<td>' . get_label('Scoring system name') . '</td>';
+		$this->deprecated_header();
+		echo '</tr>';
 
 		list($default_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $default_id);
 		echo '<tr><td class="dark" align="center">';
 		echo '<a onclick="mr.editScoringSystem(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
-		echo '</td><td><a href="javascript:showScoring(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td></tr>';
+		echo '</td><td><a href="javascript:showScoring(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td>';
+		$this->deprecated_cell('scoring', NULL, 0);
+		echo '</tr>';
 
-		$query = new DbQuery('SELECT s.id, ns.name, s.version FROM scorings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
+		$query = new DbQuery('SELECT s.id, ns.name, s.version, s.flags FROM scorings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
 		$query->add(' AND s.id <> ? ORDER BY ns.name', $default_id);
 		while ($row = $query->next())
 		{
-			list ($id, $name, $version) = $row;
+			list ($id, $name, $version, $flags) = $row;
 			echo '<tr><td class="dark" align="center">';
 			echo '<a onclick="mr.deleteScoringSystem(' . $id . ', \'' . addslashes(get_label('Are you sure you want to delete [0]?', $name)) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 			echo '<a onclick="mr.editScoringSystem(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-			echo '</td><td><a href="javascript:showScoring(' . $id . ', ' . $version . ')">' . $name . '</a></td></tr>';
+			echo '</td><td><a href="javascript:showScoring(' . $id . ', ' . $version . ')">' . self::system_name($name, $flags) . '</a></td>';
+			$this->deprecated_cell('scoring', $id, $flags);
+			echo '</tr>';
 		}
 		echo '</table>';
 	}
@@ -217,24 +269,30 @@ class RulesManagement
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createNormalizer(' . $this->scoring_owner_args() . ')" title="' . get_label('New scoring normalizer') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
-		echo '<td>' . get_label('Scoring normalizer name') . '</td></tr>';
+		echo '<td>' . get_label('Scoring normalizer name') . '</td>';
+		$this->deprecated_header();
+		echo '</tr>';
 
 		echo '<tr><td class="dark" align="center">';
 		if ($default_id != NULL)
 		{
 			echo '<a onclick="mr.editNormalizer(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
 		}
-		echo '</td><td>' . get_label('[default]') . '</td></tr>';
+		echo '</td><td>' . get_label('[default]') . '</td>';
+		$this->deprecated_cell('normalizer', NULL, 0);
+		echo '</tr>';
 
-		$query = new DbQuery('SELECT s.id, ns.name, s.version FROM normalizers s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
+		$query = new DbQuery('SELECT s.id, ns.name, s.version, s.flags FROM normalizers s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
 		$query->add(' AND s.id <> ? ORDER BY ns.name', (int)$default_id);
 		while ($row = $query->next())
 		{
-			list ($id, $name, $version) = $row;
+			list ($id, $name, $version, $flags) = $row;
 			echo '<tr><td class="dark" align="center">';
 			echo '<a onclick="mr.deleteNormalizer(' . $id . ', \'' . addslashes(get_label('Are you sure you want to delete [0]?', $name)) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 			echo '<a onclick="mr.editNormalizer(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-			echo '</td><td>' . $name . '</td></tr>';
+			echo '</td><td>' . self::system_name($name, $flags) . '</td>';
+			$this->deprecated_cell('normalizer', $id, $flags);
+			echo '</tr>';
 		}
 		echo '</table>';
 	}
@@ -247,20 +305,26 @@ class RulesManagement
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createGainingSystem(' . $this->gaining_owner_args() . ')" title="' . get_label('New gaining system') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
-		echo '<td>' . get_label('Gaining system name') . '</td></tr>';
+		echo '<td>' . get_label('Gaining system name') . '</td>';
+		$this->deprecated_header();
+		echo '</tr>';
 		list($default_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $default_id);
 		echo '<tr><td class="dark" align="center">';
 		echo '<a onclick="mr.editGainingSystem(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
-		echo '</td><td><a href="javascript:showGaining(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td></tr>';
-		$query = new DbQuery('SELECT s.id, ns.name, s.version FROM gainings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
+		echo '</td><td><a href="javascript:showGaining(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td>';
+		$this->deprecated_cell('gaining', NULL, 0);
+		echo '</tr>';
+		$query = new DbQuery('SELECT s.id, ns.name, s.version, s.flags FROM gainings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
 		$query->add(' AND s.id <> ? ORDER BY ns.name', $default_id);
 		while ($row = $query->next())
 		{
-			list ($id, $name, $version) = $row;
+			list ($id, $name, $version, $flags) = $row;
 			echo '<tr><td class="dark" align="center">';
 			echo '<a onclick="mr.deleteGainingSystem(' . $id . ', \'' . addslashes(get_label('Are you sure you want to delete [0]?', $name)) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 			echo '<a onclick="mr.editGainingSystem(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
-			echo '</td><td><a href="javascript:showGaining(' . $id . ', ' . $version . ')">' . $name . '</a></td></tr>';
+			echo '</td><td><a href="javascript:showGaining(' . $id . ', ' . $version . ')">' . self::system_name($name, $flags) . '</a></td>';
+			$this->deprecated_cell('gaining', $id, $flags);
+			echo '</tr>';
 		}
 		echo '</table>';
 	}
@@ -312,6 +376,15 @@ class RulesManagement
 		function showGaining(id, version)
 		{
 			dlg.infoForm("form/gaining_show.php?id=" + id + "&version=" + version);
+		}
+
+		// kind is scoring, normalizer or gaining - the name of its api/ops page and of its id. A
+		// refused change puts the box back, and the error says why.
+		function deprecateSystem(kind, id, box)
+		{
+			var params = { op: 'deprecate', deprecated: box.checked ? 1 : 0 };
+			params[kind + '_id'] = id;
+			json.post("api/ops/" + kind + ".php", params, refr, function() { box.checked = !box.checked; });
 		}
 <?php
 	}

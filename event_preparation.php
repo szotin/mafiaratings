@@ -172,7 +172,7 @@ class Page extends EventPageBase
 		echo '<p><table class="bordered light" width="100%">';
 		$rules_code = upgrade_rules_code($rules_code);
 		echo '<tr><td width="160">' . get_label('Rules') . ':</td><td><select id="prep-rules"' . $disabled . ' onchange="rulesChanged()">';
-		foreach (merge_same_rules(get_available_rules($this->club_id, $club_name, $club_rules)) as $r)
+		foreach (merge_same_rules(get_available_rules($this->club_id, $club_name, $club_rules, $rules_code)) as $r)
 		{
 			if (show_option($r->rules, $rules_code, $r->name))
 			{

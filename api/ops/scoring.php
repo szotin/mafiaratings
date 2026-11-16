@@ -410,6 +410,27 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('scoring_id', 'Scoring system id. If the scoring system is global (shared between clubs) deleting requires <em>admin</em> permissions.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// deprecate
+	//-------------------------------------------------------------------------------------------------------
+	function deprecate_op()
+	{
+		$scoring_id = (int)get_required_param('scoring_id');
+		$deprecated = (int)get_optional_param('deprecated', 1) != 0;
+
+		Db::begin();
+		set_system_deprecated('scorings', $scoring_id, $deprecated, LOG_OBJECT_SCORING_SYSTEM);
+		Db::commit();
+	}
+
+	function deprecate_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Deprecate a scoring system, or bring it back. A deprecated scoring system goes on being used wherever it is used already, but it is not offered for anything new. A default scoring system can not be deprecated.');
+		$help->request_param('scoring_id', 'Scoring system id. Deprecating a scoring system that is not owned by a club or a league requires <em>admin</em> permissions.');
+		$help->request_param('deprecated', '1 to deprecate, 0 to bring it back.', '1.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

@@ -355,6 +355,27 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('normalizer_id', 'Scoring normalizer id. If the scoring normalizer is global (shared between clubs) deleting requires <em>admin</em> permissions.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// deprecate
+	//-------------------------------------------------------------------------------------------------------
+	function deprecate_op()
+	{
+		$normalizer_id = (int)get_required_param('normalizer_id');
+		$deprecated = (int)get_optional_param('deprecated', 1) != 0;
+
+		Db::begin();
+		set_system_deprecated('normalizers', $normalizer_id, $deprecated, LOG_OBJECT_SCORING_NORMALIZER);
+		Db::commit();
+	}
+
+	function deprecate_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Deprecate a scoring normalizer, or bring it back. A deprecated scoring normalizer goes on being used wherever it is used already, but it is not offered for anything new. A default scoring normalizer can not be deprecated.');
+		$help->request_param('normalizer_id', 'Scoring normalizer id. Deprecating a scoring normalizer that is not owned by a club or a league requires <em>admin</em> permissions.');
+		$help->request_param('deprecated', '1 to deprecate, 0 to bring it back.', '1.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

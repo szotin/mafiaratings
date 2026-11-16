@@ -50,13 +50,24 @@ try
 	// The rules a schema of the league refers to: the rules of the league, its default and its
 	// named ones, or none - the rules of the club as they are. "l<league id>" is the default rules
 	// of a league, "r<rules id>" named rules, "0" none. A schema copied from another league keeps
-	// referring to the rules of that one, and they are offered too.
+	// referring to the rules of that one, and they are offered too. Deprecated rules are offered
+	// only to the schema that refers to them already - see RULES_FLAG_DEPRECATED.
 	$rules_choices = array();
 	$rules_choices['l' . $league_id] = $league_name;
-	$query = new DbQuery('SELECT r.id, n.name FROM rules r JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id = ? ORDER BY n.name', $league_id);
+	$query = new DbQuery('SELECT r.id, n.name, r.flags FROM rules r JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id = ? ORDER BY n.name', $league_id);
 	while ($row = $query->next())
 	{
-		$rules_choices['r' . (int)$row[0]] = $league_name . ': ' . $row[1];
+		list($id, $name, $flags) = $row;
+		$name = $league_name . ': ' . $name;
+		if ((int)$flags & RULES_FLAG_DEPRECATED)
+		{
+			if ((int)$id != (int)$schema->rules_id)
+			{
+				continue;
+			}
+			$name = get_label('[0] (deprecated)', $name);
+		}
+		$rules_choices['r' . (int)$id] = $name;
 	}
 	$rules_choices['0'] = get_label('The rules of the club as they are');
 	if ($schema->rules_id > 0)
@@ -64,10 +75,15 @@ try
 		$selected_rules = 'r' . $schema->rules_id;
 		if (!isset($rules_choices[$selected_rules]))
 		{
-			$query = new DbQuery('SELECT nl.name, nr.name FROM rules r JOIN names nr ON nr.id = r.name_id AND (nr.langs & '.$_lang.') <> 0 JOIN leagues l ON l.id = r.league_id JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0 WHERE r.id = ?', $schema->rules_id);
+			$query = new DbQuery('SELECT nl.name, nr.name, r.flags FROM rules r JOIN names nr ON nr.id = r.name_id AND (nr.langs & '.$_lang.') <> 0 JOIN leagues l ON l.id = r.league_id JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0 WHERE r.id = ?', $schema->rules_id);
 			if ($row = $query->next())
 			{
-				$rules_choices[$selected_rules] = $row[0] . ': ' . $row[1];
+				$name = $row[0] . ': ' . $row[1];
+				if ((int)$row[2] & RULES_FLAG_DEPRECATED)
+				{
+					$name = get_label('[0] (deprecated)', $name);
+				}
+				$rules_choices[$selected_rules] = $name;
 			}
 		}
 	}

@@ -19,7 +19,7 @@ function show_rules_select($club_id, $rules_code)
 	
 	$found = false;
 	
-	$all_rules = get_available_rules($club_id, $club_name, $club_rules_code);
+	$all_rules = get_available_rules($club_id, $club_name, $club_rules_code, $rules_code);
 	$r = new stdClass();
 	$r->rules = $rules_code;
 	$r->name = get_label('Custom...');

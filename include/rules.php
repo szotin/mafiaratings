@@ -663,6 +663,12 @@ function show_rules($rules_code, $view)
 	echo '</table></big>';
 }
 
+// rules.flags: named rules that are not to be picked any more. What is played by them goes on
+// being played by them, and a select that has them keeps them among its choices, but no list
+// offers them for anything new - see get_available_rules(). The default rules of a club, of a
+// league and of the site can not be deprecated. See db/alter227.sql.
+define('RULES_FLAG_DEPRECATED', 1);
+
 // The default rules of the site - the rules a new club starts from, and the rules the filters
 // of the leagues are put over where there is no club. They are the rules of the site that have
 // no name, see db/alter212.sql.
@@ -709,10 +715,33 @@ function _sort_rules_choices(&$choices)
     The rules of a league are a filter rather than rules, so what is offered for one is the
     default rules of the club put through it: what the filter allows stays as the club has it,
     the rest is the first option the filter allows - see correct_rules(). Without a club the
-    filters are put over the default rules of the site, and there is no first entry. */
-function get_available_rules($club_id = null, $club_name = null, $club_rules = null)
+    filters are put over the default rules of the site, and there is no first entry.
+
+    Deprecated rules - RULES_FLAG_DEPRECATED - are left out, unless they come out as $current_code,
+    the code of what is being edited: then they stay where they would have been, marked as
+    deprecated, so that what is played by them can keep them. What is played by is only the code,
+    so that is what tells. */
+function get_available_rules($club_id = null, $club_name = null, $club_rules = null, $current_code = null)
 {
 	global $_lang;
+
+	if ($current_code != null)
+	{
+		$current_code = upgrade_rules_code($current_code);
+	}
+	$keep = function($flags, $code, &$name) use ($current_code)
+	{
+		if (((int)$flags & RULES_FLAG_DEPRECATED) == 0)
+		{
+			return true;
+		}
+		if ($current_code == null || $code != $current_code)
+		{
+			return false;
+		}
+		$name = get_label('[0] (deprecated)', $name);
+		return true;
+	};
 
 	if ($club_id != null && ($club_name == null || $club_rules == null))
 	{
@@ -729,15 +758,15 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	$own = array();
 	if ($club_id != null)
 	{
-		$query = new DbQuery('SELECT r.id, n.name, r.rules, r.club_id FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id IS NULL AND (r.club_id = ? OR r.club_id IS NULL)', $club_id);
+		$query = new DbQuery('SELECT r.id, n.name, r.rules, r.club_id, r.flags FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id IS NULL AND (r.club_id = ? OR r.club_id IS NULL)', $club_id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT r.id, n.name, r.rules, r.club_id FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id IS NULL AND r.club_id IS NULL');
+		$query = new DbQuery('SELECT r.id, n.name, r.rules, r.club_id, r.flags FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id IS NULL AND r.club_id IS NULL');
 	}
 	while ($row = $query->next())
 	{
-		list($id, $name, $rules, $owner_id) = $row;
+		list($id, $name, $rules, $owner_id, $flags) = $row;
 		if ($owner_id != null)
 		{
 			$name = $club_name . ': ' . $name;
@@ -746,7 +775,11 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 		{
 			$name = PRODUCT_NAME;
 		}
-		$own[] = _rules_choice('r' . $id, $name, upgrade_rules_code($rules));
+		$rules = upgrade_rules_code($rules);
+		if ($keep($flags, $rules, $name))
+		{
+			$own[] = _rules_choice('r' . $id, $name, $rules);
+		}
 	}
 	_sort_rules_choices($own);
 
@@ -771,7 +804,7 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	if ($club_id != null)
 	{
 		$query = new DbQuery(
-			'SELECT r.id, nl.name, nr.name, r.rules FROM rules r' .
+			'SELECT r.id, nl.name, nr.name, r.rules, r.flags FROM rules r' .
 			' JOIN names nr ON nr.id = r.name_id AND (nr.langs & '.$_lang.') <> 0' .
 			' JOIN leagues l ON l.id = r.league_id' .
 			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
@@ -779,8 +812,13 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 			' WHERE lc.club_id = ?', $club_id);
 		while ($row = $query->next())
 		{
-			list($id, $league_name, $name, $filter) = $row;
-			$others[] = _rules_choice('r' . $id, $league_name . ': ' . $name, correct_rules($base, $filter));
+			list($id, $league_name, $name, $filter, $flags) = $row;
+			$name = $league_name . ': ' . $name;
+			$rules = correct_rules($base, $filter);
+			if ($keep($flags, $rules, $name))
+			{
+				$others[] = _rules_choice('r' . $id, $name, $rules);
+			}
 		}
 	}
 	_sort_rules_choices($others);

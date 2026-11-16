@@ -12,6 +12,13 @@ require_once __DIR__ . '/table_hiding.php';
 // to point from, so its default is marked instead - see db/alter213.sql.
 define('SYSTEM_FLAG_SITE_DEFAULT', 1);
 
+// scorings.flags, normalizers.flags and gainings.flags: a system that is not to be picked any more.
+// What uses it goes on using it - the tournaments, the rounds, the series, the schemas - and a select
+// that has it set keeps it among its choices, but no list offers it to anything new. See
+// get_available_systems(). A default system can not be deprecated: it is what everything new of its
+// owner starts with.
+define('SYSTEM_FLAG_DEPRECATED', 2);
+
 //define('SCORING_TRACK_ROLE', -1); //ROLE_CIVILIAN);
 
 define('SCORING_ROLE_FLAGS_CIV', 1);
@@ -356,13 +363,23 @@ function _sort_system_choices(&$choices)
     offered, its default system called by the name of the league first, and its other systems,
     "league: name", together with the systems of the site. $current_id is the system that is in use already; if it is
     none of these (an old tournament can use a system of a league its club has left), it is added
-    at the end so that it can stay selected. */
+    at the end so that it can stay selected.
+
+    A deprecated system - SYSTEM_FLAG_DEPRECATED - is left out, unless it is $current_id: then it
+    stays where it would have been, marked as deprecated, so that what uses it can keep it. */
 function get_available_systems($table, $club_id = NULL, $current_id = NULL, $league_id = NULL)
 {
 	global $_lang;
 
 	list($column) = _system_table_info($table);
 	$site_default_id = get_site_system_id($table);
+
+	$deprecated = array();
+	$query = new DbQuery('SELECT id FROM ' . $table . ' WHERE (flags & ' . SYSTEM_FLAG_DEPRECATED . ') <> 0');
+	while ($row = $query->next())
+	{
+		$deprecated[(int)$row[0]] = true;
+	}
 
 	$top = array();
 	$club_default_id = NULL;
@@ -453,11 +470,20 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 	$ids = array();
 	foreach (array_merge($top, $own, $others) as $s)
 	{
-		if (!isset($ids[$s->id]))
+		if (isset($ids[$s->id]))
 		{
-			$ids[$s->id] = true;
-			$result[] = $s;
+			continue;
 		}
+		if (isset($deprecated[$s->id]))
+		{
+			if ($s->id != (int)$current_id)
+			{
+				continue;
+			}
+			$s->name = get_label('[0] (deprecated)', $s->name);
+		}
+		$ids[$s->id] = true;
+		$result[] = $s;
 	}
 
 	if ($current_id != NULL && $current_id > 0 && !isset($ids[(int)$current_id]))
@@ -480,6 +506,10 @@ function get_available_systems($table, $club_id = NULL, $current_id = NULL, $lea
 			else if ($owner_league_name != NULL)
 			{
 				$name = $owner_league_name . ': ' . $name;
+			}
+			if (isset($deprecated[(int)$id]))
+			{
+				$name = get_label('[0] (deprecated)', $name);
 			}
 			$result[] = _system_choice($id, $name);
 		}
@@ -560,6 +590,46 @@ function is_default_system($table, $id)
 	}
 	$query = new DbQuery('SELECT id FROM leagues WHERE ' . $column . ' = ? LIMIT 1', $id);
 	return $query->next() ? true : false;
+}
+
+// Marks a system of $table as deprecated, or as not any more - see SYSTEM_FLAG_DEPRECATED. Who may
+// do it is who may change the system: the managers of the club and of the league owning it, an
+// admin for a system of the site. $log_object is what the log calls the kind. Returns whether
+// anything changed.
+function set_system_deprecated($table, $id, $deprecated, $log_object)
+{
+	list($club_id, $league_id, $flags) = Db::record(get_label('scoring system'), 'SELECT club_id, league_id, flags FROM ' . $table . ' WHERE id = ?', $id);
+	if (!is_null($club_id))
+	{
+		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
+		if (!is_null($league_id))
+		{
+			check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+		}
+	}
+	else if (!is_null($league_id))
+	{
+		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
+	}
+	else
+	{
+		check_permissions(PERMISSION_ADMIN);
+	}
+
+	if ($deprecated && is_default_system($table, $id))
+	{
+		throw new Exc(get_label('A default system can not be deprecated.'));
+	}
+	$new_flags = $deprecated ? ((int)$flags | SYSTEM_FLAG_DEPRECATED) : ((int)$flags & ~SYSTEM_FLAG_DEPRECATED);
+	if ($new_flags == (int)$flags)
+	{
+		return false;
+	}
+	Db::exec(get_label('scoring system'), 'UPDATE ' . $table . ' SET flags = ? WHERE id = ?', $new_flags, $id);
+	$log_details = new stdClass();
+	$log_details->deprecated = $deprecated ? 1 : 0;
+	db_log($log_object, 'changed', $log_details, $id, $club_id, $league_id);
+	return true;
 }
 
 // The names of a system of $table ('scorings', 'normalizers' or 'gainings') from the request: name, and name_xx

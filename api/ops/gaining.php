@@ -359,6 +359,27 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('gaining_id', 'Gaining system id. If the gaining system is global (shared between leagues and clubs) deleting requires <em>admin</em> permissions.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// deprecate
+	//-------------------------------------------------------------------------------------------------------
+	function deprecate_op()
+	{
+		$gaining_id = (int)get_required_param('gaining_id');
+		$deprecated = (int)get_optional_param('deprecated', 1) != 0;
+
+		Db::begin();
+		set_system_deprecated('gainings', $gaining_id, $deprecated, LOG_OBJECT_GAINING_SYSTEM);
+		Db::commit();
+	}
+
+	function deprecate_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Deprecate a gaining system, or bring it back. A deprecated gaining system goes on being used wherever it is used already, but it is not offered for anything new. A default gaining system can not be deprecated.');
+		$help->request_param('gaining_id', 'Gaining system id. Deprecating a gaining system that is not owned by a club or a league requires <em>admin</em> permissions.');
+		$help->request_param('deprecated', '1 to deprecate, 0 to bring it back.', '1.');
+		return $help;
+	}
 }
 
 $page = new ApiPage();

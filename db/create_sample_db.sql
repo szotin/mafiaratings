@@ -130,7 +130,8 @@ CREATE TABLE `rules` (
   `club_id` int(11) DEFAULT NULL,
   `league_id` int(11) DEFAULT NULL,
   `name_id` int(11) DEFAULT NULL,
-  `rules` text NOT NULL
+  `rules` text NOT NULL,
+  `flags` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `countries`;

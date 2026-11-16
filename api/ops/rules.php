@@ -244,6 +244,40 @@ class ApiPage extends OpsApiPageBase
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	// deprecate
+	//-------------------------------------------------------------------------------------------------------
+	function deprecate_op()
+	{
+		$rules_id = (int)get_required_param('rules_id');
+		$deprecated = (int)get_optional_param('deprecated', 1) != 0;
+
+		Db::begin();
+		list ($club_id, $league_id, $name_id, $flags) = Db::record(get_label('rules'), 'SELECT club_id, league_id, name_id, flags FROM rules WHERE id = ?', $rules_id);
+		self::check_owner($club_id, $league_id);
+		if ($deprecated && is_null($name_id))
+		{
+			throw new Exc(get_label('The default rules can not be deprecated.'));
+		}
+		$new_flags = $deprecated ? ((int)$flags | RULES_FLAG_DEPRECATED) : ((int)$flags & ~RULES_FLAG_DEPRECATED);
+		if ($new_flags != (int)$flags)
+		{
+			Db::exec(get_label('rules'), 'UPDATE rules SET flags = ? WHERE id = ?', $new_flags, $rules_id);
+			$log_details = new stdClass();
+			$log_details->deprecated = $deprecated ? 1 : 0;
+			db_log(LOG_OBJECT_RULES, 'changed', $log_details, $rules_id, $club_id, $league_id);
+		}
+		Db::commit();
+	}
+
+	function deprecate_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_ADMIN, 'Deprecate named game rules, or bring them back. Whatever is played by deprecated rules goes on being played by them, but they are not offered for anything new. The default rules can not be deprecated.');
+		$help->request_param('rules_id', 'Rules id.');
+		$help->request_param('deprecated', '1 to deprecate, 0 to bring them back.', '1.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// set_last_rule
 	//-------------------------------------------------------------------------------------------------------
 	function set_last_rule_op()
