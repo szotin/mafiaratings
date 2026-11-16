@@ -28,7 +28,7 @@ class Page extends TournamentPageBase
 {
 	protected function prepare()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		parent::prepare();
 		
@@ -84,8 +84,9 @@ class Page extends TournamentPageBase
 		// Ordering within a round used to be left to the database; a tournament's main round
 		// often holds dozens of events, and they belong in the order they were played.
 		$query = new DbQuery(
-			'SELECT e.id, e.round, e.misc, e.name, e.start_time, ct.timezone'.
+			'SELECT e.id, e.round, e.misc, ne.name, e.start_time, ct.timezone'.
 			' FROM events e'.
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 			' JOIN addresses a ON a.id = e.address_id'.
 			' JOIN cities ct ON ct.id = a.city_id'.
 			' WHERE e.tournament_id = ? ORDER BY e.round, e.start_time, e.id', $this->id);

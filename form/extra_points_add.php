@@ -26,7 +26,7 @@ try
 		show_user_input('form-user', '', 'tournament=' . $tournament_id, get_label('Select player.'), 'onSelect');
 		echo '</td></tr>';
 		
-		$query = new DbQuery('SELECT id, name, flags FROM events WHERE tournament_id = ? ORDER BY start_time, id', $tournament_id);
+		$query = new DbQuery('SELECT e.id, n.name, e.flags FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.tournament_id = ? ORDER BY e.start_time, e.id', $tournament_id);
 		$events = array();
 		while ($row = $query->next())
 		{

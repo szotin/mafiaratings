@@ -39,7 +39,7 @@ class Page extends AlbumPageBase
 	
 	protected function show_body()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 	
 		echo '<table class="transp" width="100%"><tr><td align="right" valign="center"></td><td height="52" width="60">';
 		start_upload_logo_button($this->album->id);
@@ -63,7 +63,8 @@ class Page extends AlbumPageBase
 		
 		$event_found = false;
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.start_time, c.timezone FROM events e' .
+			'SELECT e.id, ne.name, e.start_time, c.timezone FROM events e' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities c ON a.city_id = c.id' .
 				' WHERE e.club_id = ? AND e.start_time <= UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) .  ') = 0' .
@@ -81,7 +82,8 @@ class Page extends AlbumPageBase
 		if (!$event_found && $this->album->event_id != NULL)
 		{
 			$query->set(
-				'SELECT e.id, e.name, e.start_time, c.timezone FROM events e' .
+				'SELECT e.id, ne.name, e.start_time, c.timezone FROM events e' .
+					' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 					' JOIN addresses a ON e.address_id = a.id' .
 					' JOIN cities c ON a.city_id = c.id' .
 					' WHERE e.id = ? AND e.club_id = ?',

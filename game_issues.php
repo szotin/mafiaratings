@@ -19,7 +19,7 @@ class Page extends GeneralPageBase
 		$event_pic = new Picture(EVENT_PICTURE);
 
 
-		$query = new DbQuery('SELECT g.id, g.table_num, g.game_num, c.id, nc.name, c.flags, e.id, e.name, e.flags, i.issues, i.feature_flags, i.new_feature_flags FROM game_issues i JOIN games g ON g.id = i.game_id JOIN events e ON e.id = g.event_id JOIN clubs c ON c.id = g.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 ORDER BY i.game_id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		$query = new DbQuery('SELECT g.id, g.table_num, g.game_num, c.id, nc.name, c.flags, e.id, ne.name, e.flags, i.issues, i.feature_flags, i.new_feature_flags FROM game_issues i JOIN games g ON g.id = i.game_id JOIN events e ON e.id = g.event_id JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 JOIN clubs c ON c.id = g.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 ORDER BY i.game_id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 	
 		$count = 0;
 		echo '<table class="bordered light" width="100%">';

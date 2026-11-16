@@ -457,6 +457,20 @@ function tournament_stars_str($stars, $wrap = true, $max_stars = 10)
 	return implode('', array_slice($symbols, 0, STARS_PER_ROW)) . '<br>' . implode('', array_slice($symbols, STARS_PER_ROW));
 }
 
+// The set of names of round number $round_num: its name in every language - see get_round_name().
+// The rounds with the same number share it.
+function get_round_name_id($round_num)
+{
+	$by_lang = array();
+	$lang = LANG_NO;
+	while (($lang = get_next_lang($lang)) != LANG_NO)
+	{
+		$by_lang[$lang] = get_round_name($round_num, $lang);
+	}
+	$names = Names::from_languages($by_lang, get_label('round'));
+	return $names->get_id();
+}
+
 function create_tournament_round($address_id, $club_id, $start, $end, $notes, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $tournament_flags, $players = null, $tables = null, $games = null)
 {
 	$event_name = get_round_name($round_num);
@@ -471,8 +485,8 @@ function create_tournament_round($address_id, $club_id, $start, $end, $notes, $l
 	}
 	Db::exec(
 		get_label('round'),
-		'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, players, tables, games) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		$event_name, $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $players, $tables, $games);
+		'INSERT INTO events (name_id, address_id, club_id, start_time, duration, notes, flags, languages, fee, currency_id, scoring_id, scoring_version, scoring_options, tournament_id, rules, round, players, tables, games) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		get_round_name_id($round_num), $address_id, $club_id, $start, $end - $start, $notes, $flags, $langs, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $tournament_id, $rules_code, $round_num, $players, $tables, $games);
 	list ($round_id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
 	
 		
@@ -503,7 +517,8 @@ function create_tournament_round($address_id, $club_id, $start, $end, $notes, $l
 // tournament is under way, and those are not to be lost with it.
 function delete_tournament_round($event_id)
 {
-	list($round_name, $club_id, $tournament_id) = Db::record(get_label('round'), 'SELECT name, club_id, tournament_id FROM events WHERE id = ?', $event_id);
+	global $_lang;
+	list($round_name, $club_id, $tournament_id) = Db::record(get_label('round'), 'SELECT n.name, e.club_id, e.tournament_id FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.id = ?', $event_id);
 	foreach (array('games', 'photo_albums', 'videos', 'bug_reports') as $table)
 	{
 		list($count) = Db::record(get_label('round'), 'SELECT count(*) FROM ' . $table . ' WHERE event_id = ?', $event_id);

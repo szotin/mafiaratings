@@ -59,22 +59,24 @@ class Page extends UserPageBase
 			$query->add('(');
 		}
 		$query->add(
-			'SELECT v.id as video_id, v.video, v.name, v.lang, v.type, v.post_time as post_time, g.id, g.start_time as start_time, c.id, nc.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM user_videos u' .
+			'SELECT v.id as video_id, v.video, v.name, v.lang, v.type, v.post_time as post_time, g.id, g.start_time as start_time, c.id, nc.name, c.flags, e.id, ne.name, e.flags, g.table_num, g.game_num FROM user_videos u' .
 			' JOIN videos v ON u.video_id = v.id' .
 			' JOIN clubs c ON c.id = v.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN events e ON e.id = v.event_id' .
+			' LEFT OUTER JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 			' WHERE u.user_id = ?', $this->id, $condition);
 		if ($this->video_type <= VIDEO_TYPE_GAME)
 		{
 			$query->add(
-				') UNION (SELECT v.id as video_id, v.video, v.name, v.lang, v.type, v.post_time as post_time, g.id, g.start_time as start_time, c.id, nc.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM players p' .
+				') UNION (SELECT v.id as video_id, v.video, v.name, v.lang, v.type, v.post_time as post_time, g.id, g.start_time as start_time, c.id, nc.name, c.flags, e.id, ne.name, e.flags, g.table_num, g.game_num FROM players p' .
 				' JOIN games g ON p.game_id = g.id' .
 				' JOIN videos v ON g.video_id = v.id' .
 				' JOIN clubs c ON c.id = v.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN events e ON e.id = v.event_id' .
+				' LEFT OUTER JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' WHERE p.user_id = ?', $this->id, $condition);
 			$query->add(')');
 		}

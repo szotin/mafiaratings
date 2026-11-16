@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/game.php';
+require_once __DIR__ . '/tournament.php'; // get_round_name_id()
 
 define('GAME_FEATURE_MASK_MWT', 0x000010be); // DON_CHECKS | SHERIFF_CHECKS | DEATH | DEATH_ROUND | DEATH_TYPE | LEGACY | WARNINGS
 define('MWT_CLUB_ID', 96);
@@ -141,8 +142,8 @@ function convert_mwt_game($mwt_game)
 		Db::exec(
 			get_label('round'), 
 			// The main round carries no notes and is round 0 - both NOT NULL with no default.
-			'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round) values (?, ?, ?, ?, ?, \'\', ?, ?, ?, ?, ?, ?, ?, 0)',
-			$round_name, $address_id, $club_id, $start, $end - $start, $event_flags, LANG_ALL, $scoring_id, $scoring_version, '{}', $tournament_id, $rules_code);
+			'INSERT INTO events (name_id, address_id, club_id, start_time, duration, notes, flags, languages, scoring_id, scoring_version, scoring_options, tournament_id, rules, round) values (?, ?, ?, ?, ?, \'\', ?, ?, ?, ?, ?, ?, ?, 0)',
+			get_round_name_id(0), $address_id, $club_id, $start, $end - $start, $event_flags, LANG_ALL, $scoring_id, $scoring_version, '{}', $tournament_id, $rules_code);
 		list ($round_id) = Db::record(get_label('round'), 'SELECT LAST_INSERT_ID()');
 		$log_details = new stdClass();
 		$log_details->name = $round_name;
@@ -380,9 +381,10 @@ function convert_game_to_mwt($game_id)
 	global $_lang;
 	
 	list ($game_json, $feature_flags, $table_num, $game_num, $misc, $event_name, $event_round, $tournament_id, $mwt_tournament_id, $mwt_moderator_id, $moderator_name, $timezone) = Db::record(get_label('game'), 
-		'SELECT g.json, g.feature_flags, g.table_num, g.game_num, e.misc, e.name, e.round, t.id, t.mwt_id, u.mwt_id, nu.name, c.timezone'.
+		'SELECT g.json, g.feature_flags, g.table_num, g.game_num, e.misc, ne.name, e.round, t.id, t.mwt_id, u.mwt_id, nu.name, c.timezone'.
 		' FROM games g'.
 		' JOIN events e ON e.id = g.event_id'.
+		' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 		' JOIN addresses a ON a.id = e.address_id'.
 		' JOIN cities c ON c.id = a.city_id'.
 		' JOIN tournaments t ON t.id = g.tournament_id'.

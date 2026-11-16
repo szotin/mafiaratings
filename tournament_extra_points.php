@@ -41,11 +41,12 @@ class Page extends TournamentPageBase
 		echo '</tr>';
 		
 		$query = new DbQuery(
-			'SELECT p.id, e.id, e.name, e.flags, u.id, nu.name, u.flags, p.reason, p.details, p.points, p.mvp, eu.nickname, eu.flags, tu.flags, cu.flags' . 
+			'SELECT p.id, e.id, ne.name, e.flags, u.id, nu.name, u.flags, p.reason, p.details, p.points, p.mvp, eu.nickname, eu.flags, tu.flags, cu.flags' . 
 				' FROM event_extra_points p' . 
 				' JOIN users u ON u.id = p.user_id' . 
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = p.event_id' . 
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = u.id' .
 				' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = e.tournament_id AND tu.user_id = u.id' .
 				' LEFT OUTER JOIN club_regs cu ON cu.club_id = e.club_id AND cu.user_id = u.id' .

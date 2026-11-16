@@ -1506,9 +1506,10 @@ function broadcast_video_tiles($scope, $past, $now)
 
 	$past_expr = broadcast_past_expr($now);
 	$query = new DbQuery(
-		'SELECT b.event_id, e.name, e.tournament_id, t.name, b.day_num, b.table_num, b.part_num, b.url, ' .
+		'SELECT b.event_id, ne.name, e.tournament_id, t.name, b.day_num, b.table_num, b.part_num, b.url, ' .
 			broadcast_started_expr($now) . ', c.id, nc.name, c.flags' .
 		' FROM event_broadcasts b JOIN events e ON e.id = b.event_id' .
+		' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 		' LEFT OUTER JOIN clubs c ON c.id = e.club_id' .
 		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
@@ -1671,7 +1672,7 @@ function broadcast_live_competitions($scope)
 		// is for - but whether there is anything to read is the round's own answer: a round that
 		// is over is over however long the tournament it belongs to runs.
 		list ($name, $start_time, $flags, $tournament_id) = Db::record(get_label('event'),
-			'SELECT name, start_time, flags, tournament_id FROM events WHERE id = ?', $scope->id);
+			'SELECT n.name, e.start_time, e.flags, e.tournament_id FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.id = ?', $scope->id);
 		if (stream_is_live($start_time, ($flags & EVENT_FLAG_FINISHED) != 0, ($flags & EVENT_FLAG_CANCELED) != 0))
 		{
 			$tournament_id = is_null($tournament_id) ? 0 : (int)$tournament_id;
@@ -1702,7 +1703,8 @@ function broadcast_live_competitions($scope)
 	}
 
 	$query = new DbQuery(
-		'SELECT e.id, e.name, e.start_time, c.id, nc.name, c.flags FROM events e' .
+		'SELECT e.id, ne.name, e.start_time, c.id, nc.name, c.flags FROM events e' .
+		' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 		' LEFT OUTER JOIN clubs c ON c.id = e.club_id' .
 		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 		' WHERE e.tournament_id IS NULL' .

@@ -138,6 +138,8 @@ function obs_logo($pic, $id, $name, $flags, $club_id)
 // looking at, since a few of them have something to say in one case and not the other.
 function obs_event_context($event_id, $table_num)
 {
+	global $_lang;
+
 	$c = new stdClass();
 	$c->is_tournament = false;
 	$c->table_num = $table_num;
@@ -147,7 +149,7 @@ function obs_event_context($event_id, $table_num)
 	$c->normalizer_version = 0;
 
 	list ($name, $event_flags, $c->club_id, $c->scoring_id, $c->scoring_version, $c->scoring_options, $misc) = Db::record(get_label('event'),
-		'SELECT name, flags, club_id, scoring_id, scoring_version, scoring_options, misc FROM events WHERE id = ?', $event_id);
+		'SELECT n.name, e.flags, e.club_id, e.scoring_id, e.scoring_version, e.scoring_options, e.misc FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.id = ?', $event_id);
 
 	$c->logo = obs_logo(new Picture(EVENT_PICTURE), $event_id, $name, (int)$event_flags, $c->club_id);
 
@@ -177,6 +179,8 @@ function obs_event_context($event_id, $table_num)
 // Returns NULL when the request names no table we can make sense of.
 function obs_context()
 {
+	global $_lang;
+
 	$table_num = isset($_REQUEST['table_num']) ? max((int)$_REQUEST['table_num'], 1) : 1;
 	$tournament_id = isset($_REQUEST['tournament_id']) ? (int)$_REQUEST['tournament_id'] : 0;
 	$event_id = isset($_REQUEST['event_id']) ? (int)$_REQUEST['event_id'] : 0;
@@ -209,7 +213,7 @@ function obs_context()
 	// The rounds in the order they are played. events.round is a stage number rather than a
 	// sequence, so the clock is what puts them in order.
 	$c->rounds = array();
-	$query = new DbQuery('SELECT id, name, round, misc FROM events WHERE tournament_id = ? ORDER BY start_time, id', $tournament_id);
+	$query = new DbQuery('SELECT e.id, n.name, e.round, e.misc FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.tournament_id = ? ORDER BY e.start_time, e.id', $tournament_id);
 	while ($row = $query->next())
 	{
 		$r = new stdClass();

@@ -10,9 +10,10 @@ class Page extends GeneralPageBase
 	
 		check_permissions(PERMISSION_ADMIN);
 		$query = new DbQuery(
-			'SELECT g1.id, g2.id, g1.table_num, g1.game_num, g2.table_num, g2.game_num, g1.start_time, g1.end_time - g1.start_time, c.id, nc.name, c.flags, i.timezone, e.name, t.name FROM games g1' .
+			'SELECT g1.id, g2.id, g1.table_num, g1.game_num, g2.table_num, g2.game_num, g1.start_time, g1.end_time - g1.start_time, c.id, nc.name, c.flags, i.timezone, ne.name, t.name FROM games g1' .
 			' JOIN games g2 ON g1.start_time = g2.start_time AND g1.end_time = g2.end_time AND g1.club_id = g2.club_id' .
 			' JOIN events e ON g1.event_id = e.id' .
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON i.id = a.city_id' .
 			' JOIN clubs c ON c.id = g1.club_id' .

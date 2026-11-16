@@ -216,14 +216,15 @@ class Page extends GeneralPageBase
 		global $_lang;
 
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.flags, a.address, a.name FROM events e' .
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0', $condition);
-		$query->add(' ORDER BY e.flags & ' . EVENT_FLAG_PINNED .' DESC, e.start_time + e.duration, e.name, e.id LIMIT ' . EVENTS_ROW_COUNT * EVENTS_COLUMN_COUNT);
+		$query->add(' ORDER BY e.flags & ' . EVENT_FLAG_PINNED .' DESC, e.start_time + e.duration, ne.name, e.id LIMIT ' . EVENTS_ROW_COUNT * EVENTS_COLUMN_COUNT);
 		
 		$event_count = 0;
 		$column_count = 0;

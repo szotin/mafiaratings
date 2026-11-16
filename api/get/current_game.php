@@ -628,9 +628,10 @@ class ApiPage extends GetApiPageBase
 		}
 
 		$query = new DbQuery(
-			'SELECT g.game, e.id, e.name, e.flags, t.id, t.name, t.flags, e.round, c.id, nc.name, c.flags, ni.name, no.name, e.misc'.
+			'SELECT g.game, e.id, ne.name, e.flags, t.id, t.name, t.flags, e.round, c.id, nc.name, c.flags, ni.name, no.name, e.misc'.
 			' FROM current_games g'.
 			' JOIN events e ON e.id = g.event_id'.
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 			' JOIN clubs c ON c.id = e.club_id'.
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .

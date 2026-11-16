@@ -159,7 +159,9 @@ class Names
 	// if $name_id == 0 - name_id does not exist it has to be created - names are taken from $_REQUEST
 	// if $name_id > 0 - name_id does exist - names are taken from the database
 	// if $name_id < 0 - name_id does not exist it has to be created - $param_name is treated as the only name.
-	function __construct($name_id, $obj_name, $table_name = NULL, $obj_id = 0, $condition = NULL, $param_name = 'name')
+	// $validate is false for the objects whose names may hold any characters - events, where "1/8 final"
+	// is a name; check_name() is not called for them.
+	function __construct($name_id, $obj_name, $table_name = NULL, $obj_id = 0, $condition = NULL, $param_name = 'name', $validate = true)
 	{
 		$this->obj_name = $obj_name;
 		$this->names = array();
@@ -184,7 +186,7 @@ class Names
 			if (isset($_REQUEST[$param_name]))
 			{
 				$name = new stdClass();
-				$name->name = $_REQUEST[$param_name];
+				$name->name = trim($_REQUEST[$param_name]);
 				$name->langs = 0;
 				$this->names[] = $name;
 			}
@@ -194,12 +196,15 @@ class Names
 				if (isset($_REQUEST[$pname]))
 				{
 					$name = new stdClass();
-					$name->name = $_REQUEST[$pname];
+					$name->name = trim($_REQUEST[$pname]);
 					if (empty($name->name))
 					{
 						continue;
 					}
-					check_name($name->name, $obj_name);
+					if ($validate)
+					{
+						check_name($name->name, $obj_name);
+					}
 					$name->langs = $lang;
 					$default_mask &= ~$lang;
 					$this->names[] = $name;
@@ -208,7 +213,15 @@ class Names
 		}
 		else
 		{
-			check_name($param_name, $obj_name);
+			$param_name = trim($param_name);
+			if ($validate)
+			{
+				check_name($param_name, $obj_name);
+			}
+			else if ($param_name == '')
+			{
+				throw new Exc(get_label('Please enter [0].', $obj_name));
+			}
 			$name = new stdClass();
 			$name->name = $param_name;
 			$name->langs = 0;
@@ -354,6 +367,55 @@ class Names
 		return '';
 	}
 	
+	// The names as the values of a NameControl in js/src/mr.js: { name: "<for all languages>", ru: "...", ... }.
+	function to_js()
+	{
+		$values = array();
+		if (count($this->names) > 0)
+		{
+			$values['name'] = $this->names[0]->name;
+			for ($i = 1; $i < count($this->names); ++$i)
+			{
+				$n = $this->names[$i];
+				$lang = LANG_NO;
+				while (($lang = get_next_lang($lang, $n->langs)) != LANG_NO)
+				{
+					$values[get_lang_code($lang)] = $n->name;
+				}
+			}
+		}
+		return json_encode((object)$values, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG);
+	}
+
+	// The names of an object the site names itself in every language: $by_lang is the name by language,
+	// array(LANG_ENGLISH => 'final', LANG_RUSSIAN => 'финал', ...). The English one is the name for all
+	// languages; a language gets its own only where it differs. Nothing is checked - the names come
+	// from the labels.
+	static function from_languages($by_lang, $obj_name)
+	{
+		$names = new Names(-1, $obj_name, NULL, 0, NULL, $by_lang[LANG_ENGLISH], false);
+		foreach ($by_lang as $lang => $name)
+		{
+			if ($lang != LANG_ENGLISH && $name != $by_lang[LANG_ENGLISH])
+			{
+				$n = new stdClass();
+				$n->name = $name;
+				$n->langs = $lang;
+				$names->names[] = $n;
+				$names->names[0]->langs &= ~$lang;
+			}
+		}
+		return $names;
+	}
+
+	// The id of the set holding just $name for all languages - the one there is, or a new one. For
+	// the code that names an object itself, such as a tournament naming its rounds.
+	static function get_single_id($name, $obj_name)
+	{
+		$names = new Names(-1, $obj_name, NULL, 0, NULL, $name, false);
+		return $names->get_id();
+	}
+
 	static function show_control($names = NULL, $control_id = 'form-name', $var_name = 'nameControl')
 	{
 		// Languages are shown by their three letter codes, the way the language menu of the page shows them.
@@ -374,17 +436,7 @@ class Names
 		if (!is_null($names) && count($names->names) > 0)
 		{
 			$values_var = $var_name . 'Values';
-			echo 'var ' . $values_var . ' = {name:"' . $names->names[0]->name . '"';
-			for ($i = 1; $i < count($names->names); ++$i)
-			{
-				$n = $names->names[$i];
-				$lang = LANG_NO;
-				while (($lang = get_next_lang($lang, $n->langs)) != LANG_NO)
-				{
-					echo ', ' . get_lang_code($lang) . ':"' . $n->name . '"';
-				}
-			}
-			echo '}; ';
+			echo 'var ' . $values_var . ' = ' . $names->to_js() . '; ';
 		}
 		else
 		{

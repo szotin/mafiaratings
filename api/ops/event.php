@@ -12,6 +12,7 @@ require_once '../../include/scoring.php';
 require_once '../../include/game.php';
 require_once '../../include/seating.php';
 require_once '../../include/geo.php';
+require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -20,6 +21,53 @@ define('PERMISSION_MANAGER', PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER 
 
 class ApiPage extends OpsApiPageBase
 {
+	// The set of names of the event from the request: either "name_id" - the names of another event,
+	// taken as they are, which is how an event is copied - or "name" for all languages with "name_xx"
+	// for a language that has its own. Events do not need unique names, and an event gets the set
+	// that already has exactly its names, so the events with one name share one set. Returns 0 when
+	// the request has no name.
+	//
+	// A round of a tournament ($round_num >= 0) left with the name the forms offer for it - the name of
+	// its number in the language of the page, and nothing for the other languages - gets the names of
+	// its number in every language; see get_round_name_id().
+	private function get_name_id($round_num = -1)
+	{
+		$name_id = (int)get_optional_param('name_id', 0);
+		if ($name_id > 0)
+		{
+			list ($count) = Db::record(get_label('event name'), 'SELECT COUNT(*) FROM names WHERE id = ?', $name_id);
+			if ($count <= 0)
+			{
+				throw new Exc(get_label('Unknown [0]', get_label('event name')));
+			}
+			return $name_id;
+		}
+		
+		if ($round_num >= 0 && isset($_REQUEST['name']) && trim($_REQUEST['name']) == get_round_name($round_num))
+		{
+			$own_names = false;
+			$lang = LANG_NO;
+			while (($lang = get_next_lang($lang)) != LANG_NO)
+			{
+				if (!empty($_REQUEST['name_' . get_lang_code($lang)]))
+				{
+					$own_names = true;
+				}
+			}
+			if (!$own_names)
+			{
+				return get_round_name_id($round_num);
+			}
+		}
+
+		$names = new Names(0, get_label('event name'), NULL, 0, NULL, 'name', false);
+		if (count($names->names) > 0 && $names->names[0]->name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('event name')));
+		}
+		return $names->get_id();
+	}
+
 	function get_address_id($club, $old_address_id)
 	{
 		$address_id = get_optional_param('address_id', -1);
@@ -150,12 +198,6 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Due to international sanctions against Russia, the creation of [0] in this country is currently unavailable.', get_label('events')));
 		}
 		
-		$name = get_required_param('name');
-		if ($name == '')
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('event name')));
-		}
-
 		$start = get_optional_param('start', time());
 		$duration = (int)get_required_param('duration');
 		$fee = (int)get_optional_param('fee', $club->fee);
@@ -188,6 +230,13 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
+		$name_id = $this->get_name_id(is_null($tournament_id) ? -1 : (int)$round_num);
+		if ($name_id <= 0)
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('event name')));
+		}
+		$names = new Names($name_id, get_label('event name'));
+
 		if (!is_null($tournament_id))
 		{
 			// A round plays by the rules of its tournament and is scored by its scoring. The
@@ -217,7 +266,8 @@ class ApiPage extends OpsApiPageBase
 		{
 			$log_details->tournament_id = $tournament_id;
 		}
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $name_id;
 		if (!is_null($fee) && !is_null($currency_id))
 		{
 			$log_details->fee = (int)$fee;
@@ -257,9 +307,9 @@ class ApiPage extends OpsApiPageBase
 				{
 					Db::exec(
 						get_label('event'), 
-						'INSERT INTO events (name, fee, currency_id, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id, round) ' .
+						'INSERT INTO events (name_id, fee, currency_id, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id, round) ' .
 						'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-						$name, $fee, $currency_id, $address_id, $club_id, $start_datetime->getTimestamp(), 
+						$name_id, $fee, $currency_id, $address_id, $club_id, $start_datetime->getTimestamp(), 
 						$notes, $duration, $flags, $langs, $rules_code, 
 						$scoring_id, $scoring_version, $scoring_options, $tournament_id, $round_num);
 					list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
@@ -303,9 +353,9 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('event'), 
-				'INSERT INTO events (name, fee, currency_id, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id, round) ' .
+				'INSERT INTO events (name_id, fee, currency_id, address_id, club_id, start_time, notes, duration, flags, languages, rules, scoring_id, scoring_version, scoring_options, tournament_id, round) ' .
 				'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-				$name, $fee, $currency_id, $address_id, $club_id, $start_time, 
+				$name_id, $fee, $currency_id, $address_id, $club_id, $start_time, 
 				$notes, $duration, $flags, $langs, $rules_code, 
 				$scoring_id, $scoring_version, $scoring_options, $tournament_id, $round_num);
 			list ($event_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
@@ -337,7 +387,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('club_id', 'Club id.', 'tournament_id must be set.');
 		$help->request_param('tournament_id', 'Tournament id. When set the event becomes a tournament round.', 'club_id must be set.');
 		$help->request_param('round_num', 'Round number: 0 for main round; 1 - final; 2 - semi-final; 3 - quoter-final; etc.', 'tournament_id must be set.');
-		$help->request_param('name', 'Event name.');
+		Names::help($help, 'Event', false);
+		$help->request_param('name_id', 'The names of another event, taken as they are instead of <q>name</q> - to copy an event.', '<q>name</q> is used.');
 		$help->request_param('month', 'Month of the event.');
 		$help->request_param('day', 'Day of the month of the event.');
 		$help->request_param('year', 'Year of the event.');
@@ -388,9 +439,9 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id, $old_name, $old_tournament_id, $old_start_timestamp, $old_duration, $old_address_id, $old_fee, $old_currency_id, $old_rules_code, $old_scoring_id, $old_scoring_version, $old_scoring_options, $old_langs, $old_notes, $old_flags, $timezone, $old_round_num, $old_players, $old_tables, $old_games) =
+		list($club_id, $old_name_id, $old_tournament_id, $old_start_timestamp, $old_duration, $old_address_id, $old_fee, $old_currency_id, $old_rules_code, $old_scoring_id, $old_scoring_version, $old_scoring_options, $old_langs, $old_notes, $old_flags, $timezone, $old_round_num, $old_players, $old_tables, $old_games) =
 			Db::record(get_label('event'),
-				'SELECT e.club_id, e.name, e.tournament_id, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, e.round, e.players, e.tables, e.games ' .
+				'SELECT e.club_id, e.name_id, e.tournament_id, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, e.round, e.players, e.tables, e.games ' .
 				'FROM events e ' .
 				'JOIN addresses a ON a.id = e.address_id ' .
 				'JOIN cities c ON c.id = a.city_id ' .
@@ -414,7 +465,6 @@ class ApiPage extends OpsApiPageBase
 					'WHERE c.id = ?', $club_id);
 		}
 
-		$name = get_optional_param('name', $old_name);
 		$tournament_id = get_optional_param('tournament_id', $old_tournament_id);
 		if ($tournament_id <= 0)
 		{
@@ -424,6 +474,12 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			$round_num = get_optional_param('round_num', $old_round_num);
+		}
+		
+		$name_id = $this->get_name_id(is_null($tournament_id) ? -1 : (int)$round_num);
+		if ($name_id <= 0)
+		{
+			$name_id = $old_name_id;
 		}
 		
 		$start = get_optional_param('start', $old_start_timestamp);
@@ -647,10 +703,10 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(
 			get_label('event'),
 			'UPDATE events SET ' .
-				'name = ?, tournament_id = ?, fee = ?, currency_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, ' .
+				'name_id = ?, tournament_id = ?, fee = ?, currency_id = ?, rules = ?, scoring_id = ?, scoring_version = ?, scoring_options = ?, ' .
 				'address_id = ?, start_time = ?, notes = ?, duration = ?, flags = ?, ' .
 				'languages = ?, round = ?, players = ?, tables = ?, games = ? WHERE id = ?',
-			$name, $tournament_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options,
+			$name_id, $tournament_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options,
 			$address_id, $start_timestamp, $notes, $duration, $flags,
 			$langs, $round_num, $players, $tables, $games, $event_id);
 
@@ -668,9 +724,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $address_id);
 			$log_details = new stdClass();
-			if ($name != $old_name)
+			if ($name_id != $old_name_id)
 			{
-				$log_details->name = $name;
+				$names = new Names($name_id, get_label('event name'));
+				$log_details->name = $names->to_string();
+				$log_details->name_id = $name_id;
 			}
 			if ($tournament_id != $old_tournament_id)
 			{
@@ -745,7 +803,8 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('event_id', 'Event id.');
 		$help->request_param('tournament_id', 'Tournament id. When set the event becomes a tournament round.', 'remains the same.');
 		$help->request_param('round_num', 'Round number: 0 for main round; 1 - final; 2 - semi-final; 3 - quoter-final; etc.', 'remains the same.');
-		$help->request_param('name', 'Event name.', 'remains the same.');
+		Names::help($help, 'Event', true);
+		$help->request_param('name_id', 'The names of another event, taken as they are instead of <q>name</q>.', '<q>name</q> is used.');
 		$help->request_param('start', 'Event start time. It is either unix timestamp or datetime in the format "yyyy-mm-dd hh:00". Timezone of the address is used.', 'remains the same.');
 		$help->request_param('duration', 'Event duration in seconds.', 'remains the same.');
 		$help->request_param('fee', 'Admission rate.', 'remains the same.');
@@ -1640,13 +1699,16 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function to_tournament_op()
 	{
+		global $_lang;
+		
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
 		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $lat, $lon) = 
 			Db::record(get_label('event'), 
-				'SELECT e.club_id, e.name, e.address_id, e.start_time, e.duration, e.languages, e.notes, e.fee, e.currency_id, e.scoring_id, e.scoring_version, e.scoring_options, e.rules, e.flags, a.lat, a.lon'.
+				'SELECT e.club_id, ne.name, e.address_id, e.start_time, e.duration, e.languages, e.notes, e.fee, e.currency_id, e.scoring_id, e.scoring_version, e.scoring_options, e.rules, e.flags, a.lat, a.lon'.
 				' FROM events e'.
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' JOIN addresses a ON a.id = e.address_id'.
 				' WHERE e.id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
@@ -1687,13 +1749,15 @@ class ApiPage extends OpsApiPageBase
 		update_tournament_stats($tournament_id, $lat, $lon, 0);
 			
 		$name = get_label('main round');
+		$name_id = get_round_name_id(0);
 		$flags |= EVENT_MASK_HIDDEN;
 		Db::exec(
 			get_label('event'), 
-			'UPDATE events SET tournament_id = ?, flags = ?, name = ? WHERE id = ?', $tournament_id, $flags, $name, $event_id);
+			'UPDATE events SET tournament_id = ?, flags = ?, name_id = ? WHERE id = ?', $tournament_id, $flags, $name_id, $event_id);
 		$log_details = new stdClass();
 		$log_details->tournament_id = $tournament_id;
 		$log_details->name = $name;
+		$log_details->name_id = $name_id;
 		$log_details->flags = $flags;
 		db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
 		
@@ -1772,9 +1836,9 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(get_label('comment'), 'INSERT INTO event_comments (time, user_id, comment, event_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $event_id, $lang);
 		
-		list($event_id, $event_name, $event_start_time, $event_timezone, $event_addr) = 
+		list($event_id, $event_name_id, $event_start_time, $event_timezone, $event_addr) = 
 			Db::record(get_label('event'), 
-				'SELECT e.id, e.name, e.start_time, c.timezone, a.address FROM events e' .
+				'SELECT e.id, e.name_id, e.start_time, c.timezone, a.address FROM events e' .
 				' JOIN addresses a ON a.id = e.address_id' . 
 				' JOIN cities c ON c.id = a.city_id' . 
 				' WHERE e.id = ?', $event_id);
@@ -1789,6 +1853,8 @@ class ApiPage extends OpsApiPageBase
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN event_comments c ON c.user_id = u.id' .
 			' WHERE c.event_id = ?)', $event_id, $event_id);
+		// The name of the event in each email is in the language of the email.
+		$event_names = new Names($event_name_id, get_label('event name'));
 		// echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
@@ -1805,7 +1871,7 @@ class ApiPage extends OpsApiPageBase
 				'root' => new Tag(get_server_url()),
 				'user_id' => new Tag($user_id),
 				'event_id' => new Tag($event_id),
-				'event_name' => new Tag($event_name),
+				'event_name' => new Tag($event_names->get_name($user_lang)),
 				'event_date' => new Tag(format_date($event_start_time, $event_timezone, false, $user_lang)),
 				'event_time' => new Tag(date('H:i', $event_start_time)),
 				'addr' => new Tag($event_addr),

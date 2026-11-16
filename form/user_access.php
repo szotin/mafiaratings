@@ -27,7 +27,7 @@ try
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
-		list($club_id, $tour_id, $name, $user_flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, e.name, eu.flags FROM event_regs eu JOIN events e ON e.id = eu.event_id WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
+		list($club_id, $tour_id, $name, $user_flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, ne.name, eu.flags FROM event_regs eu JOIN events e ON e.id = eu.event_id JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 WHERE eu.event_id = ? AND eu.user_id = ?', $event_id, $user_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));

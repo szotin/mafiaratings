@@ -2217,7 +2217,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		
 		// Calculate final values for counters
 		$games = array();
-		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, e.name, e.round, p.rating_before, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND (tu.flags IS NULL OR (tu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0) AND (eu.flags IS NULL OR (eu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $tournament_id, $condition);
+		$query = new DbQuery('SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, ne.name, e.round, p.rating_before, g.table_num, g.game_num FROM players p JOIN games g ON g.id = p.game_id JOIN events e ON e.id = g.event_id JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 JOIN users u ON u.id = p.user_id LEFT OUTER JOIN clubs c ON c.id = u.club_id LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id WHERE g.tournament_id = ? AND (g.flags & '.(GAME_FLAG_RATING | GAME_FLAG_CANCELED).') = '.GAME_FLAG_RATING.' AND (tu.flags IS NULL OR (tu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0) AND (eu.flags IS NULL OR (eu.flags & '.USER_FLAG_EXHIBITION_PLAYER.') = 0)', $tournament_id, $condition);
 		$query->add(' ORDER BY g.end_time');
 		while ($row = $query->next())
 		{
@@ -2256,7 +2256,7 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		// prepare scorings per event
 		$groups = array();
 		$event_options = array();
-		$query = new DbQuery('SELECT e.id, e.name, e.scoring_options FROM events e WHERE e.tournament_id = ?', $tournament_id, hiding_events_condition($table_hiding));
+		$query = new DbQuery('SELECT e.id, ne.name, e.scoring_options FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 WHERE e.tournament_id = ?', $tournament_id, hiding_events_condition($table_hiding));
 		while ($row = $query->next())
 		{
             list($event_id, $event_name, $event_scoring_options) = $row;
@@ -2359,10 +2359,11 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 			$counters = array();
 			$games = array();
 			$query = new DbQuery(
-				'SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, g.event_id, e.round, e.name, p.rating_before, g.table_num, g.game_num'.
+				'SELECT p.user_id, p.flags, p.role, p.extra_points, p.mr_points, g.id, g.end_time, g.event_id, e.round, ne.name, p.rating_before, g.table_num, g.game_num'.
 				' FROM players p'.
 				' JOIN games g ON g.id = p.game_id'.
 				' JOIN events e ON e.id = g.event_id'.
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' JOIN users u ON u.id = p.user_id'.
 				' LEFT OUTER JOIN clubs c ON c.id = u.club_id'.
 				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = g.tournament_id'.

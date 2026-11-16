@@ -1869,6 +1869,42 @@ class NameControl
 		});
 	}
 	
+	// Replaces everything in the control with these values - the languages they have included.
+	reset(values)
+	{
+		this.langs = [];
+		for (const code in values)
+		{
+			if (code != 'name')
+			{
+				this.langs.push(code);
+			}
+		}
+		this.draw(values);
+	}
+
+	// Whether the control holds exactly these values - the same name for all languages and the same
+	// names for the same languages.
+	hasValues(values)
+	{
+		var current = this.getValues();
+		for (const code in current)
+		{
+			if ((current[code] ? current[code].trim() : '') != (values[code] ? values[code] : ''))
+			{
+				return false;
+			}
+		}
+		for (const code in values)
+		{
+			if (!(code in current))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	fillRequest(request, name)
 	{
 		if (!isSet(name))

@@ -34,7 +34,7 @@ try
 	}
 	$part = (int)$_REQUEST['part'];
 	
-	list ($url, $event_name) = Db::record(get_label('broadcast'), 'SELECT es.url, e.name FROM event_broadcasts es JOIN events e ON e.id = es.event_id WHERE es.event_id = ? AND es.day_num = ? AND es.table_num = ? AND es.part_num = ?', $event_id, $day, $table, $part);
+	list ($url, $event_name) = Db::record(get_label('broadcast'), 'SELECT es.url, ne.name FROM event_broadcasts es JOIN events e ON e.id = es.event_id JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 WHERE es.event_id = ? AND es.day_num = ? AND es.table_num = ? AND es.part_num = ?', $event_id, $day, $table, $part);
 	list ($parts) = Db::record(get_label('broadcast'), 'SELECT count(*) FROM event_broadcasts WHERE event_id = ? AND day_num = ? AND table_num = ?', $event_id, $day, $table);
 	
 	echo '<table class="dialog_form" width="100%">';

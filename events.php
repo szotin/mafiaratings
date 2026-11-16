@@ -44,7 +44,7 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
-		$condition = new SQL(' FROM events e JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id JOIN cities ct ON ct.id = a.city_id');
+		$condition = new SQL(' FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id JOIN cities ct ON ct.id = a.city_id');
 		if ($this->future)
 		{
 			$condition->add(' WHERE e.start_time + e.duration >= UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0');
@@ -141,7 +141,7 @@ class Page extends GeneralPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags,' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags,' .
 			' (SELECT count(*) FROM games WHERE event_id = e.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 			' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',

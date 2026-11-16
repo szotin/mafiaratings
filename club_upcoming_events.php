@@ -47,7 +47,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT e.id, e.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name');
+		$query = new DbQuery('SELECT e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name');
 		if ($_profile != null)
 		{
 			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
@@ -57,6 +57,7 @@ class Page extends ClubPageBase
 			$query->add(', NULL, NULL, NULL FROM events e');
 		}
 		$query->add(
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .

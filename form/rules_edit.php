@@ -150,9 +150,10 @@ try
 		if ($table_num > 0 && $game_num > 0)
 		{
 			list($club_id, $tournament_id, $rules_code, $game, $rules_name, $tournament_name) = Db::record(get_label('game'), 
-				'SELECT e.club_id, e.tournament_id, e.rules, g.game, e.name, t.name'.
+				'SELECT e.club_id, e.tournament_id, e.rules, g.game, ne.name, t.name'.
 				' FROM current_games g'.
 				' JOIN events e ON e.id = g.event_id'.
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 				' WHERE g.event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
 			$game = json_decode($game);
@@ -232,7 +233,7 @@ try
 		}
 		else
 		{
-			list($club_id, $tournament_id, $rules_code, $rules_name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, rules, name FROM events WHERE id = ?', $event_id);
+			list($club_id, $tournament_id, $rules_code, $rules_name) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, e.rules, n.name FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.id = ?', $event_id);
 			
 ?>
 			<script>

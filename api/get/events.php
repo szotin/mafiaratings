@@ -42,14 +42,14 @@ class ApiPage extends GetApiPageBase
 		if (!empty($name_contains))
 		{
 			$name_contains = '%' . $name_contains . '%';
-			$condition->add(' AND e.name LIKE(?)', $name_contains);
+			$condition->add(' AND e.name_id IN (SELECT id FROM names WHERE name LIKE(?))', $name_contains);
 		}
 		
 		if (!empty($name_starts))
 		{
 			$name_starts1 = '% ' . $name_starts . '%';
 			$name_starts2 = $name_starts . '%';
-			$condition->add(' AND (e.name LIKE(?) OR e.name LIKE(?))', $name_starts1, $name_starts2);
+			$condition->add(' AND e.name_id IN (SELECT id FROM names WHERE name LIKE(?) OR name LIKE(?))', $name_starts1, $name_starts2);
 		}
 
 		if (!empty($started_before))
@@ -186,7 +186,8 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, nc.name, c.flags, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, t.id, t.name, t.flags, ct.timezone FROM events e' .
+				'SELECT e.id, ne.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, nc.name, c.flags, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, t.id, t.name, t.flags, ct.timezone FROM events e' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' JOIN clubs c ON c.id = e.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
@@ -259,7 +260,8 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.tournament_id FROM events e' . 
+				'SELECT e.id, ne.name, e.flags, e.languages, e.address_id, e.club_id, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.tournament_id FROM events e' . 
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = e.address_id', $condition);
 			$query->add(' ORDER BY e.start_time DESC, e.id DESC');
 			if ($page_size > 0)
@@ -329,7 +331,7 @@ class ApiPage extends GetApiPageBase
 
 		$param = $help->response_param('events', 'The array of events. Events are always sorted in time order from newest to oldest. There is no way to change sorting order in the current version of the API.');
 			$param->sub_param('id', 'Event id.');
-			$param->sub_param('name', 'Event name.');
+			$param->sub_param('name', 'Event name in the language of the profile.');
 			$param->sub_param('icon', 'Event icon URL.', 1);
 			$param->sub_param('picture', 'Event picture URL.', 1);
 			$param->sub_param('langs', 'A bit combination of languages used in the event.' . valid_langs_help());

@@ -28,10 +28,11 @@ try
 				$user_club_id, $club_reg_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
-				'SELECT e.name, e.club_id, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, nu.name, u.flags' .
+				'SELECT ne.name, e.club_id, eu.nickname, eu.flags, tu.tournament_id, tu.flags, cu.club_id, cu.flags, nu.name, u.flags' .
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN events e ON e.id = ?' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN event_regs eu ON eu.user_id = u.id AND eu.event_id = e.id' .
 				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = e.tournament_id' .
 				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = e.club_id' .

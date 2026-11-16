@@ -23,8 +23,8 @@ class Page extends TournamentPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
-		
+		global $_profile, $_page, $_lang;
+
 		$can_create = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id);
 		
 		$filter = FLAG_FILTER_DEFAULT;
@@ -69,11 +69,12 @@ class Page extends TournamentPageBase
 
 		$user_id = is_null($_profile) ? NULL : $_profile->user_id;
 		$query = new DbQuery(
-			'SELECT eu.flags, e.id, e.name, e.flags, e.start_time, e.duration, e.scoring_options, e.scoring_id, s.name, e.scoring_version, ct.timezone, a.id, a.name, a.flags, a.address,' .
+			'SELECT eu.flags, e.id, ne.name, e.flags, e.start_time, e.duration, e.scoring_options, e.scoring_id, s.name, e.scoring_version, ct.timezone, a.id, a.name, a.flags, a.address,' .
 				' (SELECT count(*) FROM games WHERE event_id = e.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos' .
 				' FROM events e ' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = ?' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .

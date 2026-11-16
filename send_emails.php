@@ -114,9 +114,8 @@ try
 		Db::exec(get_label('user'), 'UPDATE tournament_regs SET flags = flags | ' . USER_TOURNAMENT_MANAGER_NOTIFIED);
 	}
 
-	$event_emails = array();
 	$query = new DbQuery(
-		'SELECT ee.id, ee.type, ee.langs, ee.flags, e.id, e.name, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name_id'.
+		'SELECT ee.id, ee.type, ee.langs, ee.flags, e.id, e.name_id, e.start_time, e.notes, e.languages, a.id, a.address, a.map_url, i.timezone, c.id, c.name_id'.
 		' FROM event_mailings ee' . 
 		' JOIN events e ON e.id = ee.event_id' .
 		' JOIN addresses a ON a.id = e.address_id' . 
@@ -132,9 +131,13 @@ try
 	{
 		list(
 			$mailing_id, $mailing_type, $mailing_langs, $mailing_flags,
-			$event_id, $event_name, $event_start_time, $event_notes, $event_langs,
+			$event_id, $event_name_id, $event_start_time, $event_notes, $event_langs,
 			$addr_id, $addr, $addr_url, $timezone, $club_id,
 			$club_name_id) = $row;
+		
+		// The emails of this mailing by type and language, parsed with the tags of its event. Each
+		// mailing has its own: two mailings of the same type and language are about different events.
+		$event_emails = array();
 
 		// echo '<br>$mailing_id=' . $mailing_id . '<br>$mailing_lang=' . $mailing_lang . '<br>$event_langs=' . $event_langs . '<br>$event_id=' . $event_id . '<br>$club_name_id=' . $club_name_id . '<br>';
 		
@@ -146,7 +149,7 @@ try
 			
 			$common_tags = get_bbcode_tags();
 			$common_tags['root'] = new Tag(get_server_url());
-			$common_tags['event_name'] = new Tag($event_name);
+			$event_names = array();
 			$common_tags['event_id'] = new Tag($event_id);
 			$common_tags['notes'] = new Tag($event_notes);
 			$common_tags['address'] = new Tag($addr);
@@ -213,8 +216,15 @@ try
 				list($user_id, $user_name, $user_email, $user_lang, $user_langs) = $row1;
 				$user_lang = get_event_email_lang($user_lang, $user_langs);
 				$email_id = $mailing_type . '-' . $user_lang;
+				// The event's name is written in the language of the email, like the club's name.
+				if (!isset($event_names[$user_lang]))
+				{
+					list ($event_names[$user_lang]) = Db::record(get_label('event'), 'SELECT name FROM names WHERE id = ? AND (langs & ?) <> 0', $event_name_id, $user_lang);
+				}
+				$event_name = $event_names[$user_lang];
 				if (!isset($event_emails[$email_id]))
 				{
+					$common_tags['event_name'] = new Tag($event_name);
 					$event_emails[$email_id] = get_event_email($mailing_type, $user_lang);
 					$common_tags['event_date'] = new Tag(format_date($event_start_time, $timezone, false, $user_lang));
 					$common_tags['event_time'] = new Tag(date('H:i', $event_start_time));

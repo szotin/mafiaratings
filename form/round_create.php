@@ -7,6 +7,7 @@ require_once '../include/event.php';
 require_once '../include/timespan.php';
 require_once '../include/scoring.php';
 require_once '../include/datetime.php';
+require_once '../include/names.php';
 
 initiate_session();
 
@@ -56,7 +57,9 @@ try
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="' . timespan_to_string($duration) . '" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 	
-	echo '<tr><td>'.get_label('Round name').':</td><td><input id="form-name" value="' . get_label('main round') . '"></td></tr>';
+	echo '<tr><td valign="top">'.get_label('Round name').':</td><td>';
+	Names::show_control(new Names(-1, get_label('event name'), NULL, 0, NULL, get_label('main round'), false));
+	echo '</td></tr>';
 	
 	// A round is played by the rules of its tournament and scored by its scoring - see the create
 	// op in api/ops/event.php, which takes both off the tournament. The scoring options are the
@@ -195,7 +198,6 @@ try
 			, club_id: <?php echo $club_id; ?>
 			, tournament_id: <?php echo $tournament_id; ?>
 			, round_num: $("#form-round").val()
-			, name: $("#form-name").val()
 			, duration: strToTimespan($("#form-duration").val())
 			, address_id: _addr
 			, notes: $("#form-notes").val()
@@ -210,6 +212,7 @@ try
 			params['city'] = $("#form-city").val();
 		}
 		
+		nameControl.fillRequest(params);
 		if ($('#form-date').length)
 			params['start'] = $('#form-date').val() + 'T' + timeStr($('#form-time').val());
 		json.post("api/ops/event.php", params, onSuccess);

@@ -250,8 +250,9 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('comment'), 'INSERT INTO game_comments (time, user_id, comment, game_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $game_id, $lang);
 		list($event_id, $event_name, $event_start_time, $event_timezone, $event_addr) = 
 			Db::record(get_label('game'), 
-				'SELECT e.id, e.name, e.start_time, c.timezone, a.address FROM games g' .
+				'SELECT e.id, ne.name, e.start_time, c.timezone, a.address FROM games g' .
 				' JOIN events e ON g.event_id = e.id' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = e.address_id' . 
 				' JOIN cities c ON c.id = a.city_id' . 
 				' WHERE g.id = ?', $game_id);

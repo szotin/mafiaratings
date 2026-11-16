@@ -20,21 +20,32 @@ require_once __DIR__ . '/localization.php'; // get_label
 // this only says how far the list handed to a script has to go.
 define('ROUND_DEEPEST_STAGE', 6);
 
-function get_round_name($round_num)
+// The name of round number $round_num in $lang, the language of the page by default.
+function get_round_name($round_num, $lang = LANG_NO)
 {
 	switch ($round_num)
 	{
 		case 0:
-			return get_label('main round');
+			$label = array('main round');
+			break;
 		case 1:
-			return get_label('final');
+			$label = array('final');
+			break;
 		case 2:
-			return get_label('semi-final');
+			$label = array('semi-final');
+			break;
 		case 3:
-			return get_label('quarter-final');
+			$label = array('quarter-final');
+			break;
 		default:
-			return get_label('1/[0] final', pow(2, $round_num - 1));
+			$label = array('1/[0] final', pow(2, $round_num - 1));
+			break;
 	}
+	if ($lang == LANG_NO)
+	{
+		return call_user_func_array('get_label', $label);
+	}
+	return call_user_func_array('get_label_lang', array_merge(array($lang), $label));
 }
 
 // The rungs above the main round, keyed by the number events.round holds. For a script, which

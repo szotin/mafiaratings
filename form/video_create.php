@@ -15,7 +15,7 @@ try
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
-		list($club_id, $event_name, $event_flags, $timestamp, $tournament_id, $tournament_name, $tournament_flags) = Db::record(get_label('event'), 'SELECT e.club_id, e.name, e.flags, e.start_time, t.id, t.name, t.flags FROM events e LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE e.id = ?', $event_id);
+		list($club_id, $event_name, $event_flags, $timestamp, $tournament_id, $tournament_name, $tournament_flags) = Db::record(get_label('event'), 'SELECT e.club_id, ne.name, e.flags, e.start_time, t.id, t.name, t.flags FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE e.id = ?', $event_id);
 		if (is_null($tournament_name))
 		{
 			$title = $event_name;

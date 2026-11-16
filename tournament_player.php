@@ -189,7 +189,7 @@ class Page extends TournamentPageBase
 	
 	private function show_games()
 	{
-		global $_scoring_groups;
+		global $_scoring_groups, $_lang;
 		
 		if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 		{
@@ -330,9 +330,10 @@ class Page extends TournamentPageBase
 		}
 		
 		$query = new DbQuery(
-				'SELECT p.points, p.reason, p.mvp, e.name, e.scoring_options'.
+				'SELECT p.points, p.reason, p.mvp, ne.name, e.scoring_options'.
 				' FROM event_extra_points p'.
 				' JOIN events e ON e.id = p.event_id'.
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' WHERE e.tournament_id = ? AND p.user_id = ?', $this->id, $this->user_id);
 		$output_needed = true;
 		while ($row = $query->next())

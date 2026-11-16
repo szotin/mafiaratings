@@ -43,7 +43,7 @@ if ($tournament_id > 0)
 else if ($event_id > 0)
 {
 	list ($title, $event_tournament_id) = Db::record(get_label('event'),
-		'SELECT e.name, e.tournament_id FROM events e WHERE e.id = ?', $event_id);
+		'SELECT ne.name, e.tournament_id FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 WHERE e.id = ?', $event_id);
 	if (!is_null($event_tournament_id))
 	{
 		list ($tournament_name) = Db::record(get_label('tournament'),

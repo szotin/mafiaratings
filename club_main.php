@@ -414,12 +414,13 @@ class Page extends ClubPageBase
 		if ($events_count > 0)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.name FROM events e' .
+				'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.name FROM events e' .
+					' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 					' JOIN addresses a ON e.address_id = a.id' .
 					' JOIN clubs c ON e.club_id = c.id' .
 					' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 					' JOIN cities ct ON ct.id = c.city_id' .
-					' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0 AND e.club_id = ? ORDER BY e.start_time + e.duration, e.name, e.id LIMIT ' . $events_count,
+					' WHERE e.start_time + e.duration > UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0 AND e.club_id = ? ORDER BY e.start_time + e.duration, ne.name, e.id LIMIT ' . $events_count,
 				$this->id);
 			while ($row = $query->next())
 			{

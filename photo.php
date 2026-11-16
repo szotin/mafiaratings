@@ -346,7 +346,7 @@ class Page extends PageBase
 		echo '<td width="160">' . get_label('Album') . ':</td><td><a href="album_photos.php?id=' . $this->album_id . '&bck=1">' . $this->album_name . '</a></td></tr>';
 		if ($this->event_id != NULL && $this->event_id > 0)
 		{
-			list($event_name) = Db::record(get_label('event'), 'SELECT name FROM events WHERE id = ?', $this->event_id);
+			list($event_name) = Db::record(get_label('event'), 'SELECT n.name FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.id = ?', $this->event_id);
 			echo '<tr><td>'.get_label('Event').':</td><td><a href="event.php?id=' . $this->event_id . '&bck=1">' . $this->club_name . ': ' . $event_name . '</a></td></tr>';
 		}
 		else

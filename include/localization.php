@@ -57,6 +57,34 @@ function get_label($labelitem)
 	return $parsed_label;
 }
 
+// The labels of a language as its labels.php has them. Included here, inside a function, so that the
+// $labelMenu it sets is a local variable and the labels of the page stay as they are.
+function _load_lang_labels($lang_code)
+{
+	$labelMenu = array();
+	include __DIR__ . '/languages/' . $lang_code . '/labels.php';
+	return $labelMenu;
+}
+
+// get_label() in another language than the one of the page: get_label_lang(LANG_RUSSIAN, 'final').
+// For the names the site gives in every language at once, such as the names of tournament rounds.
+function get_label_lang($lang, $labelitem)
+{
+	global $labelMenu;
+	static $menus = array();
+
+	if (!isset($menus[$lang]))
+	{
+		$menus[$lang] = _load_lang_labels(get_lang_code($lang));
+	}
+
+	$page_menu = isset($labelMenu) ? $labelMenu : NULL;
+	$labelMenu = $menus[$lang];
+	$label = call_user_func_array('get_label', array_slice(func_get_args(), 1));
+	$labelMenu = $page_menu;
+	return $label;
+}
+
 // $_date_translations = array();
 
 // function translate_date($date, $lang = LANG_NO)

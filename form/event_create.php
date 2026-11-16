@@ -7,6 +7,7 @@ require_once '../include/event.php';
 require_once '../include/timespan.php';
 require_once '../include/scoring.php';
 require_once '../include/datetime.php';
+require_once '../include/names.php';
 
 initiate_session();
 
@@ -32,7 +33,9 @@ try
 	$end->add(new DateInterval('P2M'));
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name"></td></tr>';
+	echo '<tr><td width="160" valign="top">'.get_label('Event name').':</td><td>';
+	Names::show_control(new Names(0, get_label('event name'), NULL, 0, NULL, 'name', false));
+	echo '</td></tr>';
 	
 	$tournaments = array();
 	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . TOURNAMENT_FLAG_LONG_TERM . ') <> 0 ORDER BY name', $club_id);
@@ -153,19 +156,29 @@ try
 	
 	echo '<table class="transp" width="100%"><tr>';
 	echo '<td align="right">';
+	// A copied event keeps the names of the one it is copied from: the names of every event offered
+	// here go to the page with the id of their set, and the new event takes that id unless its names
+	// are changed - see commit().
 	$query = new DbQuery(
-		'SELECT e.id, e.name, e.start_time, c.timezone FROM events e' .
-			' JOIN addresses a ON e.address_id = a.id' . 
-			' JOIN cities c ON a.city_id = c.id' . 
+		'SELECT e.id, n.name, e.start_time, c.timezone, e.name_id FROM events e' .
+			' JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0' .
+			' JOIN addresses a ON e.address_id = a.id' .
+			' JOIN cities c ON a.city_id = c.id' .
 			' WHERE e.club_id = ?' .
 			' AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 ORDER BY e.start_time DESC LIMIT 30',
 		$club_id);
+	$copy_names = '';
+	$delim = '';
 	echo get_label('Copy event data from') . ': <select id="form-copy" onChange="copyEvent()"><option value="0"></option>';
 	while ($row = $query->next())
 	{
-		echo '<option value="' . $row[0] . '">';
-		echo $row[1] . ' (' . format_date($row[2], $row[3], true) . ')';
+		list ($copy_id, $copy_name, $copy_start, $copy_timezone, $copy_name_id) = $row;
+		echo '<option value="' . $copy_id . '">';
+		echo htmlspecialchars($copy_name, ENT_QUOTES) . ' (' . format_date($copy_start, $copy_timezone, true) . ')';
 		echo '</option>';
+		$copy_names_set = new Names($copy_name_id, get_label('event name'));
+		$copy_names .= $delim . (int)$copy_id . ': { id: ' . (int)$copy_name_id . ', values: ' . $copy_names_set->to_js() . ' }';
+		$delim = ', ';
 	}
 	echo '</select>';
 	echo '</td></tr></table>';
@@ -283,17 +296,30 @@ try
 		return val;
 	}
 	
+	// The names of the events that can be copied, by event id: the id of their set and the names.
+	var copyNames = { <?php echo $copy_names; ?> };
+	// The names of the event copied last, while the control still holds them.
+	var copiedNames = null;
+
 	function copyEvent()
 	{
-		json.get("api/get/events.php?lod=1&event_id=" + $("#form-copy").val(), function(data)
+		var copyId = $("#form-copy").val();
+		json.get("api/get/events.php?lod=1&event_id=" + copyId, function(data)
 		{
 			if (isSet(data.events) && data.events.length > 0)
 			{
 				let e = data.events[0];
-				
-				console.log(e);
-				
-				$("#form-name").val(e.name);
+
+				if (isSet(copyNames[copyId]))
+				{
+					copiedNames = copyNames[copyId];
+					nameControl.reset(copiedNames.values);
+				}
+				else
+				{
+					copiedNames = null;
+					$("#form-name").val(e.name);
+				}
 				$("#form-time").val(e.start.split('T')[1]);
 				if (isSet(e.tournament_id))
 				{
@@ -347,7 +373,6 @@ try
 			club_id: <?php echo $club_id; ?>,
 			tournament_id: $("#form-tournament").val(),
 			round_num: $("#form-round").val(),
-			name: $("#form-name").val(),
 			duration: strToTimespan($("#form-duration").val()),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
@@ -356,7 +381,17 @@ try
 			flags: _flags,
 			langs: _langs,
 		};
-		
+
+		// A copied event shares the names of the one it is copied from, unless they were changed.
+		if (copiedNames != null && nameControl.hasValues(copiedNames.values))
+		{
+			params['name_id'] = copiedNames.id;
+		}
+		else
+		{
+			nameControl.fillRequest(params);
+		}
+
 		if (_addr <= 0)
 		{
 			params['address'] = $("#form-new_addr").val();

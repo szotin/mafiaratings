@@ -41,7 +41,7 @@ class Page extends PageBase
 	
 	protected function show_body()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 	
 		echo '<form method="post" name="createForm">';
 		echo '<table class="bordered" width="100%">';
@@ -59,7 +59,8 @@ class Page extends PageBase
 		$event_found = false;
 		echo '<tr><td>'.get_label('Event').':</td><td>';
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.start_time, c.timezone FROM events e' .
+			'SELECT e.id, ne.name, e.start_time, c.timezone FROM events e' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities c ON a.city_id = c.id' .
 				' WHERE e.club_id = ? AND e.start_time <= UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0' .
@@ -77,7 +78,8 @@ class Page extends PageBase
 		if (!$event_found && $this->album->event_id != NULL)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, e.name, e.start_time, c.timezone FROM events e' .
+				'SELECT e.id, ne.name, e.start_time, c.timezone FROM events e' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities c ON a.city_id = c.id' .
 				' WHERE e.id = ? AND e.club_id = ?', $this->album->event_id, $this->album->club_id);

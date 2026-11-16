@@ -2444,6 +2444,8 @@ class ApiPage extends OpsApiPageBase
 	// quarter-final the semi-final.
 	function delete_round_op()
 	{
+		global $_lang;
+
 		$event_id = (int)get_required_param('event_id');
 
 		Db::begin();
@@ -2455,7 +2457,7 @@ class ApiPage extends OpsApiPageBase
 		delete_tournament_round($event_id);
 		if ($round_num > 0)
 		{
-			$query = new DbQuery('SELECT id, round, name FROM events WHERE tournament_id = ? AND round > ? ORDER BY round', $tournament_id, $round_num);
+			$query = new DbQuery('SELECT e.id, e.round, n.name FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.tournament_id = ? AND e.round > ? ORDER BY e.round', $tournament_id, $round_num);
 			while ($row = $query->next())
 			{
 				list($id, $r, $name) = $row;
@@ -2464,7 +2466,7 @@ class ApiPage extends OpsApiPageBase
 				{
 					throw new Exc(get_label('Unable to delete [0] because it has already started.', $name));
 				}
-				Db::exec(get_label('round'), 'UPDATE events SET round = ?, name = ? WHERE id = ?', $r - 1, get_round_name($r - 1), $id);
+				Db::exec(get_label('round'), 'UPDATE events SET round = ?, name_id = ? WHERE id = ?', $r - 1, get_round_name_id($r - 1), $id);
 			}
 		}
 		Db::exec(get_label('score'), 'DELETE FROM tournament_scores_cache WHERE tournament_id = ?', $tournament_id);

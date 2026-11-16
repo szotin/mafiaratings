@@ -15,7 +15,7 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($event_id, $name, $club_id, $tournament_id, $flags, $games_count) = Db::record(get_label('event'), 'SELECT e.id, e.name, e.club_id, e.tournament_id, e.flags, count(g.id) FROM events e LEFT OUTER JOIN games g ON g.event_id = e.id WHERE e.id = ? GROUP BY e.id', $event_id);
+	list($event_id, $name, $club_id, $tournament_id, $flags, $games_count) = Db::record(get_label('event'), 'SELECT e.id, ne.name, e.club_id, e.tournament_id, e.flags, count(g.id) FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 LEFT OUTER JOIN games g ON g.event_id = e.id WHERE e.id = ? GROUP BY e.id, ne.name', $event_id);
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tournament_id);
 	$canceled = (($flags & EVENT_FLAG_CANCELED) != 0);
 	if ($games_count > 0)

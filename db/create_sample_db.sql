@@ -186,7 +186,7 @@ CREATE TABLE `emails` (
 DROP TABLE IF EXISTS `events`;
 CREATE TABLE `events` (
   `id` int(11) NOT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `address_id` int(11) NOT NULL,
   `club_id` int(11) NOT NULL,
   `start_time` int(11) NOT NULL,
@@ -1064,6 +1064,7 @@ INSERT INTO `names` (`id`, `langs`, `name`) VALUES
 (3, 16777215, 'Sample City'),
 (4, 16777215, 'Sample Club'),
 (5, 16777215, 'Sample League'),
+(6, 16777215, 'Sample Event'),
 (10, 16777215, 'admin'),
 (30, 16777215, 'shrek'),
 (40, 16777215, 'lilya'),
@@ -1193,7 +1194,7 @@ INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, 
 INSERT INTO `series_tournaments` (`tournament_id`, `series_id`, `stars`, `flags`, `fee`) VALUES (1, 1, 1, 0, NULL);
 
 -- Event (finished), belongs to the tournament
-INSERT INTO `events` (`id`, `name`, `address_id`, `club_id`, `start_time`, `notes`, `duration`, `flags`, `languages`, `scoring_id`, `standings_settings`, `tournament_id`, `rules`, `scoring_version`, `scoring_options`, `fee`, `currency_id`, `round`, `misc`, `players`, `tables`, `games`) VALUES (1, 'Sample Event', 1, 1, 1284784660, '', 21600, 16, 7, 1, NULL, 1, '0000100101000', 1, '{}', NULL, NULL, 0, NULL, 10, 1, 1);
+INSERT INTO `events` (`id`, `name_id`, `address_id`, `club_id`, `start_time`, `notes`, `duration`, `flags`, `languages`, `scoring_id`, `standings_settings`, `tournament_id`, `rules`, `scoring_version`, `scoring_options`, `fee`, `currency_id`, `round`, `misc`, `players`, `tables`, `games`) VALUES (1, 6, 1, 1, 1284784660, '', 21600, 16, 7, 1, NULL, 1, '0000100101000', 1, '{}', NULL, NULL, 0, NULL, 10, 1, 1);
 
 -- Registrations for the 10 players who played the game (users 3..12)
 INSERT INTO `event_regs` (`event_id`, `user_id`, `coming_odds`, `people_with_me`, `late`, `nickname`, `flags`) VALUES
@@ -1710,7 +1711,8 @@ ALTER TABLE `events`
   ADD KEY `i_events_scoring` (`scoring_id`,`start_time`),
   ADD KEY `i_events_tournament` (`tournament_id`,`start_time`),
   ADD KEY `scoring_id` (`scoring_id`,`scoring_version`),
-  ADD KEY `currency_id` (`currency_id`);
+  ADD KEY `currency_id` (`currency_id`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `event_broadcasts`
@@ -2631,7 +2633,8 @@ ALTER TABLE `events`
   ADD CONSTRAINT `event_scoring_version` FOREIGN KEY (`scoring_id`,`scoring_version`) REFERENCES `scoring_versions` (`scoring_id`, `version`),
   ADD CONSTRAINT `fk_events_address` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`),
   ADD CONSTRAINT `fk_events_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
-  ADD CONSTRAINT `fk_events_tournament` FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`);
+  ADD CONSTRAINT `fk_events_tournament` FOREIGN KEY (`tournament_id`) REFERENCES `tournaments` (`id`),
+  ADD CONSTRAINT `event_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `event_broadcasts`

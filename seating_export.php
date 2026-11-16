@@ -35,7 +35,8 @@ try
 	// The tournament's name comes along for the file name. A left join: a round can belong to no
 	// tournament at all, and then there is simply nothing to put in front of its own name.
 	list($club_id, $tournament_id, $misc_str, $event_name, $tournament_name) = Db::record(get_label('event'),
-		'SELECT e.club_id, e.tournament_id, e.misc, e.name, t.name FROM events e' .
+		'SELECT e.club_id, e.tournament_id, e.misc, ne.name, t.name FROM events e' .
+		' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 		' LEFT JOIN tournaments t ON t.id = e.tournament_id WHERE e.id = ?', $event_id);
 
 	// Whoever may replace the seating may certainly read it out, so this asks for no more than

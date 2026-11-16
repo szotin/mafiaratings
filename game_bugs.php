@@ -20,9 +20,10 @@ class Page extends GeneralPageBase
 		$user_pic = new Picture(USER_PICTURE);
 
 		$query = new DbQuery(
-			'SELECT b.id, c.id, nc.name, c.flags, e.id, e.name, e.flags, b.table_num, b.game_num, u.id, nu.name, u.flags, comment'.
+			'SELECT b.id, c.id, nc.name, c.flags, e.id, ne.name, e.flags, b.table_num, b.game_num, u.id, nu.name, u.flags, comment'.
 			' FROM bug_reports b'.
 			' JOIN events e ON e.id = b.event_id'.
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = e.club_id'.
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' JOIN users u ON u.id = b.user_id'.

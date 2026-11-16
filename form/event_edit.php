@@ -7,6 +7,7 @@ require_once '../include/event.php';
 require_once '../include/timespan.php';
 require_once '../include/scoring.php';
 require_once '../include/datetime.php';
+require_once '../include/names.php';
 require_once '../include/image.php';
 
 initiate_session();
@@ -21,10 +22,11 @@ try
 	}
 	$event_id = (int)$_REQUEST['event_id'];
 	
-	list($club_id, $name, $start_time, $duration, $address_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags, $round_num) = 
+	list($club_id, $name_id, $name, $start_time, $duration, $address_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags, $round_num) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags, e.round ' .
+			'SELECT e.club_id, e.name_id, ne.name, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags, e.round ' .
 			'FROM events e ' . 
+			'JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
 			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
@@ -54,7 +56,10 @@ try
 	$start = get_datetime($start_time, $timezone);
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">'.get_label('Event name').':</td><td><input id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
+	$names = new Names($name_id, get_label('event name'));
+	echo '<tr><td width="160" valign="top">'.get_label('Event name').':</td><td>';
+	Names::show_control($names);
+	echo '</td>';
 	
 	echo '<td align="center" valign="top" rowspan="13">';
 	start_upload_logo_button($event_id);
@@ -184,6 +189,7 @@ try
 	
 ?>	
 	<script>
+	var eventNames = <?php echo $names->to_js(); ?>;
 	var old_address_value = "<?php echo $selected_address; ?>";
 	function newAddressChange()
 	{
@@ -303,7 +309,6 @@ try
 			, event_id: <?php echo $event_id; ?>
 			, tournament_id: $("#form-tournament").val()
 			, round_num: $("#form-round").val()
-			, name: $("#form-name").val()
 			, start: $('#form-date').val() + 'T' + timeStr($('#form-time').val())
 			, duration: strToTimespan($("#form-duration").val())
 			, fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val())
@@ -320,6 +325,16 @@ try
 			params['address'] = $("#form-new_addr").val();
 			params['country'] = $("#form-country").val();
 			params['city'] = $("#form-city").val();
+		}
+		
+		// Unchanged names stay the set the event has - one it may share with other events.
+		if (nameControl.hasValues(eventNames))
+		{
+			params['name_id'] = <?php echo (int)$name_id; ?>;
+		}
+		else
+		{
+			nameControl.fillRequest(params);
 		}
 		
 		json.post("api/ops/event.php", params, onSuccess);

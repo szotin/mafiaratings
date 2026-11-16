@@ -62,8 +62,9 @@ class Page extends AddressPageBase
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
-			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, e.id, e.name, e.flags, g.table_num, g.game_num FROM videos v' .
+			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, e.id, ne.name, e.flags, g.table_num, g.game_num FROM videos v' .
 			' JOIN events e ON e.id = v.event_id' .
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON c.id = e.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .

@@ -5,6 +5,7 @@ require_once __DIR__ . '/datetime.php';
 require_once __DIR__ . '/event.php';
 require_once __DIR__ . '/game_ratings.php';
 require_once __DIR__ . '/game_players_stats.php';
+require_once __DIR__ . '/names.php';
 
 // GAME_CURRENT_VERSION must exactly match to the value of version var in js/game.js
 define('GAME_CURRENT_VERSION', '1.3'); // Major version means that the format of the game has been changed. Minor version means that the game client has been changed and need to be updated.
@@ -4013,9 +4014,9 @@ class Game
 						// no notes and belongs to no tournament round. Both columns are NOT NULL
 						// with no default and have to be named: a strict MySQL refuses the row
 						// rather than filling them in.
-						'INSERT INTO events (name, address_id, club_id, start_time, duration, notes, flags, languages, rules, scoring_id, scoring_version, scoring_options, fee, currency_id, round) ' .
+						'INSERT INTO events (name_id, address_id, club_id, start_time, duration, notes, flags, languages, rules, scoring_id, scoring_version, scoring_options, fee, currency_id, round) ' .
 						'VALUES (?, ?, ?, ?, ?, \'\', ?, ?, ?, ?, ?, ?, ?, ?, 0)',
-						$name, $address_id, $data->clubId, $event_start, $event_duration,
+						Names::get_single_id($event_name, get_label('event name')), $address_id, $data->clubId, $event_start, $event_duration,
 						// Outside a tournament, like every event of its own - see alter202.sql.
 						EVENT_FLAG_ALL_CAN_REFEREE | EVENT_FLAG_HIDE_ROLES, $club_langs, $data->rules,
 						$club_scoring_id, $scoring_version, $scoring_options, $fee, $currency_id);

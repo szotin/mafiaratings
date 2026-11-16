@@ -25,7 +25,7 @@ try
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
-		list($club_id, $tour_id, $name) = Db::record(get_label('event'), 'SELECT club_id, tournament_id, name FROM events WHERE id = ?', $event_id);
+		list($club_id, $tour_id, $name) = Db::record(get_label('event'), 'SELECT e.club_id, e.tournament_id, n.name FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $event_id, $tour_id);
 	}
 	else if (isset($_REQUEST['tournament_id']))

@@ -179,10 +179,11 @@ class Page extends PageBase
 			
 			if ($this->id <= 0)
 			{
-				$sql = 	'SELECT g.user_id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,'.
+				$sql = 	'SELECT g.user_id, ne.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,'.
 						' c.id, nc.name, c.flags, a.id, a.name, a.flags, g.game, g.game_num'.
 						' FROM current_games g'.
 						' JOIN events e ON e.id = g.event_id' .
+						' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 						' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 						' JOIN clubs c ON c.id = e.club_id' . 
 						' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
@@ -212,12 +213,13 @@ class Page extends PageBase
 				$this->civ_odds, $this->video_id, $this->flags, $json, $this->game_num, $this->table_num, $feature_flags) =
 			Db::record(
 				get_label('game'),
-				'SELECT g.user_id, e.id, e.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
+				'SELECT g.user_id, e.id, ne.name, e.flags, ct.timezone, e.start_time, t.id, t.name, t.flags, e.round,' .
 				' c.id, nc.name, c.flags, a.id, a.name, a.flags,' .
 				' m.id, nm.name, m.flags, eu.nickname, eu.flags, tu.flags, cu.flags,' .
 				' g.civ_odds, g.video_id, g.flags, g.json, g.game_num, g.table_num, g.feature_flags' .
 					' FROM games g' .
 					' JOIN events e ON e.id = g.event_id' .
+					' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 					' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 					' JOIN clubs c ON c.id = g.club_id' . 
 					' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .

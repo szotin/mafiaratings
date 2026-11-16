@@ -47,6 +47,8 @@ class Page extends StreamsPageBase
 
 	protected function prepare()
 	{
+		global $_lang;
+
 		parent::prepare();
 
 		// A round of a tournament is set up through its tournament: the table keeps its look
@@ -68,8 +70,8 @@ class Page extends StreamsPageBase
 		// that a round played at one table is not offered on the tab of the second.
 		$this->rounds = array();
 		$query = STREAMS_UNDER_EVENT
-			? new DbQuery('SELECT id, name, round FROM events WHERE id = ?', $this->id)
-			: new DbQuery('SELECT id, name, round FROM events WHERE tournament_id = ? ORDER BY round, start_time, id', $this->id);
+			? new DbQuery('SELECT e.id, n.name, e.round FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.id = ?', $this->id)
+			: new DbQuery('SELECT e.id, n.name, e.round FROM events e JOIN names n ON n.id = e.name_id AND (n.langs & '.$_lang.') <> 0 WHERE e.tournament_id = ? ORDER BY e.round, e.start_time, e.id', $this->id);
 		$finals = array();
 		while ($row = $query->next())
 		{

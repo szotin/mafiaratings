@@ -51,7 +51,7 @@ class Page extends TournamentPageBase
 		
 		$tables_count = 0;
 		$rounds = array();
-		$query = new DbQuery('SELECT g.event_id, g.table_num, e.name, COUNT(*) FROM games g JOIN events e ON e.id = g.event_id WHERE g.tournament_id = ? GROUP BY e.name, g.table_num ORDER BY g.event_id, g.table_num', $this->id);
+		$query = new DbQuery('SELECT g.event_id, g.table_num, ne.name, COUNT(*) FROM games g JOIN events e ON e.id = g.event_id JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 WHERE g.tournament_id = ? GROUP BY ne.name, g.table_num ORDER BY g.event_id, g.table_num', $this->id);
 		while ($row = $query->next())
 		{
 			list ($event_id, $table_num, $event_name, $games_count) = $row;
@@ -203,10 +203,11 @@ class Page extends TournamentPageBase
 		echo '>&nbsp;</td><td width="100">'.get_label('Round').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
 		$query = new DbQuery(
 			'SELECT g.id, g.user_id, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags,' . 
-			' e.id, e.name, e.flags, a.id, a.name, a.flags, tu.flags, cu.flags, g.table_num, g.game_num' . 
+			' e.id, ne.name, e.flags, a.id, a.name, a.flags, tu.flags, cu.flags, g.table_num, g.game_num' . 
 				' FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN events e ON e.id = g.event_id' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = e.address_id' .
 				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 				' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.

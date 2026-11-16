@@ -190,7 +190,8 @@ function show_event_selector($event_id, $form_name, $select_name, $perm_flags, $
 
 	$clubs_count = $_profile->get_clubs_count($perm_flags);
 
-	$sql = 'SELECT e.id, e.name, e.start_time, e.duration, ct.timezone, nc.name FROM events e' .
+	$sql = 'SELECT e.id, ne.name, e.start_time, e.duration, ct.timezone, nc.name FROM events e' .
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
@@ -479,11 +480,12 @@ class EventPageBase extends PageBase
 			$this->coming_odds, $this->city, $this->country, $this->round_num) =
 				Db::record(
 					get_label('event'), 
-					'SELECT e.name, e.fee, e.currency_id, cu.pattern, c.id, nc.name, c.flags, c.web_site, e.start_time, e.duration,'.
+					'SELECT ne.name, e.fee, e.currency_id, cu.pattern, c.id, nc.name, c.flags, c.web_site, e.start_time, e.duration,'.
 							' t.id, t.name, t.flags,'.
 							' a.id, a.address, a.map_url, i.timezone, a.flags,'.
 							' e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options,'.
 							' u.coming_odds, ni.name, no.name, e.round FROM events e' .
+						' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 						' JOIN addresses a ON e.address_id = a.id' .
 						' JOIN clubs c ON e.club_id = c.id' .
 						' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .

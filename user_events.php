@@ -43,6 +43,7 @@ class Page extends UserPageBase
 		
 		$condition = new SQL(
 			' FROM events e' .
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN games g ON g.event_id = e.id' .
 			' JOIN players p ON p.game_id = g.id' .
 			' JOIN addresses a ON e.address_id = a.id' .
@@ -103,7 +104,7 @@ class Page extends UserPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, e.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);
 		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
