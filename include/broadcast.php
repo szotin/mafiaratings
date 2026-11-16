@@ -1506,11 +1506,12 @@ function broadcast_video_tiles($scope, $past, $now)
 
 	$past_expr = broadcast_past_expr($now);
 	$query = new DbQuery(
-		'SELECT b.event_id, ne.name, e.tournament_id, t.name, b.day_num, b.table_num, b.part_num, b.url, ' .
+		'SELECT b.event_id, ne.name, e.tournament_id, nt.name, b.day_num, b.table_num, b.part_num, b.url, ' .
 			broadcast_started_expr($now) . ', c.id, nc.name, c.flags' .
 		' FROM event_broadcasts b JOIN events e ON e.id = b.event_id' .
 		' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+		' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 		' LEFT OUTER JOIN clubs c ON c.id = e.club_id' .
 		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 		' WHERE ' . ($past ? $past_expr : ('NOT ' . $past_expr)) . ' AND ', $scope->condition);
@@ -1658,7 +1659,7 @@ function broadcast_live_competitions($scope)
 	if ($scope->kind == BROADCAST_SCOPE_TOURNAMENT)
 	{
 		list ($name, $start_time, $flags) = Db::record(get_label('tournament'),
-			'SELECT name, start_time, flags FROM tournaments WHERE id = ?', $scope->id);
+			'SELECT n.name, t.start_time, t.flags FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $scope->id);
 		if (stream_is_live($start_time, ($flags & TOURNAMENT_FLAG_FINISHED) != 0, ($flags & TOURNAMENT_FLAG_CANCELED) != 0))
 		{
 			$live[] = broadcast_competition(stream_tournament($scope->id), $scope->param, $name, $scope->id, 0);
@@ -1688,8 +1689,9 @@ function broadcast_live_competitions($scope)
 	// begun, and nobody has marked it over or called it off.
 	$now = time();
 	$query = new DbQuery(
-		'SELECT DISTINCT t.id, t.name, t.start_time, c.id, nc.name, c.flags' .
+		'SELECT DISTINCT t.id, nt.name, t.start_time, c.id, nc.name, c.flags' .
 		' FROM events e JOIN tournaments t ON t.id = e.tournament_id' .
+		' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 		' LEFT OUTER JOIN clubs c ON c.id = t.club_id' .
 		' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 		' WHERE t.start_time <= ' . $now .

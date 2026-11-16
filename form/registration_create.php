@@ -31,7 +31,7 @@ try
 	else if (isset($_REQUEST['tournament_id']))
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
-		list($club_id, $name, $team_size) = Db::record(get_label('tournament'), 'SELECT club_id, name, team_size FROM tournaments WHERE id = ?', $tournament_id);
+		list($club_id, $name, $team_size) = Db::record(get_label('tournament'), 'SELECT t.club_id, n.name, t.team_size FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $user_id, $club_id, $tournament_id);
 	}
 	else if (isset($_REQUEST['club_id']))

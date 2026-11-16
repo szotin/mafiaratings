@@ -205,8 +205,8 @@ function obs_context()
 	$c->tournament_id = $tournament_id;
 	list ($c->tournament_name, $c->tournament_flags, $c->club_id, $c->scoring_id, $c->scoring_version,
 		$c->normalizer_id, $c->normalizer_version, $c->scoring_options) = Db::record(get_label('tournament'),
-		'SELECT name, flags, club_id, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options'.
-		' FROM tournaments WHERE id = ?', $tournament_id);
+		'SELECT n.name, t.flags, t.club_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options'.
+		' FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 	$c->tournament_flags = (int)$c->tournament_flags;
 	$c->logo = obs_logo(new Picture(TOURNAMENT_PICTURE), $tournament_id, $c->tournament_name, $c->tournament_flags, $c->club_id);
 

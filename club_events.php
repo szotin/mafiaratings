@@ -46,6 +46,7 @@ class Page extends ClubPageBase
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' WHERE e.club_id = ?',
 			$this->id);
 		if ($future)
@@ -117,7 +118,7 @@ class Page extends ClubPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, a.id, a.name, a.flags, a.address,' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, ct.timezone, t.id, nt.name, t.flags, a.id, a.name, a.flags, a.address,' .
 				' (SELECT count(*) FROM games WHERE event_id = e.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',

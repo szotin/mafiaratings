@@ -12,10 +12,13 @@ require_once '../../include/game.php';
 require_once '../../include/mwt.php';
 require_once '../../include/seating.php';
 require_once '../../include/tournament_schema.php';
+require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
 
-function send_series_notification($filename, $tournament_id, $tournament_name, $club_id, $club_name, $series)
+// $tournament_names is the Names of the tournament: the names it is being saved with, which the database
+// may not have yet. Every recipient gets the tournament and the club named in their own language.
+function send_series_notification($filename, $tournament_id, $tournament_names, $club_id, $series)
 {
 	global $_profile;
 	
@@ -27,17 +30,20 @@ function send_series_notification($filename, $tournament_id, $tournament_name, $
 	// told about a decision somebody else made - they look when they want to know. The query
 	// returns no rows for such a series, because its league_id is null.
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, nl.name'.
+		'SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, nl.name, nc.name'.
 		' FROM series s' .
 		' JOIN leagues l ON l.id = s.league_id' .
 		' JOIN league_managers lm ON lm.league_id = s.league_id' .
 		' JOIN users u ON u.id = lm.user_id' .
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
 		' JOIN names nl ON nl.id = l.name_id AND (nl.langs & u.def_lang) <> 0'.
-		' WHERE s.id = ?', $series->id);
+		' JOIN clubs c ON c.id = ?'.
+		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & u.def_lang) <> 0'.
+		' WHERE s.id = ?', $club_id, $series->id);
 	while ($row = $query->next())
 	{
-		list($user_id, $user_name, $user_email, $user_lang, $series_name, $league_id, $league_name) = $row;
+		list($user_id, $user_name, $user_email, $user_lang, $series_name, $league_id, $league_name, $club_name) = $row;
+		$tournament_name = $tournament_names->get_name($user_lang);
 		if (!is_valid_lang($user_lang))
 		{
 			$user_lang = get_lang($league_langs);
@@ -160,6 +166,18 @@ function sync_seating_mapping($tournament_id)
 
 class ApiPage extends OpsApiPageBase
 {
+	// The names of the tournament from the request - name, and name_xx for the languages that have their own. Tournament
+	// names are not unique and may hold any characters, "Cup #2" among them, so they are not checked for either.
+	private function get_names()
+	{
+		$names = new Names(0, get_label('tournament name'), NULL, 0, NULL, 'name', false);
+		if (count($names->names) == 0 || $names->names[0]->name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('tournament name')));
+		}
+		return $names;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -175,11 +193,7 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Due to international sanctions against Russia, the creation of [0] in this country is currently unavailable.', get_label('tournaments')));
 		}
 		
-		$name = get_required_param('name');
-		if (empty($name))
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('tournament name')));
-		}
+		$names = $this->get_names();
 		
 		$fee = (int)get_optional_param('fee', -1);
 		if ($fee < 0)
@@ -304,12 +318,13 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('tournament'), 
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, num_players, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $club_id, $address_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags);
+			'INSERT INTO tournaments (name_id, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, num_players, scoring_id, scoring_version, normalizer_id, normalizer_version, scoring_options, rules, flags) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$names->get_id(), $club_id, $address_id, $start, $end - $start, $langs, $notes, $fee, $currency_id, $players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options_str, $rules_code, $flags);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $names->get_id();
 		$log_details->club_id = $club_id; 
 		$log_details->address_id = $address_id; 
 		$log_details->start = $start;
@@ -356,7 +371,7 @@ class ApiPage extends OpsApiPageBase
 				'INSERT INTO series_tournaments (tournament_id, series_id, stars, stage) values (?, ?, ?, ?)',
 				$tournament_id, $s->id, series_membership_stars($smax_stars, $s->stars),
 				series_requested_stage(new SeriesOwner($sleague_id, $sclub_id), $s->id, $sstages, $s, SERIES_STAGE_BASE));
-			send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
+			send_series_notification('tournament_series_add', $tournament_id, $names, $club_id, $s);
 		}
 		
 		Db::commit();
@@ -366,7 +381,7 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Create tournament.');
-		$help->request_param('name', 'Tournament name.');
+		Names::help($help, 'Tournament', false);
 		$help->request_param('club_id', 'Club id.');
 		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,stage:1}]".', 'tournament does not belong to any series - same as "[]".');
 			$series_help->sub_param('id', 'Series id');
@@ -416,8 +431,8 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::begin();
 		
-		list ($club_id, $old_name, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id, $old_preparation_stage) =
-			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.rules, t.mwt_id, t.imafia_id, t.emo_id, t.preparation_stage FROM tournaments t' .
+		list ($club_id, $old_name_id, $old_start, $old_duration, $old_timezone, $old_address_id, $old_scoring_id, $old_scoring_version, $old_normalizer_id, $old_normalizer_version, $old_scoring_options, $old_fee, $old_currency_id, $old_num_players, $old_langs, $old_notes, $old_flags, $old_rules_code, $old_mwt_id, $old_imafia_id, $old_emo_id, $old_preparation_stage) =
+			Db::record(get_label('tournament'), 'SELECT t.club_id, t.name_id, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.rules, t.mwt_id, t.imafia_id, t.emo_id, t.preparation_stage FROM tournaments t' .
 			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
 			' WHERE t.id = ?', $tournament_id);
@@ -433,7 +448,17 @@ class ApiPage extends OpsApiPageBase
 			list($club->name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
 		}
 		
-		$name = get_optional_param('name', $old_name);
+		// Without a name in the request the tournament keeps the names it has.
+		if (isset($_REQUEST['name']))
+		{
+			$names = $this->get_names();
+			$name_id = $names->get_id();
+		}
+		else
+		{
+			$name_id = $old_name_id;
+			$names = new Names($name_id, get_label('tournament name'));
+		}
 		$fee = (int)get_optional_param('fee', $old_fee);
 		if (!is_null($fee) && $fee < 0)
 		{
@@ -536,8 +561,9 @@ class ApiPage extends OpsApiPageBase
 		if ($mwt_id != $old_mwt_id)
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.flags, t.name'.
+				'SELECT t.id, t.flags, nt.name'.
 				' FROM tournaments t'.
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 				' WHERE t.id <> ? AND t.mwt_id = ?', $tournament_id, $mwt_id);
 			if ($row = $query->next())
 			{
@@ -550,8 +576,9 @@ class ApiPage extends OpsApiPageBase
 		if ($imafia_id != $old_imafia_id)
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.flags, t.name'.
+				'SELECT t.id, t.flags, nt.name'.
 				' FROM tournaments t'.
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 				' WHERE t.id <> ? AND t.imafia_id = ?', $tournament_id, $imafia_id);
 			if ($row = $query->next())
 			{
@@ -564,8 +591,9 @@ class ApiPage extends OpsApiPageBase
 		if ($emo_id != $old_emo_id)
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.flags, t.name'.
+				'SELECT t.id, t.flags, nt.name'.
 				' FROM tournaments t'.
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 				' WHERE t.id <> ? AND t.emo_id = ?', $tournament_id, $emo_id);
 			if ($row = $query->next())
 			{
@@ -626,7 +654,7 @@ class ApiPage extends OpsApiPageBase
 						{
 							Db::exec(get_label('series'), 'UPDATE series SET flags = flags | ' . SERIES_FLAG_DIRTY . ' WHERE id = ?', $s->id);
 						}
-						send_series_notification('tournament_series_change', $tournament_id, $name, $club_id, $club->name, $s);
+						send_series_notification('tournament_series_change', $tournament_id, $names, $club_id, $s);
 						$changed = true;
 					}
 					$stage = series_requested_stage(new SeriesOwner($os->league_id, $os->club_id), $s->id, $os->stages, $s, $os->stage);
@@ -657,7 +685,7 @@ class ApiPage extends OpsApiPageBase
 						'INSERT INTO series_tournaments (tournament_id, series_id, stars, stage) values (?, ?, ?, ?)',
 						$tournament_id, $s->id, series_membership_stars($smax_stars, $s->stars),
 						series_requested_stage(new SeriesOwner($sleague_id, $sclub_id), $s->id, $sstages, $s, SERIES_STAGE_BASE));
-					send_series_notification('tournament_series_add', $tournament_id, $name, $club_id, $club->name, $s);
+					send_series_notification('tournament_series_add', $tournament_id, $names, $club_id, $s);
 					$changed = true;
 				}
 				
@@ -688,7 +716,7 @@ class ApiPage extends OpsApiPageBase
 				Db::exec(
 					get_label('sеriеs'), 
 					'DELETE FROM series_tournaments WHERE tournament_id = ? AND series_id = ?', $tournament_id, $parent_series_id);
-				send_series_notification('tournament_series_remove', $tournament_id, $name, $club_id, $club->name, $s);
+				send_series_notification('tournament_series_remove', $tournament_id, $names, $club_id, $s);
 			}
 		}
 			
@@ -753,8 +781,8 @@ class ApiPage extends OpsApiPageBase
 		// update tournament
 		Db::exec(
 			get_label('tournament'), 
-			'UPDATE tournaments SET name = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ?, preparation_stage = ? WHERE id = ?',
-			$name, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $mwt_id, $imafia_id, $emo_id, $rules_code, $preparation_stage, $tournament_id);
+			'UPDATE tournaments SET name_id = ?, address_id = ?, start_time = ?, duration = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, num_players = ?, scoring_id = ?, scoring_version = ?, normalizer_id = ?, normalizer_version = ?, scoring_options = ?, flags = ?, mwt_id = ?, imafia_id = ?, emo_id = ?, rules = ?, preparation_stage = ? WHERE id = ?',
+			$name_id, $address_id, $start, $duration, $langs, $notes, $fee, $currency_id, $num_players, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $flags, $mwt_id, $imafia_id, $emo_id, $rules_code, $preparation_stage, $tournament_id);
 		// Remembered before anything else is written: every statement has affected rows of its
 		// own, and the logging below is asking about this one.
 		$tournament_changed = (Db::affected_rows() > 0);
@@ -804,9 +832,10 @@ class ApiPage extends OpsApiPageBase
 		if ($tournament_changed || $parent_series_changed)
 		{
 			$log_details = new stdClass();
-			if ($name != $old_name)
+			if ($name_id != $old_name_id)
 			{
-				$log_details->name = $name;
+				$log_details->name = $names->to_string();
+				$log_details->name_id = $name_id;
 			}
 			if ($address_id != $old_address_id)
 			{
@@ -893,7 +922,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, 'Change tournament.');
 		$help->request_param('tournament_id', 'Tournament id.');
-		$help->request_param('name', 'Tournament name.', 'remains the same.');
+		Names::help($help, 'Tournament', true);
 		$series_help = $help->request_param('parent_series', 'Json array of series that this tournament belongs to. For example "[{id:2,stars:3},{id:4,stars:1,stage:1}]".', 'remains the same.');
 			$series_help->sub_param('id', 'Series id');
 			$series_help->sub_param('stars', 'Number of stars for this series.');
@@ -1629,9 +1658,9 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(get_label('comment'), 'INSERT INTO tournament_comments (time, user_id, comment, tournament_id, lang) VALUES (UNIX_TIMESTAMP(), ?, ?, ?, ?)', $_profile->user_id, $comment, $tournament_id, $lang);
 		
-		list($tournament_id, $tournament_name, $tournament_start_time, $tournament_duration, $tournament_timezone, $tournament_addr) = 
+		list($tournament_id, $tournament_name_id, $tournament_start_time, $tournament_duration, $tournament_timezone, $tournament_addr) = 
 			Db::record(get_label('tournament'), 
-				'SELECT e.id, e.name, e.start_time, e.duration, c.timezone, a.address FROM tournaments e' .
+				'SELECT e.id, e.name_id, e.start_time, e.duration, c.timezone, a.address FROM tournaments e' .
 				' JOIN addresses a ON a.id = e.address_id' . 
 				' JOIN cities c ON c.id = a.city_id' . 
 				' WHERE e.id = ?', $tournament_id);
@@ -1648,6 +1677,7 @@ class ApiPage extends OpsApiPageBase
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
 			' JOIN tournament_comments c ON c.user_id = u.id' .
 			' WHERE c.tournament_id = ?)', $tournament_id, $tournament_id);
+		$tournament_names = new Names($tournament_name_id, get_label('tournament name'));
 		//echo $query->get_parsed_sql();
 		while ($row = $query->next())
 		{
@@ -1664,7 +1694,7 @@ class ApiPage extends OpsApiPageBase
 				'user_id' => new Tag($user_id),
 				'user_name' => new Tag($user_name),
 				'tournament_id' => new Tag($tournament_id),
-				'tournament_name' => new Tag($tournament_name),
+				'tournament_name' => new Tag($tournament_names->get_name($user_lang)),
 				'tournament_date' => new Tag(format_date_period($tournament_start_time, $tournament_timezone, false, $user_lang)),
 				'addr' => new Tag($tournament_addr),
 				'code' => new Tag($code),
@@ -2153,7 +2183,7 @@ class ApiPage extends OpsApiPageBase
 		$tournament_id = (int)get_required_param('tournament_id');
 		
 		Db::begin();
-		list($club_id, $tournament_name, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
+		list($club_id, $tournament_name_id, $lat, $lon, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.name_id, a.lat, a.lon, t.flags FROM tournaments t JOIN addresses a ON a.id = t.address_id WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		
 		list ($user_id, $user_name, $user_email, $user_lang, $user_flags) = db::record(get_label('user'), 
@@ -2186,7 +2216,7 @@ class ApiPage extends OpsApiPageBase
 				'user_id' => new Tag($user_id),
 				'user_name' => new Tag($user_name),
 				'tournament_id' => new Tag($tournament_id),
-				'tournament_name' => new Tag($tournament_name));
+				'tournament_name' => new Tag((new Names($tournament_name_id, get_label('tournament name')))->get_name($user_lang)));
 			list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/tournament_reg_accept.php';
 			$body = parse_tags($body, $tags);
 			$text_body = parse_tags($text_body, $tags);

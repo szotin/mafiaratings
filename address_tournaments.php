@@ -25,7 +25,7 @@ class Page extends AddressPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -41,6 +41,7 @@ class Page extends AddressPageBase
 		
 		$condition = new SQL(
 			' FROM tournaments t ' .
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON t.address_id = a.id' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE t.address_id = ?',
@@ -117,7 +118,7 @@ class Page extends AddressPageBase
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$series_pic = new SeriesPicture();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, t.langs, t.num_players, a.id, a.address, a.flags,' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, t.langs, t.num_players, a.id, a.address, a.flags,' .
 			' (SELECT count(*) FROM games _g JOIN events _e ON _e.id = _g.event_id WHERE _e.tournament_id = t.id AND (_g.flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 			' (SELECT count(*) FROM events WHERE tournament_id = t.id AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0) as events,' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',

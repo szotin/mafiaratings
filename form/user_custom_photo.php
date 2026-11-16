@@ -65,10 +65,11 @@ try
 				$user_club_id, $club_reg_flags,
 				$user_name, $user_flags) = 
 		Db::record(get_label('user'), 
-				'SELECT t.name, t.club_id, tu.flags, cu.club_id, cu.flags, nu.name, u.flags' .
+				'SELECT nt.name, t.club_id, tu.flags, cu.club_id, cu.flags, nu.name, u.flags' .
 				' FROM users u' .
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 				' JOIN tournaments t ON t.id = ?' .
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN tournament_regs tu ON tu.user_id = u.id AND tu.tournament_id = t.id' .
 				' LEFT OUTER JOIN club_regs cu ON cu.user_id = u.id AND cu.club_id = t.club_id' .
 				' WHERE u.id = ?', $tournament_id, $user_id);

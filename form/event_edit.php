@@ -24,12 +24,13 @@ try
 	
 	list($club_id, $name_id, $name, $start_time, $duration, $address_id, $fee, $currency_id, $rules_code, $scoring_id, $scoring_version, $scoring_options, $langs, $notes, $flags, $timezone, $tour_id, $tour_name, $tour_flags, $round_num) = 
 		Db::record(get_label('event'), 
-			'SELECT e.club_id, e.name_id, ne.name, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, t.name, t.flags, e.round ' .
+			'SELECT e.club_id, e.name_id, ne.name, e.start_time, e.duration, e.address_id, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, e.languages, e.notes, e.flags, c.timezone, t.id, nt.name, t.flags, e.round ' .
 			'FROM events e ' . 
 			'JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 ' . 
 			'JOIN addresses a ON a.id = e.address_id ' . 
 			'JOIN cities c ON c.id = a.city_id ' . 
 			'LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id ' . 
+			'LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 ' .
 			'WHERE e.id = ?', $event_id);
 	$tour_id = (int)$tour_id;
 	$address_id = (int)$address_id;
@@ -72,7 +73,7 @@ try
 	
 	echo '</tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= ? AND start_time + duration >= ? ORDER BY name', $club_id, $start_time, $start_time);
+	$query = new DbQuery('SELECT t.id, n.name FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.club_id = ? AND t.start_time <= ? AND t.start_time + t.duration >= ? ORDER BY n.name', $club_id, $start_time, $start_time);
 	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
 	show_option(0, $tour_id, '');
 	$tournament_found = is_null($tour_id);

@@ -47,10 +47,11 @@ class PhotoAlbum
 		if ($id > 0)
 		{
 			$query = new DbQuery(
-				'SELECT a.name, a.viewers, a.adders, a.flags, e.id, ne.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags, u.id, nu.name FROM photo_albums a' .
+				'SELECT a.name, a.viewers, a.adders, a.flags, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags, u.id, nu.name FROM photo_albums a' .
 				' LEFT OUTER JOIN events e ON a.event_id = e.id' .
 				' LEFT OUTER JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
+				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' JOIN clubs c ON a.club_id = c.id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN users u ON a.user_id = u.id' .
@@ -349,7 +350,7 @@ class PhotoAlbum
 		}
 		
 		$album_pic = new Picture(ALBUM_PICTURE, new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE))));
-		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, nu.name, e.id, ne.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags FROM photo_albums a' .
+		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, nu.name, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags FROM photo_albums a' .
 			' JOIN users u ON u.id = a.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = a.club_id' .
@@ -357,6 +358,7 @@ class PhotoAlbum
 			' LEFT OUTER JOIN events e ON e.id = a.event_id' .
 			' LEFT OUTER JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' WHERE TRUE AND ', $where);
 		$query->add(' ORDER BY a.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		while ($row = $query->next())

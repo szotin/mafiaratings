@@ -175,13 +175,14 @@ class Page extends PageBase
 		$club_pic = new Picture(CLUB_PICTURE);
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
 		$query = new DbQuery(
-			'SELECT c.id, nc.name, c.flags, e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, t.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name' .
+			'SELECT c.id, nc.name, c.flags, e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, nt.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name' .
 			' FROM events e' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
 			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
@@ -248,10 +249,11 @@ class Page extends PageBase
 		
 		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 			Db::record(get_label('event'), 
-			'SELECT e.misc, e.id, ne.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags'.
+			'SELECT e.misc, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags'.
 			' FROM events e'.
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = e.club_id'.
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' WHERE e.id = ?', $this->event_id);
@@ -353,10 +355,11 @@ class Page extends PageBase
 		
 		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 			Db::record(get_label('event'), 
-			'SELECT e.misc, e.id, ne.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags'.
+			'SELECT e.misc, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags'.
 			' FROM events e'.
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = e.club_id'.
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' WHERE e.id = ?', $this->event_id);
@@ -550,10 +553,11 @@ class Page extends PageBase
 		{
 			list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
 				Db::record(get_label('event'), 
-				'SELECT ne.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags'.
+				'SELECT ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags'.
 				' FROM events e'.
 				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 				' JOIN clubs c ON c.id = e.club_id'.
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 				' WHERE e.id = ?', $this->event_id);
@@ -719,11 +723,12 @@ class Page extends PageBase
 		$game_count = 0;
 		$column_count = 0;
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags, g.table_num, g.game_num'.
+			'SELECT e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags, g.table_num, g.game_num'.
 			' FROM current_games g'.
 			' JOIN events e ON e.id = g.event_id'. 
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = e.club_id'.
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' WHERE g.user_id = ?'.

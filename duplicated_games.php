@@ -10,7 +10,7 @@ class Page extends GeneralPageBase
 	
 		check_permissions(PERMISSION_ADMIN);
 		$query = new DbQuery(
-			'SELECT g1.id, g2.id, g1.table_num, g1.game_num, g2.table_num, g2.game_num, g1.start_time, g1.end_time - g1.start_time, c.id, nc.name, c.flags, i.timezone, ne.name, t.name FROM games g1' .
+			'SELECT g1.id, g2.id, g1.table_num, g1.game_num, g2.table_num, g2.game_num, g1.start_time, g1.end_time - g1.start_time, c.id, nc.name, c.flags, i.timezone, ne.name, nt.name FROM games g1' .
 			' JOIN games g2 ON g1.start_time = g2.start_time AND g1.end_time = g2.end_time AND g1.club_id = g2.club_id' .
 			' JOIN events e ON g1.event_id = e.id' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
@@ -19,6 +19,7 @@ class Page extends GeneralPageBase
 			' JOIN clubs c ON c.id = g1.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournaments t ON t.id = g1.tournament_id' .
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' WHERE g1.id < g2.id AND g1.result = g2.result AND g1.event_id = g2.event_id' .
 			' ORDER by g1.start_time DESC');
 

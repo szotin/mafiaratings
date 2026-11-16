@@ -15,7 +15,7 @@ try
 	if (isset($_REQUEST['event_id']))
 	{
 		$event_id = (int)$_REQUEST['event_id'];
-		list($club_id, $event_name, $event_flags, $timestamp, $tournament_id, $tournament_name, $tournament_flags) = Db::record(get_label('event'), 'SELECT e.club_id, ne.name, e.flags, e.start_time, t.id, t.name, t.flags FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id WHERE e.id = ?', $event_id);
+		list($club_id, $event_name, $event_flags, $timestamp, $tournament_id, $tournament_name, $tournament_flags) = Db::record(get_label('event'), 'SELECT e.club_id, ne.name, e.flags, e.start_time, t.id, nt.name, t.flags FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 WHERE e.id = ?', $event_id);
 		if (is_null($tournament_name))
 		{
 			$title = $event_name;
@@ -30,7 +30,7 @@ try
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
 		$event_id = NULL;
-		list($club_id, $timestamp, $tournament_name, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.start_time, t.name, t.flags FROM tournaments t WHERE t.id = ?', $tournament_id);
+		list($club_id, $timestamp, $tournament_name, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.start_time, nt.name, t.flags FROM tournaments t JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 		$title = $tournament_name;
 		check_permissions(PERMISSION_CLUB_MEMBER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 	}

@@ -49,7 +49,8 @@ class Page extends UserPageBase
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
-			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' . 
+			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN event_places ep ON ep.event_id = e.id AND ep.user_id = p.user_id' . 
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
@@ -104,7 +105,7 @@ class Page extends UserPageBase
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.flags, e.start_time, ct.timezone, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, ct.timezone, t.id, nt.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);
 		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

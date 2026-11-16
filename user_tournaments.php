@@ -42,6 +42,7 @@ class Page extends UserPageBase
 		$condition = new SQL(
 			' FROM tournament_places tp' .
 			' JOIN tournaments t ON tp.tournament_id = t.id' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN games g ON g.tournament_id = t.id AND (g.flags & '.GAME_FLAG_CANCELED.') = 0' .
 			' LEFT OUTER JOIN players p ON p.game_id = g.id AND p.user_id = tp.user_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
@@ -92,7 +93,7 @@ class Page extends UserPageBase
 		
 		$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
 			$condition);
 		$query->add(' GROUP BY t.id ' . $order_by . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

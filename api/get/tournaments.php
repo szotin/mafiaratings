@@ -50,14 +50,14 @@ class ApiPage extends GetApiPageBase
 		if (!empty($name_contains))
 		{
 			$name_contains = '%' . $name_contains . '%';
-			$condition->add(' AND t.name LIKE(?)', $name_contains);
+			$condition->add(' AND t.name_id IN (SELECT id FROM names WHERE name LIKE(?))', $name_contains);
 		}
 		
 		if (!empty($name_starts))
 		{
 			$name_starts1 = '% ' . $name_starts . '%';
 			$name_starts2 = $name_starts . '%';
-			$condition->add(' AND (t.name LIKE(?) OR t.name LIKE(?))', $name_starts1, $name_starts2);
+			$condition->add(' AND t.name_id IN (SELECT id FROM names WHERE name LIKE(?) OR name LIKE(?))', $name_starts1, $name_starts2);
 		}
 
 		if (!empty($started_before))
@@ -202,8 +202,9 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, nc.name, c.flags, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules, ct.timezone FROM tournaments t' .
+				'SELECT t.id, nt.name, t.flags, t.langs, a.id, a.name, a.flags, c.id, nc.name, c.flags, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules, ct.timezone FROM tournaments t' .
 				' JOIN addresses a ON a.id = t.address_id' .
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$lang.') <> 0' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$lang.') <> 0' .
 				' JOIN cities ct ON ct.id = a.city_id', $condition);
@@ -265,8 +266,9 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT t.id, t.name, t.flags, t.langs, t.address_id, t.club_id, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules FROM tournaments t' . 
-				' JOIN addresses a ON a.id = t.address_id', $condition);
+				'SELECT t.id, nt.name, t.flags, t.langs, t.address_id, t.club_id, t.start_time, t.duration, t.notes, t.fee, t.currency_id, t.scoring_id, t.scoring_version, t.rules FROM tournaments t' . 
+				' JOIN addresses a ON a.id = t.address_id' .
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$lang.') <> 0', $condition);
 			$query->add(' ORDER BY t.start_time DESC, t.id DESC');
 			if ($page_size > 0)
 			{

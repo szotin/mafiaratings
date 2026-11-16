@@ -22,10 +22,11 @@ try
 	
 	$event_id = (int)$_REQUEST['id'];
 	list ($event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $scoring_id, $scoring_version, $scoring_options, $round_num, $standings_settings) = Db::record(get_label('event'), 
-		'SELECT ne.name, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags, e.scoring_id, e.scoring_version, e.scoring_options, e.round, e.standings_settings'.
+		'SELECT ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags, e.scoring_id, e.scoring_version, e.scoring_options, e.round, e.standings_settings'.
 		' FROM events e'.
 		' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 		' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+		' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 		' JOIN clubs c ON c.id = e.club_id'.
 		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 		' WHERE e.id = ?', $event_id);

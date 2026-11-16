@@ -25,7 +25,9 @@ try
 	$club = $_profile->clubs[$club_id];
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">' . get_label('Tournament name') . ':</td><td><input id="form-name" value=""></td></tr>';
+	echo '<tr><td width="160" valign="top">' . get_label('Tournament name') . ':</td><td>';
+	Names::show_control(new Names(0, get_label('tournament name'), NULL, 0, NULL, 'name', false));
+	echo '</td></tr>';
 	
 
 	$scoring_id = $club->scoring_id;
@@ -357,7 +359,6 @@ try
 			op: "create",
 			club_id: <?php echo $club_id; ?>,
 			parent_series: series,
-			name: $("#form-name").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
 			address_id: _addr,
@@ -384,6 +385,7 @@ try
 			params['city'] = $("#form-city").val();
 		}
 	
+		nameControl.fillRequest(params);
 		json.post("api/ops/tournament.php", params, onSuccess);
 	}
 	

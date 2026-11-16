@@ -20,7 +20,7 @@ try
 		new Picture(USER_PICTURE)));
 	
 	list ($tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
-		Db::record(get_label('tournament'), 'SELECT t.id, t.name, t.flags, c.id, nc.name, c.flags FROM tournaments t JOIN clubs c ON c.id = t.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE t.id = ?', $_REQUEST['id']);
+		Db::record(get_label('tournament'), 'SELECT t.id, nt.name, t.flags, c.id, nc.name, c.flags FROM tournaments t JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 JOIN clubs c ON c.id = t.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE t.id = ?', $_REQUEST['id']);
 	
 	$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	$rows = 0;

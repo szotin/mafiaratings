@@ -1017,7 +1017,7 @@ class ApiPage extends OpsApiPageBase
 			else
 			{
 				list($user_name) = Db::record(get_label('user'), 'SELECT nu.name FROM users u JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
-				list($tournament_name) = Db::record(get_label('tournament'), 'SELECT name FROM tournaments WHERE id = ?', $tournament_id);
+				list($tournament_name) = Db::record(get_label('tournament'), 'SELECT n.name FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 				throw new Exc(get_label('[0] is not registered for [1]', $user_name, $tournament_name));
 			}
 			check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);

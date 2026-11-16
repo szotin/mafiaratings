@@ -57,8 +57,9 @@ class Page extends SeriesPageBase
 		// happening twice in one year, and two of them sharing a column would have to hide one.
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time FROM series_tournaments st' .
+			'SELECT t.id, nt.name, t.flags, t.start_time FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' WHERE st.series_id = ? ORDER BY t.start_time, t.id', $this->id);
 		while ($row = $query->next())
 		{

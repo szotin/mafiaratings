@@ -37,10 +37,12 @@ function setDir()
 	chdir($dir);
 }
 
-function sendTournamentRegNotification($tournament_id, $tournament_name, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs)
+function sendTournamentRegNotification($tournament_id, $tournament_name_id, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs)
 {
+	// The tournament is named in the language of the email.
+	list ($tournament_name) = Db::record(get_label('tournament'), 'SELECT name FROM names WHERE id = ? AND (langs & ?) <> 0', $tournament_name_id, $manager_lang);
 	//echo $tournament_name . ' - ' . $new_regs . ': ' . $manager_name . EOL;
-	
+
 	$lang = get_lang_code($manager_lang);
 	$tags = array(
 		'root' => new Tag(get_server_url()),
@@ -71,7 +73,7 @@ try
 	if ($hour == 23)
 	{
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.club_id, count(tu.user_id)'.
+			'SELECT t.id, t.name_id, t.club_id, count(tu.user_id)'.
 			' FROM tournament_regs tu'.
 			' JOIN tournaments t ON t.id = tu.tournament_id'.
 			' WHERE (tu.flags & '.(USER_TOURNAMENT_FLAG_NOT_ACCEPTED | USER_TOURNAMENT_MANAGER_NOTIFIED).') = '.USER_TOURNAMENT_FLAG_NOT_ACCEPTED.
@@ -79,7 +81,7 @@ try
 			' ORDER BY t.id');
 		while ($row = $query->next())
 		{
-			list ($tournament_id, $tournament_name, $club_id, $new_regs) = $row;
+			list ($tournament_id, $tournament_name_id, $club_id, $new_regs) = $row;
 			$send_to_club_managers = true;
 			$query1 = new DbQuery(
 				'SELECT u.id, nu.name, u.email, u.def_lang'.
@@ -90,7 +92,7 @@ try
 			while ($row1 = $query1->next())
 			{
 				list ($manager_id, $manager_name, $manager_email, $manager_lang) = $row1;
-				sendTournamentRegNotification($tournament_id, $tournament_name, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs);
+				sendTournamentRegNotification($tournament_id, $tournament_name_id, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs);
 				--$emails_remaining;
 				$send_to_club_managers = false;
 			}
@@ -106,7 +108,7 @@ try
 				while ($row1 = $query1->next())
 				{
 					list ($manager_id, $manager_name, $manager_email, $manager_lang) = $row1;
-					sendTournamentRegNotification($tournament_id, $tournament_name, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs);
+					sendTournamentRegNotification($tournament_id, $tournament_name_id, $manager_id, $manager_name, $manager_email, $manager_lang, $new_regs);
 					--$emails_remaining;
 				}
 			}

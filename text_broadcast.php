@@ -38,7 +38,7 @@ $table_num = isset($_REQUEST['table_num']) ? max((int)$_REQUEST['table_num'], 1)
 $title = '';
 if ($tournament_id > 0)
 {
-	list ($title) = Db::record(get_label('tournament'), 'SELECT name FROM tournaments WHERE id = ?', $tournament_id);
+	list ($title) = Db::record(get_label('tournament'), 'SELECT n.name FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 }
 else if ($event_id > 0)
 {
@@ -47,7 +47,7 @@ else if ($event_id > 0)
 	if (!is_null($event_tournament_id))
 	{
 		list ($tournament_name) = Db::record(get_label('tournament'),
-			'SELECT name FROM tournaments WHERE id = ?', (int)$event_tournament_id);
+			'SELECT n.name FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', (int)$event_tournament_id);
 		$title = $tournament_name . ' - ' . $title;
 	}
 }

@@ -199,9 +199,10 @@ class Page extends GeneralPageBase
 		// held somewhere other than where the tournament is registered - the tournament's date
 		// would be the same for every row and wrong for most of them.
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, c.id, nc.name, c.flags, e.id, e.round, e.start_time, ct.timezone'.
+			'SELECT t.id, nt.name, t.flags, c.id, nc.name, c.flags, e.id, e.round, e.start_time, ct.timezone'.
 			' FROM events e'.
 			' JOIN tournaments t ON t.id = e.tournament_id'.
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = e.club_id'.
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 			' JOIN addresses a ON a.id = e.address_id'.

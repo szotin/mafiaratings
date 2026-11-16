@@ -827,7 +827,7 @@ CREATE TABLE `stats_calculators` (
 DROP TABLE IF EXISTS `tournaments`;
 CREATE TABLE `tournaments` (
   `id` int(11) NOT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `club_id` int(11) NOT NULL,
   `address_id` int(11) NOT NULL,
   `start_time` int(11) NOT NULL,
@@ -1065,6 +1065,7 @@ INSERT INTO `names` (`id`, `langs`, `name`) VALUES
 (4, 16777215, 'Sample Club'),
 (5, 16777215, 'Sample League'),
 (6, 16777215, 'Sample Event'),
+(7, 16777215, 'Sample Tournament'),
 (10, 16777215, 'admin'),
 (30, 16777215, 'shrek'),
 (40, 16777215, 'lilya'),
@@ -1190,7 +1191,7 @@ INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `durat
 INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (2, 'Club Cup 2024', NULL, 1, 1284784660, 31536000, 7, '', 0, '"0002000010000"', 1, 1, 0, NULL, NULL, 5);
 
 -- Tournament (finished) and its link to the season
-INSERT INTO `tournaments` (`id`, `name`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 'Sample Tournament', 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
+INSERT INTO `tournaments` (`id`, `name_id`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 7, 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
 INSERT INTO `series_tournaments` (`tournament_id`, `series_id`, `stars`, `flags`, `fee`) VALUES (1, 1, 1, 0, NULL);
 
 -- Event (finished), belongs to the tournament
@@ -2151,7 +2152,8 @@ ALTER TABLE `tournaments`
   ADD KEY `scoring_id` (`scoring_id`,`start_time`),
   ADD KEY `scoring_id_2` (`scoring_id`,`scoring_version`),
   ADD KEY `normalizer_id` (`normalizer_id`,`normalizer_version`),
-  ADD KEY `currency_id` (`currency_id`);
+  ADD KEY `currency_id` (`currency_id`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `tournament_approves`
@@ -2980,6 +2982,7 @@ ALTER TABLE `tournaments`
   ADD CONSTRAINT `tournament_address` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`),
   ADD CONSTRAINT `tournament_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
   ADD CONSTRAINT `tournament_currency` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
+  ADD CONSTRAINT `tournament_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`),
   ADD CONSTRAINT `tournament_normalizer_version` FOREIGN KEY (`normalizer_id`,`normalizer_version`) REFERENCES `normalizer_versions` (`normalizer_id`, `version`),
   ADD CONSTRAINT `tournament_scoring_version` FOREIGN KEY (`scoring_id`,`scoring_version`) REFERENCES `scoring_versions` (`scoring_id`, `version`);
 

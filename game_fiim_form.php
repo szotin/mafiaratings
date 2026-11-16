@@ -18,7 +18,7 @@ try
 	if ($game_id > 0)
 	{
 		list ($tournament_name, $event_name, $json, $timezone, $moder_name, $feature_flags) = Db::record(get_label('game'), 
-			'SELECT t.name, ne.name, g.json, c.timezone, nu.name, g.feature_flags FROM games g' .
+			'SELECT nt.name, ne.name, g.json, c.timezone, nu.name, g.feature_flags FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON a.id = e.address_id' .
@@ -26,6 +26,7 @@ try
 			' JOIN users u ON u.id = g.moderator_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' WHERE g.id = ?', $game_id);
 		
 		$game = new Game($json, $feature_flags);

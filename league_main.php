@@ -184,9 +184,10 @@ class Page extends LeaguePageBase
 		// tournaments
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.flags, a.address, a.name' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.flags, a.address, a.name' .
 			' FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
@@ -194,7 +195,7 @@ class Page extends LeaguePageBase
 			' JOIN cities ct ON ct.id = c.city_id' .
 			' LEFT OUTER JOIN leagues l ON l.id = s.league_id' .
 			' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND s.league_id = ?' .
-			' ORDER BY t.start_time + t.duration, t.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT), $this->id);
+			' ORDER BY t.start_time + t.duration, nt.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT), $this->id);
 		while ($row = $query->next())
 		{
 			$tournaments[] = $row;

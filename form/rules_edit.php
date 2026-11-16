@@ -150,11 +150,12 @@ try
 		if ($table_num > 0 && $game_num > 0)
 		{
 			list($club_id, $tournament_id, $rules_code, $game, $rules_name, $tournament_name) = Db::record(get_label('game'), 
-				'SELECT e.club_id, e.tournament_id, e.rules, g.game, ne.name, t.name'.
+				'SELECT e.club_id, e.tournament_id, e.rules, g.game, ne.name, nt.name'.
 				' FROM current_games g'.
 				' JOIN events e ON e.id = g.event_id'.
 				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
+				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 				' WHERE g.event_id = ? AND table_num = ? AND game_num = ?', $event_id, $table_num, $game_num);
 			$game = json_decode($game);
 			if (isset($game->clubId))
@@ -320,7 +321,7 @@ try
 	}
 	else if ($tournament_id > 0)
 	{
-		list($club_id, $rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT club_id, rules, name FROM tournaments WHERE id = ?', $tournament_id);
+		list($club_id, $rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT t.club_id, t.rules, n.name FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id);
 
 		dialog_title(get_label('Edit [0]', get_label('rules for [0]', $rules_name)));

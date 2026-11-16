@@ -1704,9 +1704,9 @@ class ApiPage extends OpsApiPageBase
 		$event_id = (int)get_required_param('event_id');
 		
 		Db::begin();
-		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $lat, $lon) = 
+		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $lat, $lon, $name_id) = 
 			Db::record(get_label('event'), 
-				'SELECT e.club_id, ne.name, e.address_id, e.start_time, e.duration, e.languages, e.notes, e.fee, e.currency_id, e.scoring_id, e.scoring_version, e.scoring_options, e.rules, e.flags, a.lat, a.lon'.
+				'SELECT e.club_id, ne.name, e.address_id, e.start_time, e.duration, e.languages, e.notes, e.fee, e.currency_id, e.scoring_id, e.scoring_version, e.scoring_options, e.rules, e.flags, a.lat, a.lon, e.name_id'.
 				' FROM events e'.
 				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' JOIN addresses a ON a.id = e.address_id'.
@@ -1717,12 +1717,13 @@ class ApiPage extends OpsApiPageBase
 			get_label('tournament'), 
 			// Nobody has said how many players a tournament grown out of a single event is laid
 			// out for. The column is NOT NULL with no default and a strict MySQL wants it named.
-			'INSERT INTO tournaments (name, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
-			$name, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
+			'INSERT INTO tournaments (name_id, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
+			$name_id, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
 		$log_details->name = $name;
+		$log_details->name_id = $name_id;
 		$log_details->club_id = $club_id; 
 		$log_details->address_id = $address_id; 
 		$log_details->start = $start_time;

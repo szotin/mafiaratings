@@ -20,7 +20,7 @@ try
 	}
 	$player_id = (int)$_REQUEST['player_id'];
 	
-	list($club_id, $name, $flags, $tournament_misc) = Db::record(get_label('tournament'), 'SELECT club_id, name, flags, misc FROM tournaments WHERE id = ?', $tournament_id);
+	list($club_id, $name, $flags, $tournament_misc) = Db::record(get_label('tournament'), 'SELECT t.club_id, n.name, t.flags, t.misc FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $tournament_id);
 	check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 	if (is_null($tournament_misc))
 	{

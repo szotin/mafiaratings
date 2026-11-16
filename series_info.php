@@ -21,9 +21,10 @@ class Page extends SeriesPageBase
 		$column_count = 0;
 		$page_size = TOURNAMENT_ROW_COUNT * TOURNAMENT_COLUMN_COUNT;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, a.name, c.id, nc.name, c.flags' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, a.name, c.id, nc.name, c.flags' .
 			' FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .

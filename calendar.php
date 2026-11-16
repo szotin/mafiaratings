@@ -30,7 +30,7 @@ class Page extends GeneralPageBase
 		$time = time() + 604800 * $this->week;
 		$end_time = $time + 604800;
 
-		$query = new DbQuery('SELECT e.id, ne.name, e.start_time, e.duration, e.flags, t.id, t.name, t.flags, c.id, nc.name, c.flags, ni.name, no.name, i.timezone, a.address, a.map_url');
+		$query = new DbQuery('SELECT e.id, ne.name, e.start_time, e.duration, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags, ni.name, no.name, i.timezone, a.address, a.map_url');
 		if ($_profile != null)
 		{
 			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
@@ -45,6 +45,7 @@ class Page extends GeneralPageBase
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
 			' JOIN cities i ON a.city_id = i.id' .
 			' JOIN countries o ON i.country_id = o.id' .

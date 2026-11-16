@@ -21,8 +21,9 @@ try
 	}
 	$tournament_id = (int)$_REQUEST['id'];
 	
-	list ($club_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $num_players, $langs, $notes, $flags, $mwt_id, $imafia_id, $emo_id, $rules_code) = 
-		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.mwt_id, t.imafia_id, t.emo_id, t.rules FROM tournaments t' . 
+	list ($club_id, $name_id, $name, $start_time, $duration, $timezone, $address_id, $scoring_id, $scoring_version, $normalizer_id, $normalizer_version, $scoring_options, $fee, $currency_id, $num_players, $langs, $notes, $flags, $mwt_id, $imafia_id, $emo_id, $rules_code) = 
+		Db::record(get_label('tournament'), 'SELECT t.club_id, t.name_id, nt.name, t.start_time, t.duration, ct.timezone, t.address_id, t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options, t.fee, t.currency_id, t.num_players, t.langs, t.notes, t.flags, t.mwt_id, t.imafia_id, t.emo_id, t.rules FROM tournaments t' . 
+		' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 		' JOIN addresses a ON a.id = t.address_id' .
 		' JOIN cities ct ON ct.id = a.city_id' .
 		' WHERE t.id = ?', $tournament_id);
@@ -62,7 +63,9 @@ try
 	$series_list .= '}';
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="240">' . get_label('Tournament name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
+	echo '<tr><td width="240" valign="top">' . get_label('Tournament name') . ':</td><td>';
+	Names::show_control(new Names($name_id, get_label('tournament name')));
+	echo '</td>';
 	
 	echo '<td align="center" valign="top" rowspan="8" width="120">';
 	start_upload_logo_button($tournament_id);
@@ -349,7 +352,6 @@ try
 			op: "change",
 			tournament_id: <?php echo $tournament_id; ?>,
 			parent_series: series,
-			name: $("#form-name").val(),
 			address_id: $("#form-addr_id").val(),
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
@@ -361,6 +363,7 @@ try
 			flags_mask: _flagsMask,
 		};
 		
+		nameControl.fillRequest(params);
 		json.post("api/ops/tournament.php", params, onSuccess);
 	}
 	

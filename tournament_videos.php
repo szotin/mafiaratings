@@ -78,10 +78,11 @@ class Page extends TournamentPageBase
 		}
 		
 		$query = new DbQuery(
-			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, t.id, t.name, t.flags, g.table_num, g.game_num FROM videos v' .
+			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, t.id, nt.name, t.flags, g.table_num, g.game_num FROM videos v' .
 			' JOIN clubs c ON c.id = v.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN tournaments t ON t.id = v.tournament_id' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id' .
 			' WHERE v.tournament_id = ?', $this->id, $condition);
 		$query->add(' ORDER BY v.video_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);

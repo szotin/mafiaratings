@@ -43,6 +43,7 @@ class Page extends SeriesPageBase
 		$condition = new SQL(
 			' FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN cities i ON i.id = a.city_id' .
@@ -89,7 +90,7 @@ class Page extends SeriesPageBase
 		$order_by = ' ORDER BY t.start_time + t.duration, t.id';
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT t.id, t.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name, st.flags, st.fee, s.fee, cu.pattern, t.num_players,' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, ni.name, st.flags, st.fee, s.fee, cu.pattern, t.num_players,' .
 			' (SELECT count(user_id) FROM tournament_places WHERE tournament_id = t.id) as players',
 			$condition);
 		$query->add($order_by);

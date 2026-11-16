@@ -126,13 +126,14 @@ class TournamentPageBase extends PageBase
 			$this->rules_code, $this->flags, $this->mwt_id, $this->imafia_id, $this->emo_id, $this->num_players, $this->lat, $this->lon, $this->num_regs, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, $this->team_size) =
 		Db::record(
 			get_label('tournament'),
-			'SELECT t.name, c.id, nc.name, c.flags,' .
+			'SELECT nt.name, c.id, nc.name, c.flags,' .
 				' a.id, a.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern,'.
 				' t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options,'.
 				' t.rules, t.flags, t.mwt_id, t.imafia_id, t.emo_id, t.num_players, a.lat, a.lon, t.num_regs, t.rating_sum, t.rating_sum_20, t.traveling_distance, t.guest_coeff, t.team_size' .
 				' FROM tournaments t' .
+				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = t.address_id' .

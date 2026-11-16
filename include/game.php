@@ -3951,7 +3951,7 @@ class Game
 	
 	function setup_event()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$data = $this->data;
 		list($timezone, $club_rules, $club_scoring_id, $club_langs, $fee, $currency_id) = Db::record(get_label('club'), 'SELECT ct.timezone, c.rules, c.scoring_id, c.langs, c.fee, c.currency_id FROM clubs c JOIN cities ct ON c.city_id = ct.id WHERE c.id = ?', $data->clubId);
@@ -4090,7 +4090,7 @@ class Game
 		// Now make sure tournament field is ok
 		if (isset($data->tournamentId) && $data->tournamentId != $tournament_id)
 		{
-			list($tournament_name, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT name, flags FROM tournaments WHERE id = ?', $data->tournamentId);
+			list($tournament_name, $tournament_flags) = Db::record(get_label('tournament'), 'SELECT n.name, t.flags FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.id = ?', $data->tournamentId);
 			if (($tournament_flags | TOURNAMENT_FLAG_SINGLE_GAME) == 0)
 			{
 				throw new Exc(get_label('Game [0] can not be played in the tournament [1]', $this->id, $tournament_name));

@@ -481,7 +481,7 @@ class EventPageBase extends PageBase
 				Db::record(
 					get_label('event'), 
 					'SELECT ne.name, e.fee, e.currency_id, cu.pattern, c.id, nc.name, c.flags, c.web_site, e.start_time, e.duration,'.
-							' t.id, t.name, t.flags,'.
+							' t.id, nt.name, t.flags,'.
 							' a.id, a.address, a.map_url, i.timezone, a.flags,'.
 							' e.notes, e.languages, e.flags, e.rules, e.scoring_id, e.scoring_version, e.scoring_options,'.
 							' u.coming_odds, ni.name, no.name, e.round FROM events e' .
@@ -495,6 +495,7 @@ class EventPageBase extends PageBase
 						' JOIN names no ON no.id = o.name_id AND (no.langs & '.$_lang.') <> 0' .
 						' LEFT OUTER JOIN event_regs u ON u.event_id = e.id AND u.user_id = ?' .
 						' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
+						' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 						' LEFT OUTER JOIN currencies cu ON e.currency_id = cu.id' .
 						' WHERE e.id = ?',
 					$user_id, $this->id);

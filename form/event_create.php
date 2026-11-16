@@ -38,7 +38,7 @@ try
 	echo '</td></tr>';
 	
 	$tournaments = array();
-	$query = new DbQuery('SELECT id, name FROM tournaments WHERE club_id = ? AND start_time <= UNIX_TIMESTAMP() AND start_time + duration > UNIX_TIMESTAMP() AND (flags & ' . TOURNAMENT_FLAG_LONG_TERM . ') <> 0 ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT t.id, n.name FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.club_id = ? AND t.start_time <= UNIX_TIMESTAMP() AND t.start_time + t.duration > UNIX_TIMESTAMP() AND (t.flags & ' . TOURNAMENT_FLAG_LONG_TERM . ') <> 0 ORDER BY n.name', $club_id);
 	while ($row = $query->next())
 	{
 		$tournaments[] = $row;

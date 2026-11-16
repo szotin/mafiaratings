@@ -35,7 +35,7 @@ try
 	else if (isset($_REQUEST['tournament_id']))
 	{
 		$tournament_id = (int)$_REQUEST['tournament_id'];
-		list($club_id, $name, $user_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, t.name, tu.flags FROM tournament_regs tu JOIN tournaments t ON t.id = tu.tournament_id WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
+		list($club_id, $name, $user_flags) = Db::record(get_label('tournament'), 'SELECT t.club_id, nt.name, tu.flags FROM tournament_regs tu JOIN tournaments t ON t.id = tu.tournament_id JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 WHERE tu.tournament_id = ? AND tu.user_id = ?', $tournament_id, $user_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $club_id, $tournament_id);
 		$substitute_flag = USER_FLAG_SUBSTITUTE;
 		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
