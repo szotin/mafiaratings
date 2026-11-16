@@ -14,9 +14,10 @@ try
 	if (isset($_REQUEST['schema_id']))
 	{
 		$schema_id = (int)$_REQUEST['schema_id'];
-		$row = Db::record(get_label('tournament schema'), 'SELECT league_id, name, ' . TOURNAMENT_SCHEMA_COLUMNS . ' FROM league_tournament_schemas WHERE id = ?', $schema_id);
+		$row = Db::record(get_label('tournament schema'), 'SELECT s.league_id, s.name_id, ' . TOURNAMENT_SCHEMA_COLUMNS . ', n.name FROM league_tournament_schemas s JOIN names n ON n.id = s.name_id AND (n.langs & '.$_lang.') <> 0 WHERE s.id = ?', $schema_id);
 		$league_id = (int)$row[0];
-		$name = $row[1];
+		$names = new Names((int)$row[1], get_label('Tournament schema name'));
+		$name = $row[7];
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		dialog_title(get_label('Edit [0]', $name));
 		$schema = tournament_schema_from_row($row[2], $row[3], $row[4], $row[5], $row[6]);
@@ -31,7 +32,7 @@ try
 		$league_id = (int)$_REQUEST['league_id'];
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		dialog_title(get_label('New tournament schema'));
-		$name = '';
+		$names = new Names(0, get_label('Tournament schema name'), NULL, 0, NULL, 'name', false);
 		// A new schema starts with what a tournament of the league usually is: one round, the
 		// rules of the league, its scoring, no normalizer, the usual awards and nothing hidden.
 		list($league_scoring_id) = Db::record(get_label('league'), 'SELECT scoring_id FROM leagues WHERE id = ?', $league_id);
@@ -88,7 +89,9 @@ try
 	}
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="160">' . get_label('Tournament schema name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td></tr>';
+	echo '<tr><td width="160" valign="top">' . get_label('Tournament schema name') . ':</td><td>';
+	Names::show_control($names);
+	echo '</td></tr>';
 
 	echo '<tr><td colspan="2">';
 	echo '<input type="checkbox" class="toggle" id="form-long-term"' . ($schema->long_term ? ' checked' : '') . ' onchange="longTermChanged()"> ' . get_label('long term tournament. Like a seasonal club championship.');
@@ -368,7 +371,8 @@ try
 			hide_bonus: parseInt($('#form-hide-bonus').val()),
 			hide_bonus_tour: hidingTourValue('form-hide-bonus'),
 		};
-		var params = { name: $('#form-name').val(), schema: JSON.stringify(schema) };
+		var params = { schema: JSON.stringify(schema) };
+		nameControl.fillRequest(params);
 <?php if ($schema_id > 0): ?>
 		params.op = 'change';
 		params.schema_id = <?php echo $schema_id; ?>;

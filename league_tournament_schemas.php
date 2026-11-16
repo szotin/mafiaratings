@@ -10,6 +10,8 @@ class Page extends LeaguePageBase
 {
 	protected function show_body()
 	{
+		global $_lang;
+
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $this->id);
 
 		echo '<p><button onclick="copySchemas()">' . get_label('Copy from another league') . '</button></p>';
@@ -20,7 +22,7 @@ class Page extends LeaguePageBase
 		echo '<td>' . get_label('Tournament schema name') . '</td>';
 		echo '<td>' . get_label('Rounds') . '</td></tr>';
 
-		$query = new DbQuery('SELECT id, name, scheme FROM league_tournament_schemas WHERE league_id = ? ORDER BY name', $this->id);
+		$query = new DbQuery('SELECT s.id, n.name, s.scheme FROM league_tournament_schemas s JOIN names n ON n.id = s.name_id AND (n.langs & '.$_lang.') <> 0 WHERE s.league_id = ? ORDER BY n.name', $this->id);
 		while ($row = $query->next())
 		{
 			list($id, $name, $schema) = $row;

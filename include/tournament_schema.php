@@ -212,9 +212,10 @@ function check_not_in_tournament_schemas($column, $id, $object_name)
 
 	$names = '';
 	$query = new DbQuery(
-		'SELECT nl.name, s.name FROM league_tournament_schemas s JOIN leagues l ON l.id = s.league_id' .
+		'SELECT nl.name, ns.name FROM league_tournament_schemas s JOIN leagues l ON l.id = s.league_id' .
+		' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 		' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
-		' WHERE s.' . $column . ' = ? ORDER BY nl.name, s.name', $id);
+		' WHERE s.' . $column . ' = ? ORDER BY nl.name, ns.name', $id);
 	while ($row = $query->next())
 	{
 		$names .= '<br>' . htmlspecialchars($row[0] . ': ' . $row[1], ENT_QUOTES);
@@ -483,7 +484,7 @@ function get_tournament_schema_leagues($club_id)
 	}
 	if (count($leagues) > 0)
 	{
-		$query = new DbQuery('SELECT id, league_id, name FROM league_tournament_schemas WHERE league_id IN (' . implode(',', array_keys($leagues)) . ') ORDER BY name');
+		$query = new DbQuery('SELECT s.id, s.league_id, n.name FROM league_tournament_schemas s JOIN names n ON n.id = s.name_id AND (n.langs & '.$_lang.') <> 0 WHERE s.league_id IN (' . implode(',', array_keys($leagues)) . ') ORDER BY n.name');
 		while ($row = $query->next())
 		{
 			$sc = new stdClass();

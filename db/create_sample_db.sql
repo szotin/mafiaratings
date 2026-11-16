@@ -417,7 +417,7 @@ DROP TABLE IF EXISTS `league_tournament_schemas`;
 CREATE TABLE `league_tournament_schemas` (
   `id` int(11) NOT NULL,
   `league_id` int(11) NOT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `scheme` text NOT NULL,
   `rules_id` int(11) DEFAULT NULL,
   `rules_league_id` int(11) DEFAULT NULL,
@@ -1876,7 +1876,8 @@ ALTER TABLE `league_pairs`
 --
 ALTER TABLE `league_tournament_schemas`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `league_name` (`league_id`,`name`),
+  ADD KEY `league_id` (`league_id`),
+  ADD KEY `name_id` (`name_id`),
   ADD KEY `tournament_schema_rules` (`rules_id`),
   ADD KEY `tournament_schema_rules_league` (`rules_league_id`),
   ADD KEY `tournament_schema_scoring` (`scoring_id`),
@@ -2793,7 +2794,8 @@ ALTER TABLE `league_tournament_schemas`
   ADD CONSTRAINT `tournament_schema_rules` FOREIGN KEY (`rules_id`) REFERENCES `rules` (`id`),
   ADD CONSTRAINT `tournament_schema_rules_league` FOREIGN KEY (`rules_league_id`) REFERENCES `leagues` (`id`),
   ADD CONSTRAINT `tournament_schema_scoring` FOREIGN KEY (`scoring_id`) REFERENCES `scorings` (`id`),
-  ADD CONSTRAINT `tournament_schema_normalizer` FOREIGN KEY (`normalizer_id`) REFERENCES `normalizers` (`id`);
+  ADD CONSTRAINT `tournament_schema_normalizer` FOREIGN KEY (`normalizer_id`) REFERENCES `normalizers` (`id`),
+  ADD CONSTRAINT `tournament_schema_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `league_requests`
