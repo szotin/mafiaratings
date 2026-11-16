@@ -214,10 +214,11 @@ class Page extends SeriesPageBase
 		{
 			$delim = '';
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score,'.
+				'SELECT s.id, ns.name, s.flags, ' . series_owner_fields() . ', ss.stars, ss.flags, p.place, s.start_time, s.duration, COUNT(p1.user_id), p.score,'.
 				' s.rating_sum, s.rating_sum_20, s.traveling_distance, s.guest_coeff'.
 				' FROM series_places p'.
 				' JOIN series s ON s.id = p.series_id'.
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0'.
 				' JOIN series_places p1 ON p1.series_id = s.id AND p1.cut_stages = 0'.
 				' JOIN series_series ss ON ss.child_id = s.id AND ss.parent_id = ?'.
 				series_owner_join() .
@@ -366,9 +367,10 @@ class Page extends SeriesPageBase
 		if ($cs_tournaments != '')
 		{
 			$query = new DbQuery(
-				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
+				'SELECT st.tournament_id, st.stars, s.id, ns.name, s.flags, ' . series_owner_fields() .
 				' FROM series_tournaments st' .
 				' JOIN series s ON s.id = st.series_id' .
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
 				series_owner_join() .
 				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ORDER BY t.start_time + t.duration DESC, t.start_time DESC, t.id DESC');
@@ -403,9 +405,10 @@ class Page extends SeriesPageBase
 		if ($cs_child_series != '')
 		{
 			$query = new DbQuery(
-				'SELECT ss.child_id, ss.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
+				'SELECT ss.child_id, ss.stars, s.id, ns.name, s.flags, ' . series_owner_fields() .
 				' FROM series_series ss' .
 				' JOIN series s ON s.id = ss.parent_id' .
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 				' JOIN series c ON c.id = ss.child_id' .
 				series_owner_join() .
 				' WHERE ss.child_id IN (' . $cs_child_series . ') ORDER BY c.start_time + c.duration DESC, c.start_time DESC, c.id DESC');

@@ -155,8 +155,9 @@ class TournamentPageBase extends PageBase
 			
 		$this->series = array();
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, st.stars, ' . series_owner_fields() .
-			' FROM series_tournaments st JOIN series s ON s.id = st.series_id' . series_owner_join() .
+			'SELECT s.id, ns.name, s.flags, st.stars, ' . series_owner_fields() .
+			' FROM series_tournaments st JOIN series s ON s.id = st.series_id' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' . series_owner_join() .
 			' WHERE st.tournament_id = ?', $this->id);
 		while ($row = $query->next())
 		{

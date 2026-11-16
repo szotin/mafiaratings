@@ -709,7 +709,7 @@ CREATE TABLE `seatings` (
 DROP TABLE IF EXISTS `series`;
 CREATE TABLE `series` (
   `id` int(11) NOT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `league_id` int(11) DEFAULT NULL,
   `club_id` int(11) DEFAULT NULL,
   `start_time` int(11) NOT NULL,
@@ -1066,6 +1066,8 @@ INSERT INTO `names` (`id`, `langs`, `name`) VALUES
 (5, 16777215, 'Sample League'),
 (6, 16777215, 'Sample Event'),
 (7, 16777215, 'Sample Tournament'),
+(8, 16777215, 'Season 2024'),
+(9, 16777215, 'Club Cup 2024'),
 (10, 16777215, 'admin'),
 (30, 16777215, 'shrek'),
 (40, 16777215, 'lilya'),
@@ -1186,9 +1188,9 @@ INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name`, `rules`) VALUES (1, N
 INSERT INTO `normalizers` (`id`, `club_id`, `league_id`, `name`, `version`, `flags`) VALUES (1, NULL, NULL, 'Mafia Ratings', 1, 1), (2, 1, NULL, 'Mafia Ratings', 1, 0), (3, NULL, 1, 'Mafia Ratings', 1, 0);
 INSERT INTO `normalizer_versions` (`normalizer_id`, `version`, `normalizer`) VALUES (1, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}'), (2, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}'), (3, 1, '{\"policies\":[{\"gameAv\":{\"minPercOfMax\":50,\"min\":20}}]}');
 INSERT INTO `league_managers` (`league_id`, `user_id`) VALUES (1, 1);
-INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (1, 'Season 2024', 1, NULL, 1284784660, 31536000, 7, '', 0, '{}', 1, 1, 0, NULL, NULL, 5);
+INSERT INTO `series` (`id`, `name_id`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (1, 8, 1, NULL, 1284784660, 31536000, 7, '', 0, '{}', 1, 1, 0, NULL, NULL, 5);
 -- A series owned by a club instead of a league. Exactly one of league_id / club_id is set.
-INSERT INTO `series` (`id`, `name`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (2, 'Club Cup 2024', NULL, 1, 1284784660, 31536000, 7, '', 0, '"0002000010000"', 1, 1, 0, NULL, NULL, 5);
+INSERT INTO `series` (`id`, `name_id`, `league_id`, `club_id`, `start_time`, `duration`, `langs`, `notes`, `flags`, `rules`, `gaining_id`, `gaining_version`, `per_player_fee`, `fee`, `currency_id`, `max_stars`) VALUES (2, 9, NULL, 1, 1284784660, 31536000, 7, '', 0, '"0002000010000"', 1, 1, 0, NULL, NULL, 5);
 
 -- Tournament (finished) and its link to the season
 INSERT INTO `tournaments` (`id`, `name_id`, `club_id`, `address_id`, `start_time`, `duration`, `langs`, `notes`, `scoring_id`, `rules`, `flags`, `scoring_version`, `standings_settings`, `scoring_options`, `normalizer_id`, `normalizer_version`, `num_players`, `fee`, `currency_id`, `mwt_id`, `misc`, `rating_sum`, `rating_sum_20`, `traveling_distance`, `guest_coeff`, `num_regs`, `imafia_id`, `emo_id`, `preparation_stage`, `team_size`) VALUES (1, 7, 1, 1, 1284784660, 86400, 7, '', 1, '0000100101000', 128, 1, NULL, '{}', NULL, NULL, 10, NULL, NULL, NULL, NULL, 0, 0, 0, 1, 10, NULL, NULL, 0, 1);
@@ -2061,7 +2063,8 @@ ALTER TABLE `series`
   ADD KEY `start_time` (`start_time`),
   ADD KEY `league_id` (`league_id`,`start_time`),
   ADD KEY `club_id` (`club_id`,`start_time`),
-  ADD KEY `gaining_id` (`gaining_id`,`gaining_version`);
+  ADD KEY `gaining_id` (`gaining_id`,`gaining_version`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `series_clubs`
@@ -2912,7 +2915,8 @@ ALTER TABLE `scoring_versions`
 ALTER TABLE `series`
   ADD CONSTRAINT `series_gaining_version` FOREIGN KEY (`gaining_id`,`gaining_version`) REFERENCES `gaining_versions` (`gaining_id`, `version`),
   ADD CONSTRAINT `series_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
-  ADD CONSTRAINT `series_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`);
+  ADD CONSTRAINT `series_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
+  ADD CONSTRAINT `series_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `series_clubs`

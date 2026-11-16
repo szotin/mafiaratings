@@ -202,9 +202,10 @@ class Page extends LeaguePageBase
 		}
 		
 		$series = array();
-		$query = new DbQuery('SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs FROM series s' .
+		$query = new DbQuery('SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.langs FROM series s' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.league_id = ?' .
-			' ORDER BY s.start_time + s.duration, s.name, s.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT), $this->id);
+			' ORDER BY s.start_time + s.duration, ns.name, s.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT), $this->id);
 		while ($row = $query->next())
 		{
 			$series[] = $row;

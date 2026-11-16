@@ -13,7 +13,7 @@ class Page extends ClubPageBase
 {
 	protected function show_body()
 	{
-		global $_page, $_profile;
+		global $_page, $_profile, $_lang;
 
 		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$owner = new SeriesOwner(0, $this->id);
@@ -46,7 +46,7 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 
-		$query = new DbQuery('SELECT s.id, s.name, s.start_time, s.duration, s.flags FROM series s WHERE ', $condition);
+		$query = new DbQuery('SELECT s.id, ns.name, s.start_time, s.duration, s.flags FROM series s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $condition);
 		$query->add(' ORDER BY s.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
 		$timezone = get_timezone();

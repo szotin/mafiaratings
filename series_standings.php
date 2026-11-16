@@ -244,9 +244,10 @@ class Page extends SeriesPageBase
 
 		$parent_series = array();
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, ' . series_owner_fields() . ', ss.stars, g.gaining'.
+			'SELECT s.id, ns.name, s.flags, ' . series_owner_fields() . ', ss.stars, g.gaining'.
 			' FROM series_series ss'.
 			' JOIN series s ON s.id = ss.parent_id'.
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0'.
 			series_owner_join().
 			' JOIN gaining_versions g ON g.gaining_id = s.gaining_id AND g.version = s.gaining_version'.
 			' WHERE ss.child_id = ?', $this->id);

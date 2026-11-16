@@ -37,7 +37,7 @@ class Page extends SeriesPageBase
 
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
@@ -53,6 +53,7 @@ class Page extends SeriesPageBase
 		$condition = new SQL(
 			' FROM series_series ss'.
 			' JOIN series s ON s.id = ss.child_id' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			series_owner_join().
 			' WHERE ss.parent_id IN ('.$subseries_csv.')');
 		if ($this->future)
@@ -101,7 +102,7 @@ class Page extends SeriesPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT DISTINCT s.id, s.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
+			'SELECT DISTINCT s.id, ns.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
 			$condition);
 		if ($this->future)

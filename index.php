@@ -332,9 +332,10 @@ class Page extends GeneralPageBase
 		
 		$this->max_series = 0;
 		$query = new DbQuery(
-			'SELECT t.id, s.id, s.name, s.flags, st.stars'.
+			'SELECT t.id, s.id, ns.name, s.flags, st.stars'.
 			' FROM series_tournaments st'.
 			' JOIN series s ON s.id = st.series_id'.
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0'.
 			' JOIN tournaments t ON t.id = st.tournament_id'.
 			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
 			' WHERE t.id IN (' . $this->tournaments_list . ')'.
@@ -419,7 +420,7 @@ class Page extends GeneralPageBase
 	
 	private function show_seriess($condition)
 	{
-		global $_profile;
+		global $_profile, $_lang;
 
 		// Every league series, and of the club ones only those run by a club the visitor belongs to.
 		// soc is the owning club from series_owner_join(), so a closed one is left out.
@@ -428,7 +429,8 @@ class Page extends GeneralPageBase
 		// to the main page of the club or the league running them, not to this one - which is also
 		// why show_series() below prints the dates of whatever it is given without asking.
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, ' . series_owner_fields() . ' FROM series s' .
+			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.langs, ' . series_owner_fields() . ' FROM series s' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			series_owner_join() .
 			' WHERE s.start_time + s.duration > UNIX_TIMESTAMP() AND s.start_time <> ' . SERIES_INFINITE_START .
 			' AND (s.league_id IS NOT NULL');
@@ -439,7 +441,7 @@ class Page extends GeneralPageBase
 				' AND (soc.flags & ' . CLUB_FLAG_CLOSED . ') = 0)', $_profile->user_id);
 		}
 		$query->add(')');
-		$query->add(' ORDER BY s.flags & ' . SERIES_FLAG_PINNED .' DESC, s.start_time + s.duration, s.name, s.id LIMIT ' . (SERIES_COLUMN_COUNT * SERIES_ROW_COUNT));
+		$query->add(' ORDER BY s.flags & ' . SERIES_FLAG_PINNED .' DESC, s.start_time + s.duration, ns.name, s.id LIMIT ' . (SERIES_COLUMN_COUNT * SERIES_ROW_COUNT));
 		
 		$series_count = 0;
 		$column_count = 0;

@@ -311,10 +311,11 @@ class ApiPage extends GetApiPageBase
 			$index = 0;
 			$tournament = $tournaments[0];
 			$query = new DbQuery(
-				'SELECT t.id, s.id, s.name, sol.id, nsol.name, soc.id, nsoc.name, st.stars'.
+				'SELECT t.id, s.id, ns.name, sol.id, nsol.name, soc.id, nsoc.name, st.stars'.
 				' FROM series_tournaments st'.
 				' JOIN tournaments t ON t.id = st.tournament_id'.
 				' JOIN series s ON s.id = st.series_id'.
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$lang.') <> 0'.
 				series_owner_join('s', $lang).
 				' WHERE t.id IN ('.$tournaments_list.') '.
 				' ORDER BY t.start_time DESC, t.id DESC');

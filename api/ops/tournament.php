@@ -30,13 +30,14 @@ function send_series_notification($filename, $tournament_id, $tournament_names, 
 	// told about a decision somebody else made - they look when they want to know. The query
 	// returns no rows for such a series, because its league_id is null.
 	$query = new DbQuery(
-		'SELECT u.id, nu.name, u.email, u.def_lang, s.name, l.id, nl.name, nc.name'.
+		'SELECT u.id, nu.name, u.email, u.def_lang, ns.name, l.id, nl.name, nc.name'.
 		' FROM series s' .
 		' JOIN leagues l ON l.id = s.league_id' .
 		' JOIN league_managers lm ON lm.league_id = s.league_id' .
 		' JOIN users u ON u.id = lm.user_id' .
 		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0 AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0'.
 		' JOIN names nl ON nl.id = l.name_id AND (nl.langs & u.def_lang) <> 0'.
+		' JOIN names ns ON ns.id = s.name_id AND (ns.langs & u.def_lang) <> 0'.
 		' JOIN clubs c ON c.id = ?'.
 		' JOIN names nc ON nc.id = c.name_id AND (nc.langs & u.def_lang) <> 0'.
 		' WHERE s.id = ?', $club_id, $series->id);

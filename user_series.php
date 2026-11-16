@@ -11,10 +11,10 @@ class Page extends UserPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		$timezone = get_timezone();
 		
-		$condition = new SQL(' FROM series_places sp JOIN series s ON s.id = sp.series_id WHERE sp.user_id = ? AND sp.cut_stages = 0', $this->id);
+		$condition = new SQL(' FROM series_places sp JOIN series s ON s.id = sp.series_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE sp.user_id = ? AND sp.cut_stages = 0', $this->id);
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$condition->add(' AND s.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
@@ -34,7 +34,7 @@ class Page extends UserPageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs, sp.place, sp.score, sp.tournaments, sp.games, sp.wins',
+			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.langs, sp.place, sp.score, sp.tournaments, sp.games, sp.wins',
 			$condition);
 		$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);

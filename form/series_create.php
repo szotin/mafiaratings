@@ -51,7 +51,9 @@ try
 	$owner_pic->show(ICONS_DIR, false);
 	echo '</td><td align="center"><b>' . $owner_name . '</b></td></tr></table></td></tr>';
 	
-	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value=""></td></tr>';
+	echo '<tr><td width="240" valign="top">' . get_label('Series name') . ':</td><td>';
+	Names::show_control(new Names(0, get_label('Series name'), NULL, 0, NULL, 'name', false));
+	echo '</td></tr>';
 
 	// The type is not a property of a series: it follows from the three rows below. Picking one
 	// here fills them in with the shape such a series usually has, and changing any of them shows
@@ -351,7 +353,6 @@ try
 			op: "create",
 			league_id: <?php echo $league_id; ?>,
 			club_id: <?php echo $club_id; ?>,
-			name: $("#form-name").val(),
 			// The three properties a series is made of. The type is not sent: the op derives it
 			// from them, which is what keeps the two sides from ever disagreeing about it.
 			max_stars: $('#form-max-stars').val(),
@@ -386,6 +387,7 @@ try
 			params['parent_series'] = JSON.stringify(series);
 		}
 
+		nameControl.fillRequest(params);
 		json.post("api/ops/series.php", params, onSuccess);
 	}
 	

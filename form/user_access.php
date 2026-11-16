@@ -44,7 +44,7 @@ try
 	else if (isset($_REQUEST['series_id']))
 	{
 		$series_id = (int)$_REQUEST['series_id'];
-		list($league_id, $club_id, $name, $user_flags) = Db::record(get_label('series'), 'SELECT s.league_id, s.club_id, s.name, sr.flags FROM series_regs sr JOIN series s ON s.id = sr.series_id WHERE sr.series_id = ? AND sr.user_id = ?', $series_id, $user_id);
+		list($league_id, $club_id, $name, $user_flags) = Db::record(get_label('series'), 'SELECT s.league_id, s.club_id, ns.name, sr.flags FROM series_regs sr JOIN series s ON s.id = sr.series_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE sr.series_id = ? AND sr.user_id = ?', $series_id, $user_id);
 		check_series_permissions(new SeriesOwner($league_id, $club_id), $series_id);
 		$exhibition_flag = USER_FLAG_EXHIBITION_PLAYER;
 		dialog_title(get_label('[0] permissions in [1]', $user_name, $name));

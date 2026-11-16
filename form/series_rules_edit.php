@@ -15,7 +15,7 @@ try
 	}
 	$series_id = (int)$_REQUEST['series_id'];
 	
-	list($series_rules, $series_name, $league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT rules, name, league_id, club_id FROM series WHERE id = ?', $series_id);
+	list($series_rules, $series_name, $league_id, $club_id) = Db::record(get_label('sеriеs'), 'SELECT s.rules, n.name, s.league_id, s.club_id FROM series s JOIN names n ON n.id = s.name_id AND (n.langs & '.$_lang.') <> 0 WHERE s.id = ?', $series_id);
 	$owner = new SeriesOwner($league_id, $club_id);
 	check_series_permissions($owner, $series_id);
 	

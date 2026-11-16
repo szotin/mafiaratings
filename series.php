@@ -39,7 +39,7 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
@@ -58,6 +58,7 @@ class Page extends GeneralPageBase
 
 		$condition = new SQL(
 			' FROM series s' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			series_owner_join());
 		if ($this->future)
 		{
@@ -107,7 +108,7 @@ class Page extends GeneralPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
+			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
 			$condition);
 		if ($this->future)

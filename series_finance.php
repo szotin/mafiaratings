@@ -136,9 +136,10 @@ class Page extends SeriesPageBase
 		if ($cs_tournaments != '')
 		{
 			$query = new DbQuery(
-				'SELECT st.tournament_id, st.stars, s.id, s.name, s.flags, ' . series_owner_fields() .
+				'SELECT st.tournament_id, st.stars, s.id, ns.name, s.flags, ' . series_owner_fields() .
 				' FROM series_tournaments st' .
 				' JOIN series s ON s.id = st.series_id' .
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 				' JOIN tournaments t ON t.id = st.tournament_id' .
 				series_owner_join() .
 				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id');

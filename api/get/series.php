@@ -12,7 +12,7 @@ class ApiPage extends GetApiPageBase
 {
 	protected function prepare_response()
 	{
-		global $_profile;
+		global $_profile, $_lang;
 		
 		$name_contains = get_optional_param('name_contains');
 		$name_starts = get_optional_param('name_starts');
@@ -37,14 +37,14 @@ class ApiPage extends GetApiPageBase
 		if (!empty($name_contains))
 		{
 			$name_contains = '%' . $name_contains . '%';
-			$condition->add(' AND s.name LIKE(?)', $name_contains);
+			$condition->add(' AND s.name_id IN (SELECT id FROM names WHERE name LIKE(?))', $name_contains);
 		}
 		
 		if (!empty($name_starts))
 		{
 			$name_starts1 = '% ' . $name_starts . '%';
 			$name_starts2 = $name_starts . '%';
-			$condition->add(' AND (s.name LIKE(?) OR s.name LIKE(?))', $name_starts1, $name_starts2);
+			$condition->add(' AND s.name_id IN (SELECT id FROM names WHERE name LIKE(?) OR name LIKE(?))', $name_starts1, $name_starts2);
 		}
 
 		// The date filters below answer four questions about a series, and a recurring tournament has
@@ -177,7 +177,8 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.max_stars, s.stages, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
+				'SELECT s.id, ns.name, s.flags, s.langs, s.start_time, s.duration, s.max_stars, s.stages, s.notes, s.rules, ' . series_owner_fields() . ' FROM series s' .
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 				series_owner_join(), $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
@@ -252,7 +253,8 @@ class ApiPage extends GetApiPageBase
 		else
 		{
 			$query = new DbQuery(
-				'SELECT s.id, s.name, s.flags, s.langs, s.start_time, s.duration, s.max_stars, s.stages, s.notes, s.league_id, s.club_id FROM series s', $condition);
+				'SELECT s.id, ns.name, s.flags, s.langs, s.start_time, s.duration, s.max_stars, s.stages, s.notes, s.league_id, s.club_id FROM series s' .
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0', $condition);
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 			if ($page_size > 0)
 			{

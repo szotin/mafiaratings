@@ -19,7 +19,7 @@ class Page extends ClubPageBase
 {
 	protected function show_body()
 	{
-		global $_profile, $_page;
+		global $_profile, $_page, $_lang;
 		$timezone = get_timezone();
 
 		$filter = FLAG_FILTER_DEFAULT;
@@ -39,7 +39,7 @@ class Page extends ClubPageBase
 			$future = ((int)$_REQUEST['future'] > 0);
 		}
 
-		$condition = new SQL(' FROM series s WHERE s.club_id = ?', $this->id);
+		$condition = new SQL(' FROM series s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE s.club_id = ?', $this->id);
 		if ($future)
 		{
 			$condition->add(' AND s.start_time + s.duration >= UNIX_TIMESTAMP()');
@@ -102,7 +102,7 @@ class Page extends ClubPageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, s.start_time, s.duration, s.langs,' .
+			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.langs,' .
 			' (SELECT count(*) FROM series_tournaments _ts JOIN tournaments _t ON _t.id = _ts.tournament_id WHERE _ts.series_id = s.id AND (_t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0) as tournaments',
 			$condition);
 		if ($future)

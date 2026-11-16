@@ -878,8 +878,8 @@ class SeriesPageBase extends PageBase
 
 	protected function prepare()
 	{
-		global $_profile;
-		
+		global $_profile, $_lang;
+
 		if (!isset($_REQUEST['id']))
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('sеriеs')));
@@ -893,8 +893,9 @@ class SeriesPageBase extends PageBase
 			$this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff) =
 		Db::record(
 			get_label('sеriеs'),
-			'SELECT s.name, ' . series_owner_fields() . ', s.start_time, s.duration, s.max_stars, s.stages, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version,' .
+			'SELECT ns.name, ' . series_owner_fields() . ', s.start_time, s.duration, s.max_stars, s.stages, s.langs, s.notes, s.flags, s.rules, s.gaining_id, s.gaining_version,' .
 				' s.rating_sum, s.rating_sum_20, s.traveling_distance, s.guest_coeff FROM series s' .
+				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 				series_owner_join() .
 				' WHERE s.id = ?',
 			$this->id);
@@ -907,9 +908,10 @@ class SeriesPageBase extends PageBase
 		// The series this one feeds into. Their logos go next to the owner's in the page header.
 		$this->parent_series = array();
 		$query = new DbQuery(
-			'SELECT s.id, s.name, s.flags, ' . series_owner_fields() .
+			'SELECT s.id, ns.name, s.flags, ' . series_owner_fields() .
 			' FROM series_series ss' .
 			' JOIN series s ON s.id = ss.parent_id' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			series_owner_join() .
 			' WHERE ss.child_id = ? ORDER BY s.start_time, s.id', $this->id);
 		while ($row = $query->next())

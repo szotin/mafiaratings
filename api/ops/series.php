@@ -9,11 +9,24 @@ require_once '../../include/datetime.php';
 require_once '../../include/scoring.php';
 require_once '../../include/image.php';
 require_once '../../include/game.php';
+require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
 
 class ApiPage extends OpsApiPageBase
 {
+	// The names of the series from the request - name, and name_xx for the languages that have their own. As with
+	// tournaments, series names are not unique and may hold any characters.
+	private function get_names()
+	{
+		$names = new Names(0, get_label('Series name'), NULL, 0, NULL, 'name', false);
+		if (count($names->names) == 0 || $names->names[0]->name == '')
+		{
+			throw new Exc(get_label('Please enter [0].', get_label('Series name')));
+		}
+		return $names;
+	}
+
 	//-------------------------------------------------------------------------------------------------------
 	// create
 	//-------------------------------------------------------------------------------------------------------
@@ -67,11 +80,7 @@ class ApiPage extends OpsApiPageBase
 		
 		$parent_series = json_decode(get_optional_param('parent_series', '[]'));
 		
-		$name = get_required_param('name');
-		if (empty($name))
-		{
-			throw new Exc(get_label('Please enter [0].', get_label('Series name')));
-		}
+		$names = $this->get_names();
 		
 		$fee = (int)get_optional_param('fee', -1);
 		if ($fee < 0)
@@ -160,12 +169,13 @@ class ApiPage extends OpsApiPageBase
 
 		Db::exec(
 			get_label('sеriеs'),
-			'INSERT INTO series (name, league_id, club_id, start_time, duration, max_stars, stages, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-			$name, $league_id, $club_id, $start, $duration, $max_stars, $stages, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
+			'INSERT INTO series (name_id, league_id, club_id, start_time, duration, max_stars, stages, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			$names->get_id(), $league_id, $club_id, $start, $duration, $max_stars, $stages, $langs, $notes, $fee, $currency_id, $flags, $owner_rules, $gaining_id, $gaining_version);
 		list ($series_id) = Db::record(get_label('sеriеs'), 'SELECT LAST_INSERT_ID()');
 
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $names->get_id();
 		$log_details->league_id = $league_id;
 		$log_details->club_id = $club_id;
 		$log_details->start = $start;
@@ -211,7 +221,7 @@ class ApiPage extends OpsApiPageBase
 	function create_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Create series. A series belongs either to a league or to a club - pass exactly one of <q>league_id</q> and <q>club_id</q>.');
-		$help->request_param('name', 'Series name.');
+		Names::help($help, 'Series', false);
 		$help->request_param('league_id', 'League id. Requires manager permissions in that league.', 'the series belongs to the club passed in <q>club_id</q>.');
 		$help->request_param('club_id', 'Club id. Requires manager permissions in that club.', 'the series belongs to the league passed in <q>league_id</q>.');
 		$series_help = $help->request_param('parent_series', 'Json array of series that this series belongs to. For example "[{id:2,stars:3},{id:4,stars:1}]". Ignored for a series with no dates: a parent series is one this series runs within, and such a series has no period to run within.', 'series does not belong to any series - same as "[]".');
@@ -252,8 +262,8 @@ class ApiPage extends OpsApiPageBase
 		$timezone = get_timezone();
 		Db::begin();
 		
-		list ($league_id, $club_id, $old_name, $old_start, $old_duration, $old_max_stars, $old_stages, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
-			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name, start_time, duration, max_stars, stages, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
+		list ($league_id, $club_id, $old_name_id, $old_start, $old_duration, $old_max_stars, $old_stages, $old_langs, $old_notes, $old_fee, $old_currency_id, $old_flags, $old_gaining_id, $old_gaining_version) =
+			Db::record(get_label('sеriеs'), 'SELECT league_id, club_id, name_id, start_time, duration, max_stars, stages, langs, notes, fee, currency_id, flags, gaining_id, gaining_version FROM series WHERE id = ?', $series_id);
 		$old_max_stars = (int)$old_max_stars;
 		$old_stages = (int)$old_stages;
 
@@ -272,7 +282,17 @@ class ApiPage extends OpsApiPageBase
 		}
 		$gaining_version = (int)get_optional_param('gaining_version', $old_gaining_version);
 		
-		$name = get_optional_param('name', $old_name);
+		// Without a name in the request the series keeps the names it has.
+		if (isset($_REQUEST['name']))
+		{
+			$names = $this->get_names();
+			$name_id = $names->get_id();
+		}
+		else
+		{
+			$name_id = $old_name_id;
+			$names = new Names($name_id, get_label('Series name'));
+		}
 		$notes = get_optional_param('notes', $old_notes);
 		$langs = get_optional_param('langs', $old_langs);
 		$given_flags = get_optional_param('flags', NULL);
@@ -552,14 +572,15 @@ class ApiPage extends OpsApiPageBase
 			
 		Db::exec(
 			get_label('sеriеs'), 
-			'UPDATE series SET name = ?, start_time = ?, duration = ?, max_stars = ?, stages = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
-			$name, $start, $duration, $max_stars, $stages, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
+			'UPDATE series SET name_id = ?, start_time = ?, duration = ?, max_stars = ?, stages = ?, langs = ?, notes = ?, fee = ?, currency_id = ?, flags = ?, gaining_id = ?, gaining_version = ? WHERE id = ?',
+			$name_id, $start, $duration, $max_stars, $stages, $langs, $notes, $fee, $currency_id, $flags, $gaining_id, $gaining_version, $series_id);
 		if (Db::affected_rows() > 0 || $parent_series_changed)
 		{
 			$log_details = new stdClass();
-			if ($name != $old_name)
+			if ($name_id != $old_name_id)
 			{
-				$log_details->name = $name;
+				$log_details->name = $names->to_string();
+				$log_details->name_id = $name_id;
 			}
 			if ($start != $old_start)
 			{
@@ -623,7 +644,7 @@ class ApiPage extends OpsApiPageBase
 	{
 		$help = new ApiHelp(PERMISSION_LEAGUE_MANAGER | PERMISSION_SERIES_MANAGER, 'Change series.');
 		$help->request_param('series_id', 'Series id.');
-		$help->request_param('name', 'Series name.', 'remains the same.');
+		Names::help($help, 'Series', true);
 		$help->request_param('max_stars', 'How many stars this series gives a tournament or a subseries entered into it, from 0 to ' . SERIES_MAX_STARS_LIMIT . '. Zero means the series does not grade its tournaments at all: it says which stage each of them belongs to instead. Lowering it leaves the stars already handed out alone.', 'remains the same.');
 		$help->request_param('flags', 'Series flags. What is played in the series is two of them, as a bit combination of: ' . SERIES_FLAG_PLAYS_TOURNAMENTS . ' - tournaments; ' . SERIES_FLAG_PLAYS_SERIES . ' - subseries. Naming the flags and naming neither of these is refused: there is no series that takes nothing. Leaving <q>flags</q> out altogether leaves the question alone. A kind the series already holds cannot be taken away: the tournaments or the subseries have to be taken off it first.', 'remain the same.');
 		$help->request_param('stages', 'How many stages the series has, from 1 to ' . SERIES_MAX_STAGES . '. See the create operation for the numbering. Lowering it leaves a tournament on a stage the series no longer has, and that tournament reads as the base stage from then on.', 'remains the same.');

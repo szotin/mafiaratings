@@ -21,11 +21,12 @@ try
 	$series_id = (int)$_REQUEST['id'];
 	$timezone = get_timezone();	
 	
-	list ($league_id, $club_id, $name, $start_time, $duration, $max_stars, $stages, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
+	list ($league_id, $club_id, $name_id, $name, $start_time, $duration, $max_stars, $stages, $langs, $notes, $flags, $owner_langs, $owner_flags, $gaining_id, $gaining_version, $fee, $currency_id) =
 		Db::record(get_label('sеriеs'),
-			'SELECT s.league_id, s.club_id, s.name, s.start_time, s.duration, s.max_stars, s.stages, s.langs, s.notes, s.flags,' .
+			'SELECT s.league_id, s.club_id, s.name_id, ns.name, s.start_time, s.duration, s.max_stars, s.stages, s.langs, s.notes, s.flags,' .
 			' COALESCE(sol.langs, soc.langs), COALESCE(sol.flags, soc.flags),' .
 			' s.gaining_id, s.gaining_version, s.fee, s.currency_id FROM series s' .
+			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
 			series_owner_join() .
 			' WHERE s.id = ?', $series_id);
 	$currency_id = (int)$currency_id;
@@ -58,7 +59,9 @@ try
 	$series_list .= '}';
 	
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="240">' . get_label('Series name') . ':</td><td><input id="form-name" value="' . $name . '"></td>';
+	echo '<tr><td width="240" valign="top">' . get_label('Series name') . ':</td><td>';
+	Names::show_control(new Names($name_id, get_label('Series name')));
+	echo '</td>';
 	
 	echo '<td align="center" valign="top" rowspan="14" width="120">';
 	start_upload_logo_button($series_id);
@@ -414,7 +417,6 @@ try
 		{
 			op: "change",
 			series_id: <?php echo $series_id; ?>,
-			name: $("#form-name").val(),
 			// The three properties a series is made of. The type is not sent: the op derives it
 			// from them, which is what keeps the two sides from ever disagreeing about it.
 			max_stars: $('#form-max-stars').val(),
@@ -450,6 +452,7 @@ try
 			params['parent_series'] = JSON.stringify(series);
 		}
 
+		nameControl.fillRequest(params);
 		json.post("api/ops/series.php", params, onSuccess);
 	}
 	
