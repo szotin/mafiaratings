@@ -7,6 +7,7 @@ require_once 'include/series.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/tournament.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -103,8 +104,10 @@ class Page extends SeriesPageBase
 		$colunm_counter = 0;
 		$query = new DbQuery(
 			'SELECT DISTINCT s.id, ns.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
-			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
-			$condition);
+			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments,' .
+			// What the subseries is worth in this series. One further down has no link to it, and no stars here.
+			' (SELECT stars FROM series_series WHERE parent_id = ? AND child_id = s.id) as stars',
+			$this->id, $condition);
 		if ($this->future)
 		{
 			$query->add(' ORDER BY s.start_time, s.id');
@@ -125,7 +128,7 @@ class Page extends SeriesPageBase
 		$series_pic = new Picture(SERIES_PICTURE);
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
+			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count, $stars) = $row;
 			$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 			$playing = ($now >= $series_time && $now < $series_time + $series_duration && !series_is_infinite($series_time));
 			if ($playing)
@@ -140,6 +143,10 @@ class Page extends SeriesPageBase
 			echo '<td width="60" class="dark" align="center" valign="center">';
 			$series_pic->set($series_id, $series_name, $series_flags);
 			$series_pic->show(ICONS_DIR, true, 60);
+			if ($stars > 0)
+			{
+				echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($stars) . '</font>';
+			}
 			echo '</td>';
 			
 			echo '<td><table width="100%" class="transp"><tr>';

@@ -49,10 +49,9 @@ class Page extends GeneralPageBase
 		{
 			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
 		}
-		echo '</td></tr>';
 		// The type filter belongs on both tabs: a recurring tournament is always under way, so the
-		// future tab is exactly where one shows up.
-		echo '<tr><td>';
+		// future tab is exactly where one shows up. It keeps to the right, out of the way of the others.
+		echo '</td><td align="right" nowrap>';
 		show_series_type_filter($this->types);
 		echo '</td></tr></table></p>';
 
