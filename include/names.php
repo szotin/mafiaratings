@@ -131,27 +131,49 @@ function check_nickname($nick, $event_id)
 	}
 }
 
-function check_address_name($name, $club_id, $address_id = -1)
+// The addresses of a club are told apart by their names: no other address of the club may have $name in one of the
+// languages $langs.
+function check_address_name($name, $club_id, $address_id = -1, $langs = DB_ALL_LANGS)
 {
-	global $_profile;
-
 	if ($name == '')
 	{
 		throw new Exc(get_label('Please enter [0].', get_label('address name')));
 	}
 
-	if ($address_id > 0)
-	{
-		$query = new DbQuery('SELECT name FROM addresses WHERE name = ? AND club_id = ? AND id <> ?', $name, $club_id, $address_id);
-	}
-	else
-	{
-		$query = new DbQuery('SELECT name FROM addresses WHERE name = ? AND club_id = ?', $name, $club_id);
-	}
+	$query = new DbQuery(
+		'SELECT a.id FROM addresses a JOIN names n ON n.id = a.name_id' .
+		' WHERE a.club_id = ? AND n.name = ? AND (n.langs & ?) <> 0 AND a.id <> ?',
+		$club_id, $name, $langs, $address_id);
 	if ($query->next())
 	{
         throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Address name'), $name));
 	}
+}
+
+// The names of an address from the request - name, and name_xx for the languages that have their own - checked
+// with check_address_name(). They are kept html-escaped, as address names always were. An address given no name
+// is called by $default, its street address, which the caller has already escaped.
+function get_address_names($club_id, $default, $address_id = -1)
+{
+	$names = new Names(0, get_label('Address name'), NULL, 0, NULL, 'name', false);
+	foreach ($names->names as $n)
+	{
+		$n->name = htmlspecialchars($n->name, ENT_QUOTES);
+	}
+	if (count($names->names) == 0)
+	{
+		$names = new Names(-1, get_label('Address name'), NULL, 0, NULL, $default, false);
+	}
+	else if ($names->names[0]->name == '')
+	{
+		$names->names[0]->name = $default;
+	}
+
+	foreach ($names->names as $n)
+	{
+		check_address_name($n->name, $club_id, $address_id, $n->langs);
+	}
+	return $names;
 }
 
 class Names

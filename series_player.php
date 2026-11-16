@@ -659,7 +659,7 @@ class Page extends SeriesPageBase
 		echo '</td><td width="48">'.get_label('Club').'</td><td width="240">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
 		
 		$query = new DbQuery(
-			'SELECT g.id, c.id, nc.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, ne.name, e.flags, t.id, nt.name, t.flags, a.id, a.name, a.flags, g.table_num, g.game_num FROM players p' .
+			'SELECT g.id, c.id, nc.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, ne.name, e.flags, t.id, nt.name, t.flags, a.id, na.name, a.flags, g.table_num, g.game_num FROM players p' .
 			' JOIN games g ON g.id = p.game_id' .
 			' JOIN clubs c ON c.id = g.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
@@ -669,6 +669,7 @@ class Page extends SeriesPageBase
 			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN series_tournaments s ON s.tournament_id = g.tournament_id' .
 			' JOIN addresses a ON a.id = e.address_id' .
+			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
 			' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
 			' JOIN cities ct ON ct.id = a.city_id' .

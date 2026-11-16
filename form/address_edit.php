@@ -19,10 +19,11 @@ try
 	}
 	$id = $_REQUEST['id'];
 	
-	list ($name, $address, $map_url, $flags, $city, $country, $club_id) = 
+	list ($name_id, $name, $address, $map_url, $flags, $city, $country, $club_id) = 
 		Db::record(
 			get_label('address'), 
-			'SELECT a.name, a.address, a.map_url, a.flags, ni.name, no.name, a.club_id FROM addresses a' .
+			'SELECT a.name_id, na.name, a.address, a.map_url, a.flags, ni.name, no.name, a.club_id FROM addresses a' .
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN cities i ON i.id = a.city_id' .
 				' JOIN countries o ON o.id = i.country_id' .
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
@@ -32,7 +33,9 @@ try
 	check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_CLUB_MANAGER, $club_id);
 			
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="120">' . get_label('Address name') . ':</td><td><input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></td>';
+	echo '<tr><td width="120" valign="top">' . get_label('Address name') . ':</td><td>';
+	Names::show_control(new Names($name_id, get_label('Address name')));
+	echo '</td>';
 	
 	echo '<td align="center" valign="top" rowspan="5">';
 	start_upload_logo_button($id);
@@ -65,11 +68,11 @@ try
 		{
 			op: "change"
 			, address_id: <?php echo $id; ?>
-			, name: $("#form-name").val()
 			, address: $("#form-address").val()
 			, city: $("#form-city").val()
 			, country: $("#form-country").val()
 		};
+		nameControl.fillRequest(params);
 		json.post("api/ops/address.php", params, onSuccess);
 	}
 	

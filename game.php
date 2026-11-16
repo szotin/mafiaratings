@@ -175,12 +175,13 @@ class Page extends PageBase
 		$club_pic = new Picture(CLUB_PICTURE);
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
 		$query = new DbQuery(
-			'SELECT c.id, nc.name, c.flags, e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, nt.name, t.flags, a.id, a.flags, a.address, a.map_url, a.name' .
+			'SELECT c.id, nc.name, c.flags, e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, nt.name, t.flags, a.id, a.flags, a.address, a.map_url, na.name' .
 			' FROM events e' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON e.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
+			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON a.city_id = ct.id' .

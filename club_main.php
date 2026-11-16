@@ -400,9 +400,10 @@ class Page extends ClubPageBase
 		// tournaments and events
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, c.timezone, a.id, a.flags, a.address, a.name FROM tournaments t' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, c.timezone, a.id, a.flags, a.address, na.name FROM tournaments t' .
 				' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON t.address_id = a.id' .
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN cities c ON c.id = a.city_id' .
 				' WHERE t.start_time + t.duration > UNIX_TIMESTAMP() AND t.club_id = ? ORDER BY t.start_time + t.duration, nt.name, t.id LIMIT ' . (COLUMN_COUNT * ROW_COUNT),
 			$this->id);
@@ -416,9 +417,10 @@ class Page extends ClubPageBase
 		if ($events_count > 0)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, nt.name, t.flags, a.id, a.flags, a.address, a.name FROM events e' .
+				'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, nt.name, t.flags, a.id, a.flags, a.address, na.name FROM events e' .
 					' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 					' JOIN addresses a ON e.address_id = a.id' .
+					' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 					' JOIN clubs c ON e.club_id = c.id' .
 					' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 					' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .

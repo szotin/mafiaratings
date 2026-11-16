@@ -32,13 +32,6 @@ class ApiPage extends OpsApiPageBase
 		}
 		$address = htmlspecialchars($address, ENT_QUOTES);
 		
-		$name = get_optional_param('name');
-		if (empty($name))
-		{
-			$name = $address;
-		}
-		$name = htmlspecialchars($name, ENT_QUOTES);
-		
 		$city_id = (int)get_optional_param('city_id', 0);
 		
 		Db::begin();
@@ -47,17 +40,18 @@ class ApiPage extends OpsApiPageBase
 			$city_id = retrieve_city_id(get_required_param('city'), retrieve_country_id(get_required_param('country'), $club->timezone));
 		}
 
-		check_address_name($name, $club_id);
+		$names = get_address_names($club_id, $address);
 
 		Db::exec(
-			get_label('address'), 
-			'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
-			$name, $club_id, $address, $city_id);
+			get_label('address'),
+			'INSERT INTO addresses (name_id, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
+			$names->get_id(), $club_id, $address, $city_id);
 		list ($addr_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
 		list ($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 		
 		$log_details = new stdClass();
-		$log_details->name = $name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $names->get_id();
 		$log_details->address = $address;
 		$log_details->city = $city_name;
 		$log_details->city_id = $city_id;
@@ -79,7 +73,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Create address.');
 		$help->request_param('club_id', 'Club id.');
 		$help->request_param('address', 'Street address.');
-		$help->request_param('name', 'Address name.', '<q>address</q> is used as a name.');
+		Names::help($help, 'Address', false); // unique in the club; when missing, the address is used as the name
 		$help->request_param('city_id', 'City id.', '<q>city</q> and <q>country</q> are used to find/create city.');
 		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', '<q>city_id</q> must be set.');
 		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', '<q>city_id</q> must be set.');
@@ -95,7 +89,7 @@ class ApiPage extends OpsApiPageBase
 		global $_profile;
 		
 		$address_id = (int)get_required_param('address_id');
-		list($club_id, $old_name, $old_address, $old_city_id, $old_flags) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id, flags FROM addresses WHERE id = ?', $address_id);
+		list($club_id, $old_name_id, $old_address, $old_city_id, $old_flags) = Db::record(get_label('club'), 'SELECT club_id, name_id, address, city_id, flags FROM addresses WHERE id = ?', $address_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		if (isset($_REQUEST['address']))
@@ -111,20 +105,14 @@ class ApiPage extends OpsApiPageBase
 			$address = $old_address;
 		}
 		
+		Db::begin();
+		// Without a name in the request the address keeps the names it has.
+		$name_id = $old_name_id;
 		if (isset($_REQUEST['name']))
 		{
-			$name = htmlspecialchars($_REQUEST['name'], ENT_QUOTES);
-			if (empty($name))
-			{
-				$name = $address;
-			}
+			$names = get_address_names($club_id, $address, $address_id);
+			$name_id = $names->get_id();
 		}
-		else
-		{
-			$name = $old_name;
-		}
-		Db::begin();
-		check_address_name($name, $club_id, $address_id);
 		if (isset($_REQUEST['city_id']))
 		{
 			$city_id = (int)$_REQUEST['city_id'];
@@ -153,15 +141,16 @@ class ApiPage extends OpsApiPageBase
 		
 		Db::exec(
 			get_label('address'), 
-			'UPDATE addresses SET name = ?, address = ?, city_id = ?, club_id = ?, flags = ? WHERE id = ?',
-			$name, $address, $city_id, $club_id, $flags, $address_id);
+			'UPDATE addresses SET name_id = ?, address = ?, city_id = ?, club_id = ?, flags = ? WHERE id = ?',
+			$name_id, $address, $city_id, $club_id, $flags, $address_id);
 		if (Db::affected_rows() > 0)
 		{
 			list($city_name) = Db::record(get_label('city'), 'SELECT n.name FROM cities c JOIN names n ON n.id = c.name_id AND (n.langs & ' . LANG_ENGLISH . ') <> 0 WHERE c.id = ?', $city_id);
 			$log_details = new stdClass();
-			if ($name != $old_name)
+			if ($name_id != $old_name_id)
 			{
-				$log_details->name = $name;
+				$log_details->name = $names->to_string();
+				$log_details->name_id = $name_id;
 			}
 			if ($address != $old_address)
 			{
@@ -192,7 +181,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, 'Change address.');
 		$help->request_param('address_id', 'Address id.');
 		$help->request_param('address', 'Street address.', 'remains the same.');
-		$help->request_param('name', 'Address name.', 'remains the same.');
+		Names::help($help, 'Address', true);
 		$help->request_param('city_id', 'City id.', '<q>city</q> and <q>country</q> are checked. If at least one of them is missing, city remains the same.');
 		$help->request_param('city', 'City name. Used only when <q>city_id</q> is not set. If a city with this name is not found, new city is created.', 'city remains the same unless <q>city_id</q> is set.');
 		$help->request_param('country', 'Country name. Used only when <q>city_id</q> is not set. If a country with this name is not found, new country is created.', 'city remains the same unless <q>city_id</q> is set.');
@@ -207,7 +196,7 @@ class ApiPage extends OpsApiPageBase
 	function close_op()
 	{
 		$address_id = (int)get_required_param('address_id');
-		list($club_id, $name, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
+		list($club_id, $name_id, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name_id, address, city_id FROM addresses WHERE id = ?', $address_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		Db::begin();
@@ -233,7 +222,7 @@ class ApiPage extends OpsApiPageBase
 	function restore_op()
 	{
 		$address_id = (int)get_required_param('address_id');
-		list($club_id, $name, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name, address, city_id FROM addresses WHERE id = ?', $address_id);
+		list($club_id, $name_id, $address, $city_id) = Db::record(get_label('club'), 'SELECT club_id, name_id, address, city_id FROM addresses WHERE id = ?', $address_id);
 		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club_id);
 		
 		Db::begin();

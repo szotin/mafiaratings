@@ -3991,7 +3991,7 @@ class Game
 			{
 				case 0:
 					// create event
-					list($address_id, $address_name, $timezone, $address_count) = Db::record(get_label('address'), 'SELECT a.id, a.name, c.timezone, (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY cnt DESC, a.id DESC LIMIT 1', $data->clubId);
+					list($address_id, $address_name, $timezone, $address_count) = Db::record(get_label('address'), 'SELECT a.id, na.name, c.timezone, (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0 JOIN cities c ON c.id = a.city_id WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY cnt DESC, a.id DESC LIMIT 1', $data->clubId);
 					list($scoring_version) = Db::record(get_label('scoring'), 'SELECT version FROM scoring_versions WHERE scoring_id = ? ORDER BY version DESC LIMIT 1', $club_scoring_id);
 					
 					$event_name = get_label('Regular Event');

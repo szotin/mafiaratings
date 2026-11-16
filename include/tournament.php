@@ -127,7 +127,7 @@ class TournamentPageBase extends PageBase
 		Db::record(
 			get_label('tournament'),
 			'SELECT nt.name, c.id, nc.name, c.flags,' .
-				' a.id, a.name, a.address, a.map_url, a.flags,' . 
+				' a.id, na.name, a.address, a.map_url, a.flags,' . 
 				' ct.id, nct.name, cr.id, ncr.name, ct.timezone,' . 
 				' t.start_time, t.duration, t.langs, t.notes, t.fee, t.currency_id, cu.pattern,'.
 				' t.scoring_id, t.scoring_version, t.normalizer_id, t.normalizer_version, t.scoring_options,'.
@@ -137,6 +137,7 @@ class TournamentPageBase extends PageBase
 				' JOIN clubs c ON c.id = t.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = t.address_id' .
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' JOIN countries cr ON cr.id = ct.country_id' .
 				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .

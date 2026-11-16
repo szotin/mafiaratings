@@ -88,7 +88,7 @@ try
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="6h" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
-	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT a.id, n.name FROM addresses a JOIN names n ON n.id = a.name_id AND (n.langs & '.$_lang.') <> 0 WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY n.name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
 	echo '<option value="-1">' . get_label('New address') . '</option>';

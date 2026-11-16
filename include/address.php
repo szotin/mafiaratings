@@ -177,7 +177,8 @@ class AddressPageBase extends PageBase
 		list ($this->name, $this->address, $this->url, $this->flags, $this->club_id, $this->club_name, $this->club_langs, $this->scoring_id, $this->club_flags, $this->city_id, $this->city_name, $this->timezone, $this->country_id, $this->country_name) = 
 			Db::record(
 				get_label('address'),
-				'SELECT a.name, a.address, a.map_url, a.flags, a.club_id, nc.name, c.langs, c.scoring_id, c.flags, a.city_id, nct.name, ct.timezone, ct.country_id, ncr.name FROM addresses a' .
+				'SELECT na.name, a.address, a.map_url, a.flags, a.club_id, nc.name, c.langs, c.scoring_id, c.flags, a.city_id, nct.name, ct.timezone, ct.country_id, ncr.name FROM addresses a' .
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN clubs c ON c.id = a.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN cities ct ON ct.id = a.city_id' .

@@ -111,8 +111,8 @@ class ApiPage extends OpsApiPageBase
 		
 				Db::exec(
 					get_label('address'), 
-					'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
-					$sc_address, $club->id, $sc_address, $city_id);
+					'INSERT INTO addresses (name_id, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
+					Names::get_single_id($sc_address, get_label('Address name')), $club->id, $sc_address, $city_id);
 				list ($address_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
 				
 				$log_details = new stdClass();
@@ -722,7 +722,7 @@ class ApiPage extends OpsApiPageBase
 
 		if ($event_changed > 0)
 		{
-			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT a.name, c.timezone FROM addresses a JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $address_id);
+			list ($addr_name, $timezone) = Db::record(get_label('address'), 'SELECT na.name, c.timezone FROM addresses a JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0 JOIN cities c ON c.id = a.city_id WHERE a.id = ?', $address_id);
 			$log_details = new stdClass();
 			if ($name_id != $old_name_id)
 			{

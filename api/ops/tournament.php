@@ -284,8 +284,8 @@ class ApiPage extends OpsApiPageBase
 			
 			Db::exec(
 				get_label('address'), 
-				'INSERT INTO addresses (name, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
-				$address, $club_id, $address, $city_id);
+				'INSERT INTO addresses (name_id, club_id, address, map_url, city_id, flags) values (?, ?, ?, \'\', ?, 0)',
+				Names::get_single_id($address, get_label('Address name')), $club_id, $address, $city_id);
 			list ($address_id) = Db::record(get_label('address'), 'SELECT LAST_INSERT_ID()');
 			
 			$log_details = new stdClass();

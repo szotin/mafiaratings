@@ -29,7 +29,9 @@ try
 
 	echo '<table class="dialog_form" width="100%">';
 	
-	echo '<tr><td width="120">'.get_label('Address name').':</td><td><input id="form-name"></td></tr>';
+	echo '<tr><td width="120" valign="top">'.get_label('Address name').':</td><td>';
+	Names::show_control(new Names(0, get_label('Address name'), NULL, 0, NULL, 'name', false));
+	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', $country_name, 'form-city');
@@ -45,16 +47,16 @@ try
 	<script>
 	function commit(onSuccess)
 	{
-		json.post("api/ops/address.php",
+		var params =
 		{
 			op: "create"
 			, club_id: <?php echo $club_id; ?>
-			, name: $("#form-name").val()
 			, address: $("#form-address").val()
 			, city: $("#form-city").val()
 			, country: $("#form-country").val()
-		},
-		onSuccess);
+		};
+		nameControl.fillRequest(params);
+		json.post("api/ops/address.php", params, onSuccess);
 	}
 	</script>
 <?php

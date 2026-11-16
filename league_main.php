@@ -184,12 +184,13 @@ class Page extends LeaguePageBase
 		// tournaments
 		$tournaments = array();
 		$query = new DbQuery(
-			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.flags, a.address, a.name' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.flags, a.address, na.name' .
 			' FROM series_tournaments st' .
 			' JOIN tournaments t ON t.id = st.tournament_id' .
 			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN series s ON s.id = st.series_id' .
 			' JOIN addresses a ON t.address_id = a.id' .
+			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON ct.id = c.city_id' .

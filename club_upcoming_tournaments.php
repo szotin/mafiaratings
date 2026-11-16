@@ -45,10 +45,11 @@ class Page extends ClubPageBase
 			echo '</td>';
 		}
 		
-		$query = new DbQuery('SELECT t.id, nt.name, t.start_time, t.duration, t.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM tournaments t');
+		$query = new DbQuery('SELECT t.id, nt.name, t.start_time, t.duration, t.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, na.name FROM tournaments t');
 		$query->add(
 			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON t.address_id = a.id' .
+			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
 			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .

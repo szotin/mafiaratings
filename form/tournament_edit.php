@@ -92,7 +92,7 @@ try
 	echo '</td></tr>';
 	echo '</td></tr>';
 	
-	$query = new DbQuery('SELECT id, name FROM addresses WHERE club_id = ? AND (flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY name', $club_id);
+	$query = new DbQuery('SELECT a.id, na.name FROM addresses a JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0 WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY na.name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id">';
 	while ($row = $query->next())

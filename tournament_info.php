@@ -316,9 +316,10 @@ class Page extends TournamentPageBase
 		$row_count = 0;
 		$column_count = 0;
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, a.name FROM events e' .
+			'SELECT e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, na.name FROM events e' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
+			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON a.city_id = ct.id' .
 			' JOIN countries cr ON ct.country_id = cr.id' .
 			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .

@@ -186,9 +186,10 @@ class ApiPage extends GetApiPageBase
 		if ($lod >= 1)
 		{
 			$query = new DbQuery(
-				'SELECT e.id, ne.name, e.flags, e.languages, a.id, a.name, a.flags, c.id, nc.name, c.flags, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, t.id, nt.name, t.flags, ct.timezone FROM events e' .
+				'SELECT e.id, ne.name, e.flags, e.languages, a.id, na.name, a.flags, c.id, nc.name, c.flags, e.start_time, e.duration, e.notes, e.fee, e.currency_id, e.rules, e.scoring_id, e.scoring_version, e.scoring_options, t.id, nt.name, t.flags, ct.timezone FROM events e' .
 				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = e.address_id' .
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN clubs c ON c.id = e.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .

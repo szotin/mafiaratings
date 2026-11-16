@@ -35,14 +35,15 @@ class Page extends ClubPageBase
 		
 		$address_pics = new Picture(ADDRESS_PICTURE);
 		$query = new DbQuery(
-			'SELECT a.id, a.name, a.address, a.map_url, a.flags, nct.name, ncr.name' .
+			'SELECT a.id, na.name, a.address, a.map_url, a.flags, nct.name, ncr.name' .
 				', (SELECT count(*) FROM events e WHERE e.address_id = a.id) cnt FROM addresses a' . 
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN cities ct ON a.city_id = ct.id' .
 				' JOIN countries cr ON ct.country_id = cr.id' .
 				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
 				' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
-				' WHERE club_id = ?' .
-				' ORDER BY (a.flags & ' . ADDRESS_FLAG_NOT_USED . '), cnt DESC, a.name',
+				' WHERE a.club_id = ?' .
+				' ORDER BY (a.flags & ' . ADDRESS_FLAG_NOT_USED . '), cnt DESC, na.name',
 			$this->id);
 		while ($row = $query->next())
 		{

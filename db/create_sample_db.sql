@@ -37,7 +37,7 @@ START TRANSACTION;
 DROP TABLE IF EXISTS `addresses`;
 CREATE TABLE `addresses` (
   `id` int(11) NOT NULL,
-  `name` varchar(64) NOT NULL,
+  `name_id` int(11) NOT NULL,
   `club_id` int(11) NOT NULL,
   `address` varchar(256) NOT NULL,
   `map_url` varchar(1024) NOT NULL,
@@ -1072,6 +1072,7 @@ INSERT INTO `names` (`id`, `langs`, `name`) VALUES
 (12, 16777215, 'ФИИМ'),
 (13, 16777215, 'Mafia Ratings'),
 (14, 16777215, 'Sample Gaining'),
+(15, 16777215, 'Sample Venue'),
 (10, 16777215, 'admin'),
 (30, 16777215, 'shrek'),
 (40, 16777215, 'lilya'),
@@ -1101,7 +1102,7 @@ INSERT INTO `countries` (`id`, `flags`, `code`, `name_id`, `currency_id`) VALUES
 INSERT INTO `country_names` (`country_id`, `name`) VALUES (1, 'Sample Country');
 INSERT INTO `cities` (`id`, `country_id`, `timezone`, `flags`, `area_id`, `name_id`, `lat`, `lon`) VALUES (1, 1, 'America/New_York', 0, 1, 3, 40.7128, -74.006);
 INSERT INTO `city_names` (`city_id`, `name`) VALUES (1, 'Sample City');
-INSERT INTO `addresses` (`id`, `name`, `club_id`, `address`, `map_url`, `flags`, `city_id`, `lat`, `lon`) VALUES (1, 'Sample Venue', 1, '123 Main St', '', 0, 1, 40.7128, -74.006);
+INSERT INTO `addresses` (`id`, `name_id`, `club_id`, `address`, `map_url`, `flags`, `city_id`, `lat`, `lon`) VALUES (1, 15, 1, '123 Main St', '', 0, 1, 40.7128, -74.006);
 
 -- Scoring (reused verbatim from the site 'mafiaratings' scoring, id 45 v1)
 INSERT INTO `scorings` (`id`, `club_id`, `name_id`, `league_id`, `version`) VALUES (1, 1, 11, NULL, 1);
@@ -1589,8 +1590,9 @@ UPDATE `tournaments` SET `num_players` = 29, `num_regs` = 29 WHERE `id` = 1;
 --
 ALTER TABLE `addresses`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `address_club` (`club_id`,`name`),
-  ADD KEY `city_id` (`city_id`);
+  ADD KEY `club_id` (`club_id`),
+  ADD KEY `city_id` (`city_id`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `bug_reports`
@@ -2535,7 +2537,8 @@ ALTER TABLE `video_comments`
 --
 ALTER TABLE `addresses`
   ADD CONSTRAINT `address_city` FOREIGN KEY (`city_id`) REFERENCES `cities` (`id`),
-  ADD CONSTRAINT `address_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`);
+  ADD CONSTRAINT `address_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
+  ADD CONSTRAINT `address_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `bug_reports`

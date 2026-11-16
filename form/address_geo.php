@@ -22,7 +22,8 @@ try
 	list ($name, $address, $map_url, $flags, $city, $country, $club_id) = 
 		Db::record(
 			get_label('address'), 
-			'SELECT a.name, a.address, a.map_url, a.flags, ni.name, no.name, a.club_id FROM addresses a' .
+			'SELECT na.name, a.address, a.map_url, a.flags, ni.name, no.name, a.club_id FROM addresses a' .
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN cities i ON i.id = a.city_id' .
 				' JOIN countries o ON o.id = i.country_id' .
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
