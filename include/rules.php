@@ -229,7 +229,8 @@ function upgrade_rules_code($rules_code)
 			$rules_code = substr($rules_code, 0, 11) . '00' . substr($rules_code, 11);
 			// The last of those 14 was antimonster, which is gone - see ca8fb69c. A code of 14 is not
 			// cut on its own any more: 14 is what a code is now, the last being blackWin. Every code of
-			// 14 with antimonster in it was upgraded in the database by update_rules.php back then.
+			// 14 with antimonster in it was upgraded in the database back then, and every code of 13 was
+			// made 14 when blackWin came, by update_rules.php - it is in the history of the repository.
 			$rules_code = substr($rules_code, 0, -1);
 		}
 
