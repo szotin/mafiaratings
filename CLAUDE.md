@@ -80,6 +80,12 @@ if ($condition)
 - **Build `js/` before deploying it, never copy from `js/src/`.** The pages load `js/mr.js`, which is compiler output — see the JavaScript build section above. `js/*.js` is in `.gitignore`, so a changed script never shows up in `git status` and has to be built and deployed deliberately: after editing anything in `js/src/`, run the build, then include the built `js/<name>.js` in the FTP list alongside the committed source. After building, check that the names the pages call by hand still exist in the output (`mr.optimizeSeating`, `mr.seatingOptLabels`, any `onclick="mr...."`) — property names do survive the default optimization level, but verify rather than assume.
 - **Do not put `use mafia;` at the top of `db/alter*.sql`.** The production database is not called `mafia`, so the statement either targets the wrong schema or aborts the script. Which database a migration is applied to belongs to the invocation, not to the migration file.
 
+## Branch new_look
+
+<!-- NEW_LOOK: remove this section before merging new_look into master. -->
+
+While `new_look` is the current branch, its production is `public_html/new_look/` (https://www.mafiaratings.com/new_look), beside the main site that keeps running `master` from `public_html/`. The two share the database and the uploaded `pics/` and `sounds/`. Everything that makes the site live in that directory goes through `SITE_SUBDIR` (`include/branding.php`) and is marked `NEW_LOOK:`; the full list to undo before the merge is in `_new_look_rollback.md` - keep it up to date, and never deploy it. Because the database is shared, a migration on this branch must keep the master code working.
+
 ## Localization
 
 All user-visible strings must be wrapped in the `get_label` function. The string argument must be in English. Translations for each language are stored in `labels.php` in the corresponding directory (e.g., alongside the PHP file that uses them). Never hardcode translated strings directly — always use `get_label`.

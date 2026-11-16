@@ -172,19 +172,24 @@ define('SESSION_OK', 0);
 define('SESSION_NO_USER', 2);
 define('SESSION_LOGIN_FAILED',3);
 
-define('PHOTOS_DIR', 'pics/photo/');
-define('ADDRESS_PICS_DIR', 'pics/address/');
-define('USER_PICS_DIR', 'pics/user/');
-define('CLUB_PICS_DIR', 'pics/club/');
-define('LEAGUE_PICS_DIR', 'pics/league/');
-define('ALBUM_PICS_DIR', 'pics/album/');
-define('EVENT_PICS_DIR', 'pics/event/');
-define('TOURNAMENT_PICS_DIR', 'pics/tournament/');
-define('SERIES_PICS_DIR', 'pics/series/');
+// NEW_LOOK: the uploaded files are the main site's (see get_shared_files_prefix()). Before the
+// merge into master these go back to plain 'pics/...' and 'sounds/'.
+require_once __DIR__ . '/server.php';
+define('SHARED_FILES_PREFIX', get_shared_files_prefix());
+
+define('PHOTOS_DIR', SHARED_FILES_PREFIX . 'pics/photo/');
+define('ADDRESS_PICS_DIR', SHARED_FILES_PREFIX . 'pics/address/');
+define('USER_PICS_DIR', SHARED_FILES_PREFIX . 'pics/user/');
+define('CLUB_PICS_DIR', SHARED_FILES_PREFIX . 'pics/club/');
+define('LEAGUE_PICS_DIR', SHARED_FILES_PREFIX . 'pics/league/');
+define('ALBUM_PICS_DIR', SHARED_FILES_PREFIX . 'pics/album/');
+define('EVENT_PICS_DIR', SHARED_FILES_PREFIX . 'pics/event/');
+define('TOURNAMENT_PICS_DIR', SHARED_FILES_PREFIX . 'pics/tournament/');
+define('SERIES_PICS_DIR', SHARED_FILES_PREFIX . 'pics/series/');
 // The flags of the countries, one file per two letter country code. They are part of the site
 // rather than something anybody uploads, which is why they sit in images and not in pics.
 define('FLAGS_DIR', 'images/flags/');
-define('SOUNDS_DIR', 'sounds/');
+define('SOUNDS_DIR', SHARED_FILES_PREFIX . 'sounds/');
 
 define('TNAILS_DIR', 'tnails/');
 define('ICONS_DIR', 'icons/');

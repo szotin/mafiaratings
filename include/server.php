@@ -110,6 +110,22 @@ function is_production_server()
 	return !is_testing_server() && !is_demo_server();
 }
 
+// NEW_LOOK: the directory under the web root the site is served from on production, '' for the
+// root. The testing server keeps the site where it always was, so this is '' there.
+function get_site_subdir()
+{
+	return is_production_server() ? SITE_SUBDIR : '';
+}
+
+// NEW_LOOK: what the site shares with the main site served from the web root - the pictures and
+// sounds people upload. The database is the same, so the files it names are the main site's: a
+// copy of its own would miss everything uploaded there afterwards, and the main site would miss
+// everything uploaded here. A path to them from the site's root, '' when there is no main site.
+function get_shared_files_prefix()
+{
+	return get_site_subdir() == '' ? '' : '../';
+}
+
 function is_ratings_server()
 {
 	return true;

@@ -424,9 +424,18 @@ function get_cookie_path()
 // long. What actually makes it endless is that every request pushes the expiry back out again.
 define('AUTH_KEY_LIFETIME', 60 * 60 * 24 * 365);
 
+// NEW_LOOK: the key a user is remembered by is one column of the users table, and the table is the
+// main site's. A cookie of its own here would have a login on one site write over the key the other
+// one holds; with the main site's cookie both are logged in by the one key. On the main site, and
+// after the merge into master, this is get_cookie_path().
+function get_auth_cookie_path()
+{
+	return get_site_subdir() == '' ? get_cookie_path() : '/';
+}
+
 function set_auth_key_cookie($auth_key, $expire)
 {
-	$path = get_cookie_path();
+	$path = get_auth_cookie_path();
 
 	// secure follows the scheme the request actually arrived on rather than being switched on
 	// flatly. Production answers http with a redirect to https, so a real page there is always
@@ -603,6 +612,21 @@ function initiate_session($lang_code = NULL)
 	// to the site and outside the web root - nothing in it is ever served. Should it turn out
 	// not to be writable, the host's folder is still better than no sessions at all.
 	$session_path = dirname(dirname(__DIR__)) . '/sessions';
+
+	// NEW_LOOK: served from a directory under the web root, the site is one level deeper, and the
+	// folder beside it would be inside public_html, served to anybody who asked for it. So the
+	// sessions go next to the main site's, outside the web root, in a folder of their own. And
+	// they are not the main site's sessions: a cookie of their own name, scoped to the directory,
+	// so that the two sites never read each other's - the code that wrote one may not be the code
+	// reading it. Rolled back before the merge into master.
+	$site_subdir = get_site_subdir();
+	if ($site_subdir != '')
+	{
+		$session_path = dirname(dirname(dirname(__DIR__))) . '/sessions_' . trim($site_subdir, '/');
+		session_name('MRSESSID_' . trim($site_subdir, '/'));
+		ini_set('session.cookie_path', get_cookie_path());
+	}
+
 	if (!is_dir($session_path))
 	{
 		@mkdir($session_path, 0700, true);
@@ -887,7 +911,7 @@ function get_back_tab_id()
 
 	if (!headers_sent())
 	{
-		setcookie(BACK_TAB_COOKIE, $id, 0, '/');
+		setcookie(BACK_TAB_COOKIE, $id, 0, get_cookie_path());
 	}
 	$_back_tab_id = $id;
 	return $id;
@@ -904,8 +928,8 @@ function show_back_tab_script()
 {
 	$id = get_back_tab_id();
 	echo '<script>(function(){';
-	echo 'var n="' . BACK_TAB_COOKIE . '",t="' . $id . '";';
-	echo 'function s(v){document.cookie=n+"="+v+";path=/"+(v?"":";max-age=0");}';
+	echo 'var n="' . BACK_TAB_COOKIE . '",t="' . $id . '",p="' . get_cookie_path() . '";';
+	echo 'function s(v){document.cookie=n+"="+v+";path="+p+(v?"":";max-age=0");}';
 	echo 's("");';
 	echo 'window.addEventListener("pageshow",function(){s("");});';
 	// Still here a few seconds later means the page was not left after all (the leaving was cancelled,
