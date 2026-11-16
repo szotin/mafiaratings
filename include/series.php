@@ -327,6 +327,39 @@ function series_membership_stars($max_stars, $stars)
 	return min($stars, $max_stars);
 }
 
+// How many stars fit on one line under an icon. Ten of them in a row are wider than the icon
+// itself, so the rest wrap onto a second one.
+define('STARS_PER_ROW', 5);
+
+// The stars are drawn under the icon of a tournament or a series everywhere they appear. Here
+// rather than with the tournaments: the header of a series page draws them too, and the
+// tournaments include this file, not the other way round.
+//
+// $wrap = false asks for the plain run of symbols instead, with no row break in it. The mail
+// templates want that: the same string goes into an html body and into a plain text one, where
+// a <br> would show up as itself.
+//
+// The cap is only there to bound the output: how many stars an entry can actually have is decided
+// by the series that gave them, whose own maximum goes up to SERIES_MAX_STARS_LIMIT (10).
+function tournament_stars_str($stars, $wrap = true, $max_stars = 10)
+{
+	$symbols = array();
+	for ($i = 0; $i < floor($stars) && $i < $max_stars; ++$i)
+	{
+		$symbols[] = '★';
+	}
+	for (; $i < $stars && $i < $max_stars; ++$i)
+	{
+		$symbols[] = '✯';
+	}
+
+	if (!$wrap || count($symbols) <= STARS_PER_ROW)
+	{
+		return implode('', $symbols);
+	}
+	return implode('', array_slice($symbols, 0, STARS_PER_ROW)) . '<br>' . implode('', array_slice($symbols, STARS_PER_ROW));
+}
+
 // What a series with these properties is called. The type is not a thing an organizer picks: it
 // follows from the three properties that actually matter, and is stored only so that lists can
 // filter and sort on it without recomputing it.
@@ -908,7 +941,7 @@ class SeriesPageBase extends PageBase
 		// The series this one feeds into. Their logos go next to the owner's in the page header.
 		$this->parent_series = array();
 		$query = new DbQuery(
-			'SELECT s.id, ns.name, s.flags, ' . series_owner_fields() .
+			'SELECT s.id, ns.name, s.flags, ' . series_owner_fields() . ', ss.stars' .
 			' FROM series_series ss' .
 			' JOIN series s ON s.id = ss.parent_id' .
 			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
@@ -917,7 +950,7 @@ class SeriesPageBase extends PageBase
 		while ($row = $query->next())
 		{
 			$s = new stdClass();
-			list($s->id, $s->name, $s->flags, $p_league_id, $p_league_name, $p_league_flags, $p_club_id, $p_club_name, $p_club_flags) = $row;
+			list($s->id, $s->name, $s->flags, $p_league_id, $p_league_name, $p_league_flags, $p_club_id, $p_club_name, $p_club_flags, $s->stars) = $row;
 			$s->owner = SeriesOwner::from_row($p_league_id, $p_league_name, $p_league_flags, $p_club_id, $p_club_name, $p_club_flags);
 			$this->parent_series[] = $s;
 		}
@@ -1041,6 +1074,11 @@ class SeriesPageBase extends PageBase
 				$pic->custom_title = $s->owner->name . ': ' . $s->name;
 			}
 			$pic->show(ICONS_DIR, true, 48);
+			// What this series is worth in the parent, as the header of a tournament shows it.
+			if ($s->stars > 0)
+			{
+				echo '<br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($s->stars) . '</font>';
+			}
 			echo '</td>';
 		}
 

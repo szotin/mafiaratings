@@ -237,10 +237,12 @@ class Page extends SeriesPageBase
 			while ($row = $query->next())
 			{
 				list ($tournament_id, $stars, $stage, $series_stages, $series_start, $series_max_stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
-				$stars = (int)$stars;
+				// Stars only from a series that grades its tournaments. One that does not - a
+				// recurring tournament - may still hold the single star stored before it stopped.
+				$stars = series_membership_stars($series_max_stars, $stars);
 				$series_stages = series_stage_count($series_stages);
-				// A series with a ladder says what a tournament of it is - its stage - instead of
-				// rating it. A series without one has nothing to say beyond the stars.
+				// A series with a ladder also says what a tournament of it is - its stage. One can
+				// have both, a season with its finals, and then both are shown.
 				$stage_name = $series_stages > 1
 					? get_series_stage_name(series_type($series_start, $series_max_stars), $series_stages, $stage)
 					: NULL;
@@ -320,27 +322,27 @@ class Page extends SeriesPageBase
 				echo ' (' . get_label('playing now') . ')';
 			}
 			echo '</a></b>';
+			if (isset($tournament->stars) && $tournament->stars > 0)
+			{
+				echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font>';
+			}
 			if (isset($tournament->stage_name))
 			{
 				echo '<br><b>' . $tournament->stage_name . '</b>';
-			}
-			else if (isset($tournament->stars))
-			{
-				echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font>';
 			}
 			echo '</td>';
 			foreach ($tournament->series as $series)
 			{
 				echo '<td width="36" align="center" valign="center">';
+				if ($series->stars > 0)
+				{
+					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font><br>';
+				}
 				if (isset($series->stage_name))
 				{
-					echo '<span style="font-size:11px;">' . $series->stage_name . '</span>';
+					echo '<span style="font-size:11px;">' . $series->stage_name . '</span><br>';
 				}
-				else
-				{
-					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font>';
-				}
-				echo '<br><a href="series_standings.php?bck=1&id=' . $series->id . '">';
+				echo '<a href="series_standings.php?bck=1&id=' . $series->id . '">';
 				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);
 				echo '</a></td>';
 			}

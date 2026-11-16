@@ -429,37 +429,6 @@ class TournamentPageBase extends PageBase
 	}
 }
 
-// How many stars fit on one line under an icon. Ten of them in a row are wider than the icon
-// itself, so the rest wrap onto a second one.
-define('STARS_PER_ROW', 5);
-
-// The stars are drawn under the icon of a tournament or a series everywhere they appear.
-//
-// $wrap = false asks for the plain run of symbols instead, with no row break in it. The mail
-// templates want that: the same string goes into an html body and into a plain text one, where
-// a <br> would show up as itself.
-//
-// The cap is only there to bound the output: how many stars an entry can actually have is decided
-// by the series that gave them, whose own maximum goes up to SERIES_MAX_STARS_LIMIT (10).
-function tournament_stars_str($stars, $wrap = true, $max_stars = 10)
-{
-	$symbols = array();
-	for ($i = 0; $i < floor($stars) && $i < $max_stars; ++$i)
-	{
-		$symbols[] = '★';
-	}
-	for (; $i < $stars && $i < $max_stars; ++$i)
-	{
-		$symbols[] = '✯';
-	}
-
-	if (!$wrap || count($symbols) <= STARS_PER_ROW)
-	{
-		return implode('', $symbols);
-	}
-	return implode('', array_slice($symbols, 0, STARS_PER_ROW)) . '<br>' . implode('', array_slice($symbols, STARS_PER_ROW));
-}
-
 // The set of names of round number $round_num: its name in every language - see get_round_name().
 // The rounds with the same number share it.
 function get_round_name_id($round_num)

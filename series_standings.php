@@ -6,7 +6,6 @@ require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/gaining.php';
 require_once 'include/datetime.php';
-require_once 'include/tournament.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -302,8 +301,6 @@ class Page extends SeriesPageBase
 		{
 			echo '<td width="36" align="center">';
 			$parent_series_pic->set($s->id, $s->name, $s->flags, $s->owner)->show(ICONS_DIR, true, 32);
-			// What this series is worth in the parent, the way the tournament lists show it under a series.
-			echo '<br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($s->stars) . '</font>';
 			echo '</td>';
 		}
 		echo '</tr>';
