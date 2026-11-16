@@ -127,11 +127,11 @@ try
 		echo '</td></tr>';
 	}
 
-	// What the owner can use - see get_available_systems(). Its default comes first and is
-	// preselected.
-	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining">';
-	show_system_options('gainings', $club_id > 0 ? $club_id : NULL, (int)$default_gaining_id, $club_id > 0 ? NULL : $league_id);
-	echo '</select></td></tr>';
+	// What the owner can use for a series of this type - see show_gaining_select(). Its default
+	// comes first and is preselected, if it is for a season.
+	echo '<tr><td>' . get_label('Gaining system') . ':</td><td>';
+	show_gaining_select($club_id, $league_id, (int)$default_gaining_id, SERIES_TYPE_SEASON, false);
+	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Notes') . ':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 	
@@ -214,6 +214,8 @@ try
 		$('#form-start, #form-end').prop('disabled', infinite);
 		$('#form-series-row').css('display', infinite ? 'none' : '');
 		$('#form-type').val(deriveType());
+		// Another type may be counted by other gaining systems.
+		fillGainings(deriveType());
 		// setSeries() refuses to run while the series has no dates, so the list of parent series
 		// has to be asked for again once it is given some.
 		if (!infinite)

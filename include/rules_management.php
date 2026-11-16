@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/rules.php';
 require_once __DIR__ . '/scoring.php';
+require_once __DIR__ . '/series.php'; // get_series_types()
 
 // The Rules page of the management menu: the rules and the scoring systems of one owner, a tab
 // for each kind. The owner is a club (club_scorings.php), a league (league_scorings.php) or the
@@ -128,6 +129,26 @@ class RulesManagement
 			echo '<input type="checkbox" class="toggle" onclick="deprecateSystem(\'' . $kind . '\', ' . (int)$id . ', this)"' . (((int)$flags & SYSTEM_FLAG_DEPRECATED) ? ' checked' : '') . '>';
 		}
 		echo '</td>';
+	}
+
+	// The headers of the columns saying which types of series a gaining system is meant for - see
+	// GAINING_FLAG_NOT_FOR_SERIES.
+	private function series_types_header()
+	{
+		foreach (get_series_types() as $type => $type_name)
+		{
+			echo '<td width="80" align="center">' . $type_name . '</td>';
+		}
+	}
+
+	// The cells of those columns for one gaining system. A box takes effect when it is clicked, the
+	// way it does in the editor of the system.
+	private function series_types_cells($id, $flags)
+	{
+		foreach (get_series_types() as $type => $type_name)
+		{
+			echo '<td align="center"><input type="checkbox" class="toggle" id="gt-' . (int)$id . '-' . $type . '"' . (((int)$flags & gaining_not_for_flag($type)) ? '' : ' checked') . ' onclick="setGainingSeriesTypes(' . (int)$id . ', this)"></td>';
+		}
 	}
 
 	// The name of a system in its list: greyed out when it is deprecated.
@@ -306,12 +327,14 @@ class RulesManagement
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="mr.createGainingSystem(' . $this->gaining_owner_args() . ')" title="' . get_label('New gaining system') . '">';
 		echo '<img src="images/create.png" border="0"></a></td>';
 		echo '<td>' . get_label('Gaining system name') . '</td>';
+		$this->series_types_header();
 		$this->deprecated_header();
 		echo '</tr>';
-		list($default_version) = Db::record(get_label('gaining system'), 'SELECT version FROM gainings WHERE id = ?', $default_id);
+		list($default_version, $default_flags) = Db::record(get_label('gaining system'), 'SELECT version, flags FROM gainings WHERE id = ?', $default_id);
 		echo '<tr><td class="dark" align="center">';
 		echo '<a onclick="mr.editGainingSystem(' . $default_id . ')" title="' . get_label('Edit [0]', get_label('[default]')) . '"><img src="images/edit.png" border="0"></a>';
 		echo '</td><td><a href="javascript:showGaining(' . $default_id . ', ' . (int)$default_version . ')">' . get_label('[default]') . '</a></td>';
+		$this->series_types_cells($default_id, $default_flags);
 		$this->deprecated_cell('gaining', NULL, 0);
 		echo '</tr>';
 		$query = new DbQuery('SELECT s.id, ns.name, s.version, s.flags FROM gainings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('s'));
@@ -323,6 +346,7 @@ class RulesManagement
 			echo '<a onclick="mr.deleteGainingSystem(' . $id . ', \'' . addslashes(get_label('Are you sure you want to delete [0]?', $name)) . '\')" title="' . get_label('Delete [0]', $name) . '"><img src="images/delete.png" border="0"></a>';
 			echo '<a onclick="mr.editGainingSystem(' . $id . ')" title="' . get_label('Edit [0]', $name) . '"><img src="images/edit.png" border="0"></a>';
 			echo '</td><td><a href="javascript:showGaining(' . $id . ', ' . $version . ')">' . self::system_name($name, $flags) . '</a></td>';
+			$this->series_types_cells($id, $flags);
 			$this->deprecated_cell('gaining', $id, $flags);
 			echo '</tr>';
 		}
@@ -376,6 +400,20 @@ class RulesManagement
 		function showGaining(id, version)
 		{
 			dlg.infoForm("form/gaining_show.php?id=" + id + "&version=" + version);
+		}
+
+		// All three boxes of the row go, so what is sent is what the row shows. A refused change -
+		// the last type unticked - puts the box back.
+		function setGainingSeriesTypes(id, box)
+		{
+			json.post("api/ops/gaining.php",
+			{
+				op: 'set_series_types'
+				, gaining_id: id
+				, series: $('#gt-' + id + '-<?php echo SERIES_TYPE_SERIES; ?>').prop('checked') ? 1 : 0
+				, season: $('#gt-' + id + '-<?php echo SERIES_TYPE_SEASON; ?>').prop('checked') ? 1 : 0
+				, recurring: $('#gt-' + id + '-<?php echo SERIES_TYPE_RECURRING; ?>').prop('checked') ? 1 : 0
+			}, undefined, function() { box.checked = !box.checked; });
 		}
 
 		// kind is scoring, normalizer or gaining - the name of its api/ops page and of its id. A

@@ -10,6 +10,7 @@ require_once __DIR__ . '/league.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
+require_once __DIR__ . '/scoring.php'; // get_available_systems(), gaining_not_for_flag()
 
 define('SERIES_OWNER_LEAGUE', 1);
 define('SERIES_OWNER_CLUB', 2);
@@ -451,6 +452,88 @@ function show_series_type_options($type, $on_change = NULL)
 		show_option($t, (int)$type, $name);
 	}
 	echo '</select>';
+}
+
+// The select of the gaining system of a series, #form-gaining: what the owner can use - see
+// get_available_systems() - and of that only what is for the type of the series - see
+// GAINING_FLAG_NOT_FOR_SERIES. The type of a series follows from controls of the form, so the
+// options are filled in by fillGainings(type), which the form calls whenever the type may have
+// changed; it returns whether the selection changed with it. $selected_id is preselected. With
+// $keep it is the system the series is on, and stays on the list while the type is $type, whether
+// it is for that type or not: the series goes on being counted by it until somebody picks another.
+function show_gaining_select($club_id, $league_id, $selected_id, $type, $keep, $on_change = NULL)
+{
+	$choices = get_available_systems('gainings', $club_id > 0 ? (int)$club_id : NULL, $keep ? $selected_id : NULL, $club_id > 0 ? NULL : $league_id);
+	$not_for = array();
+	if (count($choices) > 0)
+	{
+		$ids = array();
+		foreach ($choices as $c)
+		{
+			$ids[] = (int)$c->id;
+		}
+		$query = new DbQuery('SELECT id, flags FROM gainings WHERE id IN (' . implode(',', $ids) . ')');
+		while ($row = $query->next())
+		{
+			$not_for[(int)$row[0]] = (int)$row[1] & GAINING_FLAGS_NOT_FOR_MASK;
+		}
+	}
+	$js = array();
+	foreach ($choices as $c)
+	{
+		$js[] = array('id' => (int)$c->id, 'name' => $c->name, 'notFor' => isset($not_for[$c->id]) ? $not_for[$c->id] : 0);
+	}
+
+	echo '<select id="form-gaining"' . ($on_change == NULL ? '' : ' onchange="' . $on_change . '"') . '></select>';
+	echo '<script>';
+	echo 'var gainingChoices = ' . json_encode($js, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS) . ';';
+	echo 'var gainingKept = ' . ($keep ? '{ id: ' . (int)$selected_id . ', type: ' . (int)$type . ' }' : 'null') . ';';
+	echo 'var gainingPreselected = ' . (int)$selected_id . ';';
+?>
+	function fillGainings(type)
+	{
+		var sel = $('#form-gaining');
+		var old = sel.val();
+		if (old == null)
+		{
+			old = '' + gainingPreselected;
+		}
+		var bit = <?php echo GAINING_FLAG_NOT_FOR_SERIES; ?> << type;
+		sel.find('option').remove();
+		for (var c of gainingChoices)
+		{
+			var kept = gainingKept != null && c.id == gainingKept.id && type == gainingKept.type;
+			if ((c.notFor & bit) == 0 || kept)
+			{
+				sel.append($('<option>').val(c.id).text(c.name));
+			}
+		}
+		// What was picked if it is still there; otherwise the system the series is on, or the one
+		// preselected, rather than whatever happens to come first.
+		var candidates = [old, gainingKept != null ? '' + gainingKept.id : null, '' + gainingPreselected];
+		for (var v of candidates)
+		{
+			if (v != null && sel.find('option[value="' + v + '"]').length > 0)
+			{
+				sel.val(v);
+				break;
+			}
+		}
+		return sel.val() != old;
+	}
+	fillGainings(<?php echo (int)$type; ?>);
+<?php
+	echo '</script>';
+}
+
+// Refuses a gaining system that is not for series of this type - see GAINING_FLAG_NOT_FOR_SERIES.
+function check_gaining_for_series_type($gaining_id, $series_type)
+{
+	list($flags) = Db::record(get_label('gaining system'), 'SELECT flags FROM gainings WHERE id = ?', $gaining_id);
+	if ((int)$flags & gaining_not_for_flag($series_type))
+	{
+		throw new Exc(get_label('This gaining system is not meant for series of this type.'));
+	}
 }
 
 // What goes under the name of a series in a list. A series with no dates has none to print, so it

@@ -4,6 +4,7 @@ require_once 'include/general_page_base.php';
 require_once 'include/systems.php';
 require_once 'include/gaining.php';
 require_once 'include/scoring.php';
+require_once 'include/series.php'; // get_series_types()
 
 class Page extends PageBase
 {
@@ -16,6 +17,7 @@ class Page extends PageBase
 	private $current_version;
 	private $versions;
 	private $used_versions;
+	private $flags;
 
 	protected function prepare()
 	{
@@ -29,9 +31,10 @@ class Page extends PageBase
 		}
 		$gaining_id = (int)$_REQUEST['id'];
 
-		list($this->gaining_id, $this->name_id, $this->gaining_name, $this->current_version, $club_id, $league_id) =
+		list($this->gaining_id, $this->name_id, $this->gaining_name, $this->current_version, $club_id, $league_id, $this->flags) =
 			Db::record(get_label('gaining system'),
-				'SELECT s.id, s.name_id, ns.name, s.version, s.club_id, s.league_id FROM gainings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE s.id = ?', $gaining_id);
+				'SELECT s.id, s.name_id, ns.name, s.version, s.club_id, s.league_id, s.flags FROM gainings s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE s.id = ?', $gaining_id);
+		$this->flags = (int)$this->flags;
 		if (is_null($club_id))
 		{
 			if (is_null($league_id))
@@ -104,6 +107,14 @@ class Page extends PageBase
 			echo '$(document).on("click", "#form-name-div button.icon", function() { dirty(true); });';
 			echo '</script>';
 		}
+		// Which types of series the system is meant for - see GAINING_FLAG_NOT_FOR_SERIES. It is not a
+		// part of any version, so it is not saved with them: a box takes effect when it is clicked.
+		echo '<p>' . get_label('Meant for') . ':';
+		foreach (get_series_types() as $type => $type_name)
+		{
+			echo ' &emsp;<input type="checkbox" class="toggle" id="form-for-' . $type . '"' . (($this->flags & gaining_not_for_flag($type)) ? '' : ' checked') . ' onclick="setSeriesTypes(this)"> ' . $type_name;
+		}
+		echo '</p>';
 		echo '<div id="gaining-editor"></div>';
 
 		// The preview evaluates whatever is in the editor right now through the real Evaluator,
@@ -253,6 +264,19 @@ class Page extends PageBase
 		
 		// Save writes the version on screen, in place. Which is the whole point while nothing
 		// uses it, and worth a word of warning once something does.
+		// The types are saved on their own, right away; a refused change puts the box back.
+		function setSeriesTypes(box)
+		{
+			json.post("api/ops/gaining.php",
+			{
+				op: 'set_series_types'
+				, gaining_id: data.id
+				, series: $('#form-for-<?php echo SERIES_TYPE_SERIES; ?>').prop('checked') ? 1 : 0
+				, season: $('#form-for-<?php echo SERIES_TYPE_SEASON; ?>').prop('checked') ? 1 : 0
+				, recurring: $('#form-for-<?php echo SERIES_TYPE_RECURRING; ?>').prop('checked') ? 1 : 0
+			}, undefined, function() { box.checked = !box.checked; });
+		}
+
 		function saveData()
 		{
 			if (isVersionUsed(data.version))

@@ -167,6 +167,13 @@ class ApiPage extends OpsApiPageBase
 			$duration = $end - $start;
 		}
 
+		// A system picked for the series has to be meant for its type. The default of the owner,
+		// taken when none is picked, is not held to it: nobody chose it.
+		if ((int)get_optional_param('gaining_id') > 0)
+		{
+			check_gaining_for_series_type($gaining_id, series_type($start, $max_stars));
+		}
+
 		Db::exec(
 			get_label('sеriеs'),
 			'INSERT INTO series (name_id, league_id, club_id, start_time, duration, max_stars, stages, langs, notes, fee, currency_id, flags, rules, gaining_id, gaining_version) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -560,6 +567,13 @@ class ApiPage extends OpsApiPageBase
 			}
 		}
 		
+		// The system has to be meant for the type of the series once either of them changes. A series
+		// left as it is stays on its system, whatever was said of the system since.
+		if ($gaining_id != $old_gaining_id || series_type($start, $max_stars) != series_type($old_start, $old_max_stars))
+		{
+			check_gaining_for_series_type($gaining_id, series_type($start, $max_stars));
+		}
+
 		if ($gaining_id != $old_gaining_id || $gaining_version != $old_gaining_version)
 		{
 			$flags |= SERIES_FLAG_DIRTY;

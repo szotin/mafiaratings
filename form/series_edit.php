@@ -154,11 +154,11 @@ try
 		echo '</td></tr>';
 	}
 	
-	// What the owner can use - see get_available_systems(). The system the series is on stays on
-	// the list even if the owner could not pick it any more.
-	echo '<tr><td>' . get_label('Gaining system') . ':</td><td><select id="form-gaining" onchange="gainingChanged()">';
-	show_system_options('gainings', $club_id > 0 ? (int)$club_id : NULL, $gaining_id, $club_id > 0 ? NULL : (int)$league_id);
-	echo '</select> <select id="form-gaining-version"></select>';
+	// What the owner can use for a series of this type - see show_gaining_select(). The system the
+	// series is on stays on the list even if the owner could not pick it any more.
+	echo '<tr><td>' . get_label('Gaining system') . ':</td><td>';
+	show_gaining_select($club_id, (int)$league_id, $gaining_id, $type, true, 'gainingChanged()');
+	echo ' <select id="form-gaining-version"></select>';
 	echo '</td></tr>';
 	
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="60" rows="4">' . $notes . '</textarea></td></tr>';
@@ -199,6 +199,12 @@ try
 	<script>
 	function gainingChanged(version)
 	{
+		// No system may be for this type at all; then there are no versions either.
+		if (!$('#form-gaining').val())
+		{
+			$('#form-gaining-version').find('option').remove();
+			return;
+		}
 		json.post("api/get/gainings.php", { gaining_id: $('#form-gaining').val() }, function(data)
 		{
 			let g = data.gainings[0];
@@ -261,6 +267,11 @@ try
 		$('#form-start, #form-end').prop('disabled', infinite);
 		$('#form-series-row').css('display', infinite ? 'none' : '');
 		$('#form-type').val(deriveType());
+		// Another type may be counted by other gaining systems.
+		if (fillGainings(deriveType()))
+		{
+			gainingChanged();
+		}
 		if (!infinite)
 		{
 			setSeries();

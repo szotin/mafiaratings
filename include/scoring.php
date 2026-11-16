@@ -19,6 +19,22 @@ define('SYSTEM_FLAG_SITE_DEFAULT', 1);
 // owner starts with.
 define('SYSTEM_FLAG_DEPRECATED', 2);
 
+// gainings.flags: the types of series a gaining system is not for. A series of a type its system is
+// not for is not offered that system - see show_gaining_select() in series.php. The bits say what
+// a system is NOT for, so a system nobody has said anything about, every one that existed before
+// them included, is for all three types. The bit of a type is GAINING_FLAG_NOT_FOR_SERIES shifted
+// by the type - SERIES_TYPE_SERIES 0, SERIES_TYPE_SEASON 1, SERIES_TYPE_RECURRING 2 - see
+// gaining_not_for_flag().
+define('GAINING_FLAG_NOT_FOR_SERIES', 4);
+define('GAINING_FLAG_NOT_FOR_SEASON', 8);
+define('GAINING_FLAG_NOT_FOR_RECURRING', 16);
+define('GAINING_FLAGS_NOT_FOR_MASK', 28);
+
+function gaining_not_for_flag($series_type)
+{
+	return GAINING_FLAG_NOT_FOR_SERIES << (int)$series_type;
+}
+
 //define('SCORING_TRACK_ROLE', -1); //ROLE_CIVILIAN);
 
 define('SCORING_ROLE_FLAGS_CIV', 1);
@@ -592,12 +608,12 @@ function is_default_system($table, $id)
 	return $query->next() ? true : false;
 }
 
-// Marks a system of $table as deprecated, or as not any more - see SYSTEM_FLAG_DEPRECATED. Who may
-// do it is who may change the system: the managers of the club and of the league owning it, an
-// admin for a system of the site. $log_object is what the log calls the kind. Returns whether
-// anything changed.
-function set_system_deprecated($table, $id, $deprecated, $log_object)
+// Refuses whoever may not change a system of $table: the managers of the club and of the league
+// owning it may, an admin may change a system of the site. Returns its owner and its flags as
+// array(club_id, league_id, flags).
+function check_system_permissions($table, $id)
 {
+	_system_table_info($table);
 	list($club_id, $league_id, $flags) = Db::record(get_label('scoring system'), 'SELECT club_id, league_id, flags FROM ' . $table . ' WHERE id = ?', $id);
 	if (!is_null($club_id))
 	{
@@ -615,6 +631,15 @@ function set_system_deprecated($table, $id, $deprecated, $log_object)
 	{
 		check_permissions(PERMISSION_ADMIN);
 	}
+	return array($club_id, $league_id, (int)$flags);
+}
+
+// Marks a system of $table as deprecated, or as not any more - see SYSTEM_FLAG_DEPRECATED. Who may
+// do it is who may change the system - see check_system_permissions(). $log_object is what the log
+// calls the kind. Returns whether anything changed.
+function set_system_deprecated($table, $id, $deprecated, $log_object)
+{
+	list($club_id, $league_id, $flags) = check_system_permissions($table, $id);
 
 	if ($deprecated && is_default_system($table, $id))
 	{

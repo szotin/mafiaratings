@@ -4,6 +4,7 @@ require_once '../../include/api.php';
 require_once '../../include/gaining.php';
 require_once '../../include/scoring.php';
 require_once '../../include/systems.php';
+require_once '../../include/series.php'; // SERIES_TYPE_*
 require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
@@ -380,6 +381,54 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('deprecated', '1 to deprecate, 0 to bring it back.', '1.');
 		return $help;
 	}
+
+	//-------------------------------------------------------------------------------------------------------
+	// set_series_types
+	//-------------------------------------------------------------------------------------------------------
+	function set_series_types_op()
+	{
+		$gaining_id = (int)get_required_param('gaining_id');
+
+		Db::begin();
+		list($club_id, $league_id, $flags) = check_system_permissions('gainings', $gaining_id);
+		$new_flags = $flags & ~GAINING_FLAGS_NOT_FOR_MASK;
+		$log_details = new stdClass();
+		$any = false;
+		foreach (array('series' => SERIES_TYPE_SERIES, 'season' => SERIES_TYPE_SEASON, 'recurring' => SERIES_TYPE_RECURRING) as $param => $type)
+		{
+			$for = (int)get_optional_param($param, ($flags & gaining_not_for_flag($type)) ? 0 : 1) != 0;
+			if ($for)
+			{
+				$any = true;
+			}
+			else
+			{
+				$new_flags |= gaining_not_for_flag($type);
+			}
+			$log_details->$param = $for ? 1 : 0;
+		}
+		if (!$any)
+		{
+			throw new Exc(get_label('A gaining system has to be meant for at least one type of series.'));
+		}
+		if ($new_flags != $flags)
+		{
+			Db::exec(get_label('gaining system'), 'UPDATE gainings SET flags = ? WHERE id = ?', $new_flags, $gaining_id);
+			db_log(LOG_OBJECT_GAINING_SYSTEM, 'changed', $log_details, $gaining_id, $club_id, $league_id);
+		}
+		Db::commit();
+	}
+
+	function set_series_types_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Say which types of series a gaining system is meant for. A series is offered only the systems meant for its type; a series on a system that is not meant for its type any more stays on it.');
+		$help->request_param('gaining_id', 'Gaining system id. One that is not owned by a club or a league requires <em>admin</em> permissions.');
+		$help->request_param('season', '1 if it is for seasons, 0 if not.', 'remains the same.');
+		$help->request_param('series', '1 if it is for series of tournaments, 0 if not.', 'remains the same.');
+		$help->request_param('recurring', '1 if it is for recurring tournaments, 0 if not.', 'remains the same.');
+		return $help;
+	}
+
 }
 
 $page = new ApiPage();

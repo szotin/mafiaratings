@@ -1436,7 +1436,7 @@ $labelMenu = array (
 'New gaining system' => 'Новая серийная система посдсчета баллов', // include/rules_management.php
 'Gaining system name' => 'Название серийной системы посдсчета баллов', // gaining.php, gaining.php, include/rules_management.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, form/gaining_create.php, form/gaining_create.php
 'type' => 'тип', // include/systems.php
-'gaining system' => 'серийная система посдсчета баллов', // gaining.php, gaining.php, gaining.php, series_player.php, include/rules_management.php, include/scoring.php, include/systems.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/series.php, api/ops/series.php, form/gaining_show.php, form/gaining_table.php, form/gaining_table.php
+'gaining system' => 'серийная система посдсчета баллов', // gaining.php, gaining.php, gaining.php, series_player.php, include/rules_management.php, include/scoring.php, include/series.php, include/systems.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/gaining.php, api/ops/series.php, api/ops/series.php, form/gaining_show.php, form/gaining_table.php, form/gaining_table.php
 'Gaining system' => 'Серийная система посдсчета баллов', // gaining.php, form/gaining_create.php, form/series_create.php, form/series_edit.php
 'gaining' => 'серийные баллы', // series_player.php, series_player.php, form/gaining_show.php, form/gaining_show.php, form/gaining_table.php, form/gaining_table.php
 'Gaining system [0]. Version [1].' => 'Серийная система начисления баллов [0]. Версия [1].', // form/gaining_show.php
@@ -2200,6 +2200,9 @@ $labelMenu = array (
 'Deprecated' => 'Устарела', // include/rules_management.php
 '[0] (deprecated)' => '[0] (устар.)', // include/rules.php, include/scoring.php, include/scoring.php, form/tournament_schema_edit.php, form/tournament_schema_edit.php
 'A default system can not be deprecated.' => 'Систему по умолчанию нельзя сделать устаревшей.', // include/scoring.php
+'Deprecated rules go on being played wherever they are played already, but they are not offered for anything new.' => 'По устаревшим правилам продолжают играть там, где уже играют, но для нового их не предлагают.', // include/rules_management.php
+'Deprecated rules' => 'Устарели', // include/rules_management.php
+'The default rules can not be deprecated.' => 'Правила по умолчанию нельзя сделать устаревшими.', // api/ops/rules.php
 'A player who is not in this round\'s seating can only take somebody\'s place in every game of the round. To change one game only, change the player in the game itself.' => 'Игрока, которого нет в рассадке раунда, можно поставить на чьё-то место только во всех турах сразу. Чтобы поменять в одном туре, поменяйте игрока прямо в игре.', // api/ops/event.php, form/seating_edit.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
@@ -2222,9 +2225,9 @@ $labelMenu = array (
 'Sheriff\'s check' => 'Проверка шерифа', // plugins/obs/obs.php
 'Don\'s checks' => 'Проверки дона', // streams.php
 'Sheriff\'s checks' => 'Проверки шерифа', // streams.php
-'Deprecated rules go on being played wherever they are played already, but they are not offered for anything new.' => 'По устаревшим правилам продолжают играть там, где уже играют, но для нового их не предлагают.', // include/rules_management.php
-'Deprecated rules' => 'Устарели', // include/rules_management.php
-'The default rules can not be deprecated.' => 'Правила по умолчанию нельзя сделать устаревшими.', // api/ops/rules.php
+'Meant for' => 'Для', // gaining.php
+'This gaining system is not meant for series of this type.' => 'Эта серийная система подсчёта баллов не предназначена для серий такого типа.', // include/series.php
+'A gaining system has to be meant for at least one type of series.' => 'Серийная система подсчёта баллов должна быть предназначена хотя бы для одного типа серий.', // api/ops/gaining.php
 );
 
 return $labelMenu;
