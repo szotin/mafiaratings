@@ -2555,7 +2555,7 @@ function gameNext()
 									_gameCheckEnd();
 								}
 							}
-							else if (r == /*RULES_FIRST_DAY_VOTING_NO_BREAKING*/2)
+							else if (r == /*RULES_FIRST_DAY_VOTING_NO_BREAKING*/2 || r == /*RULES_FIRST_DAY_VOTING_NO_KILLING*/4)
 							{
 								game.time = { round: game.time.round + 1, time: 'night start' };
 							}
@@ -2600,9 +2600,17 @@ function gameNext()
 					}
 					if (i >= noms.length)
 					{
-						delete game.time.speaker;
-						game.time.nominee = noms[0];
-						_gameCreateVoting();
+						if (game.time.round == 0 && gameGetRule(/*RULES_FIRST_DAY_VOTING*/4) == /*RULES_FIRST_DAY_VOTING_NO_KILLING*/4)
+						{
+							// Nobody can leave the table on the first day, so the split is not revoted: after the speeches the night falls.
+							game.time = { round: game.time.round + 1, time: 'night start' };
+						}
+						else
+						{
+							delete game.time.speaker;
+							game.time.nominee = noms[0];
+							_gameCreateVoting();
+						}
 					}
 				}
 				break;

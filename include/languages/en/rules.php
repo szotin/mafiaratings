@@ -188,6 +188,7 @@ return array
 					'The first game «day» has an exception to other days, the player with the most votes does not leave the game. They get another 30 sec speech instead.',
 					'The first game «day» has an exception to other days, if there is only one candidate then a vote is not held, and no one is eliminated. If only one player wins the vote, noone dies, no speech, the night is falling. In other cases it works like any other voting.',
 					'The first game «day» has an exception to other days, if there is only one candidate then a vote is not held, and no one is eliminated. If only one player wins the vote, they die only if they vote for themselves. Otherwise they get a 30 sec speech.',
+					'The first game «day» has an exception to other days, if there is only one candidate then a vote is not held, and no one is eliminated. No one can leave the table on the first «day». If only one player wins the vote, noone dies, no speech, the night is falling. In case of a split, the players get 30 sec speeches and then the night is falling. There is no revote, and the question of all the players leaving the table is not raised.',
 				),
 				array
 				(
@@ -195,6 +196,7 @@ return array
 					'Voting as usual but the winner is not killed. They speack 30 sec instead.',
 					'One candidate is not voted. Split can not be broken.',
 					'One candidate is not voted. Split can be broken only to themself.',
+					'One candidate is not voted. No one leaves: a split gets 30 sec speeches and the night falls.',
 				),
 			),
 			'If two or more players gain the same number of votes, these players receive an additional 30 seconds for their defence speeches. Players speak in the order of voting. After an additional 30 seconds, a second vote only occurs between these players. If the vote is repeated, the Moderator raises the question: «Who wants all the players to leave the game?» If the majority votes for a knockout, both players leave the game. If the majority of players vote against, or the votes are equally divided, then the players remain in the game.', // 7.17.
