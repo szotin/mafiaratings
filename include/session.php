@@ -656,19 +656,17 @@ function initiate_session($lang_code = NULL)
 	if (isset($_REQUEST['bck']))
 	{
 		$back_value = $_REQUEST['bck'];
+		$tab = &get_back_tab();
 		if ($back_value == 0)
 		{
-			$_SESSION['back_list'] = array();
+			$tab['list'] = array();
 		}
-		else if (isset($_SESSION['last_page']))
+		else if (!is_null($tab['last']))
 		{
-			if (!isset($_SESSION['back_list']))
-			{
-				$_SESSION['back_list'] = array();
-			}
-			$_SESSION['back_list'][] = $_SESSION['last_page'];
+			$tab['list'][] = $tab['last'];
 		}
-		
+		unset($tab);
+
 		$uri = get_page_url();
 		$back_beg = strpos($uri, '&bck=');
 		if ($back_beg === false)
@@ -779,69 +777,204 @@ function add_request_params($request, $params)
 	return $row;
 }
 
-function get_back_page($params = NULL)
+// The way back is kept for every browser tab on its own. It used to be one list for the whole
+// session, and a person with the site open in two tabs had each of them writing its pages over
+// the other's: Back in one tab led to a page seen in the other.
+//
+// Now the session holds a list per tab, under an id the tab is given on its first page. The
+// page knows its id (PageBase::show_header() writes it into the page) and hands it to the
+// server in the mr_tab cookie at the moment it is left - in beforeunload, which comes before
+// the request for the next page goes out - and takes the cookie away again as soon as the next
+// page is shown. So a request with the cookie is a tab going on to its next page, and a request
+// without one is a tab that has just been opened: by a link opened in a new tab, a bookmark, an
+// address typed in. A new tab starts as a copy of the tab it was opened from, found by the page
+// it was opened from (the Referer), which is that tab's last page; so bck=1 in a link opened in
+// a new tab still leads back to where the link was. Opened from nowhere, it starts empty.
+//
+// The server answers with the cookie too, so that a redirect - bck=1 is always followed by one -
+// stays in the tab it started in even when that tab is a new one.
+define('BACK_TAB_COOKIE', 'mr_tab');
+define('BACK_TABS_MAX', 16);
+
+$_back_tab_id = NULL;
+
+function _find_back_tab_by_referer($tabs)
 {
-	if (isset($_SESSION['back_list']))
+	if (!isset($_SERVER['HTTP_REFERER']))
 	{
-		$list = $_SESSION['back_list'];
-		$current_back = count($list) - 1;
-		if ($current_back >= 0)
+		return NULL;
+	}
+	$referer = parse_url($_SERVER['HTTP_REFERER']);
+	if ($referer === false || !isset($referer['path']))
+	{
+		return NULL;
+	}
+	$referer_url = $referer['path'];
+	if (isset($referer['query']))
+	{
+		$referer_url .= '?' . $referer['query'];
+	}
+
+	$found = NULL;
+	foreach ($tabs as $id => $tab)
+	{
+		if (!is_null($tab['last']) && $tab['last'][1] == $referer_url && (is_null($found) || $tab['time'] > $tabs[$found]['time']))
 		{
-			if ($params != NULL)
-			{
-				$list[$current_back][1] = add_request_params($list[$current_back][1], $params);
-				$_SESSION['back_list'] = $list;
-			}
-			return $list[$current_back][1];
+			$found = $id;
 		}
 	}
-	return '';
+	return $found;
+}
+
+function get_back_tab_id()
+{
+	global $_back_tab_id;
+
+	if (!is_null($_back_tab_id))
+	{
+		return $_back_tab_id;
+	}
+
+	// The list the whole session used to share.
+	unset($_SESSION['back_list']);
+	unset($_SESSION['last_page']);
+
+	if (!isset($_SESSION['back_tabs']) || !is_array($_SESSION['back_tabs']))
+	{
+		$_SESSION['back_tabs'] = array();
+	}
+	$tabs = &$_SESSION['back_tabs'];
+
+	$id = NULL;
+	if (isset($_COOKIE[BACK_TAB_COOKIE]))
+	{
+		$cookie = $_COOKIE[BACK_TAB_COOKIE];
+		if (is_string($cookie) && preg_match('/^[0-9a-f]{12}$/', $cookie) && isset($tabs[$cookie]))
+		{
+			$id = $cookie;
+		}
+	}
+
+	if (is_null($id))
+	{
+		$id = bin2hex(random_bytes(6));
+		$source = _find_back_tab_by_referer($tabs);
+		if (is_null($source))
+		{
+			$tabs[$id] = array('last' => NULL, 'list' => array());
+		}
+		else
+		{
+			$tabs[$id] = array('last' => $tabs[$source]['last'], 'list' => $tabs[$source]['list']);
+		}
+
+		// The tabs that were closed are never told about; the ones not used for the longest go.
+		while (count($tabs) > BACK_TABS_MAX)
+		{
+			$oldest = NULL;
+			foreach ($tabs as $tab_id => $tab)
+			{
+				if ($tab_id != $id && (is_null($oldest) || $tab['time'] < $tabs[$oldest]['time']))
+				{
+					$oldest = $tab_id;
+				}
+			}
+			unset($tabs[$oldest]);
+		}
+	}
+	$tabs[$id]['time'] = time();
+	unset($tabs);
+
+	if (!headers_sent())
+	{
+		setcookie(BACK_TAB_COOKIE, $id, 0, '/');
+	}
+	$_back_tab_id = $id;
+	return $id;
+}
+
+function &get_back_tab()
+{
+	$id = get_back_tab_id();
+	return $_SESSION['back_tabs'][$id];
+}
+
+// The script that keeps the tab's id in the cookie exactly while the tab is going to its next page.
+function show_back_tab_script()
+{
+	$id = get_back_tab_id();
+	echo '<script>(function(){';
+	echo 'var n="' . BACK_TAB_COOKIE . '",t="' . $id . '";';
+	echo 'function s(v){document.cookie=n+"="+v+";path=/"+(v?"":";max-age=0");}';
+	echo 's("");';
+	echo 'window.addEventListener("pageshow",function(){s("");});';
+	// Still here a few seconds later means the page was not left after all (the leaving was cancelled,
+	// or the link was a download) - and then the next request is not this tab's.
+	echo 'window.addEventListener("beforeunload",function(){s(t);setTimeout(function(){s("");},5000);});';
+	echo '})();</script>';
+}
+
+function _get_back_top($params)
+{
+	$tab = &get_back_tab();
+	$current_back = count($tab['list']) - 1;
+	if ($current_back < 0)
+	{
+		return NULL;
+	}
+	if ($params != NULL)
+	{
+		$tab['list'][$current_back][1] = add_request_params($tab['list'][$current_back][1], $params);
+	}
+	return $tab['list'][$current_back];
+}
+
+function get_back_page($params = NULL)
+{
+	$top = _get_back_top($params);
+	if (is_null($top))
+	{
+		return '';
+	}
+	return $top[1];
 }
 
 function show_back_button($params = NULL)
 {
-	if (isset($_SESSION['back_list']))
+	$top = _get_back_top($params);
+	if (!is_null($top))
 	{
-		$list = $_SESSION['back_list'];
-		$current_back = count($list) - 1;
-		if ($current_back >= 0)
-		{
-			if ($params != NULL)
-			{
-				$list[$current_back][1] = add_request_params($list[$current_back][1], $params);
-				$_SESSION['back_list'] = $list;
-			}
-			echo '<a class="back" href="' . $list[$current_back][1] . '" onclick="this.blur();" title="' . get_label('Back to the [[0]]', $list[$current_back][0]) . '"><span>' . get_label('Back') . '</span></a>';
-			return;
-		}
+		echo '<a class="back" href="' . $top[1] . '" onclick="this.blur();" title="' . get_label('Back to the [[0]]', $top[0]) . '"><span>' . get_label('Back') . '</span></a>';
 	}
 }
 
 function can_go_back()
 {
-	return isset($_SESSION['back_list']) && count($_SESSION['back_list']) >= 1;
+	$tab = &get_back_tab();
+	return count($tab['list']) >= 1;
 }
 
 function redirect_back($params = NULL)
 {
-	if (!isset($_SESSION['back_list']))
+	$top = _get_back_top($params);
+	if (!is_null($top))
 	{
-		return;
+		throw new RedirectExc($top[1]);
 	}
-	
-	$list = $_SESSION['back_list'];
-	$current_back = count($list) - 1;
-	if ($current_back < 0)
+}
+
+// Called by every page shown: this is now the tab's last page, the one bck=1 leads back to; and
+// if the tab has just come back to the page on top of its list, it has gone back, and that page
+// is taken off.
+function set_back_tab_page($title, $url)
+{
+	$tab = &get_back_tab();
+	$tab['last'] = array($title, $url);
+	$last_back = count($tab['list']) - 1;
+	if ($last_back >= 0 && $tab['list'][$last_back][1] == $url)
 	{
-		return;
+		array_pop($tab['list']);
 	}
-	
-	if ($params != NULL)
-	{
-		$list[$current_back][1] = add_request_params($list[$current_back][1], $params);
-		$_SESSION['back_list'] = $list;
-	}
-	throw new RedirectExc($list[$current_back][1]);
 }
 
 function show_option($option_value, $current_value, $text, $title = NULL)

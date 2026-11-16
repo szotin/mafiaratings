@@ -36,6 +36,8 @@ class PageBase
 	function __construct()
 	{
 		initiate_session();
+		// Before anything is written: the tab's id goes back in a cookie.
+		get_back_tab_id();
 		$this->user_pic = new Picture(USER_PICTURE);
 		$this->club_pic = new Picture(CLUB_PICTURE);
 		$this->_indexing_policy = INDEXING_POLICY_NONE;
@@ -223,22 +225,13 @@ class PageBase
 		echo '<link rel="stylesheet" href="' . versioned_asset('desktop.css') . '" type="text/css" media="screen" />';
 		echo '<link rel="stylesheet" href="' . versioned_asset('common.css') . '" type="text/css" media="screen" />';
 		$this->add_headers();
+		show_back_tab_script();
 		echo '</head>';
 		
 		$uri = get_page_url();
 		if (count($_POST) == 0)
 		{
-			$_SESSION['last_page'] = array($this->_title, $uri);
-			if (isset($_SESSION['back_list']))
-			{
-				$list = $_SESSION['back_list'];
-				$last_back = count($list) - 1;
-				if ($last_back >= 0 && $list[$last_back][1] == $uri)
-				{
-					unset($_SESSION['back_list'][$last_back]);
-				}
-	//			print_r($_SESSION['back_list']);
-			}
+			set_back_tab_page($this->_title, $uri);
 		}
 
 		echo '<body>';
