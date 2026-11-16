@@ -325,14 +325,14 @@ class ApiPage extends OpsApiPageBase
 				$rules_name = get_label('Rules before [0]', $system_name);
 				for ($i = 2; ; ++$i)
 				{
-					$query = new DbQuery('SELECT id FROM rules WHERE club_id = ? AND name = ?', $club_id, $rules_name);
+					$query = new DbQuery('SELECT r.id FROM rules r JOIN names n ON n.id = r.name_id WHERE r.club_id = ? AND n.name = ?', $club_id, $rules_name);
 					if (!$query->next())
 					{
 						break;
 					}
 					$rules_name = get_label('Rules before [0]', $system_name) . ' (' . $i . ')';
 				}
-				Db::exec(get_label('rules'), 'INSERT INTO rules (club_id, league_id, name, rules) VALUES (?, NULL, ?, ?)', $club_id, $rules_name, $old_rules_code);
+				Db::exec(get_label('rules'), 'INSERT INTO rules (club_id, league_id, name_id, rules) VALUES (?, NULL, ?, ?)', $club_id, Names::get_single_id($rules_name, get_label('Rules name')), $old_rules_code);
 			}
 			$scoring_id = own_system_unless_same('scorings', $new_scoring_id, $old_scoring_id, $club_id, NULL);
 			$normalizer_id = own_system_unless_same('normalizers', $new_normalizer_id, $old_normalizer_id, $club_id, NULL);

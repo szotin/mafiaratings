@@ -99,7 +99,7 @@ try
 	{
 		// Named rules of a club or of the site. Those of a league are a filter, edited in
 		// form/league_rules_edit.php. The default rules of the site have no name, and keep it.
-		list($club_id, $league_id, $rules_code, $rules_name) = Db::record(get_label('rules'), 'SELECT club_id, league_id, rules, name FROM rules WHERE id = ?', $rules_id);
+		list($club_id, $league_id, $rules_code, $name_id, $rules_name) = Db::record(get_label('rules'), 'SELECT r.club_id, r.league_id, r.rules, r.name_id, n.name FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.id = ?', $rules_id);
 		if ($league_id != NULL)
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('rules')));
@@ -112,7 +112,7 @@ try
 		{
 			check_permissions(PERMISSION_ADMIN);
 		}
-		$has_name = $rules_name != '';
+		$has_name = !is_null($name_id);
 		if (!$has_name)
 		{
 			$rules_name = get_label('[default]');
@@ -127,11 +127,11 @@ try
 			{
 				op: 'change'
 				, rules_id: <?php echo $rules_id; ?>
-<?php if ($has_name) { ?>
-				, name: $("#form-name").val()
-<?php } ?>
 				, rules: rulesCode
 			};
+<?php if ($has_name) { ?>
+			nameControl.fillRequest(params);
+<?php } ?>
 			json.post("api/ops/rules.php", params, onSuccess);
 		}
 		</script>
@@ -139,7 +139,9 @@ try
 		echo '<table class="transp" width="100%"><tr><td>';
 		if ($has_name)
 		{
-			echo '<p><input class="longest" id="form-name" value="' . htmlspecialchars($rules_name, ENT_QUOTES) . '"></p>';
+			echo '<p>';
+			Names::show_control(new Names($name_id, get_label('Rules name')));
+			echo '</p>';
 		}
 		echo '<p>';
 		show_rules_select($club_id, $rules_code);
@@ -381,15 +383,17 @@ try
 <?php if ($club_id > 0) { ?>
 				, club_id: <?php echo $club_id; ?>
 <?php } ?>
-				, name: $("#form-name").val()
 				, rules: rulesCode
 			};
+			nameControl.fillRequest(params);
 			json.post("api/ops/rules.php", params, onSuccess);
 		}
 		</script>
 <?php
 		echo '<table class="transp" width="100%"><tr><td>';
-		echo '<p><input class="longest" id="form-name"></p><p>';
+		echo '<p>';
+		Names::show_control(new Names(0, get_label('Rules name'), NULL, 0, NULL, 'name', false));
+		echo '</p><p>';
 		show_rules_select($club_id > 0 ? $club_id : null, $rules_code);
 		echo '</p></td></tr>';
 	}

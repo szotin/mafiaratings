@@ -35,18 +35,20 @@ class RulesManagement
 		}
 	}
 
-	// The condition picking the rows of this owner out of a table with club_id and league_id.
-	private function owner_condition()
+	// The condition picking the rows of this owner out of a table with club_id and league_id - the
+	// table aliased $alias, if it is.
+	private function owner_condition($alias = NULL)
 	{
+		$a = is_null($alias) ? '' : $alias . '.';
 		if ($this->club_id != NULL)
 		{
-			return new SQL('club_id = ?', $this->club_id);
+			return new SQL($a . 'club_id = ?', $this->club_id);
 		}
 		if ($this->league_id != NULL)
 		{
-			return new SQL('league_id = ?', $this->league_id);
+			return new SQL($a . 'league_id = ?', $this->league_id);
 		}
-		return new SQL('club_id IS NULL AND league_id IS NULL');
+		return new SQL($a . 'club_id IS NULL AND ' . $a . 'league_id IS NULL');
 	}
 
 	// The arguments mr.createScoringSystem() and mr.createNormalizer() take for this owner:
@@ -137,6 +139,8 @@ class RulesManagement
 	// dialog of their own; the default rules of the site are the row of the site with no name.
 	private function show_rules()
 	{
+		global $_lang;
+
 		$is_league = $this->league_id != NULL;
 		echo '<table class="bordered light" width="100%">';
 		echo '<tr class="darker"><td width="48"><a href="#" onclick="createRules()" title="' . get_label('New rules') . '">';
@@ -153,7 +157,7 @@ class RulesManagement
 		}
 		else
 		{
-			$query = new DbQuery('SELECT id FROM rules WHERE club_id IS NULL AND league_id IS NULL AND name = \'\'');
+			$query = new DbQuery('SELECT id FROM rules WHERE club_id IS NULL AND league_id IS NULL AND name_id IS NULL');
 			$edit_default = ($row = $query->next()) ? 'editRules(' . (int)$row[0] . ')' : NULL;
 		}
 		echo '<tr><td class="dark" align="center">';
@@ -163,8 +167,8 @@ class RulesManagement
 		}
 		echo '</td><td>' . get_label('[default]') . '</td></tr>';
 
-		$query = new DbQuery('SELECT id, name FROM rules WHERE name <> \'\' AND ', $this->owner_condition());
-		$query->add(' ORDER BY name');
+		$query = new DbQuery('SELECT r.id, n.name FROM rules r JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE ', $this->owner_condition('r'));
+		$query->add(' ORDER BY n.name');
 		while ($row = $query->next())
 		{
 			list ($id, $name) = $row;

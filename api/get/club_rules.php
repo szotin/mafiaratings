@@ -31,6 +31,8 @@ class ApiPage extends GetApiPageBase
 	
 	protected function prepare_response()
 	{
+		global $_lang;
+
 		$club_id = (int)get_required_param('club_id');
 		$view = VIEW_DEFAULT;
 		switch (get_optional_param('view'))
@@ -46,7 +48,7 @@ class ApiPage extends GetApiPageBase
 		// The same rules, in the same order, as the club is offered them - see
 		// get_available_rules(). Each says where it comes from.
 		$owners = array();
-		$query = new DbQuery('SELECT r.id, r.club_id, r.league_id, r.name FROM rules r LEFT OUTER JOIN league_clubs lc ON lc.league_id = r.league_id AND lc.club_id = ? WHERE r.club_id = ? OR (r.club_id IS NULL AND r.league_id IS NULL) OR lc.club_id IS NOT NULL', $club_id, $club_id);
+		$query = new DbQuery('SELECT r.id, r.club_id, r.league_id, n.name FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 LEFT OUTER JOIN league_clubs lc ON lc.league_id = r.league_id AND lc.club_id = ? WHERE r.club_id = ? OR (r.club_id IS NULL AND r.league_id IS NULL) OR lc.club_id IS NOT NULL', $club_id, $club_id);
 		while ($row = $query->next())
 		{
 			$owners['r' . $row[0]] = $row;

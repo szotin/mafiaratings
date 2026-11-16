@@ -3,6 +3,7 @@
 require_once '../../include/api.php';
 require_once '../../include/rules.php';
 require_once '../../include/tournament_schema.php';
+require_once '../../include/names.php';
 
 define('CURRENT_VERSION', 0);
 
@@ -48,13 +49,15 @@ class ApiPage extends OpsApiPageBase
 		return rules_code_from_object($rules);
 	}
 
-	// A name is needed, it is not the name of the owner (that is what its default rules are
-	// called), and the owner has no other rules by that name.
-	private static function check_name($club_id, $league_id, $name, $rules_id = 0)
+	// The names of the rules from the request - name, and name_xx for the languages that have their own.
+	// A name is needed, it is not the name of the owner (that is what its default rules are called), and
+	// the owner has no other rules by that name in a language this name is for.
+	private static function get_names($club_id, $league_id, $rules_id = 0)
 	{
 		global $_lang;
 
-		if ($name == '')
+		$names = new Names(0, get_label('Rules name'), NULL, 0, NULL, 'name', false);
+		if (count($names->names) == 0 || $names->names[0]->name == '')
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('Rules name')));
 		}
@@ -62,27 +65,33 @@ class ApiPage extends OpsApiPageBase
 		if ($club_id != NULL)
 		{
 			list($owner_name) = Db::record(get_label('club'), 'SELECT n.name FROM clubs c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 WHERE c.id = ?', $club_id);
-			$query = new DbQuery('SELECT id FROM rules WHERE club_id = ? AND name = ? AND id <> ?', $club_id, $name, $rules_id);
+			$owner = new SQL('r.club_id = ?', $club_id);
 		}
 		else if ($league_id != NULL)
 		{
 			list($owner_name) = Db::record(get_label('league'), 'SELECT n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & '.$_lang.') <> 0 WHERE l.id = ?', $league_id);
-			$query = new DbQuery('SELECT id FROM rules WHERE league_id = ? AND name = ? AND id <> ?', $league_id, $name, $rules_id);
+			$owner = new SQL('r.league_id = ?', $league_id);
 		}
 		else
 		{
 			$owner_name = PRODUCT_NAME;
-			$query = new DbQuery('SELECT id FROM rules WHERE club_id IS NULL AND league_id IS NULL AND name = ? AND id <> ?', $name, $rules_id);
+			$owner = new SQL('r.club_id IS NULL AND r.league_id IS NULL');
 		}
 
-		if ($query->next())
+		foreach ($names->names as $n)
 		{
-			throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Rules name'), $name));
+			$query = new DbQuery('SELECT r.id FROM rules r JOIN names n ON n.id = r.name_id WHERE ', $owner);
+			$query->add(' AND n.name = ? AND (n.langs & ?) <> 0 AND r.id <> ?', $n->name, $n->langs, $rules_id);
+			if ($query->next())
+			{
+				throw new Exc(get_label('[0] "[1]" is already used. Please try another one.', get_label('Rules name'), $n->name));
+			}
+			if (mb_strtolower($n->name, 'UTF-8') == mb_strtolower($owner_name, 'UTF-8'))
+			{
+				throw new Exc(get_label('Rules name can not be the same as club name [0].', $n->name));
+			}
 		}
-		if (mb_strtolower($name, 'UTF-8') == mb_strtolower($owner_name, 'UTF-8'))
-		{
-			throw new Exc(get_label('Rules name can not be the same as club name [0].', $name));
-		}
+		return $names;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -96,17 +105,17 @@ class ApiPage extends OpsApiPageBase
 		$league_id = ($club_id == NULL && $league_id > 0) ? $league_id : NULL;
 		self::check_owner($club_id, $league_id);
 
-		$rules_name = trim(get_required_param('name'));
 		$rules = self::rules_value($league_id, get_optional_param('rules', $league_id != NULL ? '{}' : get_site_rules()));
 
 		Db::begin();
-		self::check_name($club_id, $league_id, $rules_name);
-		Db::exec(get_label('rules'), 'INSERT INTO rules (club_id, league_id, name, rules) VALUES (?, ?, ?, ?)', $club_id, $league_id, $rules_name, $rules);
+		$names = self::get_names($club_id, $league_id);
+		Db::exec(get_label('rules'), 'INSERT INTO rules (club_id, league_id, name_id, rules) VALUES (?, ?, ?, ?)', $club_id, $league_id, $names->get_id(), $rules);
 		list ($rules_id) = Db::record(get_label('rules'), 'SELECT LAST_INSERT_ID()');
 
 		$log_details = new stdClass();
 		$log_details->id = $rules_id;
-		$log_details->name = $rules_name;
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $names->get_id();
 		$log_details->code = $rules;
 		db_log(LOG_OBJECT_RULES, 'created', $log_details, $rules_id, $club_id, $league_id);
 		Db::commit();
@@ -119,7 +128,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_ADMIN, 'Create named game rules of a club, of a league, or of the site.');
 		$help->request_param('club_id', 'Club id. The rules are the club\'s.', 'not the club\'s.');
 		$help->request_param('league_id', 'League id. The rules are the league\'s, and they are a filter rather than rules: a club that picks them plays its own default rules put through the filter. Not used when club_id is set.', 'with no club_id either, the rules are the site\'s; only an admin can create those.');
-		$help->request_param('name', 'Rules name. Must be unique for its owner, and different from the owner\'s name.');
+		Names::help($help, 'Rules', false); // unique for its owner in every language, and different from the owner's name
 
 		$rules_param = $help->request_param('rules', 'Rules of a club or of the site: either a rules code in the form "' . DEFAULT_RULES . '" or json object of the following format. Rules of a league: a filter, as in api/ops/league.php.', 'the default rules of the site; an empty filter for a league.');
 		api_rules_help($rules_param);
@@ -145,28 +154,26 @@ class ApiPage extends OpsApiPageBase
 		Db::begin();
 		if ($rules_id > 0)
 		{
-			list ($club_id, $league_id, $old_rules_name, $old_rules) = Db::record(get_label('rules'), 'SELECT club_id, league_id, name, rules FROM rules WHERE id = ?', $rules_id);
+			list ($club_id, $league_id, $old_name_id, $old_rules) = Db::record(get_label('rules'), 'SELECT club_id, league_id, name_id, rules FROM rules WHERE id = ?', $rules_id);
 			self::check_owner($club_id, $league_id);
 
 			$rules = self::rules_value($league_id, get_optional_param('rules', $old_rules));
-			$rules_name = $old_rules_name;
-			// The default rules of the site keep having no name.
-			if ($old_rules_name != '')
+			$name_id = $old_name_id;
+			// The default rules of the site keep having no name; the others keep theirs unless a name is sent.
+			if (!is_null($old_name_id) && isset($_REQUEST['name']))
 			{
-				$rules_name = trim(get_optional_param('name', $old_rules_name));
-				if ($rules_name != $old_rules_name)
-				{
-					self::check_name($club_id, $league_id, $rules_name, $rules_id);
-				}
+				$names = self::get_names($club_id, $league_id, $rules_id);
+				$name_id = $names->get_id();
 			}
 
-			Db::exec(get_label('rules'),  'UPDATE rules SET name = ?, rules = ? WHERE id = ?', $rules_name, $rules, $rules_id);
+			Db::exec(get_label('rules'),  'UPDATE rules SET name_id = ?, rules = ? WHERE id = ?', $name_id, $rules, $rules_id);
 			if (Db::affected_rows() > 0)
 			{
 				$log_details = new stdClass();
-				if ($rules_name != $old_rules_name)
+				if ($name_id != $old_name_id)
 				{
-					$log_details->name = $rules_name;
+					$log_details->name = $names->to_string();
+					$log_details->name_id = $name_id;
 				}
 				if ($rules != $old_rules)
 				{
@@ -200,7 +207,7 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER | PERMISSION_ADMIN, 'Change named game rules, or the default rules of a club.');
 		$help->request_param('rules_id', 'Rules id. The default rules of the site are changed by their id too; they keep having no name.', '"club_id" must be set.');
 		$help->request_param('club_id', 'Club id. The default rules of this club are changed; "name" is not used.', '"rules_id" must be set.');
-		$help->request_param('name', 'New rules name.', 'remains the same.');
+		Names::help($help, 'Rules', true);
 		$rules_param = $help->request_param('rules', 'New rules. Either rules code in the form "' . DEFAULT_RULES . '" or json object of the following format. A filter for the rules of a league.', 'remains the same.');
 		api_rules_help($rules_param);
 		return $help;
@@ -211,12 +218,14 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function delete_op()
 	{
+		global $_lang;
+
 		$rules_id = (int)get_required_param('rules_id');
 
 		Db::begin();
-		list ($club_id, $league_id, $rules_name) = Db::record(get_label('rules'), 'SELECT club_id, league_id, name FROM rules WHERE id = ?', $rules_id);
+		list ($club_id, $league_id, $name_id, $rules_name) = Db::record(get_label('rules'), 'SELECT r.club_id, r.league_id, r.name_id, n.name FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.id = ?', $rules_id);
 		self::check_owner($club_id, $league_id);
-		if ($rules_name == '')
+		if (is_null($name_id))
 		{
 			throw new Exc(get_label('The default rules can not be deleted.'));
 		}

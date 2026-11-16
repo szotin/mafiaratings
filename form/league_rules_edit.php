@@ -15,14 +15,14 @@ try
 	if (isset($_REQUEST['rules_id']))
 	{
 		$rules_id = (int)$_REQUEST['rules_id'];
-		list($league_id, $rules, $rules_name) = Db::record(get_label('rules'), 'SELECT league_id, rules, name FROM rules WHERE id = ?', $rules_id);
+		list($league_id, $rules, $name_id, $rules_name) = Db::record(get_label('rules'), 'SELECT r.league_id, r.rules, r.name_id, n.name FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.id = ?', $rules_id);
 		if (is_null($league_id))
 		{
 			throw new FatalExc(get_label('Unknown [0]', get_label('rules')));
 		}
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $league_id);
 		dialog_title(get_label('Edit [0]', get_label('rules [0]', $rules_name)));
-		show_rules_filter_form($rules, 'api/ops/rules.php', array('op' => 'change', 'rules_id' => $rules_id), $rules_name);
+		show_rules_filter_form($rules, 'api/ops/rules.php', array('op' => 'change', 'rules_id' => $rules_id), new Names($name_id, get_label('Rules name')));
 	}
 	else
 	{
@@ -38,7 +38,7 @@ try
 		{
 			// New rules start as the default filter of the league.
 			dialog_title(get_label('Create [0]', get_label('rules for [0]', $league_name)));
-			show_rules_filter_form($league_rules, 'api/ops/rules.php', array('op' => 'create', 'league_id' => $league_id), '');
+			show_rules_filter_form($league_rules, 'api/ops/rules.php', array('op' => 'create', 'league_id' => $league_id), new Names(0, get_label('Rules name'), NULL, 0, NULL, 'name', false));
 		}
 		else
 		{

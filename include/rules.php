@@ -668,7 +668,7 @@ function show_rules($rules_code, $view)
 // no name, see db/alter212.sql.
 function get_site_rules()
 {
-	$query = new DbQuery('SELECT rules FROM rules WHERE club_id IS NULL AND league_id IS NULL AND name = \'\'');
+	$query = new DbQuery('SELECT rules FROM rules WHERE club_id IS NULL AND league_id IS NULL AND name_id IS NULL');
 	if ($row = $query->next())
 	{
 		return upgrade_rules_code($row[0]);
@@ -729,11 +729,11 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	$own = array();
 	if ($club_id != null)
 	{
-		$query = new DbQuery('SELECT id, name, rules, club_id FROM rules WHERE league_id IS NULL AND (club_id = ? OR club_id IS NULL)', $club_id);
+		$query = new DbQuery('SELECT r.id, n.name, r.rules, r.club_id FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id IS NULL AND (r.club_id = ? OR r.club_id IS NULL)', $club_id);
 	}
 	else
 	{
-		$query = new DbQuery('SELECT id, name, rules, club_id FROM rules WHERE league_id IS NULL AND club_id IS NULL');
+		$query = new DbQuery('SELECT r.id, n.name, r.rules, r.club_id FROM rules r LEFT OUTER JOIN names n ON n.id = r.name_id AND (n.langs & '.$_lang.') <> 0 WHERE r.league_id IS NULL AND r.club_id IS NULL');
 	}
 	while ($row = $query->next())
 	{
@@ -771,7 +771,8 @@ function get_available_rules($club_id = null, $club_name = null, $club_rules = n
 	if ($club_id != null)
 	{
 		$query = new DbQuery(
-			'SELECT r.id, nl.name, r.name, r.rules FROM rules r' .
+			'SELECT r.id, nl.name, nr.name, r.rules FROM rules r' .
+			' JOIN names nr ON nr.id = r.name_id AND (nr.langs & '.$_lang.') <> 0' .
 			' JOIN leagues l ON l.id = r.league_id' .
 			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0' .
 			' JOIN league_clubs lc ON lc.league_id = r.league_id' .
@@ -864,10 +865,10 @@ function rules_filter_to_json($rules)
     $rules is the filter as it stands in the database, which is already JSON and goes to the
     page as it is. $api and $params say where the dialog posts what it has: the filter itself is
     added to the parameters under the name every one of those operations calls it by. */
-// $name is null for a filter that has no name of its own - the filter of a league or of a series.
-// For named rules of a league it is their name, shown in a field above the filter and sent as
-// "name" along with it.
-function show_rules_filter_form($rules, $api, $params, $name = null)
+// $names is null for a filter that has no name of its own - the filter of a league or of a series.
+// For named rules of a league it is their Names (include/names.php), shown in the name control above
+// the filter and sent as "name" and "name_xx" along with it.
+function show_rules_filter_form($rules, $api, $params, $names = null)
 {
 	global $_lang, $_rules_options;
 ?>
@@ -877,17 +878,19 @@ function show_rules_filter_form($rules, $api, $params, $name = null)
 	{
 		var params = <?php echo json_encode($params); ?>;
 		params.rules = rules;
-<?php if (!is_null($name)) { ?>
-		params.name = $("#form-name").val();
+<?php if (!is_null($names)) { ?>
+		nameControl.fillRequest(params);
 <?php } ?>
 		json.post(<?php echo json_encode($api); ?>, params, onSuccess);
 	}
 	</script>
 <?php
 	echo '<table class="transp" width="100%">';
-	if (!is_null($name))
+	if (!is_null($names))
 	{
-		echo '<tr><td><p>' . get_label('Rules name') . ': <input class="longest" id="form-name" value="' . htmlspecialchars($name, ENT_QUOTES) . '"></p></td></tr>';
+		echo '<tr><td><p>' . get_label('Rules name') . ':</p>';
+		Names::show_control($names);
+		echo '</td></tr>';
 	}
 	echo '<tr><td><span id="form-rules"></span></td></tr>';
 	

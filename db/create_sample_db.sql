@@ -129,7 +129,7 @@ CREATE TABLE `rules` (
   `id` int(11) NOT NULL,
   `club_id` int(11) DEFAULT NULL,
   `league_id` int(11) DEFAULT NULL,
-  `name` varchar(128) NOT NULL,
+  `name_id` int(11) DEFAULT NULL,
   `rules` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -1181,7 +1181,7 @@ INSERT INTO `clubs` (`id`, `name_id`, `langs`, `flags`, `web_site`, `city_id`, `
 INSERT INTO `leagues` (`id`, `name_id`, `langs`, `web_site`, `email`, `phone`, `scoring_id`, `flags`, `rules`, `normalizer_id`, `gaining_id`) VALUES (1, 5, 7, '', 'league@example.com', '', 2, 0, '{}', 3, 3);
 INSERT INTO `league_clubs` (`league_id`, `club_id`, `flags`) VALUES (1, 1, 0);
 -- The default rules of the site: the rules of the site with no name - see db/alter212.sql.
-INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name`, `rules`) VALUES (1, NULL, NULL, '', '0002000010000');
+INSERT INTO `rules` (`id`, `club_id`, `league_id`, `name_id`, `rules`) VALUES (1, NULL, NULL, NULL, '0002000010000');
 -- The default normalizer of the site (flags 1, see get_site_normalizer_id() in include/scoring.php)
 -- and the copies of it that the sample club and the sample league have as their own defaults -
 -- see db/alter213.sql.
@@ -1657,7 +1657,8 @@ ALTER TABLE `club_regs`
 ALTER TABLE `rules`
   ADD PRIMARY KEY (`id`),
   ADD KEY `club_id` (`club_id`),
-  ADD KEY `league_id` (`league_id`);
+  ADD KEY `league_id` (`league_id`),
+  ADD KEY `name_id` (`name_id`);
 
 --
 -- Indexes for table `countries`
@@ -2590,7 +2591,8 @@ ALTER TABLE `club_regs`
 --
 ALTER TABLE `rules`
   ADD CONSTRAINT `rules_club` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`),
-  ADD CONSTRAINT `rules_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`);
+  ADD CONSTRAINT `rules_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
+  ADD CONSTRAINT `rules_name` FOREIGN KEY (`name_id`) REFERENCES `names` (`id`);
 
 --
 -- Constraints for table `countries`
