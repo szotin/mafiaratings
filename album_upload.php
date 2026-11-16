@@ -26,7 +26,7 @@ class Page extends AlbumPageBase
 			<?php echo UPLOAD_PHOTO_MAX_SIZE; ?>, 
 			function (result)
 			{
-				$('#progress-' + i).html('<img src="pics/photo/tnails/' + result.photo_id + '.jpg">');
+				$('#progress-' + i).html('<img src="<?php echo PHOTOS_DIR . TNAILS_DIR; ?>' + result.photo_id + '.jpg">');
 				$('#row-' + i).addClass('dark');
 				if (++i < files.length)
 				{
