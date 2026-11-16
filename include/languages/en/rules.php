@@ -10,8 +10,23 @@ return array
 			'Ten people participate in each game. The Players are divided into two groups: Red and Black. The Red Players are law-abiding citizens (they draw the «Citizen» card); the «black» players are mafiosi (they draw the «Mafia» card). Seven red cards and three black cards are played. One of the seven red cards is different from the others - the «Sheriff» card. This Player becomes the leader of the Red Players. The Black players also have a leader, the one who draws the «Don» card.', // 1.1.
 			'The game has two parts: «day» and «night».', // 1.2.
 			'The Moderator observes the game and orchestrates its progress. Side Referees may assist in the game.', // 1.3.
-			'The Red team wins at the moment when all the black team are eliminated from the game. The «Black» wins when the number of «Black» players is greater or equal than the «Red» ones. The player is assumed to be «killed» at the moment the vote is over and the moment after the «black» team completed their shooting.', // 1.4.
-			'If during 3 following «nights» and «days» starting with «night», no player leaves the game, a draw is announced.', // 1.5.
+			'The Red team wins at the moment when all the black team are eliminated from the game. The player is assumed to be «killed» at the moment the vote is over and the moment after the «black» team completed their shooting.', // 1.4.
+			array // 1.5.
+			(
+				RULES_BLACK_WIN,
+				'Mafia victory',
+				array
+				(
+					'The «Black» wins when the number of «Black» players is greater or equal than the «Red» ones.',
+					'The «Black» wins when the number of «Black» players is greater or equal than the «Red» ones. Besides, the «Black» wins when the night falls and there is only one «Red» player more than «Black» ones at the table: there is no need to shoot, the Referee announces the «Black» victory at once. For example, when there are eight players, three of them «Black», and a «Red» player is voted out.',
+				),
+				array
+				(
+					'The «Black» wins when they are as many as the «Red».',
+					'The «Black» wins also when all that is left for them is to shoot at night - for example, after a «Red» player is voted out at eight players. No shooting is needed.',
+				),
+			),
+			'If during 3 following «nights» and «days» starting with «night», no player leaves the game, a draw is announced.', // 1.6.
 		),
 	),
 	

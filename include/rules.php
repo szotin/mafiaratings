@@ -3,7 +3,7 @@
 require_once __DIR__ . '/db.php';
 
 // См правила описанные в https://docs.google.com/document/d/1MTOaNVRmx0eCT-TGYAUbGy2F2WAiOcpdf0NSDsVqjCk
-define('DEFAULT_RULES', '0002000010000');
+define('DEFAULT_RULES', '00020000100000');
 
 // 6.3. Ротация первой речи.
 // rotation
@@ -125,7 +125,13 @@ define('RULES_TECH_FAUL', 12);
 define('RULES_TECH_FAUL_NO', 0); // 9.6.1. В этой версии правил технических фолов нет.
 define('RULES_TECH_FAUL_YES', 1); // 9.6.2. За повышенные эмоции, споры с судьей, стуки по столу отвлекающие от игры, а также грубые высказывания в адрес других игроков, судья может дать технический фол. Технические фолы считаются отдельно от основных. За два технических фола игрок получает удаление.
 
-define('RULE_OPTIONS_COUNT', 13);
+// 1.5. Победа мафии. It is the last in the code because it was added last, but it is shown first - see get_rule_options_order().
+// blackWin
+define('RULES_BLACK_WIN', 13);
+define('RULES_BLACK_WIN_EQUAL', 0); // 1.5.1. Победа «чёрной» команды наступает в случае, когда за игровым столом остается равное количество игроков обеих команд или количество «черных» игроков больше, чем «красных».
+define('RULES_BLACK_WIN_BEFORE_NIGHT', 1); // 1.5.2. То же самое, и кроме того «чёрные» побеждают, когда наступает ночь, а «красных» за столом на одного больше, чем «чёрных». Например, при восьми игроках заголосовали «красного» и осталось три «чёрных» против четырёх «красных». Стрелять уже не нужно - игра заканчивается.
+
+define('RULE_OPTIONS_COUNT', 14);
 
 define('RULE_OPTION_NAME', 0);
 define('RULE_OPTION_VALUES', 1);
@@ -155,7 +161,30 @@ $_rules_options = array(
 	array('gameEndSpeech', array(true, false), 7, 18, false),
 	array('threeFouls', array('lose-speech', 'short-speech', 'no'), 8, 4, false),
 	array('techFouls', array('no', 'yes'), 8, 5, false),
+	array('blackWin', array('equal', 'before-night'), 0, 4, false),
 );
+
+// The numbers of the options above in the order of the rules they are in: by paragraph, then by item.
+// The number of an option is its place in the rules code, and a new option goes to the end of the code
+// so that the codes already given out keep their meaning. Wherever the options are shown one after
+// another, they are shown in this order.
+function get_rule_options_order()
+{
+	global $_rules_options;
+
+	$order = range(0, RULE_OPTIONS_COUNT - 1);
+	usort($order, function($a, $b) use ($_rules_options)
+	{
+		$pa = $_rules_options[$a][RULE_OPTION_PARAGRAPH];
+		$pb = $_rules_options[$b][RULE_OPTION_PARAGRAPH];
+		if ($pa != $pb)
+		{
+			return $pa - $pb;
+		}
+		return $_rules_options[$a][RULE_OPTION_ITEM] - $_rules_options[$b][RULE_OPTION_ITEM];
+	});
+	return $order;
+}
 
 function is_valid_rules_code($rules_code)
 {
@@ -198,11 +227,16 @@ function upgrade_rules_code($rules_code)
 		if (strlen($rules_code) == 12)
 		{
 			$rules_code = substr($rules_code, 0, 11) . '00' . substr($rules_code, 11);
-		}
-		
-		if (strlen($rules_code) == 14)
-		{
+			// The last of those 14 was antimonster, which is gone - see ca8fb69c. A code of 14 is not
+			// cut on its own any more: 14 is what a code is now, the last being blackWin. Every code of
+			// 14 with antimonster in it was upgraded in the database by update_rules.php back then.
 			$rules_code = substr($rules_code, 0, -1);
+		}
+
+		if (strlen($rules_code) == 13)
+		{
+			// blackWin is added at the end. It is 0 - the black win at equal numbers only, as before.
+			$rules_code .= '0';
 		}
 	}
 	return $rules_code;
@@ -432,7 +466,7 @@ function api_rules_help($rules_param, $show_code_param = false)
 	{
 		$rules_param->sub_param('code', 'Rules code in the form "' . DEFAULT_RULES . '". It uniquiely identifies the rules. It is guaranteed that games/events/tournaments/clubs with the same code are using the same rules.');
 	}
-	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	foreach (get_rule_options_order() as $i)
 	{
 		$rule_option = $_rules_options[$i];
 		$rule_option_name = $rule_option[RULE_OPTION_NAME];
@@ -483,7 +517,7 @@ function api_rules_filter_help($rules_param)
 	global $_rules_options;
 	
 	$rules = include '../../include/languages/en/rules.php';
-	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	foreach (get_rule_options_order() as $i)
 	{
 		$rule_option = $_rules_options[$i];
 		$rule_option_name = $rule_option[RULE_OPTION_NAME];
@@ -607,7 +641,7 @@ function show_rules($rules_code, $view)
 	}
 	else
 	{
-		for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+		foreach (get_rule_options_order() as $i)
 		{
 			$option = $_rules_options[$i];
 			$paragraph_index = $option[RULE_OPTION_PARAGRAPH];
@@ -937,7 +971,8 @@ function show_rules_filter_form($rules, $api, $params, $names = null)
 	
 	$labels = include __DIR__ . '/languages/' . get_lang_code($_lang) . '/rules.php';
 	$rules_array = array();
-	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	// A filter names the options it allows, so here the place of an option in rulesOptions is only where it is shown.
+	foreach (get_rule_options_order() as $i)
 	{
 		$option = $_rules_options[$i];
 		$paragraph = $option[RULE_OPTION_PARAGRAPH];

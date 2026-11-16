@@ -898,6 +898,16 @@ function _gameIsEnd()
 		{
 			return 2;
 		}
+
+		// The night is coming with one red more than black: the black shoot and they are as many as
+		// the red. By the rules where nobody waits for that shot the game is over at the end of the day -
+		// when the night falls, or as soon as the last of the day dies when there is no last speech.
+		if (blackAlive + 1 == redAlive &&
+			gameGetRule(/*RULES_BLACK_WIN*/13) == /*RULES_BLACK_WIN_BEFORE_NIGHT*/1 &&
+			(game.time.time == 'night start' || (game.time.time == 'day kill speaking' && !_gameLastSpeechExists())))
+		{
+			return 2;
+		}
 	}
 	return 0;
 }
@@ -2764,6 +2774,12 @@ function gameNext()
 				});
 				return; // Bypass gameDirty() - it is not needed any more
 			}
+		}
+		if (isSet(game.time) && game.time.time == 'night start')
+		{
+			// Whoever has died, the night falls here, and by the rules where the black win before the
+			// night this is where they win - see _gameIsEnd().
+			_gameCheckEnd();
 		}
 		gameDirty();
 	}

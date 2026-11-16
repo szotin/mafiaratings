@@ -235,17 +235,26 @@ class RulesUpdater extends Updater
 		}
 
 		$count = 0;
-		$query = new DbQuery('SELECT id, json FROM games WHERE id > ? ORDER BY id LIMIT ' . $items_count, $this->vars->game);
+		$query = new DbQuery('SELECT id, json, rules FROM games WHERE id > ? ORDER BY id LIMIT ' . $items_count, $this->vars->game);
 		while ($row = $query->next())
 		{
 			++$count;
-			list($game_id, $game) = $row;
+			list($game_id, $game, $rules_code) = $row;
 			$game = json_decode($game);
 			if (convert_game($game))
 			{
-				$game = json_encode($game);
-				Db::exec('game', 'UPDATE games SET json = ? WHERE id = ?', $game, $game_id);
+				Db::exec('game', 'UPDATE games SET json = ?, rules = ? WHERE id = ?', json_encode($game), $game->rules, $game_id);
 				++$this->vars->real_count;
+			}
+			else
+			{
+				// The column is the code of the json, and the games are found by it - api/get/games.php.
+				$new_rules_code = upgrade_rules_code($rules_code);
+				if ($new_rules_code !== $rules_code)
+				{
+					Db::exec('game', 'UPDATE games SET rules = ? WHERE id = ?', $new_rules_code, $game_id);
+					++$this->vars->real_count;
+				}
 			}
 			$this->vars->game = (int)$game_id;
 			if (!$this->canDoOneMoreItem())

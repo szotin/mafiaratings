@@ -174,7 +174,7 @@ try
 			}
 			if (isset($game->rules))
 			{
-				$rules_code = $game->rules;
+				$rules_code = upgrade_rules_code($game->rules);
 			}
 			
 			if ($tournament_name != null)
@@ -298,7 +298,7 @@ try
 	else if ($demo_game)
 	{
 		$club_id = $demo_game->clubId;
-		$rules_code = $demo_game->rules;
+		$rules_code = upgrade_rules_code($demo_game->rules);
 		$rules_name = get_label('Demo');
 		
 ?>			
@@ -433,13 +433,14 @@ try
 	
 	$rules = include '../include/languages/' . get_lang_code($_lang) . '/rules.php';
 	$rules_array = array();
-	for ($i = 0; $i < RULE_OPTIONS_COUNT; ++$i)
+	// The options are shown in the order of the rules, and the last field of each is its place in the rules code.
+	foreach (get_rule_options_order() as $i)
 	{
 		$option = $_rules_options[$i];
 		$paragraph = $option[RULE_OPTION_PARAGRAPH];
 		$item = $option[RULE_OPTION_ITEM];
 		$rule = $rules[$paragraph][RULE_PARAGRAPH_ITEMS][$item];
-		$rules_array[] = array($rule[RULE_ITEM_NAME], ($paragraph + 1) . '.' . ($item + 1), $rule[RULE_ITEM_OPTIONS], $rule[RULE_ITEM_OPTIONS_SHORT], $option[RULE_OPTION_NAME], $option[RULE_OPTION_VALUES]);
+		$rules_array[] = array($rule[RULE_ITEM_NAME], ($paragraph + 1) . '.' . ($item + 1), $rule[RULE_ITEM_OPTIONS], $rule[RULE_ITEM_OPTIONS_SHORT], $option[RULE_OPTION_NAME], $option[RULE_OPTION_VALUES], $i);
 	}
 	echo "\nvar rulesOptions = " . json_encode($rules_array) . ";\n";
 	
@@ -456,12 +457,13 @@ try
 
 	function getRule(ruleNum)
 	{
-		return rulesCode.substr(ruleNum, 1);
+		return rulesCode.substr(rulesOptions[ruleNum][6], 1);
 	}
-	
+
 	function setRule(ruleNum, value)
 	{
-		rulesCode = rulesCode.substr(0, ruleNum) + value + rulesCode.substr(ruleNum + 1);
+		var pos = rulesOptions[ruleNum][6];
+		rulesCode = rulesCode.substr(0, pos) + value + rulesCode.substr(pos + 1);
 		$('#form-full-text').html('<p>' + rulesOptions[ruleNum][1] + '. ' + rulesOptions[ruleNum][2][value] + '</p>');
 		if ($('#form-rules').length > 0)
 		{
