@@ -467,6 +467,18 @@ class Names
 		echo 'var ' . $var_name . ' = new NameControl(' . $values_var . ', "' . $control_id . '", "' . $var_name . '", {' . $lang_names . '});';
 		echo '</script>';
 	}
+
+	// For a name control of a small dialog: its language menu is shown over the page. Inside the
+	// dialog the menu does not fit - it stretches the dialog, which scrolls, and the menu moves away
+	// from its button. The menu goes with the dialog when the dialog is closed. Call right after
+	// show_control(), from a form shown by dlg.form().
+	static function show_menu_over_dialog($control_id = 'form-name')
+	{
+		echo '<script>';
+		echo '(function() { var m = $("#' . $control_id . '-menu").appendTo("body");';
+		echo ' $("#dlg" + dlg.curId()).on("dialogclose", function() { m.remove(); }); })();';
+		echo '</script>';
+	}
 	
 	static function help($help, $object, $for_update, $param_name = 'name')
 	{

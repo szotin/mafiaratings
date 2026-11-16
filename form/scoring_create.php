@@ -42,6 +42,7 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="200" valign="top">'.get_label('Scoring system name').':</td><td>';
 	Names::show_control(new Names(0, get_label('Scoring system name'), NULL, 0, NULL, 'name', false));
+	Names::show_menu_over_dialog();
 	echo '</td></tr>';
 	
 	echo '<tr><td>'.get_label('Copy all rules from') . ':</td><td><select id="form-copy">';

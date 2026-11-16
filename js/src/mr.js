@@ -920,7 +920,7 @@ var mr = new function()
 		{
 			url += delim + "league=" + leagueId;
 		}
-		dlg.form(url, refr, 400);
+		dlg.form(url, refr, 600);
 	}
 
 	this.editScoringSystem = function(id)
@@ -1148,7 +1148,7 @@ var mr = new function()
 		{
 			url += delim + "league=" + leagueId;
 		}
-		dlg.form(url, refr, 400);
+		dlg.form(url, refr, 600);
 	}
 
 	this.editNormalizer = function(id)
@@ -1180,7 +1180,7 @@ var mr = new function()
 		{
 			url += delim + "club=" + clubId;
 		}
-		dlg.form(url, refr, 400);
+		dlg.form(url, refr, 600);
 	}
 
 	this.editGainingSystem = function(id)

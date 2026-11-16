@@ -307,6 +307,8 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	function delete_op()
 	{
+		global $_lang;
+
 		$gaining_id = (int)get_required_param('gaining_id');
 		
 		list ($league_id, $club_id) = Db::record(get_label('gaining system'), 'SELECT league_id, club_id FROM gainings WHERE id = ?', $gaining_id);
@@ -328,6 +330,21 @@ class ApiPage extends OpsApiPageBase
 		if (is_default_system('gainings', $gaining_id))
 		{
 			throw new Exc(get_label('The default gaining system can not be deleted.'));
+		}
+		// A series keeps the version of the system it is scored by, so the system goes only when no
+		// series uses it. Saying which ones lets the manager move them to another system first.
+		$series_names = '';
+		$query = new DbQuery(
+			'SELECT n.name FROM series s JOIN names n ON n.id = s.name_id AND (n.langs & '.$_lang.') <> 0' .
+			' WHERE s.gaining_id = ? ORDER BY s.start_time DESC, s.id DESC', $gaining_id);
+		while ($row = $query->next())
+		{
+			$series_names .= '<br>' . htmlspecialchars($row[0], ENT_QUOTES);
+		}
+		if ($series_names != '')
+		{
+			list($gaining_name) = Db::record(get_label('gaining system'), 'SELECT n.name FROM gainings g JOIN names n ON n.id = g.name_id AND (n.langs & '.$_lang.') <> 0 WHERE g.id = ?', $gaining_id);
+			throw new Exc(get_label('Unable to delete [0] because series use it:', $gaining_name) . $series_names);
 		}
 		Db::exec(get_label('gaining system'), 'UPDATE gainings SET version = NULL WHERE id = ?', $gaining_id);
 		Db::exec(get_label('gaining system'), 'DELETE FROM gaining_versions WHERE gaining_id = ?', $gaining_id);
