@@ -193,11 +193,11 @@ class Page extends TournamentPageBase
 		
 		if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 		{
-			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS | SCORING_SELECT_FLAG_NO_NORMALIZER;
 		}
 		else
 		{
-			$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION;
+			$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER;
 		}
 		
 		echo '<p>';

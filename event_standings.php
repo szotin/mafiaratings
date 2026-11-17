@@ -189,23 +189,23 @@ class Page extends EventPageBase
 				echo '<td align="right">';
 				if ($player->nom_flags & $best_red_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_black_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_don_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_sheriff_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span></span>';
 				}
 				if ($player->nom_flags & $mvp_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="mvp">MVP</span></span>';
 				}
 				echo '</td>';
 			}

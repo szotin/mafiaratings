@@ -397,23 +397,23 @@ class Page extends TournamentPageBase
 				echo '<td align="right">';
 				if ($player->nom_flags & $best_red_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_black_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_don_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_sheriff_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span></span>';
 				}
 				if ($player->nom_flags & $mvp_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="mvp">MVP</span></span>';
 				}
 				echo '</td>';
 			}
@@ -442,7 +442,9 @@ class Page extends TournamentPageBase
 			}
 			foreach ($series as $s)
 			{
-				if ($number < $this->num_players && $s->stars > 0)
+				// As complete_competitions.php counts them: whatever stars the series gives the tournament -
+				// none at all included - go into the formula, which may or may not use them.
+				if ($number < $this->num_players)
 				{
 					echo '<td align="center">' . format_gain(get_gaining_points($this->id, $s->gaining, $s->stars, $number + 1, $player->points, $players_count, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, false)) . '</td>';
 					// if ($player->id == 3536)
@@ -586,14 +588,7 @@ class Page extends TournamentPageBase
 			echo '<td align="center">' . (is_null($games_count) ? '' : $games_count) . '</td>';
 			foreach ($series as $s)
 			{
-				if ($s->stars > 0)
-				{
-					echo '<td align="center">' . format_gain(get_gaining_points($this->id, $s->gaining, $s->stars, $place, $sum, $count, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, false)) . '</td>';
-				}
-				else
-				{
-					echo '<td align="center"></td>';
-				}
+				echo '<td align="center">' . format_gain(get_gaining_points($this->id, $s->gaining, $s->stars, $place, $sum, $count, $this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, false)) . '</td>';
 			}
 			echo '</tr>';
 		}
@@ -778,23 +773,23 @@ class Page extends TournamentPageBase
 				echo '<td align="right">';
 				if ($player->nom_flags & $best_red_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_black_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_don_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_sheriff_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span></span>';
 				}
 				if ($player->nom_flags & $mvp_flag)
 				{
-					echo '<img src="images/wreath.png" width="36"><span class="mvp">MVP</span>';
+					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="mvp">MVP</span></span>';
 				}
 				echo '</td>';
 			}
@@ -873,11 +868,11 @@ class Page extends TournamentPageBase
 		{
 			if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 			{
-				$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS;
+				$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS | SCORING_SELECT_FLAG_NO_NORMALIZER;
 			}
 			else
 			{
-				$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION;
+				$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER;
 			}
 			show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'submitScoring', $scoring_select_flags);
 		}
