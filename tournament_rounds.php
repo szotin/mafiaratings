@@ -33,9 +33,9 @@ class Page extends TournamentPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<table class="transp" width="100%"><tr><td>';
+		echo '<div class="toolbar">';
 		show_checkbox_filter(array(get_label('with video'), get_label('unplayed events'), get_label('canceled events')), $filter, 'filterEvents');
-		echo '</td></tr></table>';
+		echo '</div>';
 		
 		$condition = new SQL(' WHERE e.tournament_id = ?',
 			$this->id);
@@ -105,14 +105,13 @@ class Page extends TournamentPageBase
 			}
 			echo '</th>';
 		}
-		echo '<th colspan="2">' . get_label('Round') . '</th>';
+		echo '<th>' . get_label('Round') . '</th>';
 		echo '<th width="140" align="center">' . get_label('Scoring') . '</th>';
 		echo '<th width="80" align="center">' . get_label('Scoring coefficient') . '</th>';
 		echo '<th width="80" align="center">' . get_label('Games played') . '</th>';
 		echo '<th width="80" align="center">' . get_label('Players attended') . '</th></tr>';
 		
 		$now = time();
-		$event_pic = new Picture(EVENT_PICTURE);
 		foreach ($rounds as $row)
 		{
 			list($user_event_flags, $event_id, $event_name, $event_flags, $event_time, $event_duration, $scoring_options, $scoring_id, $scoring_name, $scoring_version, $timezone, $address_id, $address_name, $address_flags, $address, $games_count, $users_count, $videos_count) = $row;
@@ -157,11 +156,6 @@ class Page extends TournamentPageBase
 				}
 				echo '</td>';
 			}
-			
-			echo '<td width="60" class="dark">';
-			$event_pic->set($event_id, $event_name, $event_flags);
-			$event_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
 			
 			echo '<td><table width="100%" class="transp"><tr>';
 			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
