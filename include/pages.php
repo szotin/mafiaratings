@@ -70,12 +70,12 @@ function show_pages_navigation($page_size, $count, $exclude_param = NULL)
 		}
 	}*/
 
-	echo '<p><table class="transp" width="0"><tr><td class="nav" width="60">';
+	$current = (int)$_page;
 	$middle = floor(PAGE_THUMBNAILS_COUNT / 2);
 	$last_page = get_last_page($page_size, $count);
-	if ($_page > $middle)
+	if ($current > $middle)
 	{
-		$min_page = $_page - $middle;
+		$min_page = $current - $middle;
 		if ($min_page + PAGE_THUMBNAILS_COUNT - 1 > $last_page)
 		{
 			$min_page = $last_page - PAGE_THUMBNAILS_COUNT + 1;
@@ -89,41 +89,41 @@ function show_pages_navigation($page_size, $count, $exclude_param = NULL)
 	{
 		$min_page = 0;
 	}
-
-	if ($_page > 0)
-	{
-		echo '<a href="' . $base_url . '0" title="'.get_label('First page').' 1: 1-' . $page_size . '"><img src="images/first.png" border="0"></a>';
-		$rmin = ($_page - 1) * $page_size + 1;
-		$rmax = $rmin + $page_size - 1;
-		echo '&nbsp;<a href="' . $base_url . ($_page - 1) . '" title="'.get_label('Previous page').' ' . $_page . ': ' . $rmin . '-' . $rmax . '"><img src="images/prev.png" border="0"></a>';
-	}
-	else
-	{
-		echo '<img src="images/first_d.png" border="0">&nbsp;<img src="images/prev_d.png" border="0">';
-	}
-	echo '</td><td width="0" class="nav">';
+	$base_url = htmlspecialchars($base_url, ENT_QUOTES, 'UTF-8');
 	
+	// The range of rows a page shows, for the hint over its link.
+	$range = function($p) use ($page_size, $count)
+	{
+		$rmin = $p * $page_size + 1;
+		return $rmin . '-' . min($rmin + $page_size - 1, $count);
+	};
+	// A link to a page, or a dead arrow when there is no such page.
+	$arrow = function($p, $enabled, $text, $title, $class) use ($base_url, $range)
+	{
+		if (!$enabled)
+		{
+			return '<span class="pg ' . $class . ' is-off" aria-hidden="true">' . $text . '</span>';
+		}
+		return '<a class="pg ' . $class . '" href="' . $base_url . $p . '" title="' . $title . ' ' . ($p + 1) . ': ' . $range($p) . '">' . $text . '</a>';
+	};
+	
+	echo '<nav class="pager" aria-label="' . get_label('Pages') . '">';
+	echo $arrow(0, $current > 0, '&laquo;', get_label('First page'), 'pg-end');
+	echo $arrow($current - 1, $current > 0, '&lsaquo;', get_label('Previous page'), 'pg-step');
 	if ($min_page > 0)
 	{
-		echo '&nbsp;|&nbsp;...';
+		echo '<span class="pg-gap">&hellip;</span>';
 	}
-	
 	$p = $min_page;
 	for ($i = 0; $i < PAGE_THUMBNAILS_COUNT; ++$i)
 	{
-		if ($p != $_page)
+		if ($p != $current)
 		{
-			$rmin = $p * $page_size + 1;
-			$rmax = $rmin + $page_size - 1;
-			if ($rmax > $count)
-			{
-				$rmax = $count;
-			}
-			echo '&nbsp;|&nbsp;<a href="' . $base_url . $p . '" title="Page ' . ($p + 1) . ': ' . $rmin . '-' . $rmax . '">' . ($p + 1) . '</a>';
+			echo '<a class="pg" href="' . $base_url . $p . '" title="Page ' . ($p + 1) . ': ' . $range($p) . '">' . ($p + 1) . '</a>';
 		}
 		else
 		{
-			echo '&nbsp;|&nbsp;' . ($p + 1);
+			echo '<span class="pg" aria-current="page">' . ($p + 1) . '</span>';
 		}
 		++$p;
 		if ($p * $page_size >= $count)
@@ -131,29 +131,14 @@ function show_pages_navigation($page_size, $count, $exclude_param = NULL)
 			break;
 		}
 	}
-	
 	if ($p * $page_size < $count)
 	{
-		echo '&nbsp;|&nbsp;...';
+		echo '<span class="pg-gap">&hellip;</span>';
 	}
-	
-	echo '&nbsp;|&nbsp;</td><td width="60" class="nav">';
-	if (($_page + 1) * $page_size < $count)
-	{
-		$rmin = ($_page + 1) * $page_size + 1;
-		$rmax = $rmin + $page_size - 1;
-		if ($rmax > $count)
-		{
-			$rmax = $count;
-		}
-		echo '<a href="' . $base_url . ($_page + 1) . '" title="'.get_label('Next page').' ' . ($_page + 2) . ': ' . $rmin . '-' . $rmax . '"><img src="images/next.png" border="0"></a>';
-		echo '&nbsp;<a href="' . $base_url . $last_page . '" title="'.get_label('Last page').' ' . ($last_page + 1) . ': ' . ($last_page * $page_size + 1) . '-' . $count . '"><img src="images/last.png" border="0"></a>';
-	}
-	else
-	{
-		echo '<img src="images/next_d.png" border="0">&nbsp;<img src="images/last_d.png" border="0">';
-	}
-	echo '</td></tr></table></p>';
+	$has_next = ($current + 1) * $page_size < $count;
+	echo $arrow($current + 1, $has_next, '&rsaquo;', get_label('Next page'), 'pg-step');
+	echo $arrow($last_page, $has_next, '&raquo;', get_label('Last page'), 'pg-end');
+	echo '</nav>';
 }
 
 ?>

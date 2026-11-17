@@ -15,8 +15,15 @@ class GeneralPageBase extends PageBase
 	protected function show_title()
 	{
 		echo '<div class="page-hd"><div>' . $this->standard_title() . '</div><div class="page-hd-side">';
+		echo $this->title_actions();
 		show_back_button();
 		echo '</div></div>';
+	}
+
+	// What a page offers to do beside its title on the band - "New club" on the list of clubs.
+	protected function title_actions()
+	{
+		return '';
 	}
 }
 

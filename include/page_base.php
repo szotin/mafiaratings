@@ -720,6 +720,15 @@ class PageBase
 		case 'status':
 			$path = '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>';
 			break;
+		case 'video':
+			$path = '<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3z"/>';
+			break;
+		case 'plus':
+			$path = '<path d="M12 5v14M5 12h14"/>';
+			break;
+		case 'globe':
+			$path = '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5z"/>';
+			break;
 		default:
 			return '';
 		}

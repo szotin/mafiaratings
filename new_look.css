@@ -444,8 +444,8 @@ a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space
 .more { font-size: 14px; font-weight: 550; color: var(--red); white-space: nowrap; }
 .more:hover { color: var(--red-hi); text-decoration: underline; text-underline-offset: 3px; }
 .dim { color: var(--slate); }
-.home-page .chip { background: var(--frost); color: var(--ink-soft); box-shadow: inset 0 0 0 1px var(--rule); height: 22px; padding: 0 9px; font-size: 11.5px; }
-.home-page .chip.live { background: var(--red); color: #fff; box-shadow: none; }
+.page .chip { background: var(--frost); color: var(--ink-soft); box-shadow: inset 0 0 0 1px var(--rule); height: 22px; padding: 0 9px; font-size: 11.5px; }
+.page .chip.live { background: var(--red); color: #fff; box-shadow: none; }
 .rail-box { padding: 18px 20px; border-radius: var(--r-sheet); background: var(--paper); border: 1px solid rgba(11,20,34,.06); box-shadow: var(--shadow-card); }
 
 /* a player: a round picture (or initials) with a name and a line under it */
@@ -641,6 +641,122 @@ a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space
   .home-results .pcard { flex: 0 0 84%; scroll-snap-align: start; }
   .home-results .pcard:hover { transform: none; }
   .home-filter, .home-filter input.dropdown { width: 100%; }
+}
+
+/* =================================================================== lists: tournaments, clubs, leagues, series */
+
+.page .chip.off { background: var(--frost); color: var(--slate); text-decoration: line-through; }
+.mast .page-hd-side .btn { height: 38px; padding: 0 16px; border-radius: 999px; }
+.mast .page-hd-side .btn .ic { width: 16px; height: 16px; }
+.mast a.btn:hover { color: #fff; }
+.page p.empty { margin: 24px 0; padding: 28px; border-radius: var(--r-sheet); background: var(--paper); border: 1px dashed var(--rule-strong); color: var(--slate); text-align: center; }
+
+/* the filters of a list, on one line that wraps */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 18px; }
+.toolbar .switch-row { display: contents; }
+.toolbar .tb-field { display: flex; align-items: center; }
+.nl .toolbar input.dropdown { width: 240px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
+.toolbar input.dropdown-btn { position: static; width: 16px; height: 16px; margin: 0 12px 0 -28px; padding: 0; border: 0; opacity: .6; }
+.toolbar .tb-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--slate); font-size: 13.5px; }
+.nl .toolbar .tb-dates input[type=date] { height: 38px !important; border-radius: 999px !important; padding: 0 12px !important; }
+.toolbar .tb-dates button.small_icon { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; }
+
+/* past / future */
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); }
+.seg a { display: inline-flex; align-items: center; height: 32px; padding: 0 16px; border-radius: 999px; font: 500 14px var(--font-display); text-transform: uppercase; letter-spacing: .05em; color: var(--slate); }
+.nl .seg a:link, .nl .seg a:visited { color: var(--slate); }
+.seg a:hover, .nl .seg a:hover { color: var(--ink); }
+.seg a[aria-current], .nl .seg a[aria-current]:link, .nl .seg a[aria-current]:visited { background: var(--night); color: #fff; }
+
+/* a filter that is on or off: a chip; the checkbox inside it is hidden */
+.fchips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fchips-label { font-size: 13.5px; color: var(--slate); margin-right: 2px; }
+.fchip { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer; user-select: none;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-strong); font-size: 13.5px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
+.fchip:hover { box-shadow: inset 0 0 0 1px var(--mist); }
+.fchip input, .fchip input[type="checkbox"].toggle { position: absolute; opacity: 0; width: 1px; height: 1px; min-width: 0; margin: 0 !important; padding: 0; border: 0; pointer-events: none; }
+.fchip input[type="checkbox"].toggle::after { display: none; }
+.fchip:has(input:checked) { background: var(--red-soft); color: var(--red); box-shadow: inset 0 0 0 1px rgba(200,35,44,.45); }
+.fchip:has(input:checked)::before { content: "\2713"; font-weight: 700; }
+.fchip:has(input:focus-visible) { outline: 2.5px solid var(--link); outline-offset: 2px; }
+
+/* a filter with three answers (all / only / none of them): a chip whose mark says which */
+.toolbar span.switch-item { display: inline-flex; align-items: center; gap: 6px; height: 34px; margin: 0; padding: 0 14px 0 8px; border-radius: 999px; cursor: pointer;
+  background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-strong); font-size: 13.5px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
+.toolbar span.switch-item > span.switch-text { padding: 0; }
+.toolbar span.tri-filter { width: 20px; height: 20px; min-width: 0; margin: 0; border: 0; border-radius: 50%; background: var(--frost); box-shadow: inset 0 0 0 1px var(--rule-strong); display: inline-grid; place-items: center; }
+.toolbar span.tri-filter i { display: none; }
+.toolbar span.tri-filter::after { content: ""; font-size: 12px; font-weight: 700; line-height: 1; }
+.toolbar span.tri-filter.yes { background: var(--up); box-shadow: none; }
+.toolbar span.tri-filter.yes::after { content: "\2713"; color: #fff; }
+.toolbar span.tri-filter.no { background: var(--down); box-shadow: none; }
+.toolbar span.tri-filter.no::after { content: "\2715"; color: #fff; }
+.toolbar span.switch-item:has(.tri-filter.yes) { background: var(--up-soft); box-shadow: inset 0 0 0 1px rgba(17,121,74,.35); color: var(--up); }
+.toolbar span.switch-item:has(.tri-filter.no) { background: var(--down-soft); box-shadow: inset 0 0 0 1px rgba(192,48,27,.35); color: var(--down); }
+
+/* the month a group of cards belongs to */
+.posters > .grp { grid-column: 1 / -1; margin: 10px 0 -4px; font-size: 15px; letter-spacing: .06em; color: var(--slate); }
+.posters > .grp:first-child { margin-top: 0; }
+.nl .posters > h3.grp { margin: 10px 0 -4px; font-size: 15px; color: var(--slate); }
+.nl .posters > h3.grp:first-child { margin-top: 0; }
+.pcard.is-off .pc-cover { filter: grayscale(1); opacity: .65; }
+.pcard.is-off h3 a { color: var(--slate); }
+.pc-foot { justify-content: space-between; }
+.pc-nums { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; color: var(--slate); }
+.pc-nums > * { display: inline-flex; align-items: center; gap: 4px; }
+.pc-nums a { position: relative; z-index: 1; color: var(--slate); }
+.nl .pc-nums a:link, .nl .pc-nums a:visited { color: var(--slate); }
+.pc-nums a:hover, .nl .pc-nums a:hover { color: var(--red); }
+.nl .pcard h3 { margin: 0; }
+.nl .pcard h3 a:link, .nl .pcard h3 a:visited { color: var(--ink); }
+.nl .pcard:hover h3 a { color: var(--red); }
+
+/* tiles: a club, a league, a series */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 14px; }
+.tiles.wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); }
+.tiles-sec { margin-bottom: 26px; }
+.tile { position: relative; display: flex; align-items: center; gap: 14px; min-width: 0; padding: 14px 16px; border-radius: var(--r-sheet); background: var(--paper);
+  border: 1px solid rgba(11,20,34,.06); box-shadow: var(--shadow-card); transition: transform .18s, box-shadow .18s; }
+.tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+.tile .logo { flex: none; width: 52px; height: 52px; border-radius: 12px; object-fit: contain; background: #fff; box-shadow: inset 0 0 0 1px rgba(11,20,34,.06); }
+.tile .logo.is-empty { display: grid; place-items: center; background: var(--night); color: #fff; font: 600 18px var(--font-display); }
+.tile .who-txt { flex: 1; }
+.tile .who-name { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+.nl .tile a.who-name:link, .nl .tile a.who-name:visited { color: var(--ink); }
+.tile a.who-name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.tile:hover .who-name, .nl .tile:hover a.who-name:link, .nl .tile:hover a.who-name:visited { color: var(--red); }
+.tile .who-sub { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.tile .who-sub .ic, .tile-meta .ic { width: 14px; height: 14px; color: var(--mist); }
+.tile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 4px; font-size: 13px; color: var(--slate); }
+.tile-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+.tile-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; flex: none; max-width: 40%; }
+.tile-actions > img { display: none; }
+.nl .tile-actions button.icon { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; }
+.nl .tile-actions button.icon img { width: 18px; height: 18px; }
+.tile-num { position: relative; z-index: 1; flex: none; display: flex; flex-direction: column; align-items: center; min-width: 56px; padding: 6px 8px; border-radius: 12px; background: var(--frost); }
+.tile-num b { font: 600 22px/1 var(--font-display); color: var(--ink); }
+.tile-num span { margin-top: 3px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--slate); }
+.nl a.tile-num:link, .nl a.tile-num:visited { color: var(--slate); }
+.tile-num:hover b { color: var(--red); }
+.tile.is-off .logo { filter: grayscale(1); opacity: .6; }
+.tile.is-off .who-name { color: var(--slate) !important; }
+.tile.is-mine { box-shadow: inset 3px 0 0 var(--red), var(--shadow-card); }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile:hover { transform: none; } }
+
+/* the pages of a list */
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 18px 0; }
+.pager .pg { display: inline-grid; place-items: center; min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; font-weight: 600; font-size: 14px; color: var(--ink-soft); background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); }
+.nl .pager a.pg:link, .nl .pager a.pg:visited { color: var(--ink-soft); }
+.pager a.pg:hover, .nl .pager a.pg:hover { color: var(--red); box-shadow: inset 0 0 0 1px var(--mist); }
+.pager .pg[aria-current] { background: var(--night); color: #fff; box-shadow: none; }
+.pager .pg-step, .pager .pg-end { font-size: 18px; line-height: 1; }
+.pager .pg.is-off { color: var(--rule-strong); background: transparent; }
+.pager .pg-gap { padding: 0 4px; color: var(--mist); }
+@media (max-width: 639px) { .pager .pg-end { display: none; } }
+@media (max-width: 639px) {
+  .nl .toolbar input.dropdown, .toolbar .tb-field { width: 100%; }
+  .tile-num { min-width: 44px; }
+  .tile-num span { display: none; }
 }
 
 /* =================================================================== the old markup, restyled */
