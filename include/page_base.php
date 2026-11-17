@@ -83,11 +83,12 @@ class PageBase
 			if ($this->_locked && !$this->_admin)
 			{
 				$title_shown = true;
+				$this->open_content();
 				$this->show_lock_page();
 			}
 			else
 			{
-				$this->show_title();
+				$this->show_title_band();
 				$title_shown = true;
 				$this->show_body();
 			}
@@ -140,7 +141,11 @@ class PageBase
 					// second time - see the count() of the series in TournamentPageBase. The
 					// base heading is the title the page was run under and a back button, and
 					// both of those are known whatever prepare() did.
-					PageBase::show_title();
+					$this->show_title_band(true);
+				}
+				else
+				{
+					$this->open_content();
 				}
 				if (!$footer_shown)
 				{
@@ -169,6 +174,63 @@ class PageBase
 		}
 	}
 	
+	// The heading of the page goes on the dark band across the top - the page's title, or the
+	// picture, name and tabs of the club, event, tournament... it belongs to - and everything
+	// after it on the sheet of the page below. A page whose heading prints nothing (the game)
+	// gets no band. $base_title: the plain heading of PageBase rather than the page's own; see
+	// the catch in run().
+	private function show_title_band($base_title = false)
+	{
+		ob_start();
+		try
+		{
+			if ($base_title)
+			{
+				PageBase::show_title();
+			}
+			else
+			{
+				$this->show_title();
+			}
+		}
+		catch (Exception $e)
+		{
+			ob_end_clean();
+			throw $e;
+		}
+		$title = ob_get_clean();
+		if (trim($title) != '')
+		{
+			// The menu of a club, an event, a tournament... is the first row of its heading, but in the
+			// look of the site its tabs run along the bottom edge of the band: moved to the end.
+			if (preg_match('#<nav class="tabs">.*?</nav>#s', $title, $matches))
+			{
+				$title = str_replace($matches[0], '', $title) . $matches[0];
+			}
+			echo '<section class="mast"><div class="wrap">' . $title . '</div></section>';
+		}
+		$this->open_content();
+	}
+
+	private $_content_open = false;
+
+	private function open_content()
+	{
+		if (!$this->_content_open)
+		{
+			echo '<div class="wrap page ' . $this->content_class() . '">';
+			$this->_content_open = true;
+		}
+	}
+
+	// The class of the sheet the page's content is on. 'nl' restyles the markup every page shares -
+	// the bordered tables, buttons, inputs - in the look of the site. A page with a look of its own,
+	// as the game is, returns something else.
+	protected function content_class()
+	{
+		return 'nl';
+	}
+
 	private function show_lock_page()
 	{
 		global $_profile;
@@ -195,6 +257,8 @@ class PageBase
 		echo '<head>';
 		echo '<title>' . PRODUCT_NAME . ': ' . $this->_title . '</title>';
 		echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
+		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+		echo '<link rel="icon" href="images/maf.png">';
 		switch ($this->_indexing_policy)
 		{
 		case INDEXING_POLICY_NONE:
@@ -224,6 +288,7 @@ class PageBase
 		
 		echo '<link rel="stylesheet" href="' . versioned_asset('desktop.css') . '" type="text/css" media="screen" />';
 		echo '<link rel="stylesheet" href="' . versioned_asset('common.css') . '" type="text/css" media="screen" />';
+		echo '<link rel="stylesheet" href="' . versioned_asset('new_look.css') . '" type="text/css" />';
 		$this->add_headers();
 		show_back_tab_script();
 		echo '</head>';
@@ -235,111 +300,104 @@ class PageBase
 		}
 
 		echo '<body>';
-		
-		echo '<ul id="header-lang-menu" style="display:none;position:absolute;width:42px;text-align:left;z-index:2147483647;">';
-		$lang = LANG_NO;
-		while (($lang = get_next_lang($lang, LANG_ALL_VISUAL)) != LANG_NO)
-		{
-			echo '<li><a href="javascript:mr.browserLangChange(\'' . get_lang_code($lang) . '\')" title="' . get_lang_str($lang) . '">' . get_short_lang_str($lang) . '</a></li>';
-		}
-		echo '</ul>';
-		
-		echo '<table border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
-		echo '<tr class="header">';
+		echo '<a class="skip" href="#main">' . get_label('Skip to content') . '</a>';
+
+		$menu = PageBase::get_main_menu();
+
+		echo '<header class="hd"><div class="wrap">';
 		if ($this->_locked && $this->_admin)
 		{
-			echo '<td class="header" width="48"><a onclick="mr.lockSite(false)"><img src="images/repairs.png" title="The site is locked" width="48"/></a></td>';
+			echo '<a class="hd-lock" onclick="mr.lockSite(false)" title="The site is locked"><img src="images/repairs.png" alt=""></a>';
 		}
-		if (is_ratings_server())
+		echo '<a class="brand" href="index.php" title="' . get_label('Home') . '"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
+
+		echo '<nav class="nav" aria-label="' . get_label('Menu') . '">';
+		PageBase::show_nav_items($menu);
+		echo '</nav>';
+
+		echo '<div class="hd-tools">';
+		if ($_profile != NULL)
 		{
-			echo '<td class="header"><a href="index.php"><img src="images/title_r.png" /></a></td>';
+			echo '<a class="btn-create" href="game.php?bck=0" title="' . get_label('The game') . '">' . PageBase::icon('play') . '<span>' . get_label('Play') . '</span></a>';
+		}
+
+		PageBase::show_lang_switch();
+
+		if ($_session_state == SESSION_NO_USER || $_session_state == SESSION_LOGIN_FAILED || $_profile == NULL)
+		{
+			echo '<div class="nav-more hd-login">';
+			echo '<button type="button" class="btn-login" aria-expanded="false">' . PageBase::icon('user') . '<span>' . get_label('Login') . '</span></button>';
+			echo '<div class="menu menu-right login-panel" hidden>';
+			echo '<form action="javascript:login()">';
+			echo '<label>' . get_label('Login') . '<input id="header-username" autocomplete="username"></label>';
+			echo '<label>' . get_label('Password') . '<input type="password" id="header-password" autocomplete="current-password"></label>';
+			echo '<label class="chk"><input type="checkbox" id="header-remember" checked> ' . get_label('remember me') . '</label>';
+			echo '<button type="submit" class="btn">' . get_label('Login') . '</button>';
+			echo '</form>';
+			echo '<div class="menu-sep"></div>';
+			echo '<a href="javascript:mr.resetPassword()">' . get_label('I forgot my password. Please help me!') . '</a>';
+			echo '<a href="javascript:mr.createAccount()">' . get_label('Create user account') . '</a>';
+			echo '</div></div>';
 		}
 		else
 		{
-			echo '<td class="header"><img src="images/title.png" /></td>';
-		}
-		if ($_session_state == SESSION_NO_USER || $_session_state == SESSION_LOGIN_FAILED)
-		{
-			echo '<td class="header" align="right"><form action="javascript:login()">';
-			echo get_label('Login') . ':&nbsp;<input id="header-username" class="in-header short">&nbsp;';
-			echo get_label('Password') . ':&nbsp;<input type="password" id="header-password" class="in-header short">&nbsp;';
-			echo '<input value="Login" class="in-header" type="submit"><br>';
-			echo '<input class="in-header" type="checkbox" id="header-remember" checked>'.get_label('remember me').'</form></td>';
-			echo '<td  class="header" align="right">';
-			echo '<a href="index.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
-			echo '<a href="javascript:mr.resetPassword()" title="' . get_label('I forgot my password. Please help me!') . '"><img src="images/password.png"></a>';
-			echo '<a href="javascript:mr.createAccount()" title="' . get_label('Create user account') . '"><img src="images/create_user.png"></a>';
-		}
-		else if ($_profile != NULL)
-		{
-			$club = NULL;
-			if ($_profile->user_club_id != NULL && isset($_profile->clubs[$_profile->user_club_id]))
-			{
-				$club = $_profile->clubs[$_profile->user_club_id];
-			}
-			
-			echo '<td valign="middle" align="right">';
-			echo '<a href="index.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Home') . '"><img src="images/home.png" /></a></>';
-			// echo '<a href="ratings.php" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('Ratings') . '"><img src="images/clubs.png" /></a>';
-			echo '<a href="game.php?bck=0" onMouseEnter="javascript:setCurrentMenu(null)" title="' . get_label('The game') . '"><img src="images/thegame.png" /></a>';
-			if ($club != NULL)
-			{
-				echo ' <a href="club_main.php?id=' . $club->id . '" title="' . $club->name . '" id="header-club"  onMouseEnter="javascript:';
-				if (count($_profile->clubs) > 1)
-				{
-					echo 'showClubMenu()">';
-				}
-				else
-				{
-					echo 'setCurrentMenu(null)">';
-				}
-				$this->club_pic->set($club->id, $club->name, $club->club_flags);
-				$this->club_pic->show(ICONS_DIR, false, 48); //, ' class="round"');
-				echo '</a> ';
-			}
-			echo ' <a id="header-user" onMouseEnter="javascript:showUserMenu()" href="user_info.php?id=' . $_profile->user_id . '" title="' . $_profile->user_name . '">';
+			echo '<div class="nav-more hd-user">';
+			echo '<button type="button" class="hd-avatar" aria-expanded="false" title="' . $_profile->user_name . '">';
 			$this->user_pic->set($_profile->user_id, $_profile->user_name, $_profile->user_flags);
-			$this->user_pic->show(ICONS_DIR, false, 48); //, ' class="round"');
-			echo '</a> ';
-			
-			echo '<ul id="header-user-menu" style="display:none;position:absolute;width:150px;text-align:left;z-index:2147483647;">';
-			echo '<li><a href="user_info.php?id=' . $_profile->user_id . '" title="' . get_label('Statistics for [0]', $_profile->user_name) . '"><img src="images/user.png" class="menu_image"> ' . get_label('My statistics') . '</a></li>';
-			echo '<li><a href="javascript:mr.editUser(' . $_profile->user_id . ')" title="' . get_label('Account settings') . '"><img src="images/settings.png" class="menu_image"> ' . get_label('My account') . '</a></li>';
-			echo '<li><a href="javascript:mr.changePassword()" title="' . get_label('Change password') . '"><img src="images/key.png" class="menu_image"> ' . get_label('Change password') . '</a></li>';
+			$this->user_pic->show(ICONS_DIR, false, 36);
+			echo '</button>';
+			echo '<div class="menu menu-right" hidden>';
+			echo '<div class="menu-who">' . $_profile->user_name . '</div>';
+			echo '<a href="user_info.php?id=' . $_profile->user_id . '">' . get_label('My statistics') . '</a>';
+			echo '<a href="javascript:mr.editUser(' . $_profile->user_id . ')">' . get_label('My account') . '</a>';
+			echo '<a href="javascript:mr.changePassword()">' . get_label('Change password') . '</a>';
 			if ($_profile->user_accounts_count > 1)
 			{
-				echo '<li><a href="merge_user.php?id=' . $_profile->user_id . '" title="' . get_label('Merge accounts with the same email to current account.') . '"><img src="images/merge.png" class="menu_image"> ' . get_label('Merge my accounts') . '</a></li>';
+				echo '<a href="merge_user.php?id=' . $_profile->user_id . '" title="' . get_label('Merge accounts with the same email to current account.') . '">' . get_label('Merge my accounts') . '</a>';
 			}
-			echo '<li><a href="javascript:logout()" title="' . get_label('Logout from [0]', PRODUCT_NAME) . '"><img src="images/logout.png" class="menu_image"> ' . get_label('Log out') . '</a></li>';
-			echo '</ul>';
-			
-			if (count($_profile->clubs) > 1)
+			$clubs_shown = false;
+			foreach ($_profile->clubs as $c)
 			{
-				echo '<ul id="header-club-menu" style="display:none;position:absolute;text-align:left;z-index:2147483647;">';
-				foreach ($_profile->clubs as $c)
+				if (($c->club_flags & CLUB_FLAG_CLOSED) != 0)
 				{
-					if ($c->id != $club->id && ($c->club_flags & CLUB_FLAG_CLOSED) == 0)
-					{
-						echo '<li><a href="club_main.php?id=' . $c->id . '">';
-						$this->club_pic->set($c->id, $c->name, $c->club_flags);
-						$this->club_pic->show(ICONS_DIR, false, 48, 48, ' class="menu_image"');
-						echo ' ' . $c->name . '</a></li>';
-					}
+					continue;
 				}
-				echo '</ul>';
+				if (!$clubs_shown)
+				{
+					echo '<div class="menu-sep"></div><div class="menu-label">' . get_label('My clubs') . '</div>';
+					$clubs_shown = true;
+				}
+				echo '<a class="menu-club" href="club_main.php?id=' . $c->id . '">';
+				$this->club_pic->set($c->id, $c->name, $c->club_flags);
+				$this->club_pic->show(ICONS_DIR, false, 22);
+				echo '<span>' . $c->name . '</span></a>';
 			}
+			echo '<div class="menu-sep"></div>';
+			echo '<a href="javascript:logout()">' . get_label('Log out') . '</a>';
+			echo '</div></div>';
 		}
-		$next_lang = get_next_lang($_lang, LANG_ALL_VISUAL); 
-		if ($next_lang == LANG_NO)
+
+		echo '<button type="button" class="burger" aria-expanded="false" aria-controls="drawer" aria-label="' . get_label('Menu') . '">' . PageBase::icon('menu') . '</button>';
+		echo '</div>'; // hd-tools
+		echo '</div></header>';
+
+		// The same menu, for a screen too narrow for the row in the header.
+		echo '<div class="drawer" id="drawer" hidden><div class="drawer-scrim" data-close></div>';
+		echo '<div class="drawer-panel" role="dialog" aria-modal="true" aria-label="' . get_label('Menu') . '" tabindex="-1">';
+		echo '<div class="drawer-top"><a class="brand" href="index.php"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
+		echo '<button type="button" class="drawer-close" data-close aria-label="' . get_label('Close') . '">' . PageBase::icon('close') . '</button></div>';
+		echo '<nav class="drawer-body">';
+		if ($_profile != NULL)
 		{
-			$next_lang = LANG_ENGLISH;
+			echo '<a class="btn drawer-create" href="game.php?bck=0">' . PageBase::icon('play') . '<span>' . get_label('Play') . '</span></a>';
 		}
-		echo '</td><td width="32"><a id="header-lang" onMouseEnter="showLangMenu()" title="' . get_label('Change language') . '" href="javascript:mr.browserLangChange(\'' . get_lang_code($next_lang) . '\')"><span class="menu-lang">' . get_short_lang_str($_lang) . '</span></a>';
-		
-		echo '</td></tr></table>';
-		echo '<table class="main" border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
-		echo '<tr>';
-		echo '<td valign="top">';
+		PageBase::show_drawer_items($menu);
+		echo '</nav>';
+		echo '<div class="drawer-foot"><span>' . get_label('Language') . '</span>';
+		PageBase::show_lang_switch();
+		echo '</div></div></div>';
+
+		echo '<main id="main" tabindex="-1">';
 
 		$this->_state = PAGE_STATE_HEADER;
 
@@ -359,99 +417,294 @@ class PageBase
 
 	final function show_footer()
 	{
-		global $_agent;
-		
 		if ($this->_state != PAGE_STATE_HEADER)
 		{
 			return;
 		}
-		
-		echo '</td></tr></table>';
-			
-		echo '<table border="0" cellpadding="5" cellspacing="0" width="' . PAGE_WIDTH . '" align="center">';
-		echo '<tr><td class="header">';
-		
-		echo '<img src="images/transp.png" width="1" height="24">';
-			
-		// facebook like button
-/*		if ($this->_facebook)
+
+		if ($this->_content_open)
 		{
-			// echo '<script src="http://connect.facebook.net/en_US/all.js#xfbml=1"></script><fb:like href="' . PRODUCT_URL . '" layout="button_count" show_faces="false" width="' . MENU_WIDTH . '"></fb:like>';
-			echo '<iframe src="http://www.facebook.com/plugins/like.php?href=www.mafiaworld.ca&amp;layout=button_count&amp;show_faces=false&amp;width=450&amp;action=like&amp;font&amp;colorscheme=light&amp;height=21" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:21px;" allowTransparency="true"></iframe>';
-		}*/
-		
-		if (empty($_POST) && !isset($this->no_selectors))
+			echo '</div>';
+			$this->_content_open = false;
+		}
+		echo '</main>';
+
+		echo '<footer class="ft"><div class="wrap">';
+		echo '<a class="brand" href="index.php"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
+		echo '<nav class="ft-nav">';
+		foreach (PageBase::get_main_menu() as $item)
 		{
-			echo '<td class="header" align="right" valign="top">';
-			foreach ($_GET as $key => $value)
+			if (!is_null($item->page) && is_null($item->submenu))
 			{
-				echo '<input type="hidden" name="' . $key . '" value="' . $value . '">';
+				echo '<a href="' . $item->page . '">' . $item->text . '</a>';
 			}
 		}
-		
+		echo '</nav>';
+		echo '<p class="ft-note">&copy; ' . date('Y') . ' ' . PRODUCT_NAME;
 		if (REQUEST_PROFILING > 0)
 		{
-			echo '</td><td class="header" align="right">' . number_format(microtime(true) - $this->start, 3) . ' sec';
+			echo ' &middot; ' . number_format(microtime(true) - $this->start, 3) . ' sec';
 		}
-		echo '</td></tr></table>';
-		// Correct fb_xd_fragment bug in IE
-		// echo '<script>document.getElementsByTagName(\'html\')[0].style.display=\'block\';</script>';
-		// ...
-		
+		echo '</p>';
+		echo '</div></footer>';
+
 		// Keeps a row of tabs to one row, with a menu for those that do not fit - see tabs.js.
 		echo '<script src="' . versioned_asset('tabs.js') . '"></script>';
+		// The header: its menus, the drawer, the language - see new_look.js.
+		echo '<script src="' . versioned_asset('new_look.js') . '"></script>';
 		echo '<div id="dlg"></div>';
 		echo '<div id="loading"><img style="margin-top:20px;z-index:2147483647;" src="images/loading.gif" alt="' . get_label('Loading..') . '"/><h4>' . get_label('Please wait..') . '</h4></div>';
 		echo '</body></html>';
 		$this->_state = PAGE_STATE_FOOTER;
 	}
-	
-	// service functions
-	static function show_menu($menu, $id = 'menubar')
+
+	// The menu of the whole site, in the header, the drawer and the footer. Items with a submenu
+	// are the dropdowns; a NULL page in a submenu is a separator.
+	static function get_main_menu()
 	{
-		$url = substr(strtolower(get_page_name()), 1);
-		if ($id != NULL)
+		global $_profile;
+
+		$ccc = '';
+		if (isset($_REQUEST['ccc']))
 		{
-			echo '<ul id="' . $id . '" style="display:none;">';
-		}
-		else
-		{
-			echo '<ul style="display:none;">';
+			$ccc = '?ccc=' . urlencode($_REQUEST['ccc']);
 		}
 
-		foreach ($menu as $item)
+		$menu = array
+		(
+			new MenuItem('ratings.php' . $ccc, get_label('Ratings'), get_label('Players ratings')),
+			new MenuItem('tournaments.php' . $ccc, get_label('Tournaments'), get_label('Tournaments history')),
+			new MenuItem('series.php', get_label('Series'), get_label('Series history')),
+			new MenuItem('leagues.php' . $ccc, get_label('Leagues'), get_label('Leagues list')),
+			new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
+			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
+			new MenuItem('#more', get_label('More'), NULL, array
+			(
+				new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
+				new MenuItem('broadcasts.php', get_label('Broadcasts'), get_label('Broadcasts from various events.')),
+				new MenuItem('seatings.php', get_label('Seatings'), get_label('Seating arrangements')),
+				new MenuItem(NULL, get_label('Reports'), NULL),
+				new MenuItem('stats.php' . $ccc, get_label('General stats'), get_label('General statistics. How many games played, mafia winning percentage, how many players, etc.', PRODUCT_NAME)),
+				new MenuItem('by_numbers.php' . $ccc, get_label('By numbers'), get_label('Statistics by table numbers. What is the most winning number, or what number is shot more often.')),
+				new MenuItem('nominations.php' . $ccc, get_label('Nomination winners'), get_label('Custom nomination winners. For example who had most warnings, or who was checked by sheriff most often.')),
+				new MenuItem('referees.php' . $ccc, get_label('Referees'), get_label('Referees statistics')),
+				new MenuItem('competition.php' . $ccc, get_label('Competition chart'), get_label('Competition chart at the top of the rating.')),
+				new MenuItem(NULL, get_label('Resources'), NULL),
+				new MenuItem('rules.php', get_label('Rulebook'), get_label('Rules of the game in [0]', PRODUCT_NAME)),
+				new MenuItem('photo_albums.php' . $ccc, get_label('Photos'), get_label('Photo albums')),
+				new MenuItem('videos.php' . $ccc, get_label('Videos'), get_label('Videos from various events.')),
+			)),
+		);
+
+		if ($_profile != NULL && $_profile->is_admin())
 		{
-			echo '<li';
-			if (is_null($item->page))
+			$menu[] = new MenuItem('#site', get_label('Management'), NULL, array
+			(
+				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
+				new MenuItem('pairs.php' . $ccc, get_label('Pairs'), get_label('Global pair policies')),
+				new MenuItem(NULL, NULL, NULL),
+				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
+				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
+				new MenuItem('currencies.php' . $ccc, get_label('Currencies'), get_label('Manage currencies')),
+				new MenuItem(NULL, NULL, NULL),
+				new MenuItem('scorings.php' . $ccc, get_label('Rules'), get_label('Game rules and scoring systems of [0]', PRODUCT_NAME)),
+				new MenuItem('sounds.php' . $ccc, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.')),
+				new MenuItem(NULL, NULL, NULL),
+				new MenuItem('game_issues.php' . $ccc, get_label('Game issues'), get_label('List of the games that have issues.')),
+				new MenuItem('game_bugs.php' . $ccc, get_label('Game bugs'), get_label('List of the bug reports in the game.')),
+				new MenuItem(NULL, NULL, NULL),
+				new MenuItem('duplicated_games.php' . $ccc, get_label('Duplicated games'), get_label('Search for duplicated games suspects.')),
+				new MenuItem('duplicated_users.php' . $ccc, get_label('Duplicated users'), get_label('Merge duplicated user accounts.')),
+				new MenuItem(NULL, NULL, NULL),
+				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
+				new MenuItem('maintenance_tasks.php' . $ccc, get_label('Maintenance tasks'), get_label('Manage recuring maintanance scripts')),
+				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
+			));
+		}
+		return $menu;
+	}
+
+	// Is this item the page being shown? Compares the script names, not the parameters.
+	private static function is_current_page($page)
+	{
+		if (is_null($page) || $page == '' || $page[0] == '#')
+		{
+			return false;
+		}
+		$script = basename(strtolower(get_page_name()));
+		$pos = strpos($page, '?');
+		$item_script = strtolower($pos === false ? $page : substr($page, 0, $pos));
+		return $item_script == $script;
+	}
+
+	private static function is_current_menu($item)
+	{
+		if (PageBase::is_current_page($item->page))
+		{
+			return true;
+		}
+		if (!is_null($item->submenu))
+		{
+			foreach ($item->submenu as $sub)
 			{
-				echo ' type="separator">';
+				if (PageBase::is_current_page($sub->page))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static function show_menu_link($item, $class = NULL)
+	{
+		echo '<a href="' . $item->page . '"';
+		if ($class != NULL)
+		{
+			echo ' class="' . $class . '"';
+		}
+		if ($item->title != NULL)
+		{
+			echo ' title="' . htmlspecialchars($item->title, ENT_QUOTES) . '"';
+		}
+		if ($item->new_window)
+		{
+			echo ' target="_blank"';
+		}
+		if (PageBase::is_current_page($item->page))
+		{
+			echo ' aria-current="page"';
+		}
+		echo '><span>' . $item->text . '</span></a>';
+	}
+
+	// The items of a dropdown: links, and separators that may carry the name of the group after them.
+	private static function show_dropdown_items($submenu)
+	{
+		$first = true;
+		foreach ($submenu as $sub)
+		{
+			if (is_null($sub->page))
+			{
+				if (!$first)
+				{
+					echo '<div class="menu-sep" role="separator"></div>';
+				}
+				if (!empty($sub->text))
+				{
+					echo '<div class="menu-label">' . $sub->text . '</div>';
+				}
 			}
 			else
 			{
-				if (strpos($item->page, $url) !== false)
+				PageBase::show_menu_link($sub);
+			}
+			$first = false;
+		}
+	}
+
+	// A row of links with dropdowns: the header's navigation, and the tabs of the clubs, events,
+	// tournaments... (see show_menu()).
+	static function show_nav_items($menu)
+	{
+		foreach ($menu as $item)
+		{
+			if (is_null($item->page))
+			{
+				continue;
+			}
+			if (is_null($item->submenu))
+			{
+				PageBase::show_menu_link($item);
+				continue;
+			}
+			echo '<div class="nav-more' . (PageBase::is_current_menu($item) ? ' is-active' : '') . '">';
+			echo '<button type="button" aria-expanded="false">' . $item->text . PageBase::icon('chevron') . '</button>';
+			echo '<div class="menu" hidden>';
+			PageBase::show_dropdown_items($item->submenu);
+			echo '</div></div>';
+		}
+	}
+
+	private static function show_drawer_items($menu)
+	{
+		echo '<div class="drawer-group">';
+		echo '<a class="dl" href="index.php"><span>' . get_label('Home') . '</span></a>';
+		foreach ($menu as $item)
+		{
+			if (!is_null($item->page) && is_null($item->submenu))
+			{
+				PageBase::show_menu_link($item, 'dl');
+			}
+		}
+		echo '</div>';
+		foreach ($menu as $item)
+		{
+			if (is_null($item->submenu))
+			{
+				continue;
+			}
+			echo '<div class="drawer-group"><div class="drawer-label">' . $item->text . '</div>';
+			foreach ($item->submenu as $sub)
+			{
+				if (!is_null($sub->page))
 				{
-					echo ' class="ui-state-disabled"';
-				}
-				echo '><a href="' . $item->page . '"';
-				if ($item->title != NULL)
-				{
-					echo ' title="' . $item->title . '"';
-				}
-				if ($item->new_window)
-				{
-					echo ' target="_blank"';
-				}
-				echo '>' . $item->text . '</a>';
-				if ($item->submenu != NULL)
-				{
-					PageBase::show_menu($item->submenu, NULL);
+					PageBase::show_menu_link($sub, 'dl');
 				}
 			}
-			echo '</li>';
+			echo '</div>';
 		}
-		echo '</ul>';
 	}
-	
+
+	private static function show_lang_switch()
+	{
+		global $_lang;
+
+		echo '<div class="lang" role="group" aria-label="' . get_label('Language') . '">';
+		$lang = LANG_NO;
+		while (($lang = get_next_lang($lang, LANG_ALL_VISUAL)) != LANG_NO)
+		{
+			$code = get_lang_code($lang);
+			echo '<button type="button" onclick="mr.browserLangChange(\'' . $code . '\')" aria-pressed="' . ($lang == $_lang ? 'true' : 'false') . '" title="' . get_lang_str($lang) . '">' . get_short_lang_str($lang) . '</button>';
+		}
+		echo '</div>';
+	}
+
+	// The few line icons the header needs, drawn inline so that they take the colour of the text.
+	static function icon($name)
+	{
+		switch ($name)
+		{
+		case 'play':
+			$path = '<path d="M7 5v14l11-7z"/>';
+			break;
+		case 'user':
+			$path = '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>';
+			break;
+		case 'menu':
+			$path = '<path d="M4 7h16M4 12h16M4 17h16"/>';
+			break;
+		case 'close':
+			$path = '<path d="M6 6l12 12M18 6L6 18"/>';
+			break;
+		case 'chevron':
+			$path = '<path d="M6 9l6 6 6-6"/>';
+			break;
+		default:
+			return '';
+		}
+		return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' . $path . '</svg>';
+	}
+
+	// The menu of a club, an event, a tournament... shown as the row of tabs under its name.
+	// $id is kept for the callers; nothing looks for it any more.
+	static function show_menu($menu, $id = 'menubar')
+	{
+		echo '<nav class="tabs"><div class="tabs-inner">';
+		PageBase::show_nav_items($menu);
+		echo '</div></nav>';
+	}
+
 	// virtual section these functions should be overriden
 	protected function prepare()
 	{
@@ -459,14 +712,14 @@ class PageBase
 	
 	protected function standard_title()
 	{
-		return '<h3>' . $this->_title . '</h3>';
+		return '<h1>' . $this->_title . '</h1>';
 	}
 	
 	protected function show_title()
 	{
-		echo '<table class="head" width="100%"><tr><td>' . $this->standard_title() . '</td><td align="right" valign="top">';
+		echo '<div class="page-hd"><div>' . $this->standard_title() . '</div><div class="page-hd-side">';
 		show_back_button();
-		echo '</td></tr></table>';	
+		echo '</div></div>';
 	}
 	
 	protected function show_body()
