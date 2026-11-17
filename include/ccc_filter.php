@@ -96,7 +96,9 @@ class CCCFilter
 	function show($title, $on_select = NULL)
 	{
 		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '" title="' . $title . '" placeholder="' . get_label('Select country/city/club') . '"/>';
-		echo '<input type="image" class="dropdown-btn" src="images/dropdown.png" onclick="cccDrop()"/>';
+		// The arrow that opens the list: a line icon of the look of the site, drawn over the right end
+		// of the field.
+		echo '<button type="button" class="dropdown-btn" onclick="cccDrop()" aria-label="' . $title . '"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
 //		echo '<button class="small_icon" onclick="goTo({ccc:undefined,page:undefined})"><img src="images/clear.png" width="12"></button>';
 //		echo '<button class="dropdown-btn" onclick="cccDrop()"><img src="images/down.png" width="16" height="16"></button>';
 ?>
