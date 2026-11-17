@@ -288,7 +288,7 @@ class Picture
 		$origin = $this->pic_dir . $dir . $this->id . (is_null($this->secondary_id) ? '' : '-' . $this->secondary_id);
 		echo '<span style="position:relative;"><img code="' . $code . '" origin="' . $origin . '.png" src="';
 		echo $this->url($dir);
-		echo '" title="' . $title . '" border="0"';
+		echo '" title="' . $title . '" alt="" border="0"';
 
 		if ($width > 0)
 		{

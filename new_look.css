@@ -353,8 +353,8 @@ html, body { overflow-x: clip; }
 .mast .light, .mast .lighter, .mast .lightest { background: transparent !important; }
 .mast td.dark a, .mast td.darker a { color: #fff; }
 .mast img { border-radius: 10px; }
-.mast button.icon { background: rgba(255,255,255,.10); border-color: transparent; border-radius: 8px; }
-.mast button.icon:hover { background: rgba(255,255,255,.20); }
+.mast button.icon { background: rgba(255,255,255,.16); border-color: transparent; border-radius: 50%; }
+.mast button.icon:hover { background: rgba(255,255,255,.26); }
 .mast button.icon img { border-radius: 0; filter: brightness(1.15); }
 .mast :focus-visible { outline-color: #fff; }
 
@@ -406,9 +406,12 @@ a.back:active span { padding: 0; }
 .eh-side { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
 .eh-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .eh-actions > img { display: none; }
-.mast .eh-actions button.icon { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.09); border: 1px solid var(--night-line); transition: background .15s, border-color .15s; }
-.mast .eh-actions button.icon:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.3); }
+.mast .eh-actions button.icon { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; border-radius: 999px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.18); transition: background .15s, border-color .15s; }
+.mast .eh-actions button.icon:hover { background: rgba(255,255,255,.26); border-color: rgba(255,255,255,.34); }
 .mast .eh-actions button.icon img { width: 20px; height: 20px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+/* the few pictures drawn in black would vanish on the dark band: drawn white there */
+.mast button.icon img[src*="clear.png"], .mast button.icon img[src*="game.png"], .mast button.icon img[src*="function.png"],
+.mast button.icon img[src*="objection.png"], .mast button.icon img[src*="user.png"] { filter: invert(1); }
 .eh-facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; }
 .eh-facts > div { display: flex; align-items: center; gap: 7px; padding: 6px 12px 6px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid var(--night-line); color: var(--night-text); font-size: 13.5px; min-width: 0; }
 .eh-facts dt { display: contents; }
@@ -872,6 +875,15 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .comments-sec textarea.wide_comment { width: 100% !important; max-width: 100%; min-height: 40px; border-radius: 10px; font: 400 14px var(--font); padding: 9px 12px; }
 .comments-sec table { width: 100%; }
 
+/* an award of the standings: a wreath with "MVP" or the role in the middle of it */
+.award { position: relative; display: inline-grid; place-items: center; width: 36px; height: 36px; margin: 0 1px; vertical-align: middle; }
+.award > img, .award > span { grid-area: 1 / 1; }
+.award > img { width: 36px; height: auto; }
+.award span.mvp, .award span.best-in-role { position: static; margin: 0; opacity: 1; }
+.award span.mvp { font: 700 9.5px/1 var(--font); letter-spacing: .02em; color: #7A5A00; transform: translateY(-3px); }
+.award span.best-in-role { transform: translateY(-3px); }
+.award span.best-in-role img { display: block; width: 21px; height: 21px; opacity: .7; }
+
 /* the pages of a list */
 .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 18px 0; }
 .pager .pg { display: inline-grid; place-items: center; min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px; font-weight: 600; font-size: 14px; color: var(--ink-soft); background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); }
@@ -962,13 +974,13 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl input[type=submit] { background: var(--red); border-color: var(--red); color: #fff; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .05em; }
 .nl input[type=submit]:hover { background: var(--red-hi); border-color: var(--red-hi); }
 
-/* icon buttons - edit, delete, create... - everywhere: dark circles with the picture in the middle,
-   as on the band of a tournament */
+/* icon buttons - edit, delete, create... - everywhere: a circle a shade off the background it is on,
+   darker on a light page, lighter on the dark band (see .mast .eh-actions) */
 .nl button.icon, .nl button.small_icon, .nl button.big_icon,
 .ui-dialog button.icon, .ui-dialog button.small_icon, .ui-dialog button.big_icon {
   display: inline-grid; place-items: center; width: 34px; height: 34px; margin: 1px 2px; padding: 0; vertical-align: middle;
-  border: 0 !important; border-radius: 50%; background: var(--night); cursor: pointer;
-  box-shadow: 0 6px 14px -8px rgba(11,20,34,.6); transition: background .15s, transform .15s;
+  border: 0 !important; border-radius: 50%; background: rgba(19,35,58,.13); cursor: pointer;
+  box-shadow: none; transition: background .15s, transform .15s;
 }
 .nl button.small_icon, .ui-dialog button.small_icon { width: 28px; height: 28px; }
 .nl button.big_icon, .ui-dialog button.big_icon { width: 48px; height: 48px; }
@@ -976,12 +988,9 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl button.small_icon img, .ui-dialog button.small_icon img { max-width: 14px; max-height: 14px; }
 .nl button.big_icon img, .ui-dialog button.big_icon img { max-width: 28px; max-height: 28px; border-radius: 0 !important; }
 .nl button.icon:hover, .nl button.small_icon:hover, .nl button.big_icon:hover,
-.ui-dialog button.icon:hover, .ui-dialog button.small_icon:hover, .ui-dialog button.big_icon:hover { background: var(--night-3); transform: translateY(-1px); }
+.ui-dialog button.icon:hover, .ui-dialog button.small_icon:hover, .ui-dialog button.big_icon:hover { background: rgba(19,35,58,.22); transform: translateY(-1px); }
 .nl button.icon[checked], .nl button.big_icon[checked], .ui-dialog button.icon[checked] { background: var(--red); }
 .nl button.icon:disabled, .ui-dialog button.icon:disabled { opacity: .4; cursor: default; transform: none; }
-/* the few pictures drawn in black would vanish on the dark: drawn white instead */
-button.icon img[src*="clear.png"], button.small_icon img[src*="clear.png"], button.icon img[src*="function.png"],
-button.icon img[src*="objection.png"], button.icon img[src*="user.png"] { filter: invert(1); }
 @media (prefers-reduced-motion: reduce) { .nl button.icon, .ui-dialog button.icon { transition: none; } .nl button.icon:hover { transform: none; } }
 
 /* the tabs inside a page (see tabs.js): a line of uppercase labels, the open one underlined in red;
