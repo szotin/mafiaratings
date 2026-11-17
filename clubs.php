@@ -7,6 +7,7 @@ require_once 'include/city.php';
 require_once 'include/country.php';
 require_once 'include/image.php';
 require_once 'include/user_location.php';
+require_once 'include/cards.php';
 
 define('ROW_COUNT', DEFAULT_ROW_COUNT);
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
@@ -14,6 +15,16 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends GeneralPageBase
 {
+	protected function title_actions()
+	{
+		global $_profile;
+		if ($_profile == NULL)
+		{
+			return '';
+		}
+		return '<a class="btn" href="#" onclick="mr.createClub(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('club')) . '</span></a>';
+	}
+	
 	protected function show_body()
 	{
 		global $_profile, $_lang, $_page;
@@ -21,24 +32,13 @@ class Page extends GeneralPageBase
 		$closed = isset($_REQUEST['closed']);
 		$root_only = isset($_REQUEST['root']);
 		
-		echo '<p><table class="transp" width="100%">';
-		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		echo '<div class="toolbar"><div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
-		echo '<input type="checkbox" class="toggle" id="closed" onclick="filter()"';
-		if (isset($_REQUEST['closed']))
-		{
-			echo ' checked';
-		}
-		echo '> ' . get_label('Show closed clubs');
-		
-		echo ' <input type="checkbox" class="toggle" id="root" onclick="filter()"';
-		if (isset($_REQUEST['root']))
-		{
-			echo ' checked';
-		}
-		echo '> ' . get_label('Root clubs only');
-		echo '</td></tr></table></p>';
+		echo '</div>';
+		echo '<label class="fchip"><input type="checkbox" id="closed" onclick="filter()"' . ($closed ? ' checked' : '') . '>' . get_label('Show closed clubs') . '</label>';
+		echo '<label class="fchip"><input type="checkbox" id="root" onclick="filter()"' . ($root_only ? ' checked' : '') . '>' . get_label('Root clubs only') . '</label>';
+		echo '</div>';
 		
 		$delimiter = ' WHERE ';
 		$condition = new SQL();
@@ -74,15 +74,6 @@ class Page extends GeneralPageBase
 		}
 		
 		$page_size = ROW_COUNT * COLUMN_COUNT;
-		$column_count = 0;
-		$clubs_count = 0;
-		if ($_profile != NULL && !$closed)
-		{
-			--$page_size;
-			++$column_count;
-			++$clubs_count;
-		}
-		
 		$user_id = -1;
 		if ($_profile != NULL)
 		{
@@ -90,8 +81,6 @@ class Page extends GeneralPageBase
 		}
 		
 		list ($count) = Db::record(get_label('club'), 'SELECT count(*) FROM clubs c ' .
-				' LEFT OUTER JOIN club_regs u ON u.user_id = ? AND u.club_id = c.id' .
-				' JOIN cities i ON c.city_id = i.id',
 				' LEFT OUTER JOIN club_regs u ON u.user_id = ? AND u.club_id = c.id' .
 				' JOIN cities i ON c.city_id = i.id',
 			$user_id, $condition);
@@ -106,69 +95,45 @@ class Page extends GeneralPageBase
 				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0',
 			$user_id, $condition);
 		$query->add(' ORDER BY ISNULL(u.flags), games DESC, nc.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
-			
-		if ($_profile != NULL && !$closed)
-		{
-			echo '<table class="bordered" width="100%"><tr>';
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';	
-			echo '<table class="transp" width="100%">';
-			echo '<tr><td align="left" class="light wide">';
-			show_club_buttons(-1, '', 0, 0);
-			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.createClub()">' . get_label('Create [0]', get_label('club'));
-			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" height="' . ICON_HEIGHT . '">';
-			echo '</td></tr></table>';
-			echo '</td>';
-		}
+		
+		$clubs_count = 0;
 		while ($row = $query->next())
 		{
-			list ($id, $name, $flags, $url, $city_name, $memb_flags) = $row;
-			
-			if ($column_count == 0)
+			list ($id, $name, $flags, $url, $city_name, $memb_flags, $games) = $row;
+			if ($clubs_count++ == 0)
 			{
-				if ($clubs_count == 0)
-				{
-					echo '<table class="bordered" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
+				echo '<div class="tiles">';
 			}
-
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';
-			
-			echo '<table class="transp" width="100%">';
+			$classes = 'tile';
+			if ($flags & CLUB_FLAG_CLOSED)
+			{
+				$classes .= ' is-off';
+			}
+			if (!is_null($memb_flags))
+			{
+				$classes .= ' is-mine';
+			}
+			$this->club_pic->set($id, $name, $flags);
+			echo '<div class="' . $classes . '">' . card_logo($this->club_pic, $name);
+			echo '<div class="who-txt"><a class="who-name" href="club_main.php?bck=1&id=' . $id . '">' . $name . '</a>';
+			echo '<span class="who-sub">' . PageBase::icon('pin') . $city_name . '</span></div>';
 			if ($_profile != NULL)
 			{
-				echo '<tr class="darker"><td align="left" style="padding:2px;">';
-				show_club_buttons($id, $name, $flags, $memb_flags);
-				echo '</td></tr>';
+				$buttons = PageBase::capture(function() use ($id, $name, $flags, $memb_flags) { show_club_buttons($id, $name, $flags, $memb_flags); });
+				if (trim(strip_tags($buttons, '<button>')) != '')
+				{
+					echo '<div class="tile-actions">' . $buttons . '</div>';
+				}
 			}
-			
-			echo '<tr><td align="center"><a href="club_main.php?bck=1&id=' . $id . '">';
-			echo '<b>' . $name . '</b><br>';
-			$this->club_pic->set($id, $name, $flags);
-			$this->club_pic->show(ICONS_DIR, false);
-			echo '<br></a>' . $city_name . '<br>';
-			
-			echo '</td></tr></table>';
-			echo '</td>';
-			
-			++$clubs_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
+			echo '</div>';
 		}
 		if ($clubs_count > 0)
 		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
+			echo '</div>';
+		}
+		else
+		{
+			echo '<p class="empty">' . get_label('No clubs found.') . '</p>';
 		}
 		show_pages_navigation($page_size, $count);
 	}

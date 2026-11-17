@@ -12,6 +12,7 @@ require_once 'include/scoring.php';
 require_once 'include/picture.php';
 require_once 'include/tournament.php';
 require_once 'include/series.php';
+require_once 'include/cards.php';
 
 define('HOME_NEXT_COUNT', 4);      // "Next up" on the band
 define('HOME_SEASON_COUNT', 6);    // long-term tournaments running now, on the band
@@ -77,87 +78,7 @@ class Page extends GeneralPageBase
 	}
 
 	// ------------------------------------------------------------------ small pieces
-
-	// Two letters standing in for a missing picture: "GG" for Golden Gate, "Cr" for Craig.
-	private static function initials($name, $upper)
-	{
-		$name = trim(html_entity_decode(strip_tags($name), ENT_QUOTES, 'UTF-8'));
-		$words = preg_split('/[\s\-_.]+/u', $name, -1, PREG_SPLIT_NO_EMPTY);
-		if (count($words) >= 2)
-		{
-			$result = mb_substr($words[0], 0, 1, 'UTF-8') . mb_substr($words[1], 0, 1, 'UTF-8');
-		}
-		else
-		{
-			$result = mb_substr($name, 0, 2, 'UTF-8');
-		}
-		$result = $upper ? mb_strtoupper($result, 'UTF-8') : mb_convert_case($result, MB_CASE_TITLE, 'UTF-8');
-		return htmlspecialchars($result, ENT_QUOTES, 'UTF-8');
-	}
-
-	// The round picture of a player, or their initials on a colour of their own.
-	private function avatar($id, $name, $flags)
-	{
-		$this->user_pic->set($id, $name, $flags);
-		if ($this->user_pic->has_image())
-		{
-			return '<span class="av sm"><img src="' . $this->user_pic->url(ICONS_DIR) . '" alt="" loading="lazy" decoding="async"></span>';
-		}
-		return '<span class="av sm t' . (($id % 6) + 1) . '" aria-hidden="true">' . Page::initials($name, false) . '</span>';
-	}
-
-	// The short name of a month: "Nov", "Ноя".
-	private static function month_abbr($month)
-	{
-		global $_lang;
-		return mb_substr(get_month_name($month, $_lang, true), 0, 3, 'UTF-8');
-	}
-
-	// A date as a little calendar page: the month over the day.
-	private static function dstamp($time, $timezone)
-	{
-		date_default_timezone_set($timezone);
-		return '<span class="dstamp" aria-hidden="true"><span class="m">' . mb_strtoupper(Page::month_abbr(date('n', $time)), 'UTF-8') . '</span><span class="d">' . date('j', $time) . '</span></span>';
-	}
-
-	// The days of a tournament, short: "Nov 7–8", "7–8 ноя", "Oct 30 – Nov 2".
-	private static function short_period($start, $duration, $timezone)
-	{
-		global $_lang;
-
-		date_default_timezone_set($timezone);
-		$end = $start + max($duration, 1) - 1;
-		$sd = date('j', $start);
-		$ed = date('j', $end);
-		$sm = Page::month_abbr(date('n', $start));
-		$em = Page::month_abbr(date('n', $end));
-		$same_month = date('Y-n', $start) == date('Y-n', $end);
-		$same_day = $same_month && $sd == $ed;
-		if ($_lang == LANG_RUSSIAN || $_lang == LANG_UKRAINIAN)
-		{
-			$sm = mb_strtolower($sm, 'UTF-8');
-			$em = mb_strtolower($em, 'UTF-8');
-			if ($same_day)
-			{
-				return $sd . ' ' . $sm;
-			}
-			if ($same_month)
-			{
-				return $sd . '–' . $ed . ' ' . $sm;
-			}
-			return $sd . ' ' . $sm . ' – ' . $ed . ' ' . $em;
-		}
-		if ($same_day)
-		{
-			return $sm . ' ' . $sd;
-		}
-		if ($same_month)
-		{
-			return $sm . ' ' . $sd . '–' . $ed;
-		}
-		return $sm . ' ' . $sd . ' – ' . $em . ' ' . $ed;
-	}
-
+	
 	// When a tournament that has not started yet starts, relative to today: "Today", "Tomorrow" or the date.
 	private function when($t)
 	{
@@ -175,26 +96,14 @@ class Page extends GeneralPageBase
 		{
 			return '<span class="rel soon">' . get_label('Tomorrow') . '</span>';
 		}
-		return '<span class="rel">' . Page::short_period($t->start_time, 1, $t->timezone) . '</span>';
+		return '<span class="rel">' . card_short_period($t->start_time, 1, $t->timezone) . '</span>';
 	}
-
-	// The picture of a tournament filling a card: its logo over a blurred copy of itself; or, when it
-	// has none, its initials with the logo of the club in the corner.
+	
 	private function cover($t)
 	{
 		$this->tournament_pic->set($t->id, $t->name, $t->flags);
-		if ($this->tournament_pic->has_image(true))
-		{
-			$url = $this->tournament_pic->url(TNAILS_DIR);
-			return '<span class="cv-blur" style="background-image: url(\'' . $url . '\');"></span><img class="cv-logo" src="' . $url . '" alt="" loading="lazy" decoding="async">';
-		}
-		$html = '<span class="pc-fallback"><span class="pc-mono">' . Page::initials($t->name, true) . '</span>';
 		$this->club_pic->set($t->club_id, $t->club_name, $t->club_flags);
-		if ($this->club_pic->has_image())
-		{
-			$html .= '<img class="pc-club" src="' . $this->club_pic->url(ICONS_DIR) . '" alt="">';
-		}
-		return $html . '</span>';
+		return card_cover($this->tournament_pic, $this->club_pic, $t->name);
 	}
 
 	// ------------------------------------------------------------------ data
@@ -353,8 +262,8 @@ class Page extends GeneralPageBase
 				echo '<section><h2 class="now-h">' . get_label('Next up') . '</h2><ul class="next-list">';
 				foreach ($next as $t)
 				{
-					echo '<li>' . Page::dstamp($t->start_time, $t->timezone) . '<div class="t"><a href="tournament.php?bck=1&id=' . $t->id . '">' . $t->name . '</a>';
-					echo '<div class="meta"><span>' . $t->city . '</span><span>' . Page::short_period($t->start_time, $t->duration, $t->timezone) . '</span></div></div></li>';
+					echo '<li>' . card_dstamp($t->start_time, $t->timezone) . '<div class="t"><a href="tournament.php?bck=1&id=' . $t->id . '">' . $t->name . '</a>';
+					echo '<div class="meta"><span>' . $t->city . '</span><span>' . card_short_period($t->start_time, $t->duration, $t->timezone) . '</span></div></div></li>';
 				}
 				echo '</ul></section>';
 			}
@@ -420,7 +329,7 @@ class Page extends GeneralPageBase
 		foreach ($tournaments as $t)
 		{
 			echo '<article class="pcard"><div class="pc-cover">' . $this->cover($t);
-			echo '<span class="pc-date">' . Page::short_period($t->start_time, $t->duration, $t->timezone) . '</span>';
+			echo '<span class="pc-date">' . card_short_period($t->start_time, $t->duration, $t->timezone) . '</span>';
 			if ($t->stars > 0)
 			{
 				echo '<span class="pc-stars"><span class="stars">' . tournament_stars_str($t->stars, false) . '</span></span>';
@@ -508,7 +417,7 @@ class Page extends GeneralPageBase
 				{
 					echo '<ol class="rank-list">';
 				}
-				echo '<li><span class="n">' . sprintf('%02d', $number) . '</span><a class="who" href="series_player.php?bck=1&user_id=' . $user_id . '&id=' . $s->id . '">' . $this->avatar($user_id, $user_name, $user_flags);
+				echo '<li><span class="n">' . sprintf('%02d', $number) . '</span><a class="who" href="series_player.php?bck=1&user_id=' . $user_id . '&id=' . $s->id . '">' . card_avatar($this->user_pic, $user_id, $user_name, $user_flags);
 				echo '<span class="who-txt"><span class="who-name">' . $user_name . '</span><span class="who-sub">' . $user_club . '</span></span></a>';
 				echo '<span class="v">' . format_score($score, false) . '</span></li>';
 			}
@@ -570,7 +479,7 @@ class Page extends GeneralPageBase
 		{
 			list ($id, $name, $city_name, $rating, $flags) = $row;
 			++$number;
-			echo '<li><span class="n">' . sprintf('%02d', $number) . '</span><a class="who" href="user_info.php?bck=1&id=' . $id . '">' . $this->avatar($id, $name, $flags);
+			echo '<li><span class="n">' . sprintf('%02d', $number) . '</span><a class="who" href="user_info.php?bck=1&id=' . $id . '">' . card_avatar($this->user_pic, $id, $name, $flags);
 			echo '<span class="who-txt"><span class="who-name">' . $name . '</span><span class="who-sub">' . $city_name . '</span></span></a>';
 			echo '<span class="v">' . number_format(USER_INITIAL_RATING + $rating) . '</span></li>';
 		} while ($row = $query->next());
@@ -640,7 +549,7 @@ class Page extends GeneralPageBase
 					get_label('[0] moved down from [1] to [2] place. ', $name, $player->src, $player->dst);
 			}
 			echo '<li title="' . htmlspecialchars(strip_tags($title), ENT_QUOTES, 'UTF-8') . '"><span class="n">' . (isset($player->dst) ? $player->dst : '&mdash;') . '</span>';
-			echo '<a class="who" href="user_info.php?bck=1&id=' . $player->id . '">' . $this->avatar($player->id, $player->user_name, $player->user_flags);
+			echo '<a class="who" href="user_info.php?bck=1&id=' . $player->id . '">' . card_avatar($this->user_pic, $player->id, $player->user_name, $player->user_flags);
 			echo '<span class="who-txt"><span class="who-name">' . $player->user_name . '</span><span class="who-sub">' . $player->club_name . '</span></span></a>';
 			echo '<span class="v">' . $mark . '</span></li>';
 		}
@@ -677,7 +586,7 @@ class Page extends GeneralPageBase
 		do
 		{
 			list ($id, $name, $flags, $start_time, $duration, $timezone, $tournament_id, $tournament_name, $club_id, $club_name, $games, $players) = $row;
-			echo '<li>' . Page::dstamp($start_time, $timezone) . '<div class="t"><a href="event.php?bck=1&id=' . $id . '">' . $name . '</a>';
+			echo '<li>' . card_dstamp($start_time, $timezone) . '<div class="t"><a href="event.php?bck=1&id=' . $id . '">' . $name . '</a>';
 			if ($start_time + $duration > $this->now)
 			{
 				echo ' <span class="chip live">' . get_label('playing now') . '</span>';

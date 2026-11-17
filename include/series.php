@@ -639,12 +639,13 @@ function series_type_filter_condition($types, $series_alias = 's')
 // $on_change names a function to call instead.
 function show_series_type_filter($types, $on_change = NULL)
 {
-	echo get_label('Types') . ':';
+	echo '<span class="fchips"><span class="fchips-label">' . get_label('Types') . ':</span>';
 	foreach (get_series_type_filter_names() as $t => $name)
 	{
 		$bit = series_type_filter_bit($t);
-		echo ' <input type="checkbox" class="toggle" id="stf' . $bit . '" onclick="stf()"' . (($types & $bit) ? ' checked' : '') . '> ' . $name;
+		echo ' <label class="fchip"><input type="checkbox" class="toggle" id="stf' . $bit . '" onclick="stf()"' . (($types & $bit) ? ' checked' : '') . '>' . $name . '</label>';
 	}
+	echo '</span>';
 ?>
 	<script>
 		function seriesTypeFilterFlags()

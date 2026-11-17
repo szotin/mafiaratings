@@ -7,6 +7,7 @@ require_once 'include/series.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -41,20 +42,6 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
-		echo '<p><table class="transp" width="100%">';
-		echo '<tr><td>';
-		show_date_filter();
-		echo '&emsp;&emsp;';
-		if (!$this->future)
-		{
-			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
-		}
-		// The type filter belongs on both tabs: a recurring tournament is always under way, so the
-		// future tab is exactly where one shows up. It keeps to the right, out of the way of the others.
-		echo '</td><td align="right" nowrap>';
-		show_series_type_filter($this->types);
-		echo '</td></tr></table></p>';
-
 		$condition = new SQL(
 			' FROM series s' .
 			' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
@@ -96,11 +83,21 @@ class Page extends GeneralPageBase
 			$condition->add(' AND s.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		echo '<div class="tab">';
-		echo '<button ' . ($this->future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
-		echo '<button ' . (!$this->future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
+		echo '<div class="toolbar">';
+		echo card_seg(array(
+			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$this->future),
+			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $this->future)), get_label('Series'));
+		echo '<div class="tb-dates">';
+		show_date_filter();
 		echo '</div>';
-		echo '<div class="tabcontent">';
+		// The type filter belongs on both tabs: a recurring tournament is always under way, so the
+		// future tab is exactly where one shows up.
+		show_series_type_filter($this->types);
+		if (!$this->future)
+		{
+			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
+		}
+		echo '</div>';
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
@@ -120,52 +117,46 @@ class Page extends GeneralPageBase
 		}
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="2" align="center">' . get_label('Series') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Tournaments') . '</td></tr>';
-		
 		$timezone = get_timezone();
 		$now = time();
-		$series_pic = new Picture(SERIES_PICTURE);
+		$series_pic = new SeriesPicture();
+		$series_count = 0;
 		while ($row = $query->next())
 		{
 			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
 			$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 			// A recurring tournament is always under way. Saying so adds nothing to its type.
 			$playing = ($now >= $series_time && $now < $series_time + $series_duration && !series_is_infinite($series_time));
-			if ($playing)
+			$canceled = ($series_flags & SERIES_FLAG_CANCELED) != 0;
+			if ($series_count++ == 0)
 			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
+				echo '<div class="tiles wide">';
 			}
 			
-			echo '<td width="60" class="dark" align="center" valign="center">';
-			$series_pic->set($series_id, $series_name, $series_flags);
-			$series_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td width="60" align="center" valign="center">';
-			$owner->picture()->show(ICONS_DIR, false, 40);
-			echo '</td><td>';
-			echo '<b><a href="series_standings.php?bck=1&id=' . $series_id . '">' . $series_name;
-			if ($playing)
+			echo '<div class="tile' . ($canceled ? ' is-off' : '') . '">' . card_logo($series_pic->set($series_id, $series_name, $series_flags, $owner), $series_name);
+			echo '<div class="who-txt"><a class="who-name" href="series_standings.php?bck=1&id=' . $series_id . '">' . $series_name . '</a>';
+			echo '<span class="who-sub">' . PageBase::icon($owner->is_league() ? 'trophy' : 'users') . $owner->name . '</span>';
+			echo '<span class="tile-meta"><span>' . PageBase::icon('cal') . series_period($series_time, $series_duration, $timezone) . '</span>';
+			if ($canceled)
 			{
-				echo ' (' . get_label('playing now') . ')';
+				echo '<span class="chip off">' . get_label('canceled') . '</span>';
 			}
-			echo '</b><br>' . series_period($series_time, $series_duration, $timezone) . '</a></td>';
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td align="center"><a href="series_tournaments.php?bck=1&id=' . $series_id . '">' . $tournaments_count . '</a></td>';
-			
-			echo '</tr>';
+			else if ($playing)
+			{
+				echo '<span class="chip live">' . get_label('playing now') . '</span>';
+			}
+			echo '</span></div>';
+			echo '<a class="tile-num" href="series_tournaments.php?bck=1&id=' . $series_id . '" title="' . get_label('Tournaments') . '"><b>' . $tournaments_count . '</b><span>' . get_label('Tournaments') . '</span></a>';
+			echo '</div>';
 		}
-		echo '</table>';
+		if ($series_count > 0)
+		{
+			echo '</div>';
+		}
+		else
+		{
+			echo '<p class="empty">' . get_label('No series found.') . '</p>';
+		}
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
