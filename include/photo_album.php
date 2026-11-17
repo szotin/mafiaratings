@@ -438,38 +438,17 @@ class PhotoAlbum
 		
 		$query = new DbQuery('SELECT p.id FROM photos p JOIN photo_albums a ON p.album_id = a.id ', $condition);
 		$query->add(' ORDER BY p.id DESC LIMIT ' . ($_page * PHOTO_ROW_COUNT * PHOTO_COL_COUNT) . ',' . (PHOTO_ROW_COUNT * PHOTO_COL_COUNT));
-		echo '<table class="photos" width="100%">';
-		$col_count = 0;
-		$picture_width = CONTENT_WIDTH / PHOTO_COL_COUNT - 4;
+		// A grid of thumbnails as wide as the screen allows; each one opens the photo.
+		echo '<div class="photo-grid">';
 		while ($row = $query->next())
 		{
 			$photo_id = $row[0];
-			if ($col_count == 0)
-			{
-				echo '<tr class="light">';
-			}
-			
-			echo '<td width="' . $picture_width . '" align="center" valign="top"><a href="photo.php?id=' . $photo_id . '&page=' . $_page . $link_str . '&bck=1">';
-			echo '<img src="' . PHOTOS_DIR . TNAILS_DIR . $photo_id . '.jpg" width="' . EVENT_PHOTO_WIDTH . '" border="0">';
-			echo '</a></td>';
-			
-			++$col_count;
-			if ($col_count == PHOTO_COL_COUNT)
-			{
-				$col_count = 0;
-				echo '</tr>';
-			}
+			echo '<a href="photo.php?id=' . $photo_id . '&page=' . $_page . $link_str . '&bck=1">';
+			echo '<img src="' . PHOTOS_DIR . TNAILS_DIR . $photo_id . '.jpg" alt="" loading="lazy" decoding="async">';
+			echo '</a>';
 		}
-		if ($col_count > 0)
-		{
-			do
-			{
-				echo '<td width="' . $picture_width . '">&nbsp;</td>';
-				++$col_count;
-				
-			} while ($col_count < PHOTO_COL_COUNT);
-		}
-		echo '</table>';
+		echo '</div>';
+		show_pages_navigation(PHOTO_ROW_COUNT * PHOTO_COL_COUNT, $count);
 	}
 	
 	static function viewers_condition()

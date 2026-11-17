@@ -700,8 +700,8 @@ a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 18px; }
 .toolbar .switch-row { display: contents; }
 .toolbar .tb-field { display: flex; align-items: center; }
-.nl .toolbar input.dropdown { width: 240px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
-.toolbar input.dropdown-btn { position: static; width: 16px; height: 16px; margin: 0 12px 0 -28px; padding: 0; border: 0; opacity: .6; }
+.nl input.dropdown { width: 240px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
+.nl input.dropdown-btn { vertical-align: middle; top: 0; filter: none; background: none; position: static; width: 16px; height: 16px; margin: 0 12px 0 -28px; padding: 0; border: 0; opacity: .6; }
 .toolbar .tb-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--slate); font-size: 13.5px; }
 .nl .toolbar .tb-dates input[type=date] { height: 38px !important; border-radius: 999px !important; padding: 0 12px !important; }
 .toolbar .tb-dates button.small_icon { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; }
@@ -1010,8 +1010,41 @@ a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space
 .ui-menu { padding: 6px; border-radius: 12px; border: 1px solid var(--rule); box-shadow: 0 18px 40px -18px rgba(19, 35, 58, 0.35); }
 .ui-menu .ui-menu-item { border-radius: 8px; }
 
+/* the old on/off switches, in the colour of the site */
+input[type="checkbox"].toggle:checked { background-color: var(--red); border-color: var(--red); }
+
+/* the photos of an album, an event, a player */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 180px), 1fr)); gap: 10px; }
+.photo-grid a { display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: var(--night); box-shadow: var(--shadow-card); }
+.photo-grid img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .25s; }
+.photo-grid a:hover img { transform: scale(1.04); }
+@media (prefers-reduced-motion: reduce) { .photo-grid img { transition: none; } .photo-grid a:hover img { transform: none; } }
+
+/* printing: the content alone, black on white, without the menus, the filters and the buttons */
 @media print {
-  .hd, .ft, .tabs, .drawer { display: none !important; }
-  body { background: #fff; }
-  .mast { background: none; color: var(--ink); }
+  @page { margin: 14mm 12mm; }
+  .hd, .ft, .tabs, .drawer, .search-dlg, .skip, .toolbar, .pager, .seg, .crumbs, a.back, .page-hd-side, .eh-actions, .eh-cta, .eh-side button,
+  .home-filter, .feat-links, .tile-actions, .switch-row, .tab, #dlg, #loading, .ui-dialog, .ui-widget-overlay { display: none !important; }
+  html, body { background: #fff !important; color: #000; }
+  body { font-size: 11pt; }
+  .mast { background: none !important; color: #000; border-bottom: 2px solid #000; }
+  .mast::before { display: none; }
+  .mast > .wrap { padding: 0 0 8px !important; }
+  .mast h1, .mast h2, .mast h3, .mast a, .mast .eh-facts > div, .mast .chip, .mast p, .mast .eyebrow, .bignum b, .bignum strong { color: #000 !important; text-shadow: none !important; }
+  .mast .eh-facts > div, .mast .chip, .mast .eyebrow { background: none !important; border: 1px solid #999 !important; box-shadow: none !important; }
+  .now-main h1 .accent { color: #000 !important; }
+  .wrap { max-width: none; padding: 0; }
+  .page { padding: 12px 0 0 !important; }
+  .nl { overflow: visible !important; }
+  a { color: inherit !important; text-decoration: none; }
+  .pcard, .tile, .season, .rail-box, .rank-list li, .elist li, .ads li, .nl table.bordered tr, .photo-grid a { break-inside: avoid; page-break-inside: avoid; }
+  .pcard, .tile, .season, .rail-box, .ads li, .nl table.bordered, .nl .tabcontent, .photo-grid a { box-shadow: none !important; border: 1px solid #bbb !important; }
+  .pcard:hover, .tile:hover { transform: none; }
+  .nl table.bordered { outline: 0; }
+  .nl table.bordered > tbody > tr.darker:first-child > td, .nl table.bordered > thead > tr > th, .nl table.bordered > tbody > tr.th > td { background: #eee !important; color: #000 !important; }
+  .nl table.bordered > tbody > tr > td { border-top: 1px solid #ddd !important; }
+  .home-results .posters { display: grid !important; overflow: visible !important; }
+  .chip.live::before, .pulse { animation: none !important; }
+  .nl input.dropdown, .nl input.dropdown-btn, .nl button.icon, .nl button.small_icon, .nl button.big_icon, .nl input[type=submit], .nl input[type=button], .nl img[src*="find.png"] { display: none !important; }
+  .nl select, .nl input { border: 0 !important; box-shadow: none !important; background: none !important; padding-left: 0 !important; -webkit-appearance: none; appearance: none; }
 }
