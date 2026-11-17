@@ -44,3 +44,11 @@ in the main site's database. List each one here as it is applied, so that the me
 migrations production already has:
 
 - (none yet)
+
+Changes made on `master` itself for the branch:
+
+- **0611ebb1** "Link the main page to the new look of the site" - a dark bar at the top of the old
+  `index.php` (marked `NEW_LOOK:`) leading to `new_look/index.php`, and its two labels
+  ('Try the new look of the site', 'It is still being tested. Please tell us what is wrong with
+  it.') in `include/languages/ru|ua/labels.php`. At the merge `index.php` conflicts: keep the
+  new_look version, which has no bar, and let build_labels drop the two labels.
