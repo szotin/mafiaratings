@@ -286,7 +286,7 @@ class TournamentPageBase extends PageBase
 			}
 			$h->fact('layers', $series);
 		}
-		if (!is_null($this->currency_pattern) && !is_null($this->fee))
+		if (!is_null($this->currency_pattern) && !is_null($this->fee) && $this->fee > 0)
 		{
 			$h->fact('coin', format_currency($this->fee, $this->currency_pattern));
 		}

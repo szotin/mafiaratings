@@ -34,6 +34,7 @@ class Page extends GeneralPageBase
 	private $ccc_filter;
 	private $condition;
 	private $now;
+	private $band_shown = false;
 
 	protected function prepare()
 	{
@@ -114,7 +115,9 @@ class Page extends GeneralPageBase
 	//
 	// Membership comes from club_regs rather than from the profile, whose club list is every club there
 	// is when the visitor is an administrator.
-	private function select_tournaments($where, $order, $limit)
+	// $everyone - every tournament there is, whoever runs it: the band of the page shows what is on
+	// anywhere, as the design has it.
+	private function select_tournaments($where, $order, $limit, $everyone = false)
 	{
 		global $_profile, $_lang;
 
@@ -127,15 +130,18 @@ class Page extends GeneralPageBase
 			' JOIN clubs c ON c.id = t.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' WHERE (t.flags & ' . (TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE | TOURNAMENT_FLAG_CANCELED) . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0' . $where, $this->condition);
-		$query->add(
-			' AND (EXISTS (SELECT st.series_id FROM series_tournaments st' .
-			' JOIN series s ON s.id = st.series_id' .
-			' WHERE st.tournament_id = t.id AND s.league_id IS NOT NULL)');
-		if ($_profile != NULL)
+		if (!$everyone)
 		{
-			$query->add(' OR t.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?)', $_profile->user_id);
+			$query->add(
+				' AND (EXISTS (SELECT st.series_id FROM series_tournaments st' .
+				' JOIN series s ON s.id = st.series_id' .
+				' WHERE st.tournament_id = t.id AND s.league_id IS NOT NULL)');
+			if ($_profile != NULL)
+			{
+				$query->add(' OR t.club_id IN (SELECT club_id FROM club_regs WHERE user_id = ?)', $_profile->user_id);
+			}
+			$query->add(')');
 		}
-		$query->add(')');
 		$query->add(' ORDER BY ' . $order . ' LIMIT ' . (int)$limit);
 
 		$tournaments = array();
@@ -200,21 +206,29 @@ class Page extends GeneralPageBase
 		// The tournament of the day: one playing now, or else the next one to start.
 		$featured = $this->select_tournaments(
 			' AND t.start_time <= ' . $now . ' AND t.start_time + t.duration > ' . $now . ' AND (t.flags & ' . $long . ') = 0',
-			't.flags & ' . TOURNAMENT_FLAG_PINNED . ' DESC, t.start_time + t.duration, t.id', 1);
+			't.flags & ' . TOURNAMENT_FLAG_PINNED . ' DESC, t.start_time + t.duration, t.id', 1, true);
 		if (count($featured) == 0)
 		{
 			$featured = $this->select_tournaments(
 				' AND t.start_time > ' . $now . ' AND (t.flags & ' . $long . ') = 0',
-				't.flags & ' . TOURNAMENT_FLAG_PINNED . ' DESC, t.start_time, t.id', 1);
+				't.flags & ' . TOURNAMENT_FLAG_PINNED . ' DESC, t.start_time, t.id', 1, true);
 		}
 		$featured = count($featured) > 0 ? $featured[0] : NULL;
 
 		$next = $this->select_tournaments(
 			' AND t.start_time > ' . $now . ' AND (t.flags & ' . $long . ') = 0' . (is_null($featured) ? '' : ' AND t.id <> ' . (int)$featured->id),
-			't.start_time, t.id', HOME_NEXT_COUNT);
+			't.start_time, t.id', HOME_NEXT_COUNT, true);
 		$seasons = $this->select_tournaments(
 			' AND t.start_time <= ' . $now . ' AND t.start_time + t.duration > ' . $now . ' AND (t.flags & ' . $long . ') <> 0',
-			't.flags & ' . TOURNAMENT_FLAG_PINNED . ' DESC, t.start_time + t.duration, t.id', HOME_SEASON_COUNT);
+			't.flags & ' . TOURNAMENT_FLAG_PINNED . ' DESC, t.start_time + t.duration, t.id', HOME_SEASON_COUNT, true);
+
+		// Nothing on and nothing coming: no band at all. The filter then goes to the top of the page.
+		if (is_null($featured) && count($next) == 0 && count($seasons) == 0)
+		{
+			$this->band_shown = false;
+			return;
+		}
+		$this->band_shown = true;
 
 		echo '<div class="home-top">';
 		if (!is_null($featured))
@@ -231,11 +245,7 @@ class Page extends GeneralPageBase
 
 		echo '<div class="now-grid"><div class="now-main">';
 		echo '<h1><span>' . get_label('On now') . '</span> <span class="accent">' . get_label('and next') . '</span></h1>';
-		if (is_null($featured))
-		{
-			echo '<p class="now-none">' . get_label('No tournaments are planned yet.') . '</p>';
-		}
-		else
+		if (!is_null($featured))
 		{
 			$t = $featured;
 			$url = 'tournament.php?bck=1&id=' . $t->id;
@@ -603,6 +613,12 @@ class Page extends GeneralPageBase
 
 	protected function show_body()
 	{
+		if (!$this->band_shown)
+		{
+			echo '<div class="toolbar"><div class="tb-field">';
+			$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', ''));
+			echo '</div></div>';
+		}
 		echo '<div class="cols wide-rail home"><div class="stack">';
 		$this->show_adverts();
 		$this->show_recent_tournaments();

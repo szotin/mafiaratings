@@ -19,7 +19,6 @@ class Page extends EventPageBase
 			echo '</tr></table>';
 		}
 		
-		echo '<table width="100%"><tr valign="top"><td>';
 		echo '<table class="bordered" width="100%"><tr>';
 		echo '<td align="center" class="dark"><p>' . format_date($this->start_time, $this->timezone, true) . '<br>';
 		if ($this->address_url == '')
@@ -285,13 +284,13 @@ class Page extends EventPageBase
 			
 			echo '</table>';
 		}
-		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
+		echo '<section class="comments-sec"><div id="comments"></div></section>';
 	}
 	
 	
 	protected function js_on_load()
 	{
-		echo 'mr.showComments("event", ' . $this->id . ", 5)\n";
+		echo 'mr.showComments("event", ' . $this->id . ", 5, false, 'wide_comment')\n";
 		if (isset($_REQUEST['attend']))
 		{
 			echo 'attend();';

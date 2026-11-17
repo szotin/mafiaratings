@@ -142,10 +142,8 @@ class Page extends SeriesPageBase
 	{
 		global $_profile;
 		
-		echo '<table width="100%"><tr valign="top"><td>';
 		$this->show_details();
 		$this->show_properties();
-		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
 	}
 }
 

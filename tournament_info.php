@@ -15,6 +15,8 @@ define('COMMENTS_WIDTH', 300);
 
 class Page extends TournamentPageBase
 {
+	private $people_pic;
+
 	private function show_details()
 	{
 		global $_page, $_lang, $_profile;
@@ -96,218 +98,21 @@ class Page extends TournamentPageBase
 			}
 		}
 		
-		$tournament_reg_pic =
-			new Picture(USER_TOURNAMENT_PICTURE,
-			new Picture(USER_CLUB_PICTURE,
-			$this->user_pic));
-		$club_pic = new Picture(CLUB_PICTURE);
+		$this->show_people(get_label('Participants'), $players, $games_count > 0, true);
+		$this->show_people(get_label('Applicants'), $applications, $games_count > 0, true);
+		$this->show_people(get_label('Referees'), $referees, $games_count > 0, false);
 		
-		$row_count = 0;
-		$column_count = 0;
-		foreach ($players as $row)
-		{
-			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_reg_flags, $club_reg_flags, $city, $lat, $lon, $rating) = $row;
-			if ($column_count == 0)
-			{
-				if ($row_count == 0)
-				{
-					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . USER_COLUMN_COUNT . '"><b>' . get_label('Participants') . '</b></td></tr>';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-				
-			}
-			
-			echo '<td width="' . USER_COLUMN_WIDTH . '%" align="center" valign="top">';
-			echo '<table class="transp" width="100%"><tr class="dark"><td width="36">';
-			$club_pic->set($user_club_id, $user_club_name, $user_club_flags);
-			$club_pic->show(ICONS_DIR, false, 24);
-			echo '</td><td><b>' . $user_name . '</b></td></tr>';
-			echo '<tr><td colspan="2" align="center">';
-			$tournament_reg_pic->
-				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
-				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
-				set($user_id, $user_name, $user_flags);
-			if ($games_count > 0)
-			{
-				$tournament_reg_pic->show(ICONS_DIR, true, 64);
-			}
-			else
-			{
-				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
-				$tournament_reg_pic->show(ICONS_DIR, false, 64);
-				echo '</a>';
-			}
-			echo '</td></tr>';
-			echo '<tr><td colspan="2" style="padding-left:6px;" align="center">';
-			echo $city . '<br>';
-			echo get_label('[0] km', format_rating(get_distance($this->lat, $this->lon, $lat, $lon, GEO_KILOMETERS))) . '<br>';
-			echo get_label('Rating: [0]', format_rating($rating+1000)) . '</td></tr>';
-			echo '</table>';
-			echo '</td>';
-			
-			++$row_count;
-			++$column_count;
-			if ($column_count >= USER_COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
-		}
-		
-		if ($row_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (USER_COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
-		
-		$row_count = 0;
-		$column_count = 0;
-		foreach ($applications as $row)
-		{
-			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_reg_flags, $club_reg_flags, $city, $lat, $lon, $rating) = $row;
-			if ($column_count == 0)
-			{
-				if ($row_count == 0)
-				{
-					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . USER_COLUMN_COUNT . '"><b>' . get_label('Applicants') . '</b></td></tr>';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-				
-			}
-			
-			echo '<td width="' . USER_COLUMN_WIDTH . '%" align="center" valign="top">';
-			echo '<table class="transp" width="100%"><tr class="dark"><td width="36">';
-			$club_pic->set($user_club_id, $user_club_name, $user_club_flags);
-			$club_pic->show(ICONS_DIR, false, 24);
-			echo '</td><td><b>' . $user_name . '</b></td></tr>';
-			echo '<tr><td colspan="2" align="center">';
-			$tournament_reg_pic->
-				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
-				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
-				set($user_id, $user_name, $user_flags);
-			if ($games_count > 0)
-			{
-				$tournament_reg_pic->show(ICONS_DIR, true, 64);
-			}
-			else
-			{
-				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
-				$tournament_reg_pic->show(ICONS_DIR, false, 64);
-				echo '</a>';
-			}
-			echo '</td></tr>';
-			echo '<tr><td colspan="2" style="padding-left:6px;" align="center">';
-			echo $city . '<br>';
-			echo get_label('[0] km', format_rating(get_distance($this->lat, $this->lon, $lat, $lon, GEO_KILOMETERS))) . '<br>';
-			echo get_label('Rating: [0]', format_rating($rating+1000)) . '</td></tr>';
-			echo '</table>';
-			echo '</td>';
-			
-			++$row_count;
-			++$column_count;
-			if ($column_count >= USER_COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
-		}
-		
-		if ($row_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (USER_COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
-		
-		$row_count = 0;
-		$column_count = 0;
-		foreach ($referees as $row)
-		{
-			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_reg_flags, $club_reg_flags) = $row;
-			if ($column_count == 0)
-			{
-				if ($row_count == 0)
-				{
-					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . USER_COLUMN_COUNT . '"><b>' . get_label('Referees') . '</b></td></tr>';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-				
-			}
-			
-			echo '<td width="' . USER_COLUMN_WIDTH . '%" align="center" valign="top">';
-			echo '<table class="transp" width="100%"><tr class="dark"><td width="36">';
-			$club_pic->set($user_club_id, $user_club_name, $user_club_flags);
-			$club_pic->show(ICONS_DIR, false, 24);
-			echo '</td><td><b>' . $user_name . '</b></td></tr>';
-			echo '<tr><td colspan="2" align="center">';
-			$tournament_reg_pic->
-				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
-				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
-				set($user_id, $user_name, $user_flags);
-			if ($games_count > 0)
-			{
-				$tournament_reg_pic->show(ICONS_DIR, true, 64);
-			}
-			else
-			{
-				echo '<a href="user_info.php?bck=1&id=' . $user_id . '">';
-				$tournament_reg_pic->show(ICONS_DIR, false, 64);
-				echo '</a>';
-			}
-			echo '</td></tr></table>';
-			echo '</td>';
-			
-			++$row_count;
-			++$column_count;
-			if ($column_count >= USER_COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
-		}
-		
-		if ($row_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (USER_COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
-		
-		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="darker"><td colspan="2"><b>' . get_label('Properties') . '</b></td></tr>';
-		echo '<tr><td width="200">'.get_label('Average rating').':</td><td>';
+		// The figures of the field, once there is a field to speak of.
 		if ($this->num_regs > 0)
 		{
-			echo format_rating(1000 + $this->rating_sum / $this->num_regs);
-		}			
-		echo '</td></tr>';
-//		echo '<tr><td>'.get_label('Rating sum').':</td><td>' . format_rating(1000 * $this->num_regs + $this->rating_sum) . '</td></tr>';
-		echo '<tr><td width="200">'.get_label('Average rating of top 20 players').':</td><td>';
-		if ($this->num_regs > 0)
-		{
-			echo format_rating(1000 + $this->rating_sum_20 / ($this->num_regs > 20 ? 20 : $this->num_regs));
+			echo '<p><table class="bordered light" width="100%">';
+			echo '<tr class="darker"><td colspan="2"><b>' . get_label('Properties') . '</b></td></tr>';
+			echo '<tr><td width="200">'.get_label('Average rating').':</td><td>' . format_rating(1000 + $this->rating_sum / $this->num_regs) . '</td></tr>';
+			echo '<tr><td width="200">'.get_label('Average rating of top 20 players').':</td><td>' . format_rating(1000 + $this->rating_sum_20 / ($this->num_regs > 20 ? 20 : $this->num_regs)) . '</td></tr>';
+			echo '<tr><td>'.get_label('Total traveling distance').':</td><td>' . get_label('[0] km', format_rating(convert_distance($this->traveling_distance, GEO_MILES, GEO_KILOMETERS))) . '</td></tr>';
+			echo '<tr><td>'.get_label('Guest coefficient').':</td><td>' . format_rating($this->guest_coeff, 0) . '</td></tr>';
+			echo '</table></p>';
 		}
-		echo '</td></tr>';
-//		echo '<tr><td>'.get_label('Rating sum of top 20 players').':</td><td>' . format_rating(1000 * ($this->num_regs > 20 ? 20 : $this->num_regs) + $this->rating_sum_20) . '</td></tr>';
-		echo '<tr><td>'.get_label('Total traveling distance').':</td><td>' . get_label('[0] km', format_rating(convert_distance($this->traveling_distance, GEO_MILES, GEO_KILOMETERS))) . '</td></tr>';
-		echo '<tr><td>'.get_label('Guest coefficient').':</td><td>' . format_rating($this->guest_coeff, 0) . '</td></tr>';
-		echo '</table></p>';
 		
 		$page_size = ROUND_ROW_COUNT * ROUND_COLUMN_COUNT;
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE tournament_id = ? AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0', $this->id);
@@ -396,20 +201,63 @@ class Page extends TournamentPageBase
 		show_pages_navigation($page_size, $count);
 	}
 	
+	// A grid of people of the tournament - its participants, applicants or referees - each in a card
+	// of its own: the picture, the name with the club, and for the players where they come from and
+	// their rating. Once games are played the picture leads to the player's page of the tournament.
+	private function show_people($title, $rows, $played, $details)
+	{
+		if (count($rows) == 0)
+		{
+			return;
+		}
+		if (!isset($this->people_pic))
+		{
+			$this->people_pic = new Picture(USER_TOURNAMENT_PICTURE, new Picture(USER_CLUB_PICTURE, $this->user_pic));
+		}
+		$pic = $this->people_pic;
+
+		echo '<section class="people-sec"><div class="sec-hd"><h2>' . $title . '</h2><span class="dim">' . count($rows) . '</span></div><div class="people">';
+		foreach ($rows as $row)
+		{
+			list ($user_id, $user_name, $user_flags, $user_club_id, $user_club_name, $user_club_flags, $tournament_reg_flags, $club_reg_flags) = $row;
+			$pic->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
+				set($user_id, $user_name, $user_flags);
+			$url = $played ? $pic->hyperlink() : 'user_info.php?bck=1&id=' . $user_id;
+
+			echo '<a class="person" href="' . $url . '">';
+			echo '<span class="person-pic">' . PageBase::capture(function() use ($pic) { $pic->show(ICONS_DIR, false, 64, 64); }) . '</span>';
+			echo '<span class="person-name">';
+			if (!is_null($user_club_id))
+			{
+				$this->club_pic->set($user_club_id, $user_club_name, $user_club_flags);
+				echo PageBase::capture(function() { $this->club_pic->show(ICONS_DIR, false, 18, 18); });
+			}
+			echo '<b>' . $user_name . '</b></span>';
+			if ($details)
+			{
+				list (, , , , , , , , $city, $lat, $lon, $rating) = $row;
+				echo '<span class="person-sub">' . $city . '</span>';
+				echo '<span class="person-sub">' . get_label('[0] km', format_rating(get_distance($this->lat, $this->lon, $lat, $lon, GEO_KILOMETERS))) . '</span>';
+				echo '<span class="person-rating">' . get_label('Rating: [0]', '<b>' . format_rating($rating + 1000) . '</b>') . '</span>';
+			}
+			echo '</a>';
+		}
+		echo '</div></section>';
+	}
+
 	protected function show_body()
 	{
-		global $_profile;
-		
-		echo '<table width="100%"><tr valign="top"><td>';
 		$this->show_details();
-		echo '</td><td id="comments" width="' . COMMENTS_WIDTH . '"></td></tr></table>';
+		echo '<section class="comments-sec"><div id="comments"></div></section>';
 	}
 	
 	protected function js_on_load()
 	{
 		global $_profile;
 		
-		echo 'mr.showComments("tournament", ' . $this->id . ", 5);\n";
+		echo 'mr.showComments("tournament", ' . $this->id . ", 5, false, 'wide_comment');\n";
 		if (isset($_REQUEST['approve']) && $_profile != NULL && (!isset($_REQUEST['_login_']) || $_REQUEST['_login_'] == $_profile->user_id))
 		{
 			$league_id = (int)$_REQUEST['approve'];

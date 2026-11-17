@@ -649,7 +649,7 @@ class EventPageBase extends PageBase
 			$tournament_pic->set($this->tournament_id, $this->tournament_name, $this->tournament_flags);
 			$h->fact('trophy', PageBase::entity_link($tournament_pic, $this->tournament_name));
 		}
-		if (!is_null($this->currency_pattern) && !is_null($this->fee))
+		if (!is_null($this->currency_pattern) && !is_null($this->fee) && $this->fee > 0)
 		{
 			$h->fact('coin', get_label('Admission rate') . ': ' . format_currency($this->fee, $this->currency_pattern));
 		}
