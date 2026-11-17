@@ -70,12 +70,14 @@ var dlg = new function()
 {
 	var _lastId = 0;
 	
-	this.custom = function(text, title, width, buttons, onClose)
+	// kind - what the dialog is: "error", "warning", "info", "confirm" or "form". It becomes the class
+	// dlg-<kind> of the dialog, which gives it its look.
+	this.custom = function(text, title, width, buttons, onClose, kind)
 	{
 		let parentElem = $("#dlg");
 		let id = 'dlg' + _lastId;
 		++_lastId;
-		
+
 		if (!isNumber(width))
 		{
 			width = parseInt(width);
@@ -84,7 +86,9 @@ var dlg = new function()
 				width = 500;
 			}
 		}
-		
+		// never wider than the screen, nor taller: what does not fit scrolls inside the dialog
+		width = Math.min(width, $(window).width() - 16);
+
 		parentElem.append('<div id="' + id + '" title="' + title + '">' + text + '</div>');
 		let elem = $('#' + id);
 		//elem.html(text);
@@ -92,9 +96,10 @@ var dlg = new function()
 		{
 			modal: true,
 			resizable: false,
-			hide: {effect: 'fade', duration: 500},
-			show: {effect: 'fade', duration: 500},
+			hide: {effect: 'fade', duration: 150},
+			show: {effect: 'fade', duration: 150},
 			'width': width,
+			dialogClass: isString(kind) ? 'dlg-' + kind : '',
 			close: function()
 			{
 				if (isSet(onClose))
@@ -137,7 +142,7 @@ var dlg = new function()
 		return dlg.custom(text, title, width, 
 		{
 			ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); } }
-		}, onClose);
+		}, onClose, "error");
 	}
 
 	this.warning = function(text, title, width, onClose)
@@ -149,7 +154,7 @@ var dlg = new function()
 		return dlg.custom(text, title, width, 
 		{
 			ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); } }
-		}, onClose);
+		}, onClose, "warning");
 	}
 
 	this.info = function(text, title, width, onClose)
@@ -161,7 +166,7 @@ var dlg = new function()
 		return dlg.custom(text, title, width, 
 		{
 			ok: { id:"dlg-ok", text: l("Close"), click: function() { $(this).dialog("close"); } }
-		}, onClose);
+		}, onClose, "info");
 	}
 
 	this.yesNo = function(text, title, width, onYes, onNo)
@@ -174,7 +179,7 @@ var dlg = new function()
 		{
 			yes: { id:"dlg-yes", text: l("Yes"), click: function() { $(this).dialog("close"); if (isSet(onYes)) onYes(); } },
 			no: { id:"dlg-no", text: l("No"), click: function() { $(this).dialog("close"); if (isSet(onNo)) onNo(); } }
-		});
+		}, undefined, "confirm");
 	}
 
 	this.okCancel = function(text, title, width, onOk, onCancel)
@@ -187,7 +192,7 @@ var dlg = new function()
 		{
 			ok: { id:"dlg-ok", text: l("Ok"), click: function() { $(this).dialog("close"); if (isSet(onOk)) onOk(); } },
 			cancel: { id:"dlg-cancel", text: l("Cancel"), click: function() { $(this).dialog("close"); if (isSet(onCancel)) onCancel(); } }
-		});
+		}, undefined, "confirm");
 	}
 	
 	this.page = function(formPage, width)
@@ -244,7 +249,7 @@ var dlg = new function()
 			{
 				ok: { id:"dlg-ok", text: l("Ok"), click: function() { commit(formCommited); } },
 				cancel: { id:"dlg-cancel", text: l("Cancel"), click: formCanceled }
-			});
+			}, undefined, "form");
 		}
 		
 		if (!isNumber(width))
