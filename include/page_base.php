@@ -499,26 +499,25 @@ class PageBase
 			)),
 		);
 
+		// What only an administrator sees goes into "More" as a section of its own, not into a
+		// dropdown beside it: the row of the header has no room for one more.
 		if ($_profile != NULL && $_profile->is_admin())
 		{
-			$menu[] = new MenuItem('#site', get_label('Management'), NULL, array
+			$more = $menu[count($menu) - 1];
+			$more->submenu = array_merge($more->submenu, array
 			(
+				new MenuItem(NULL, get_label('Management'), NULL),
 				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
 				new MenuItem('pairs.php' . $ccc, get_label('Pairs'), get_label('Global pair policies')),
-				new MenuItem(NULL, NULL, NULL),
 				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
 				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
 				new MenuItem('currencies.php' . $ccc, get_label('Currencies'), get_label('Manage currencies')),
-				new MenuItem(NULL, NULL, NULL),
 				new MenuItem('scorings.php' . $ccc, get_label('Rules'), get_label('Game rules and scoring systems of [0]', PRODUCT_NAME)),
 				new MenuItem('sounds.php' . $ccc, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.')),
-				new MenuItem(NULL, NULL, NULL),
 				new MenuItem('game_issues.php' . $ccc, get_label('Game issues'), get_label('List of the games that have issues.')),
 				new MenuItem('game_bugs.php' . $ccc, get_label('Game bugs'), get_label('List of the bug reports in the game.')),
-				new MenuItem(NULL, NULL, NULL),
 				new MenuItem('duplicated_games.php' . $ccc, get_label('Duplicated games'), get_label('Search for duplicated games suspects.')),
 				new MenuItem('duplicated_users.php' . $ccc, get_label('Duplicated users'), get_label('Merge duplicated user accounts.')),
-				new MenuItem(NULL, NULL, NULL),
 				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
 				new MenuItem('maintenance_tasks.php' . $ccc, get_label('Maintenance tasks'), get_label('Manage recuring maintanance scripts')),
 				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
