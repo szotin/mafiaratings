@@ -754,7 +754,7 @@ button.dropdown-btn .ic { width: 16px; height: 16px; }
 .mast button.dropdown-btn:hover { background: rgba(255,255,255,.12); }
 .toolbar .tb-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--slate); font-size: 13.5px; }
 .nl .toolbar .tb-dates input[type=date] { height: 38px !important; border-radius: 999px !important; padding: 0 12px !important; }
-.toolbar .tb-dates button.small_icon { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; }
+.toolbar .tb-dates button.small_icon { width: 30px; height: 30px; }
 
 /* past / future */
 .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule); }
@@ -962,12 +962,27 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl input[type=submit] { background: var(--red); border-color: var(--red); color: #fff; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .05em; }
 .nl input[type=submit]:hover { background: var(--red-hi); border-color: var(--red-hi); }
 
-/* small square icon buttons keep their pictures */
-.nl button.icon, .nl button.big_icon, .nl button.small_icon {
-  border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); cursor: pointer;
+/* icon buttons - edit, delete, create... - everywhere: dark circles with the picture in the middle,
+   as on the band of a tournament */
+.nl button.icon, .nl button.small_icon, .nl button.big_icon,
+.ui-dialog button.icon, .ui-dialog button.small_icon, .ui-dialog button.big_icon {
+  display: inline-grid; place-items: center; width: 34px; height: 34px; margin: 1px 2px; padding: 0; vertical-align: middle;
+  border: 0 !important; border-radius: 50%; background: var(--night); cursor: pointer;
+  box-shadow: 0 6px 14px -8px rgba(11,20,34,.6); transition: background .15s, transform .15s;
 }
-.nl button.icon:hover, .nl button.big_icon:hover, .nl button.small_icon:hover { background: var(--frost); border-color: var(--rule-strong); }
-.nl button.icon[checked], .nl button.big_icon[checked] { background: var(--red-soft); border-color: var(--red); }
+.nl button.small_icon, .ui-dialog button.small_icon { width: 28px; height: 28px; }
+.nl button.big_icon, .ui-dialog button.big_icon { width: 48px; height: 48px; }
+.nl button.icon img, .nl button.small_icon img, .ui-dialog button.icon img, .ui-dialog button.small_icon img { max-width: 18px; max-height: 18px; width: auto; height: auto; border-radius: 0 !important; }
+.nl button.small_icon img, .ui-dialog button.small_icon img { max-width: 14px; max-height: 14px; }
+.nl button.big_icon img, .ui-dialog button.big_icon img { max-width: 28px; max-height: 28px; border-radius: 0 !important; }
+.nl button.icon:hover, .nl button.small_icon:hover, .nl button.big_icon:hover,
+.ui-dialog button.icon:hover, .ui-dialog button.small_icon:hover, .ui-dialog button.big_icon:hover { background: var(--night-3); transform: translateY(-1px); }
+.nl button.icon[checked], .nl button.big_icon[checked], .ui-dialog button.icon[checked] { background: var(--red); }
+.nl button.icon:disabled, .ui-dialog button.icon:disabled { opacity: .4; cursor: default; transform: none; }
+/* the few pictures drawn in black would vanish on the dark: drawn white instead */
+button.icon img[src*="clear.png"], button.small_icon img[src*="clear.png"], button.icon img[src*="function.png"],
+button.icon img[src*="objection.png"], button.icon img[src*="user.png"] { filter: invert(1); }
+@media (prefers-reduced-motion: reduce) { .nl button.icon, .ui-dialog button.icon { transition: none; } .nl button.icon:hover { transform: none; } }
 
 /* the tabs inside a page (see tabs.js): a line of uppercase labels, the open one underlined in red;
    what they open is a sheet */
@@ -1048,8 +1063,6 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .ui-dialog input[disabled], .ui-dialog select[disabled], .ui-dialog textarea[disabled] { background-color: var(--frost) !important; color: var(--slate); cursor: not-allowed; }
 .ui-dialog input[type=submit], .ui-dialog input[type=button] { min-height: 34px; padding: 0 14px; border: 1px solid var(--rule-strong); border-radius: 9px; background: var(--paper); cursor: pointer; font: 500 14px var(--font); color: var(--ink); }
 .ui-dialog input[type=submit]:hover, .ui-dialog input[type=button]:hover { background: var(--frost); }
-.ui-dialog button.icon, .ui-dialog button.small_icon, .ui-dialog button.big_icon { border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); cursor: pointer; }
-.ui-dialog button.icon:hover, .ui-dialog button.small_icon:hover, .ui-dialog button.big_icon:hover { background: var(--frost); border-color: var(--rule-strong); }
 .ui-dialog fieldset { margin: 10px 0; padding: 10px 14px 12px; border: 1px solid var(--rule); border-radius: 12px; }
 .ui-dialog legend { padding: 0 6px; font: 500 13px var(--font-display); text-transform: uppercase; letter-spacing: .06em; color: var(--slate); }
 .ui-dialog h3, .ui-dialog h4 { padding-left: 0; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .03em; color: var(--ink); }
