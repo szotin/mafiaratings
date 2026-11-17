@@ -316,6 +316,7 @@ class PageBase
 		echo '</nav>';
 
 		echo '<div class="hd-tools">';
+		echo '<button type="button" class="search-btn" data-open-search aria-label="' . get_label('Search') . '" title="' . get_label('Search') . ' (Ctrl+K)">' . PageBase::icon('search') . '<span>' . get_label('Search') . '</span><kbd>/</kbd></button>';
 		if ($_profile != NULL)
 		{
 			echo '<a class="btn-create" href="game.php?bck=0" title="' . get_label('The game') . '">' . PageBase::icon('play') . '<span>' . get_label('Play') . '</span></a>';
@@ -396,6 +397,8 @@ class PageBase
 		echo '<div class="drawer-foot"><span>' . get_label('Language') . '</span>';
 		PageBase::show_lang_switch();
 		echo '</div></div></div>';
+
+		PageBase::show_search_dialog();
 
 		echo '<main id="main" tabindex="-1">';
 
@@ -670,11 +673,40 @@ class PageBase
 		echo '</div>';
 	}
 
+	// The search of the header: a dialog with one field, filled as one types from
+	// api/control/search.php by new_look.js. The words the script needs are given to it here, in
+	// the language of the page.
+	private static function show_search_dialog()
+	{
+		$words = array(
+			'player' => get_label('Players'),
+			'club' => get_label('Clubs'),
+			'tournament' => get_label('Tournaments'),
+			'league' => get_label('Leagues'),
+			'series' => get_label('Series'),
+			'none' => get_label('Nothing found.'),
+			'short' => get_label('Type at least two letters.'),
+			'error' => get_label('The search failed. Please try again.'));
+		echo '<div class="search-dlg" id="search" hidden data-words="' . htmlspecialchars(json_encode($words), ENT_QUOTES, 'UTF-8') . '">';
+		echo '<div class="drawer-scrim" data-close></div>';
+		echo '<div class="search-box" role="dialog" aria-modal="true" aria-label="' . get_label('Search') . '">';
+		echo '<div class="search-field">' . PageBase::icon('search');
+		echo '<input type="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results" autocomplete="off" spellcheck="false"';
+		echo ' placeholder="' . get_label('Find a player, club or tournament') . '" aria-label="' . get_label('Find a player, club or tournament') . '">';
+		echo '<button type="button" class="search-close" data-close aria-label="' . get_label('Close') . '">Esc</button></div>';
+		echo '<ul class="search-results" id="search-results" role="listbox" aria-label="' . get_label('Search') . '"></ul>';
+		echo '<div class="search-hint">' . get_label('[0] to choose, Enter to open, Esc to close', '&uarr;&darr;') . '</div>';
+		echo '</div></div>';
+	}
+
 	// The few line icons the header needs, drawn inline so that they take the colour of the text.
 	static function icon($name)
 	{
 		switch ($name)
 		{
+		case 'search':
+			$path = '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>';
+			break;
 		case 'play':
 			$path = '<path d="M7 5v14l11-7z"/>';
 			break;

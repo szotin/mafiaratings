@@ -229,6 +229,51 @@ a:hover { color: var(--red); }
 .drawer-foot span { font-size: 14px; color: var(--slate); }
 @media (prefers-reduced-motion: reduce) { .drawer-panel, .drawer-scrim { transition: none; } }
 
+/* ------------------------------------------------------------ search */
+.search-btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; border: 1px solid transparent; border-radius: 999px; cursor: pointer;
+  background: var(--sky); color: var(--slate); font: 400 14px var(--font); }
+.search-btn:hover { color: var(--ink); border-color: var(--rule-strong); }
+.search-btn .ic { width: 18px; height: 18px; }
+.search-btn span { display: none; }
+.search-btn kbd { display: none; margin-left: auto; padding: 2px 6px; border: 1px solid var(--rule-strong); border-radius: 5px; background: var(--paper); font: 600 11px/1 var(--font); color: var(--slate); }
+@media (min-width: 760px) { .search-btn { padding: 0 12px 0 12px; } .search-btn span { display: inline; } }
+@media (min-width: 1280px) { .search-btn { min-width: 190px; } .search-btn kbd { display: inline; } }
+
+.search-dlg { position: fixed; inset: 0; z-index: 70; display: flex; justify-content: center; align-items: flex-start; padding: 10vh 16px 16px; }
+.search-dlg[hidden] { display: none; }
+.search-dlg .drawer-scrim { opacity: 1; }
+.search-box { position: relative; width: min(640px, 100%); max-height: 76vh; display: flex; flex-direction: column; background: var(--paper); border-radius: 16px; box-shadow: 0 30px 80px -24px rgba(19,35,58,.55); overflow: hidden; }
+.search-field { display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--rule); }
+.search-field > .ic { width: 20px; height: 20px; color: var(--slate); }
+.search-dlg.is-busy .search-field > .ic { animation: search-busy 1s ease-in-out infinite; }
+@keyframes search-busy { 50% { opacity: .3; } }
+.search-field input { flex: 1; min-width: 0; height: 56px; border: 0; outline: 0; background: none; font: 500 17px var(--font); color: var(--ink); }
+.search-field input::placeholder { color: var(--slate); font-weight: 400; }
+.search-field input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.search-close { padding: 4px 7px; border: 1px solid var(--rule-strong); border-radius: 6px; background: none; cursor: pointer; font: 600 12px var(--font); color: var(--slate); }
+.search-close:hover { color: var(--ink); }
+.search-results { overflow-y: auto; margin: 0; padding: 6px; list-style: none; overscroll-behavior: contain; }
+.search-results:empty { display: none; }
+.search-group { padding: 10px 10px 4px; font: 500 12.5px var(--font-display); text-transform: uppercase; letter-spacing: .06em; color: var(--slate); }
+.search-results a { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; color: var(--ink); }
+.search-results a[aria-selected="true"] { background: var(--frost); color: var(--ink); }
+.search-results a[aria-selected="true"] .search-name { color: var(--red); }
+.search-pic { flex: none; width: 34px; height: 34px; border-radius: 9px; overflow: hidden; display: grid; place-items: center; background: #fff; box-shadow: inset 0 0 0 1px rgba(11,20,34,.08); }
+.search-pic.round { border-radius: 50%; }
+.search-pic img { width: 100%; height: 100%; object-fit: contain; }
+.search-pic.round img { object-fit: cover; }
+.search-pic.is-empty { background: var(--night); color: #fff; font: 600 13px var(--font-display); box-shadow: none; }
+.search-txt { min-width: 0; }
+.search-name { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-results .s { display: block; font-size: 13px; color: var(--slate); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-empty { padding: 28px 20px; color: var(--slate); text-align: center; }
+.search-hint { padding: 10px 16px; border-top: 1px solid var(--rule); background: var(--frost); font-size: 13px; color: var(--slate); }
+@media (max-width: 639px) {
+  .search-dlg { padding: 0; }
+  .search-box { width: 100%; max-height: 100%; height: 100%; border-radius: 0; }
+  .search-hint { display: none; }
+}
+
 /* =================================================================== the band (masthead) */
 
 .mast {
