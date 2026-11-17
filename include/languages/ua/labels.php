@@ -2203,6 +2203,9 @@ $labelMenu = array (
 'Deprecated rules go on being played wherever they are played already, but they are not offered for anything new.' => 'За застарілими правилами й далі грають там, де вже грають, але для нового їх не пропонують.', // include/rules_management.php, include/rules_management.php
 'Deprecated rules' => 'Застарілі', // include/rules_management.php, include/rules_management.php
 'The default rules can not be deprecated.' => 'Правила за замовчуванням не можна зробити застарілими.', // api/ops/rules.php, api/ops/rules.php
+'Meant for' => 'Для', // gaining.php, gaining.php
+'This gaining system is not meant for series of this type.' => 'Ця серійна система підрахунку балів не призначена для серій такого типу.', // include/series.php, include/series.php
+'A gaining system has to be meant for at least one type of series.' => 'Серійна система підрахунку балів має бути призначена хоча б для одного типу серій.', // api/ops/gaining.php, api/ops/gaining.php
 'A player who is not in this round\'s seating can only take somebody\'s place in every game of the round. To change one game only, change the player in the game itself.' => 'Гравця, якого немає в розсадці раунду, можна поставити на чиєсь місце лише в усіх турах одразу. Щоб поміняти в одному турі, поміняйте гравця просто в грі.', // api/ops/event.php, form/seating_edit.php, api/ops/event.php, form/seating_edit.php
 'town\'s vicory' => 'перемога міста', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'перемога мафії', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
@@ -2225,9 +2228,8 @@ $labelMenu = array (
 'Sheriff\'s check' => 'Перевірка шерифа', // plugins/obs/obs.php, plugins/obs/obs.php
 'Don\'s checks' => 'Перевірки дона', // streams.php, streams.php
 'Sheriff\'s checks' => 'Перевірки шерифа', // streams.php, streams.php
-'Meant for' => 'Для', // gaining.php
-'This gaining system is not meant for series of this type.' => 'Ця серійна система підрахунку балів не призначена для серій такого типу.', // include/series.php
-'A gaining system has to be meant for at least one type of series.' => 'Серійна система підрахунку балів має бути призначена хоча б для одного типу серій.', // api/ops/gaining.php
+'Try the new look of the site' => 'Спробуйте новий вигляд сайту', // index.php
+'It is still being tested. Please tell us what is wrong with it.' => 'Він ще перевіряється. Розкажіть нам, що в ньому не так.', // index.php
 );
 
 return $labelMenu;

@@ -2203,6 +2203,9 @@ $labelMenu = array (
 'Deprecated rules go on being played wherever they are played already, but they are not offered for anything new.' => 'По устаревшим правилам продолжают играть там, где уже играют, но для нового их не предлагают.', // include/rules_management.php
 'Deprecated rules' => 'Устарели', // include/rules_management.php
 'The default rules can not be deprecated.' => 'Правила по умолчанию нельзя сделать устаревшими.', // api/ops/rules.php
+'Meant for' => 'Для', // gaining.php
+'This gaining system is not meant for series of this type.' => 'Эта серийная система подсчёта баллов не предназначена для серий такого типа.', // include/series.php
+'A gaining system has to be meant for at least one type of series.' => 'Серийная система подсчёта баллов должна быть предназначена хотя бы для одного типа серий.', // api/ops/gaining.php
 'A player who is not in this round\'s seating can only take somebody\'s place in every game of the round. To change one game only, change the player in the game itself.' => 'Игрока, которого нет в рассадке раунда, можно поставить на чьё-то место только во всех турах сразу. Чтобы поменять в одном туре, поменяйте игрока прямо в игре.', // api/ops/event.php, form/seating_edit.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
@@ -2225,9 +2228,8 @@ $labelMenu = array (
 'Sheriff\'s check' => 'Проверка шерифа', // plugins/obs/obs.php
 'Don\'s checks' => 'Проверки дона', // streams.php
 'Sheriff\'s checks' => 'Проверки шерифа', // streams.php
-'Meant for' => 'Для', // gaining.php
-'This gaining system is not meant for series of this type.' => 'Эта серийная система подсчёта баллов не предназначена для серий такого типа.', // include/series.php
-'A gaining system has to be meant for at least one type of series.' => 'Серийная система подсчёта баллов должна быть предназначена хотя бы для одного типа серий.', // api/ops/gaining.php
+'Try the new look of the site' => 'Попробуйте новый вид сайта', // index.php
+'It is still being tested. Please tell us what is wrong with it.' => 'Он ещё проверяется. Расскажите нам, что в нём не так.', // index.php
 );
 
 return $labelMenu;
