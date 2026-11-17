@@ -258,7 +258,7 @@ class PageBase
 		echo '<title>' . PRODUCT_NAME . ': ' . $this->_title . '</title>';
 		echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
 		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-		echo '<link rel="icon" href="images/maf.png">';
+		echo '<link rel="icon" type="image/svg+xml" href="images/favicon.svg">';
 		switch ($this->_indexing_policy)
 		{
 		case INDEXING_POLICY_NONE:
