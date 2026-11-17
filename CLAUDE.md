@@ -44,6 +44,7 @@ Bit-flag based, defined in `include/constants.php`. Eight levels from player to 
 - Vanilla JS + jQuery, compiled with Google Closure Compiler.
 - Source files in `js/src/`, compiled outputs in `js/`.
 - Multilingual: each module has per-language files (e.g., `game_en.js`, `game_ru.js`, `game_ua.js`). Supported languages: English, Russian, Ukrainian.
+- The look of the pages (from the v3 design preview): `new_look.css` (tokens, header, the dark title band, tabs, footer, and the restyling of the old markup inside `.nl`), `new_look.js` (header dropdowns, drawer) and the self-hosted fonts in `fonts/`. Like `tabs.js`, the two are plain files at the root, loaded as they are and not compiled. `PageBase` (`include/page_base.php`) builds the header, the menu of the site (`get_main_menu()`), the band (`show_title_band()` — whatever `show_title()` prints goes on it, an entity's tabs moved to its bottom edge) and the footer. A page with a look of its own overrides `content_class()` (the game does).
 
 ### OBS Studio Overlays
 - `plugins/obs/` — the pages shown as browser sources in OBS Studio. Over the picture: `overlay.php`, and `players.php` / `gamestats.php`, which are the same drawing with one half left out. All three are built by `obs.php` and refreshed by `obs.js`; `obs.css` holds the look and `fonts/` the two self-hosted fonts.

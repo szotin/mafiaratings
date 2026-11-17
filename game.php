@@ -25,7 +25,13 @@ class Page extends PageBase
 	protected function show_title()
 	{
 	}
-	
+
+	// The game has a look of its own (game.css).
+	protected function content_class()
+	{
+		return 'game-page';
+	}
+
 	protected function prepare()
 	{
 		$this->club_id = 0;
