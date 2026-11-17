@@ -259,8 +259,13 @@ a:hover { color: var(--red); }
   .hd-avatar { width: 36px; height: 36px; }
   .brand { font-size: 18px; }
 }
+/* nor can the header be wider than the screen, whatever font a phone ends up drawing it with:
+   the logo gives way first, the buttons never */
+.hd .wrap { min-width: 0; }
+.hd .brand { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.hd .hd-tools { flex: none; }
 /* and whatever is still too wide, the page itself never scrolls sideways */
-body { overflow-x: clip; }
+html, body { overflow-x: clip; }
 
 .search-dlg { position: fixed; inset: 0; z-index: 70; display: flex; justify-content: center; align-items: flex-start; padding: 10vh 16px 16px; }
 .search-dlg[hidden] { display: none; }
@@ -384,6 +389,14 @@ a.back:active span { padding: 0; }
 .eh-art img + img { position: absolute; left: 0 !important; top: 0; margin: 0 !important; }
 .eh-art.round { border-radius: 50%; }
 .eh-art.round img { object-fit: cover; }
+/* a tournament: a cover as on the cards of the main page - the logo whole over a blurred copy of it */
+.eh-art.cover { position: relative; width: 128px; background: var(--night-2); }
+.eh-art.cover a { position: absolute; inset: 0; }
+.eh-art.cover .cv-blur { position: absolute; inset: -16px; }
+.eh-art.cover img.cv-logo { position: absolute; inset: 8% 0; width: 100% !important; height: 84% !important; object-fit: contain; }
+.eh-art.cover .pc-mono { font-size: 30px; }
+.eh-art.cover img.pc-club { left: 8px; bottom: 8px; width: 22px !important; height: 22px !important; border-radius: 6px !important; background: #fff; }
+@media (min-width: 760px) { .eh-art.cover { width: 170px; } .eh-art.cover .pc-mono { font-size: 40px; } }
 .eh.is-off .eh-art { filter: grayscale(1); opacity: .7; }
 .eh-main { min-width: 0; }
 .mast .eh h1 { font-size: 30px; line-height: 1.02; overflow-wrap: anywhere; }
@@ -614,7 +627,8 @@ a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space
 .home-filter input.dropdown { width: 230px; height: 36px; padding: 0 36px 0 14px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255,255,255,.08); color: #fff; font: 400 14px var(--font); }
 .home-filter input.dropdown::placeholder { color: var(--night-dim); }
 .home-filter input.dropdown:focus { outline: none; border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.12); }
-.home-filter input.dropdown-btn { width: 16px; height: 16px; margin-left: -28px; filter: invert(1) brightness(1.4); opacity: .7; }
+.home-filter button.dropdown-btn { color: var(--night-dim); }
+.home-filter button.dropdown-btn:hover { color: #fff; }
 
 .now-grid { display: grid; gap: 28px; margin-top: 8px; }
 @media (min-width: 1000px) { .now-grid { grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 44px; align-items: start; } }
@@ -732,7 +746,12 @@ a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space
 .toolbar .switch-row { display: contents; }
 .toolbar .tb-field { display: flex; align-items: center; }
 .nl input.dropdown, .home-page input.dropdown { width: 240px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
-.nl input.dropdown-btn, .home-page input.dropdown-btn { vertical-align: middle; top: 0; filter: none; background: none; position: static; width: 16px; height: 16px; margin: 0 12px 0 -28px; padding: 0; border: 0; opacity: .6; }
+/* the arrow of a dropdown field (the club/city/country filter), drawn over the right end of the field */
+button.dropdown-btn { position: relative; top: 0; display: inline-grid; place-items: center; width: 28px; height: 28px; margin: 0 8px 0 -34px; padding: 0; border: 0 !important; border-radius: 50%;
+  background: none; color: var(--slate); cursor: pointer; vertical-align: middle; }
+button.dropdown-btn:hover, button.dropdown-btn:active { padding: 0; border: 0; background: var(--frost); color: var(--ink); }
+button.dropdown-btn .ic { width: 16px; height: 16px; }
+.mast button.dropdown-btn:hover { background: rgba(255,255,255,.12); }
 .toolbar .tb-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--slate); font-size: 13.5px; }
 .nl .toolbar .tb-dates input[type=date] { height: 38px !important; border-radius: 999px !important; padding: 0 12px !important; }
 .toolbar .tb-dates button.small_icon { width: 30px; height: 30px; border-radius: 50%; display: inline-grid; place-items: center; }
@@ -1110,6 +1129,6 @@ input[type="checkbox"].toggle:checked { background-color: var(--red); border-col
   .nl table.bordered > tbody > tr > td { border-top: 1px solid #ddd !important; }
   .home-results .posters { display: grid !important; overflow: visible !important; }
   .chip.live::before, .pulse { animation: none !important; }
-  .nl input.dropdown, .nl input.dropdown-btn, .nl button.icon, .nl button.small_icon, .nl button.big_icon, .nl input[type=submit], .nl input[type=button], .nl img[src*="find.png"] { display: none !important; }
+  .nl input.dropdown, .nl button.dropdown-btn, .nl button.icon, .nl button.small_icon, .nl button.big_icon, .nl input[type=submit], .nl input[type=button], .nl img[src*="find.png"] { display: none !important; }
   .nl select, .nl input { border: 0 !important; box-shadow: none !important; background: none !important; padding-left: 0 !important; -webkit-appearance: none; appearance: none; }
 }

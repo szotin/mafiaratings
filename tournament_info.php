@@ -6,12 +6,8 @@ require_once 'include/pages.php';
 require_once 'include/event.php';
 require_once 'include/utilities.php';
 
-define('ROUND_COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
-define('ROUND_ROW_COUNT', 6);
-define('ROUND_COLUMN_WIDTH', (100 / ROUND_COLUMN_COUNT));
 define('USER_COLUMN_COUNT', 6);
 define('USER_COLUMN_WIDTH', (100 / USER_COLUMN_COUNT));
-define('COMMENTS_WIDTH', 300);
 
 class Page extends TournamentPageBase
 {
@@ -113,92 +109,6 @@ class Page extends TournamentPageBase
 			echo '<tr><td>'.get_label('Guest coefficient').':</td><td>' . format_rating($this->guest_coeff, 0) . '</td></tr>';
 			echo '</table></p>';
 		}
-		
-		$page_size = ROUND_ROW_COUNT * ROUND_COLUMN_COUNT;
-		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events WHERE tournament_id = ? AND (flags & ' . EVENT_FLAG_CANCELED . ') = 0', $this->id);
-		show_pages_navigation($page_size, $count);
-		
-		$row_count = 0;
-		$column_count = 0;
-		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, na.name FROM events e' .
-			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
-			' JOIN addresses a ON e.address_id = a.id' .
-			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
-			' JOIN cities ct ON a.city_id = ct.id' .
-			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0' .
-			' WHERE e.tournament_id = ? AND (e.flags & ' . EVENT_FLAG_CANCELED . ') = 0' .
-			' ORDER BY e.start_time DESC, e.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size,
-			$this->id);
-
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
-		while ($row = $query->next())
-		{
-			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $event_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name) = $row;
-			$past = ($start_time + $duration <= $now);
-			if ($past)
-			{
-				$url = 'event.php';
-				$dark_class = ' class="dark"';
-				$light_class = '';
-			}
-			else
-			{
-				$url = 'event.php';
-				$dark_class = ' class="darker"';
-				$light_class = ' class="dark"';
-			}
-			
-			if ($name == $addr_name)
-			{
-				$name = $addr;
-			}
-			if ($column_count == 0)
-			{
-				if ($row_count == 0)
-				{
-					echo '<table class="bordered light" width="100%"><tr class="darker"><td colspan="' . ROUND_COLUMN_COUNT . '"><b>' . get_label('Rounds') . '</b></td></tr>';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td width="' . ROUND_COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
-			echo '<tr' . $dark_class . '><td align="center" style="height: 32px;"><b>' . $name . '</b></td></tr>';
-
-
-			echo '<tr' . $light_class . '><td align="center"><a href="' . $url . '?bck=1&id=' . $id . '">';
-			$event_pic->
-				set($id, $name, $flags)->
-				set($addr_id, $addr, $addr_flags);
-			$event_pic->show(ICONS_DIR, false);
-			echo '</a><br>' . format_date($start_time, $event_timezone) . '</td></tr></table>';
-			
-			echo '</td>';
-			
-			++$row_count;
-			++$column_count;
-			if ($column_count >= ROUND_COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
-		}
-		if ($row_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (ROUND_COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
-		show_pages_navigation($page_size, $count);
 	}
 	
 	// A grid of people of the tournament - its participants, applicants or referees - each in a card

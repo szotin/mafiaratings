@@ -844,7 +844,7 @@ class PageBase
 		echo '</div>';
 
 		echo '<header class="eh' . ($h->off ? ' is-off' : '') . '">';
-		echo '<div class="eh-art' . ($h->round ? ' round' : '') . '">' . $h->art . '</div>';
+		echo '<div class="eh-art' . ($h->round ? ' round' : '') . ($h->cover ? ' cover' : '') . '">' . $h->art . '</div>';
 		echo '<div class="eh-main"><h1>' . $h->name . '</h1>';
 		if (!empty($h->sub))
 		{
@@ -1114,6 +1114,7 @@ class EntityHeader
 	public $name;
 	public $art = '';         // the picture
 	public $round = false;    // a person's picture is round
+	public $cover = false;    // the art is a cover (card_cover()), wider than a logo
 	public $sub = '';         // a line under the name: where it is up to, its stars
 	public $facts = array();  // array(icon, html) each, see fact()
 	public $side = '';        // to the right of the name: a rating, a button to apply

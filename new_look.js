@@ -408,12 +408,16 @@
 		}
 		var t = e.target;
 		var typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
-		if ((e.key == 'k' || e.key == 'K') && (e.ctrlKey || e.metaKey) && !e.altKey)
+		// By the key on the keyboard rather than by the letter it types: with a Russian or a
+		// Ukrainian layout on, K types "л" and the slash key types ".".
+		var isK = e.code == 'KeyK' || e.key == 'k' || e.key == 'K';
+		var isSlash = e.key == '/' || ((e.code == 'Slash' || e.code == 'NumpadDivide') && !e.shiftKey);
+		if (isK && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey)
 		{
 			e.preventDefault();
 			setSearch(true);
 		}
-		else if (e.key == '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && !document.querySelector('.ui-dialog:not([style*="display: none"])'))
+		else if (isSlash && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && !document.querySelector('.ui-dialog:not([style*="display: none"])'))
 		{
 			e.preventDefault();
 			setSearch(true);

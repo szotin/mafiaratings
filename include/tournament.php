@@ -10,6 +10,7 @@ require_once __DIR__ . '/address.php';
 require_once __DIR__ . '/club.php';
 require_once __DIR__ . '/series.php';
 require_once __DIR__ . '/stream.php';
+require_once __DIR__ . '/cards.php';
 require_once __DIR__ . '/city.php';
 require_once __DIR__ . '/country.php';
 require_once __DIR__ . '/user.php';
@@ -241,9 +242,13 @@ class TournamentPageBase extends PageBase
 		$h = new EntityHeader($this->name, get_label('Tournaments'), 'tournaments.php');
 		$h->off = ($this->flags & TOURNAMENT_FLAG_CANCELED) != 0;
 
+		// The picture of a tournament as on the cards of the main page: its logo whole, over a blurred
+		// copy of itself; or its initials with the logo of the club.
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$tournament_pic->set($this->id, $this->name, $this->flags);
-		$h->art = PageBase::capture(function() use ($tournament_pic) { $tournament_pic->show(TNAILS_DIR, false); });
+		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
+		$h->art = card_cover($tournament_pic, $this->club_pic, $this->name);
+		$h->cover = true;
 		if ($this->address_url != '')
 		{
 			$h->art = '<a href="address_info.php?bck=1&id=' . $this->address_id . '">' . $h->art . '</a>';
