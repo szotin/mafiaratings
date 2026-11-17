@@ -1047,7 +1047,6 @@ class SeriesPageBase extends PageBase
 		// ends the request, so the error page it was announcing stopped at its heading and
 		// never got its footer, and with the footer went every dialog on it. See
 		// PageBase::run.
-		echo '<table class="head" width="100%">';
 
 		$is_manager = is_series_manager($this->owner, $this->id);
 		$menu = array
@@ -1092,86 +1091,56 @@ class SeriesPageBase extends PageBase
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}
-		
-		echo '<tr><td colspan="4">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';
-		
-		echo '<tr><td rowspan="2" valign="top" align="left" width="1">';
-		echo '<table class="bordered ';
-		if (($this->flags & SERIES_FLAG_CANCELED) != 0)
-		{
-			echo 'dark';
-		}
-		else
-		{
-			echo 'light';
-		}
-		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
-		show_series_buttons(
-			$this->id,
-			$this->start_time,
-			$this->duration,
-			$this->flags,
-			$this->owner);
-		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
+
+		$h = new EntityHeader($this->name, get_label('Series'), 'series.php');
+		$h->off = ($this->flags & SERIES_FLAG_CANCELED) != 0;
+
 		$series_pic = new Picture(SERIES_PICTURE);
 		$series_pic->set($this->id, $this->name, $this->flags);
-		$series_pic->show(TNAILS_DIR, false);
-		echo '</td></tr></table></td>';
-		
-		echo '<td rowspan="2" valign="top"><h2 class="series">' . $this->name . '</h2><br><h3>' . $this->_title;
-		$time = time();
-		echo '</h3><p class="subtitle">' . series_period($this->start_time, $this->duration, $this->timezone) . '</p>';
+		$h->art = PageBase::capture(function() use ($series_pic) { $series_pic->show(TNAILS_DIR, false); });
+		$h->actions = PageBase::capture(function() { show_series_buttons($this->id, $this->start_time, $this->duration, $this->flags, $this->owner); });
+
 		// A series with no dates is always under way, which is what series_period() already says.
-		if (($this->flags & SERIES_FLAG_FINISHED) == 0 && !series_is_infinite($this->start_time))
+		if ($h->off)
 		{
-			echo '<p class="subtitle"><i>(';
-			if ($this->start_time < $time)
+			$h->sub = '<span class="chip off">' . get_label('canceled') . '</span>';
+		}
+		else if (($this->flags & SERIES_FLAG_FINISHED) != 0)
+		{
+			$h->sub = '<span class="chip done">' . get_label('finished') . '</span>';
+		}
+		else if (!series_is_infinite($this->start_time))
+		{
+			if ($this->start_time < time())
 			{
-				echo get_label('playing now');
+				$h->sub = '<span class="chip live">' . get_label('playing now') . '</span>';
 			}
 			else
 			{
-				echo get_label('not started yet');
+				$h->sub = '<span class="chip">' . get_label('not started yet') . '</span>';
 			}
-			echo ')</i></p>';
 		}
-		echo '</td>';
-		
-		echo '<td valign="top" align="right">';
-		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom"><table><tr>';
 
-		// The series this one is a part of, then the league or the club running it.
-		$parent_pic = new SeriesPicture();
-		foreach ($this->parent_series as $s)
+		$h->fact('cal', series_period($this->start_time, $this->duration, $this->timezone));
+		$h->fact($this->owner->is_league() ? 'trophy' : 'users', PageBase::entity_link($this->owner_pic, $this->owner->name, $this->owner->url()));
+
+		// The series this one is a part of, with what it is worth in each, as a tournament shows it.
+		if (count($this->parent_series) > 0)
 		{
-			echo '<td align="center" width="64">';
-			$pic = $parent_pic->set($s->id, $s->name, $s->flags, $s->owner);
-			// "<its league or club>: <parent series>". Set explicitly because the title Picture
-			// builds from the fallback chain puts the two the other way round.
-			$pic->custom_title = $s->name;
-			if (!is_null($s->owner->name) && $s->owner->name != $s->name)
+			$parent_pic = new SeriesPicture();
+			$parents = '';
+			foreach ($this->parent_series as $s)
 			{
-				$pic->custom_title = $s->owner->name . ': ' . $s->name;
+				$parents .= PageBase::entity_link($parent_pic->set($s->id, $s->name, $s->flags, $s->owner), $s->name);
+				if ($s->stars > 0)
+				{
+					$parents .= '<span class="stars">' . tournament_stars_str($s->stars, false) . '</span>';
+				}
 			}
-			$pic->show(ICONS_DIR, true, 48);
-			// What this series is worth in the parent, as the header of a tournament shows it.
-			if ($s->stars > 0)
-			{
-				echo '<br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($s->stars) . '</font>';
-			}
-			echo '</td>';
+			$h->fact('layers', $parents);
 		}
 
-		echo '<td align="center">';
-		$this->owner_pic->show(ICONS_DIR, true, 48);
-		echo '</td>';
-
-		echo '</tr></table></td></tr>';
-		
-		echo '</table>';
+		$this->show_entity_header($h, $menu);
 	}
 }
 

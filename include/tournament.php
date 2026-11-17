@@ -184,7 +184,6 @@ class TournamentPageBase extends PageBase
 	{
 		global $_profile;
 		
-		echo '<table class="head" width="100%">';
 
 		$menu = array
 		(
@@ -238,150 +237,108 @@ class TournamentPageBase extends PageBase
 			);
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}
-		
-		echo '<tr><td colspan="4">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';
-		
-		echo '<tr><td rowspan="2" valign="top" align="left" width="1">';
-		echo '<table class="bordered ';
-		if (($this->flags & TOURNAMENT_FLAG_CANCELED) != 0)
-		{
-			echo 'dark';
-		}
-		else
-		{
-			echo 'light';
-		}
-		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
-		show_tournament_buttons(
-			$this->id,
-			$this->start_time,
-			$this->duration,
-			$this->flags,
-			$this->club_id,
-			$this->club_flags,
-			true);
-		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
+
+		$h = new EntityHeader($this->name, get_label('Tournaments'), 'tournaments.php');
+		$h->off = ($this->flags & TOURNAMENT_FLAG_CANCELED) != 0;
+
 		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$tournament_pic->set($this->id, $this->name, $this->flags);
+		$h->art = PageBase::capture(function() use ($tournament_pic) { $tournament_pic->show(TNAILS_DIR, false); });
 		if ($this->address_url != '')
 		{
-			echo '<a href="address_info.php?bck=1&id=' . $this->address_id . '">';
-			$tournament_pic->show(TNAILS_DIR, false);
-			echo '</a>';
+			$h->art = '<a href="address_info.php?bck=1&id=' . $this->address_id . '">' . $h->art . '</a>';
 		}
-		else
+
+		$h->actions = PageBase::capture(function()
 		{
-			$tournament_pic->show(TNAILS_DIR, false);
-		}
-		echo '</td></tr></table></td>';
-		
-		echo '<td valign="top"><h2 class="tournament">' . $this->name . '</h2><br><h3>' . $this->_title;
-		$time = time();
-		echo '</h3><p class="subtitle">' . format_date_period($this->start_time, $this->duration, $this->timezone);
+			show_tournament_buttons($this->id, $this->start_time, $this->duration, $this->flags, $this->club_id, $this->club_flags, true);
+		});
+
+		$h->sub = $this->status_html();
 		if (!is_null($this->mwt_id))
 		{
-			echo '<br><br><a href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank"><img src="images/fiim.png" width="24" title="' . get_label('[0] link', 'MWT') . '"></a>';
+			$h->sub .= ' <a class="eh-ext" href="https://mafiaworldtour.com/tournaments/' . $this->mwt_id . '" target="_blank"><img src="images/fiim.png" width="20" title="' . get_label('[0] link', 'MWT') . '"></a>';
 		}
 		else if (!is_null($this->imafia_id))
 		{
-			echo '<br><br><a href="https://imafia.org/tournament/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="24" title="' . get_label('[0] link', 'iMafia') . '"></a>';
+			$h->sub .= ' <a class="eh-ext" href="https://imafia.org/tournament/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="20" title="' . get_label('[0] link', 'iMafia') . '"></a>';
 		}
 		else if (!is_null($this->emo_id))
 		{
-			echo '<br><br><a href="https://tournament.emotion.games/results/' . $this->emo_id . '" target="_blank"><img src="images/emo.png" width="24" title="' . get_label('[0] link', 'Emotion.games') . '"></a>';
+			$h->sub .= ' <a class="eh-ext" href="https://tournament.emotion.games/results/' . $this->emo_id . '" target="_blank"><img src="images/emo.png" width="20" title="' . get_label('[0] link', 'Emotion.games') . '"></a>';
 		}
-		
-		if (($this->flags & TOURNAMENT_FLAG_FINISHED) == 0)
-		{
-			$done = false;
-			echo '<p class="subtitle">';
-			if ($this->start_time < $time)
-			{
-				echo '<i>('.get_label('playing now').')</i>';
-				$done = true;
-			}
-			else if ($this->flags & TOURNAMENT_FLAG_REGISTRATION_CLOSED)
-			{
-				echo '<i>('.get_label('registration is closed').')</i>';
-				$done = true;
-			}
-			else if ($_profile != NULL)
-			{
-				$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $this->id, $_profile->user_id);
-				if ($row = $query->next())
-				{
-					list($tu_flags) = $row;
-					echo '<button onclick="mr.unattendTournament(' . $this->id . ', \'' . get_label('Are you sure you want to cancel your tournament participation?') . '\')">';
-					if ($tu_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED)
-					{
-						echo get_label('Cancel my application');
-					}
-					else
-					{
-						echo get_label('Cancel my participation');
-					}
-					echo '</button>';
-					$done = true;
-				}
-			}
-			if (!$done)
-			{
-				echo '<button onclick="mr.attendTournament('.$this->id;
-				if ($this->team_size > 1)
-				{
-					echo ', true';
-				}
-				else
-				{
-					echo ', false';
-				}
-				if ($_profile == null)
-				{
-					echo ', true';
-				}
-				echo ')">'.get_label('Apply for participation').'</button>';
-			}
-			echo '</p>';
-		}
-		
-		echo '</td><td valign="top" align="right">';
-		show_back_button();
-		echo '</td></tr>';
-		
-		echo '<tr><td style="padding: 0px 0px 0px 20px;">';
-		echo '</td><td align="right" valign="bottom"><table><tr><td align="center">';
-		
+
+		$h->fact('cal', format_date_period($this->start_time, $this->duration, $this->timezone));
+		$h->fact('pin', '<span><a href="address_info.php?bck=1&id=' . $this->address_id . '">' . trim($this->address_name) . '</a>' . (trim($this->address_name) == $this->city_name ? '' : ', ' . $this->city_name) . '</span>');
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR, true, 54);
-		
+		$h->fact('users', PageBase::entity_link($this->club_pic, $this->club_name));
 		if (count($this->series) > 0)
 		{
 			$series_pic = new SeriesPicture();
+			$series = '';
 			foreach ($this->series as $s)
 			{
-				echo '<td align="center" width="64">';
-				$series_pic->set($s->series_id, $s->series_name, $s->series_flags, $s->owner)->show(ICONS_DIR, true, 42);
-				echo '<br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($s->stars) . '</font>';
-				// for ($i = 0; $i < floor($s->stars); ++$i)
-				// {
-					// echo '<img src="images/star.png" width="12">';
-				// }
-				// for (; $i < $s->stars; ++$i)
-				// {
-					// echo '<img src="images/star-half.png" width="12">';
-				// }
-				// for (; $i < 5; ++$i)
-				// {
-					// echo '<img src="images/star-empty.png" width="12">';
-				// }
-				echo '</td>';
+				$series .= PageBase::entity_link($series_pic->set($s->series_id, $s->series_name, $s->series_flags, $s->owner), $s->series_name);
+				if ($s->stars > 0)
+				{
+					$series .= '<span class="stars">' . tournament_stars_str($s->stars, false) . '</span>';
+				}
+			}
+			$h->fact('layers', $series);
+		}
+		if (!is_null($this->currency_pattern) && !is_null($this->fee))
+		{
+			$h->fact('coin', format_currency($this->fee, $this->currency_pattern));
+		}
+
+		$h->side = $this->participation_html();
+		$this->show_entity_header($h, $menu);
+	}
+
+	// Where the tournament is up to, for the line under its name.
+	private function status_html()
+	{
+		if (($this->flags & TOURNAMENT_FLAG_CANCELED) != 0)
+		{
+			return '<span class="chip off">' . get_label('canceled') . '</span>';
+		}
+		if (($this->flags & TOURNAMENT_FLAG_FINISHED) != 0)
+		{
+			return '<span class="chip done">' . get_label('finished') . '</span>';
+		}
+		if ($this->start_time < time())
+		{
+			return '<span class="chip live">' . get_label('playing now') . '</span>';
+		}
+		if ($this->flags & TOURNAMENT_FLAG_REGISTRATION_CLOSED)
+		{
+			return '<span class="chip">' . get_label('registration is closed') . '</span>';
+		}
+		return '';
+	}
+
+	// The button to apply for the tournament, or to take the application back, while it has not
+	// started and is taking players.
+	private function participation_html()
+	{
+		global $_profile;
+
+		if (($this->flags & (TOURNAMENT_FLAG_FINISHED | TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_REGISTRATION_CLOSED)) != 0 || $this->start_time < time())
+		{
+			return '';
+		}
+		if ($_profile != NULL)
+		{
+			$query = new DbQuery('SELECT flags FROM tournament_regs WHERE tournament_id = ? AND user_id = ?', $this->id, $_profile->user_id);
+			if ($row = $query->next())
+			{
+				list($tu_flags) = $row;
+				return '<button class="eh-cta ghost" onclick="mr.unattendTournament(' . $this->id . ', \'' . get_label('Are you sure you want to cancel your tournament participation?') . '\')">' .
+					(($tu_flags & USER_TOURNAMENT_FLAG_NOT_ACCEPTED) ? get_label('Cancel my application') : get_label('Cancel my participation')) .
+					'</button>';
 			}
 		}
-		echo '</td></tr></table></td></tr>';
-		
-		echo '</table>';
+		return '<button class="eh-cta" onclick="mr.attendTournament(' . $this->id . ', ' . ($this->team_size > 1 ? 'true' : 'false') . ($_profile == NULL ? ', true' : '') . ')">' . get_label('Apply for participation') . '</button>';
 	}
 	
 	protected function show_hidden_table_message($condition = NULL)

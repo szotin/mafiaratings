@@ -563,7 +563,6 @@ class EventPageBase extends PageBase
 	
 	protected function show_title()
 	{
-		echo '<table class="head" width="100%">';
 
 		$menu = array
 		(
@@ -633,79 +632,62 @@ class EventPageBase extends PageBase
 			}
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}
-		
-		echo '<tr><td colspan="4">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';
-		
-		echo '<tr><td rowspan="2" valign="top" align="left" width="1">';
-		echo '<table class="bordered ';
-		if (($this->flags & EVENT_FLAG_CANCELED) != 0)
+
+		// A round of a tournament is found through its tournament, an event on its own through the
+		// list of events.
+		if (is_null($this->tournament_id))
 		{
-			echo 'dark';
+			$h = new EntityHeader($this->name, get_label('Events'), 'events.php');
 		}
 		else
 		{
-			echo 'light';
+			$h = new EntityHeader($this->name, $this->tournament_name, 'tournament_info.php?bck=1&id=' . $this->tournament_id);
 		}
-		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
-		show_event_buttons(
-			$this->id,
-			$this->tournament_id,
-			$this->start_time,
-			$this->duration,
-			$this->flags,
-			$this->club_id,
-			$this->club_flags,
-			$this->coming_odds != NULL && $this->coming_odds > 0,
-			$this->is_manager, $this->is_referee, true);
-		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
-		
+		$h->off = ($this->flags & EVENT_FLAG_CANCELED) != 0;
+		if ($h->off)
+		{
+			$h->sub = '<span class="chip off">' . get_label('canceled') . '</span>';
+		}
+
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
 		$event_pic->
 			set($this->id, $this->name, $this->flags)->
 			set($this->address_id, $this->address, $this->address_flags);
+		$h->art = PageBase::capture(function() use ($event_pic) { $event_pic->show(TNAILS_DIR, false); });
 		if ($this->address_url != '')
 		{
-			echo '<a href="address_info.php?bck=1&id=' . $this->address_id . '">';
-			$event_pic->show(TNAILS_DIR, false);
-			echo '</a>';
+			$h->art = '<a href="address_info.php?bck=1&id=' . $this->address_id . '">' . $h->art . '</a>';
 		}
-		else
+		$h->actions = PageBase::capture(function()
 		{
-			$event_pic->show(TNAILS_DIR, false);
-		}
-		echo '</td></tr></table></td>';
-		
-		echo '<td valign="top"><h2 class="event">' . $this->get_full_name() . '</h2><br><h3>' . $this->_title;
-		$time = time();
-		echo '</h3><p class="subtitle">' . format_date($this->start_time, $this->timezone, true) . '</p>';
-		if (!is_null($this->currency_pattern) && !is_null($this->fee))
-		{
-			echo '<p class="subtitle"><b>'.get_label('Admission rate').': '.format_currency($this->fee, $this->currency_pattern).'</b></p>';
-		}
-		echo '</td>';
-		
-		echo '<td valign="top" align="right">';
-		show_back_button();
-		echo '</td></tr><tr><td style="padding: 0px 0px 0px 20px;">';
-		// Nothing stands beside the heading any more. The tower that led to the broadcasts was
-		// put here when there was nowhere else for it to go; it has a place of its own in the
-		// menu above now, between the standings and the games, and a second way in beside the
-		// heading only made the page busier. The cell stays, so that the club and tournament
-		// icons keep the column they have always been in.
-		echo '</td><td align="right" valign="bottom"><table><tr><td align="center">';
+			show_event_buttons(
+				$this->id,
+				$this->tournament_id,
+				$this->start_time,
+				$this->duration,
+				$this->flags,
+				$this->club_id,
+				$this->club_flags,
+				$this->coming_odds != NULL && $this->coming_odds > 0,
+				$this->is_manager, $this->is_referee, true);
+		});
+
+		$h->fact('cal', format_date($this->start_time, $this->timezone, true));
+		$h->fact('pin', '<span><a href="address_info.php?bck=1&id=' . $this->address_id . '">' . trim($this->address) . '</a>' . (trim($this->address) == $this->city ? '' : ', ' . $this->city) . '</span>');
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR, true, 48);
+		$h->fact('users', PageBase::entity_link($this->club_pic, $this->club_name));
 		if (!is_null($this->tournament_id))
 		{
 			$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 			$tournament_pic->set($this->tournament_id, $this->tournament_name, $this->tournament_flags);
-			$tournament_pic->show(ICONS_DIR, true, 48);
+			$h->fact('trophy', PageBase::entity_link($tournament_pic, $this->tournament_name));
 		}
-		echo '</td></tr></table></td></tr>';
-		
-		echo '</table>';
+		if (!is_null($this->currency_pattern) && !is_null($this->fee))
+		{
+			$h->fact('coin', get_label('Admission rate') . ': ' . format_currency($this->fee, $this->currency_pattern));
+		}
+
+		$this->show_entity_header($h, $menu);
 	}
 	
 	// What the tournament hides of this round - see include/table_hiding.php. A round hidden as a

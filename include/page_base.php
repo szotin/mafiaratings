@@ -690,6 +690,36 @@ class PageBase
 		case 'chevron':
 			$path = '<path d="M6 9l6 6 6-6"/>';
 			break;
+		case 'chev-r':
+			$path = '<path d="M9 6l6 6-6 6"/>';
+			break;
+		case 'cal':
+			$path = '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>';
+			break;
+		case 'pin':
+			$path = '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>';
+			break;
+		case 'users':
+			$path = '<circle cx="9" cy="8.5" r="3.3"/><path d="M2.8 19.5c0-3.3 2.8-5.3 6.2-5.3s6.2 2 6.2 5.3"/><path d="M15.5 5.6a3.2 3.2 0 0 1 0 6M17.6 14.5c2.2.6 3.6 2.4 3.6 5"/>';
+			break;
+		case 'layers':
+			$path = '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>';
+			break;
+		case 'trophy':
+			$path = '<path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5M12 14v3.5M8.5 20.5h7"/>';
+			break;
+		case 'link':
+			$path = '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>';
+			break;
+		case 'coin':
+			$path = '<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-1-1.6-1.6-2.8-1.6-1.6 0-2.8.9-2.8 2.2 0 3 5.8 1.5 5.8 4.4 0 1.3-1.3 2.2-3 2.2-1.3 0-2.5-.6-3-1.7M12 6v1.6M12 16.4V18"/>';
+			break;
+		case 'lang':
+			$path = '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5z"/>';
+			break;
+		case 'status':
+			$path = '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>';
+			break;
 		default:
 			return '';
 		}
@@ -703,6 +733,112 @@ class PageBase
 		echo '<nav class="tabs"><div class="tabs-inner">';
 		PageBase::show_nav_items($menu);
 		echo '</div></nav>';
+	}
+
+	// What a piece of code prints, as a string - for the parts of an entity's heading drawn by
+	// functions that print (Picture::show, the buttons of a club or a tournament).
+	static function capture($print)
+	{
+		ob_start();
+		try
+		{
+			$print();
+		}
+		catch (Exception $e)
+		{
+			ob_end_clean();
+			throw $e;
+		}
+		return ob_get_clean();
+	}
+
+	// The site a web address is on, for showing the address short: "mafiaclub.com".
+	static function url_host($url)
+	{
+		$host = parse_url($url, PHP_URL_HOST);
+		if (empty($host))
+		{
+			return $url;
+		}
+		return preg_replace('#^www\.#', '', $host);
+	}
+
+	// A small picture with a name, linking to its page: the club of a tournament, the series it
+	// is in. $name defaults to the picture's own.
+	static function entity_link($pic, $name = NULL, $url = NULL)
+	{
+		if (is_null($name))
+		{
+			$name = $pic->title();
+		}
+		if (is_null($url))
+		{
+			$url = $pic->hyperlink();
+		}
+		return '<a class="ent" href="' . $url . '">' . PageBase::capture(function() use ($pic) { $pic->show(ICONS_DIR, false, 22, 22); }) . '<span>' . $name . '</span></a>';
+	}
+
+	// The heading of a club, an event, a tournament, a series, a league, a player or an address on
+	// the band: where it is on the site, its picture and name, a line of facts about it, what can
+	// be done with it, and its tabs. $h is an EntityHeader.
+	protected function show_entity_header($h, $menu)
+	{
+		echo '<div class="eh-top"><nav class="crumbs" aria-label="' . get_label('Breadcrumb') . '">';
+		if (!empty($h->section))
+		{
+			echo '<a href="' . $h->section_url . '">' . $h->section . '</a>' . PageBase::icon('chev-r');
+		}
+		// The name of the page after the name of the entity - unless this is its main page, the
+		// first of its tabs, where the name says it all.
+		$main_page = count($menu) > 0 ? basename(parse_url($menu[0]->page, PHP_URL_PATH)) : '';
+		if (!empty($this->_title) && $this->_title != $h->name && $main_page != '' && $main_page != basename($_SERVER['SCRIPT_NAME']))
+		{
+			echo '<a href="' . $menu[0]->page . '">' . $h->name . '</a>' . PageBase::icon('chev-r') . '<span aria-current="page">' . $this->_title . '</span>';
+		}
+		else
+		{
+			echo '<span aria-current="page">' . $h->name . '</span>';
+		}
+		echo '</nav>';
+		show_back_button();
+		echo '</div>';
+
+		echo '<header class="eh' . ($h->off ? ' is-off' : '') . '">';
+		echo '<div class="eh-art' . ($h->round ? ' round' : '') . '">' . $h->art . '</div>';
+		echo '<div class="eh-main"><h1>' . $h->name . '</h1>';
+		if (!empty($h->sub))
+		{
+			echo '<p class="eh-sub">' . $h->sub . '</p>';
+		}
+		echo '</div>';
+
+		// Buttons with nothing to do print a transparent picture to hold their place; there is no
+		// place to hold here.
+		$actions = trim(preg_replace('#<img src="images/transp.png"[^>]*>#', '', $h->actions));
+		if (!empty($h->side) || !empty($actions))
+		{
+			echo '<div class="eh-side">' . $h->side;
+			if (!empty($actions))
+			{
+				echo '<div class="eh-actions">' . $actions . '</div>';
+			}
+			echo '</div>';
+		}
+		if (count($h->facts) > 0)
+		{
+			echo '<dl class="eh-facts">';
+			foreach ($h->facts as $fact)
+			{
+				echo '<div><dt>' . PageBase::icon($fact[0]) . '</dt><dd>' . $fact[1] . '</dd></div>';
+			}
+			echo '</dl>';
+		}
+		echo '</header>';
+
+		if (count($menu) > 0)
+		{
+			PageBase::show_menu($menu);
+		}
 	}
 
 	// virtual section these functions should be overriden
@@ -927,6 +1063,36 @@ class MenuItem
 		$this->text = $text;
 		$this->submenu = $submenu;
 		$this->new_window = $new_window;
+	}
+}
+
+// What PageBase::show_entity_header() draws. Everything that is html is printed as it is.
+class EntityHeader
+{
+	public $section;          // the part of the site the entity is listed in, for the crumbs
+	public $section_url;
+	public $name;
+	public $art = '';         // the picture
+	public $round = false;    // a person's picture is round
+	public $sub = '';         // a line under the name: where it is up to, its stars
+	public $facts = array();  // array(icon, html) each, see fact()
+	public $side = '';        // to the right of the name: a rating, a button to apply
+	public $actions = '';     // the icon buttons of the managers
+	public $off = false;      // closed or canceled
+
+	function __construct($name, $section, $section_url)
+	{
+		$this->name = $name;
+		$this->section = $section;
+		$this->section_url = $section_url;
+	}
+
+	function fact($icon, $html)
+	{
+		if (!is_null($html) && $html !== '')
+		{
+			$this->facts[] = array($icon, $html);
+		}
 	}
 }
 

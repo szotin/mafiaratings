@@ -114,41 +114,30 @@ class LeaguePageBase extends PageBase
 				// new MenuItem('league_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name)),
 			));
 		}
-		
-		echo '<table class="head" width="100%">';
-		
-		echo '<tr><td colspan="3">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';
-		if (($this->flags & LEAGUE_FLAG_CLOSED) != 0)
+
+		$h = new EntityHeader($this->name, get_label('Leagues'), 'leagues.php');
+		$h->off = ($this->flags & LEAGUE_FLAG_CLOSED) != 0;
+		if ($h->off)
 		{
-			$dark = 'darker';
-			$light = 'dark';
+			$h->sub = '<span class="chip off">' . get_label('closed') . '</span>';
 		}
-		else
-		{
-			$dark = 'dark';
-			$light = 'light';
-		}
-		
+
 		$league_pic = new Picture(LEAGUE_PICTURE);
-		echo '<tr><td width="1"><table class="bordered"><tr><td class="' . $dark . '" valign="top" style="min-width:28px; padding:4px;">';
-		show_league_buttons($this->id, $this->name, $this->flags);
-		echo '</td><td class="' . $light . '" style="min-width:' . TNAIL_WIDTH . 'px; padding: 4px 3px 1px 4px;">';
 		$league_pic->set($this->id, $this->name, $this->flags);
+		$h->art = PageBase::capture(function() use ($league_pic) { $league_pic->show(TNAILS_DIR, false); });
+		$h->actions = PageBase::capture(function() { show_league_buttons($this->id, $this->name, $this->flags); });
+
 		if ($this->url != '')
 		{
-			echo '<a href="' . $this->url . '" target="blank">';
-			$league_pic->show(TNAILS_DIR, false);
-			echo '</a>';
+			$h->fact('link', '<a href="' . $this->url . '" target="_blank">' . PageBase::url_host($this->url) . '</a>');
 		}
-		else
+		list ($clubs) = Db::record(get_label('league'), 'SELECT count(*) FROM league_clubs WHERE league_id = ? AND flags = 0', $this->id);
+		if ($clubs > 0)
 		{
-			$league_pic->show(TNAILS_DIR, false);
+			$h->fact('users', '<a href="league_clubs.php?id=' . $this->id . '">' . get_label('Clubs') . ': ' . $clubs . '</a>');
 		}
-		echo '</td></tr></table><td valign="top"><h2 class="league">' . $this->name . '</h2><br><h3>' . $this->_title . '</h3></td><td valign="top" align="right">';
-		show_back_button();
-		echo '</td></tr></table>';
+
+		$this->show_entity_header($h, $menu);
 	}
 }
 
