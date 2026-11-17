@@ -220,51 +220,50 @@ class UserPageBase extends PageBase
 				new MenuItem('user_sounds.php?id=' . $this->id, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.')),
 			));
 		}
-			
-		echo '<table class="head" width="100%">';
 
-		echo '<tr><td colspan="3">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';	
-		
-		echo '<tr><td rowspan="2" width="' . TNAIL_WIDTH . '"><table class="bordered light"><tr><td class="dark" valign="top" style="min-width:28px; padding:4px;">';
-		if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $this->id, $this->club_id))
-		{
-			echo '<button class="icon" onclick="mr.editUser(' . $this->id . ')" title="' . get_label('Account settings') . '"><img src="images/edit.png" border="0"></button>';
-		}
-		echo '</td><td style="padding: 4px 2px 4px 1px;">';
+		$h = new EntityHeader($this->title, get_label('Ratings'), 'ratings.php');
+		$h->round = true;
+
 		$user_pic = new Picture(USER_PICTURE);
 		$user_pic->set($this->id, $this->name, $this->flags);
-		$user_pic->show(TNAILS_DIR, false);
-		echo '</td></tr></table><td valign="top"><h2 class="user">' . $this->title . '</h2><br><h3>' . $this->_title . '</h3><p class="subtitle">';
-		echo $this->city . ', ' . $this->country . '</p>';
+		$h->art = PageBase::capture(function() use ($user_pic) { $user_pic->show(TNAILS_DIR, false); });
+		if (is_permitted(PERMISSION_OWNER | PERMISSION_CLUB_MANAGER, $this->id, $this->club_id))
+		{
+			$h->actions = '<button class="icon" onclick="mr.editUser(' . $this->id . ')" title="' . get_label('Account settings') . '"><img src="images/edit.png" border="0"></button>';
+		}
 
-		echo '<p class="subtitle">';
 		if (!is_null($this->mwt_id))
 		{
-			echo '<a href="https://mafiaworldtour.com/user/' . $this->mwt_id . '/show" target="_blank"><img src="images/fiim.png" width="24" title="' . get_label('[0] link', 'MWT') . '"></a> ';
+			$h->sub .= '<a class="eh-ext" href="https://mafiaworldtour.com/user/' . $this->mwt_id . '/show" target="_blank"><img src="images/fiim.png" width="20" title="' . get_label('[0] link', 'MWT') . '"></a>';
 		}
 		if (!is_null($this->imafia_id))
 		{
-			echo '<a href="https://imafia.org/u/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="24" title="' . get_label('[0] link', 'iMafia') . '"></a> ';
+			$h->sub .= '<a class="eh-ext" href="https://imafia.org/u/' . $this->imafia_id . '" target="_blank"><img src="images/imafia.png" width="20" title="' . get_label('[0] link', 'iMafia') . '"></a>';
 		}
 		if (!is_null($this->emo_id))
 		{
-			echo '<a href="https://tournament.emotion.games/players/' . $this->emo_id . '" target="_blank"><img src="images/emo.png" width="24" title="' . get_label('[0] link', 'Emotion.games') . '"></a> ';
+			$h->sub .= '<a class="eh-ext" href="https://tournament.emotion.games/players/' . $this->emo_id . '" target="_blank"><img src="images/emo.png" width="20" title="' . get_label('[0] link', 'Emotion.games') . '"></a>';
 		}
-		echo '</p>';
 
-		echo '</td><td valign="top" align="right">';
-		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom" colspan="2">';
+		$h->fact('pin', $this->city . ', ' . $this->country);
 		if ($this->club != NULL)
 		{
-			echo '<table><tr><td align="center">';
 			$this->club_pic->set($this->club_id, $this->club, $this->club_flags);
-			$this->club_pic->show(ICONS_DIR, true, 48);
-			echo '</td></tr></table>';
+			$h->fact('users', PageBase::entity_link($this->club_pic, $this->club));
 		}
-		echo '</td></tr></table>';
+		$h->fact('cal', get_label('Member since [0]', format_date($this->reg_date, get_timezone())));
+
+		// The place in the ratings, counted the way the ratings page orders them - see user_info.php.
+		list ($rating, $games, $won) = Db::record(get_label('user'), 'SELECT rating, games, games_won FROM users WHERE id = ?', $this->id);
+		if ($games > 0)
+		{
+			list ($pos) = Db::record(get_label('rating'),
+				'SELECT count(*) FROM users WHERE games > 0 AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?))))))',
+				$rating, $rating, $games, $games, $won, $won, $this->id);
+			$h->side = '<a class="bignum" href="ratings.php?bck=1"><b>#' . ($pos + 1) . '</b><span>' . get_label('Rating') . ' <strong>' . format_rating($rating) . '</strong></span></a>';
+		}
+
+		$this->show_entity_header($h, $menu);
 	}
 }
 

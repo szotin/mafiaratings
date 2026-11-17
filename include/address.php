@@ -215,52 +215,29 @@ class AddressPageBase extends PageBase
 				// , new MenuItem('address_links.php?id=' . $this->id, get_label('Links'), get_label('Links to custom mafia web sites.'))
 			))
 		);
-		
-		echo '<table class="head" width="100%">';
-		
-		echo '<tr><td colspan="4" style="height: 36px;">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';
-		
+
+		// An address is a club's: it is found through the club.
+		$h = new EntityHeader($this->name, $this->club_name, 'club_main.php?bck=1&id=' . $this->club_id);
+		$h->off = ($this->flags & ADDRESS_FLAG_NOT_USED) != 0;
+
 		$address_pic = new Picture(ADDRESS_PICTURE);
-		
-		echo '<tr><td rowspan="2" align="left" width="1">';
-		echo '<table class="bordered ';
-		if (($this->flags & ADDRESS_FLAG_NOT_USED) != 0)
-		{
-			echo 'dark';
-		}
-		else
-		{
-			echo 'light';
-		}
-		echo '"><tr><td width="1" valign="top" style="padding:4px;" class="dark">';
+		$address_pic->set($this->id, $this->name, $this->flags);
+		$h->art = PageBase::capture(function() use ($address_pic) { $address_pic->show(TNAILS_DIR, false); });
 		if ($this->is_manager)
 		{
-			show_address_buttons($this->id, $this->name, $this->flags, $this->club_id);
+			$h->actions = PageBase::capture(function() { show_address_buttons($this->id, $this->name, $this->flags, $this->club_id); });
 		}
-		echo '</td><td width="' . ICON_WIDTH . '" style="padding: 4px;">';
-		$address_pic->set($this->id, $this->name, $this->flags);
+
+		$where = addr_label($this->address, $this->city_name, $this->country_name);
 		if ($this->url != '')
 		{
-			echo '<a href="' . $this->url . '" target="blank">';
-			$address_pic->show(TNAILS_DIR, false);
-			echo '</a>';
+			$where = '<a href="' . $this->url . '" target="_blank">' . $where . '</a>';
 		}
-		else
-		{
-			$address_pic->show(TNAILS_DIR, false);
-		}
-		echo '</td></tr></table></td>';
-		
-		echo '<td rowspan="2" valign="top"><h2 class="address">' . $this->name . '</h2><br><h3>' . $this->_title . '</h3><p class="subtitle">' . addr_label($this->address, $this->city_name, $this->country_name) . '</p></td><td align="right" valign="top">';
-		show_back_button();
-		echo '</td></tr><tr><td align="right" valign="bottom" width="' . ICON_WIDTH . '"><table><tr><td>';
+		$h->fact('pin', $where);
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR, true, 48);
-		echo '</td></tr></table></td></tr>';
-		
-		echo '</table>';
+		$h->fact('users', PageBase::entity_link($this->club_pic, $this->club_name));
+
+		$this->show_entity_header($h, $menu);
 	}
 }
 

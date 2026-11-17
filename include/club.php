@@ -205,61 +205,40 @@ class ClubPageBase extends PageBase
 			}
 			$menu[] = new MenuItem('#other', get_label('Management'), NULL, $managment_menu);
 		}
-		
-		echo '<table class="transp" width="100%">';
-		
-		echo '<tr><td colspan="3">';
-		PageBase::show_menu($menu);
-		echo '</td></tr>';
-		if (($this->flags & CLUB_FLAG_CLOSED) != 0)
-		{
-			$dark = 'darker';
-			$light = 'dark';
-		}
-		else
-		{
-			$dark = 'dark';
-			$light = 'light';
-		}
-		
-		echo '<tr><td width="1" rowspan="2"><table class="bordered"><tr><td class="' . $dark . '" valign="top" style="min-width:28px; padding:4px;">';
-		show_club_buttons($this->id, $this->name, $this->flags, $this->memb_flags);
-		echo '</td><td class="' . $light . '" style="min-width:' . TNAIL_WIDTH . 'px; padding: 4px 3px 1px 4px;">';
+
+		$h = new EntityHeader($this->name, get_label('Clubs'), 'clubs.php');
+		$h->off = ($this->flags & CLUB_FLAG_CLOSED) != 0;
+
 		$this->club_pic->set($this->id, $this->name, $this->flags);
+		$h->art = PageBase::capture(function() { $this->club_pic->show(TNAILS_DIR, false); });
+		$h->actions = PageBase::capture(function() { show_club_buttons($this->id, $this->name, $this->flags, $this->memb_flags); });
+		if ($h->off)
+		{
+			$h->sub = '<span class="chip off">' . get_label('closed') . '</span>';
+		}
+
+		$h->fact('pin', $this->city . ', ' . $this->country);
 		if ($this->url != '')
 		{
-			echo '<a href="' . $this->url . '" target="blank">';
-			$this->club_pic->show(TNAILS_DIR, false);
-			echo '</a>';
+			$h->fact('link', '<a href="' . $this->url . '" target="_blank">' . PageBase::url_host($this->url) . '</a>');
 		}
-		else
-		{
-			$this->club_pic->show(TNAILS_DIR, false);
-		}
-		echo '</td></tr></table><td valign="top" rowspan="2"><h2 class="club">' . $this->name . '</h2><br><h3>' . $this->_title . '</h3><p class="subtitle">' . $this->city . ', ' . $this->country . '</p></td><td valign="top" align="right">';
-		show_back_button();
-		echo '</td></tr>';
-		echo '</tr><td align="right" valign="bottom">';
-		echo '<table class="transp"><tr>';
 		if ($this->parent_id != NULL)
 		{
-			echo '<td width="64">';
-			$this->club_pic->set($this->parent_id, get_label('[0] is a member of [1] club system.', $this->name, $this->parent_name), $this->parent_flags);
-			$this->club_pic->show(ICONS_DIR, true, 48);
-			echo '</td>';
+			$parent_pic = new Picture(CLUB_PICTURE);
+			$parent_pic->set($this->parent_id, $this->parent_name, $this->parent_flags);
+			$h->fact('users', PageBase::entity_link($parent_pic, $this->parent_name));
 		}
+		$leagues = '';
 		$query = new DbQuery('SELECT l.id, nl.name, l.flags FROM league_clubs c JOIN leagues l ON l.id = c.league_id JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0 WHERE c.flags = 0 AND c.club_id = ? ORDER BY nl.name', $this->id);
 		while ($row = $query->next())
 		{
 			list($league_id, $league_name, $league_flags) = $row;
-			echo '<td width="64">';
-			$this->league_pic->set($league_id, get_label('[0] is a member of [1].', $this->name, $league_name), $league_flags);
-			$this->league_pic->show(ICONS_DIR, true, 48);
-			echo '</td>';
+			$this->league_pic->set($league_id, $league_name, $league_flags);
+			$leagues .= PageBase::entity_link($this->league_pic, $league_name);
 		}
-		echo '</tr></table>';
-		echo '</td></tr>';
-		echo '</table>';
+		$h->fact('trophy', $leagues);
+
+		$this->show_entity_header($h, $menu);
 	}
 }
 

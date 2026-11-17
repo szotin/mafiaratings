@@ -299,6 +299,85 @@ a.back:active span { padding: 0; }
 .page a.back { background: var(--paper); border-color: var(--rule-strong); color: var(--ink); }
 .page a.back:hover { background: var(--frost); }
 
+/* the heading of a club, event, tournament, series, league, player, address (.eh) */
+.eh-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; padding-top: 8px; font-size: 13.5px; color: var(--night-dim); }
+.crumbs a { color: var(--night-dim); }
+.crumbs a:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.crumbs span[aria-current] { color: var(--night-text); }
+.crumbs .ic { width: 14px; height: 14px; color: rgba(255,255,255,.35); }
+
+.eh { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px 18px; align-items: center; }
+.eh-art { width: 72px; height: 72px; border-radius: 16px; overflow: hidden; background: #fff; display: grid; place-items: center;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.14), 0 14px 30px -12px rgba(0,0,0,.6); }
+.eh-art a, .eh-art > span, .eh-art a > span { display: block; width: 100%; height: 100%; }
+.eh-art img { width: 100% !important; height: 100% !important; object-fit: contain; border-radius: 0 !important; display: block; }
+/* the "closed" mark Picture::show puts over a club's picture */
+.eh-art img + img { position: absolute; left: 0 !important; top: 0; margin: 0 !important; }
+.eh-art.round { border-radius: 50%; }
+.eh-art.round img { object-fit: cover; }
+.eh.is-off .eh-art { filter: grayscale(1); opacity: .7; }
+.eh-main { min-width: 0; }
+.mast .eh h1 { font-size: 30px; line-height: 1.02; overflow-wrap: anywhere; }
+.eh-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; color: var(--night-dim); font-size: 14px; }
+.eh-sub:empty { display: none; }
+.eh-ext img { display: block; border-radius: 4px; }
+.eh-side { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.eh-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.eh-actions > img { display: none; }
+.mast .eh-actions button.icon { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; border-radius: 10px; background: rgba(255,255,255,.92); }
+.mast .eh-actions button.icon:hover { background: #fff; }
+.mast .eh-actions button.icon img { width: 22px; height: 22px; filter: none; }
+.eh-facts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 0; }
+.eh-facts > div { display: flex; align-items: center; gap: 7px; padding: 6px 12px 6px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid var(--night-line); color: var(--night-text); font-size: 13.5px; min-width: 0; }
+.eh-facts dt { display: contents; }
+.eh-facts dt .ic { width: 15px; height: 15px; color: var(--night-dim); }
+.eh-facts dd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; min-width: 0; }
+.eh-facts a:hover { color: #FFB4B4; }
+@media (min-width: 760px) {
+  .eh { grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px 22px; }
+  .eh-art { width: 96px; height: 96px; border-radius: 20px; }
+  .mast .eh h1 { font-size: 46px; }
+  .eh-side { grid-column: 3; grid-row: 1; justify-content: flex-end; }
+  .eh-facts { grid-column: 2 / -1; }
+}
+
+/* a picture with a name: the club of a tournament, the series it is in */
+a.ent { display: inline-flex; align-items: center; gap: 7px; min-width: 0; color: #fff; }
+a.ent > span:first-child { display: contents; }
+a.ent img { width: 22px !important; height: 22px !important; border-radius: 6px !important; background: #fff; object-fit: contain; flex: none; }
+a.ent img + img { display: none; }
+a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.stars { color: #F2C14E; letter-spacing: 1px; font-size: 13px; }
+
+/* a short status: playing now, finished, canceled */
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 999px; font: 500 12.5px var(--font-display); text-transform: uppercase; letter-spacing: .06em;
+  background: rgba(255,255,255,.10); color: var(--night-text); }
+.chip.live { background: var(--red); color: #fff; box-shadow: 0 8px 24px -10px var(--red-glow); }
+.chip.live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: chip-pulse 1.6s ease-in-out infinite; }
+.chip.off { background: rgba(255,255,255,.06); color: var(--night-dim); text-decoration: line-through; }
+@keyframes chip-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .chip.live::before { animation: none; } }
+
+/* a big number beside the name: a player's place in the ratings */
+.bignum { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.mast a.bignum:hover { color: inherit; }
+.bignum b { font: 600 56px/0.9 var(--font-display); color: #fff; }
+.bignum span { margin-top: 6px; font-size: 13px; color: var(--night-dim); }
+.bignum strong { color: #fff; font-weight: 700; }
+@media (min-width: 760px) { .bignum b { font-size: 72px; } }
+@media (max-width: 759px) {
+  .bignum { flex-direction: row; align-items: baseline; gap: 10px; }
+  .bignum b { font-size: 36px; }
+}
+
+/* the button to apply for a tournament */
+.mast button.eh-cta { height: 42px; padding: 0 20px; border-radius: 999px; border: 0; cursor: pointer; background: var(--red); color: #fff;
+  font: 500 15px var(--font-display); text-transform: uppercase; letter-spacing: .05em; box-shadow: 0 10px 26px -12px var(--red-glow); }
+.mast button.eh-cta:hover { background: var(--red-hi); }
+.mast button.eh-cta.ghost { background: rgba(255,255,255,.08); box-shadow: 0 0 0 1px var(--night-line); }
+.mast button.eh-cta.ghost:hover { background: rgba(255,255,255,.16); }
+
 /* tabs - the menu of a club, event, tournament... on the bottom edge of its band */
 .tabs { margin: 22px 0 0; }
 .tabs-inner { display: flex; flex-wrap: wrap; gap: 2px; }
@@ -307,7 +386,14 @@ a.back:active span { padding: 0; }
   font-family: var(--font-display); text-transform: uppercase; letter-spacing: .05em; font-weight: 500; font-size: 15px;
   color: var(--night-dim); white-space: nowrap; background: none; border: 0; cursor: pointer;
 }
-.tabs-inner > a:first-child { margin-left: -13px; }
+/* the text of the first tab lines up with the text above it, on every row the tabs wrap into */
+.tabs-inner { margin-left: -13px; }
+@media (max-width: 759px) {
+  .tabs-inner { margin-left: -10px; gap: 0; }
+  .tabs-inner > a, .tabs-inner > .nav-more > button { padding: 10px 10px 12px; font-size: 14px; }
+  .tabs-inner > a[aria-current]::after, .tabs-inner > .nav-more.is-active > button::after { left: 10px; right: 10px; }
+  .eh-facts > div { padding: 5px 10px 5px 8px; font-size: 13px; }
+}
 .tabs-inner > a:hover, .tabs-inner > .nav-more > button:hover { color: #fff; }
 .tabs-inner > a[aria-current], .tabs-inner > .nav-more.is-active > button { color: #fff; }
 .tabs-inner > a[aria-current]::after, .tabs-inner > .nav-more.is-active > button::after {
