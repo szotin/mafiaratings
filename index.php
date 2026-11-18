@@ -349,7 +349,7 @@ class Page extends GeneralPageBase
 			echo '<div class="pc-foot">';
 			if (!is_null($t->winner))
 			{
-				echo '<span class="pc-win">' . PageBase::icon('trophy') . '<span class="dim">' . get_label('Winner') . '</span><b>' . $t->winner . '</b></span>';
+				echo '<span class="pc-win" title="' . get_label('Winner') . ': ' . $t->winner . '">' . PageBase::icon('trophy') . '<b>' . $t->winner . '</b></span>';
 			}
 			else if ($t->num_players > 0)
 			{

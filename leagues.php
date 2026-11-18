@@ -75,7 +75,7 @@ class Page extends GeneralPageBase
 		echo '<div class="toolbar"><div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('leagues')));
 		echo '</div>';
-		echo '<label class="fchip"><input type="checkbox" id="closed" onclick="filterClosed()"' . ($closed ? ' checked' : '') . '>' . get_label('Show closed leagues') . '</label>';
+		echo '<label class="fchip"><input type="checkbox" class="toggle" id="closed" onclick="filterClosed()"' . ($closed ? ' checked' : '') . '>' . get_label('Show closed leagues') . '</label>';
 		echo '</div>';
 		
 		$this->show_requests();
@@ -135,7 +135,7 @@ class Page extends GeneralPageBase
 			echo '<span class="who-sub">' . PageBase::icon('users') . get_label('Clubs') . ': ' . $clubs;
 			if (!empty($url))
 			{
-				echo ' · ' . PageBase::url_host($url);
+				echo ' Â· ' . PageBase::url_host($url);
 			}
 			echo '</span></div>';
 			if ($_profile != NULL)

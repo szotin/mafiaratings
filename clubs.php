@@ -36,8 +36,8 @@ class Page extends GeneralPageBase
 		echo '<div class="toolbar"><div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
 		echo '</div>';
-		echo '<label class="fchip"><input type="checkbox" id="closed" onclick="filter()"' . ($closed ? ' checked' : '') . '>' . get_label('Show closed clubs') . '</label>';
-		echo '<label class="fchip"><input type="checkbox" id="root" onclick="filter()"' . ($root_only ? ' checked' : '') . '>' . get_label('Root clubs only') . '</label>';
+		echo '<label class="fchip"><input type="checkbox" class="toggle" id="closed" onclick="filter()"' . ($closed ? ' checked' : '') . '>' . get_label('Show closed clubs') . '</label>';
+		echo '<label class="fchip"><input type="checkbox" class="toggle" id="root" onclick="filter()"' . ($root_only ? ' checked' : '') . '>' . get_label('Root clubs only') . '</label>';
 		echo '</div>';
 		
 		$delimiter = ' WHERE ';

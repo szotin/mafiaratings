@@ -757,7 +757,14 @@ input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min
 
 /* the filters of a list, on one line that wraps */
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 18px; }
-.toolbar .switch-row { display: contents; }
+/* the three-way filters take a line of their own under the rest: strung after the dates they did not fit
+   and broke wherever they happened to reach */
+div.switch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.toolbar .switch-row { flex: 1 0 100%; margin: 0; }
+/* a line of the toolbar of its own for several filters together (the types and the three-way filters of
+   the series): they share it rather than each taking one */
+.toolbar .tb-line { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.toolbar .tb-line .switch-row { flex: 0 1 auto; margin-left: auto; }
 .toolbar .tb-field { display: flex; align-items: center; }
 .nl input.dropdown, .home-page input.dropdown { width: 240px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
 /* the arrow of a dropdown field (the club/city/country filter), drawn over the right end of the field */
@@ -777,31 +784,37 @@ button.dropdown-btn .ic { width: 16px; height: 16px; }
 .seg a:hover, .nl .seg a:hover { color: var(--ink); }
 .seg a[aria-current], .nl .seg a[aria-current]:link, .nl .seg a[aria-current]:visited { background: var(--night); color: #fff; }
 
-/* a filter that is on or off: a chip; the checkbox inside it is hidden */
+/* A filter, and any other switch that takes effect the moment it is touched, is drawn one way
+   everywhere: a round mark - empty when off, a tick on a dark ground when on. A filter with three answers
+   (all / only these / none of these, include/checkbox_filter.php) adds a cross, and its two answers are
+   green and red. In a toolbar the mark and its words make a chip together, the words working as the
+   mark does. Underneath, an on/off one is still the checkbox with the class toggle it always was. */
 .fchips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .fchips-label { font-size: 13.5px; color: var(--slate); margin-right: 2px; }
-.fchip { position: relative; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer; user-select: none;
+.fchip, span.switch-item { display: inline-flex; align-items: center; gap: 6px; height: 34px; margin: 0; padding: 0 14px 0 8px; border-radius: 999px; cursor: pointer; user-select: none;
   background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-strong); font-size: 13.5px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
-.fchip:hover { box-shadow: inset 0 0 0 1px var(--mist); }
-.fchip input, .fchip input[type="checkbox"].toggle { position: absolute; opacity: 0; width: 1px; height: 1px; min-width: 0; margin: 0 !important; padding: 0; border: 0; pointer-events: none; }
-.fchip input[type="checkbox"].toggle::after { display: none; }
-.fchip:has(input:checked) { background: var(--ink-soft); color: #fff; box-shadow: none; }
-.fchip:has(input:checked)::before { content: "\2713"; font-weight: 700; }
+.fchip:hover, span.switch-item:hover { box-shadow: inset 0 0 0 1px var(--mist); }
+span.switch-item > span.switch-text { padding: 0; }
+.fchip:has(input:checked) { background: var(--frost); box-shadow: inset 0 0 0 1px var(--ink-soft); color: var(--ink); }
 .fchip:has(input:focus-visible) { outline: 2.5px solid var(--link); outline-offset: 2px; }
-
-/* a filter with three answers (all / only / none of them): a chip whose mark says which */
-.toolbar span.switch-item { display: inline-flex; align-items: center; gap: 6px; height: 34px; margin: 0; padding: 0 14px 0 8px; border-radius: 999px; cursor: pointer;
-  background: var(--paper); box-shadow: inset 0 0 0 1px var(--rule-strong); font-size: 13.5px; font-weight: 500; color: var(--ink-soft); white-space: nowrap; }
-.toolbar span.switch-item > span.switch-text { padding: 0; }
-.toolbar span.tri-filter { width: 20px; height: 20px; min-width: 0; margin: 0; border: 0; border-radius: 50%; background: var(--frost); box-shadow: inset 0 0 0 1px var(--rule-strong); display: inline-grid; place-items: center; }
-.toolbar span.tri-filter i { display: none; }
-.toolbar span.tri-filter::after { content: ""; font-size: 12px; font-weight: 700; line-height: 1; }
-.toolbar span.tri-filter.yes { background: var(--up); box-shadow: none; }
-.toolbar span.tri-filter.yes::after { content: "\2713"; color: #fff; }
-.toolbar span.tri-filter.no { background: var(--down); box-shadow: none; }
-.toolbar span.tri-filter.no::after { content: "\2715"; color: #fff; }
-.toolbar span.switch-item:has(.tri-filter.yes) { background: var(--up-soft); box-shadow: inset 0 0 0 1px rgba(17,121,74,.35); color: var(--up); }
-.toolbar span.switch-item:has(.tri-filter.no) { background: var(--down-soft); box-shadow: inset 0 0 0 1px rgba(192,48,27,.35); color: var(--down); }
+.fchip input[type="checkbox"].toggle:focus-visible { outline: 0; }
+input[type="checkbox"].toggle, span.tri-filter { appearance: none; -webkit-appearance: none; position: relative; flex: none; display: inline-grid; place-items: center;
+  width: 20px; height: 20px; min-width: 0; margin: 0 4px; padding: 0; vertical-align: middle; border: 0; border-radius: 50%;
+  background: var(--frost); box-shadow: inset 0 0 0 1px var(--rule-strong); cursor: pointer; transition: background-color .12s; }
+.fchip input[type="checkbox"].toggle, span.switch-item span.tri-filter { margin: 0 !important; }
+input[type="checkbox"].toggle::after, span.tri-filter::after { content: ""; position: static; width: auto; height: auto; border-radius: 0; background: none;
+  font-size: 12px; font-weight: 700; line-height: 1; color: #fff; transition: none; }
+input[type="checkbox"].toggle:checked { background: var(--ink-soft); box-shadow: none; }
+input[type="checkbox"].toggle:checked::after { content: "\2713"; }
+input[type="checkbox"].toggle:disabled { opacity: .4; cursor: default; }
+input[type="checkbox"].toggle:not(:first-child) { margin-left: 16px; }
+span.tri-filter i { display: none; }
+span.tri-filter.yes { background: var(--up); box-shadow: none; }
+span.tri-filter.yes::after { content: "\2713"; }
+span.tri-filter.no { background: var(--down); box-shadow: none; }
+span.tri-filter.no::after { content: "\2715"; }
+span.switch-item:has(.tri-filter.yes) { background: var(--up-soft); box-shadow: inset 0 0 0 1px rgba(17,121,74,.35); color: var(--up); }
+span.switch-item:has(.tri-filter.no) { background: var(--down-soft); box-shadow: inset 0 0 0 1px rgba(192,48,27,.35); color: var(--down); }
 
 /* the month a group of cards belongs to */
 .posters > .grp { grid-column: 1 / -1; margin: 10px 0 -4px; font-size: 15px; letter-spacing: .06em; color: var(--slate); }
@@ -811,7 +824,10 @@ button.dropdown-btn .ic { width: 16px; height: 16px; }
 .pcard.is-off .pc-cover { filter: grayscale(1); opacity: .65; }
 .pcard.is-off h3 a { color: var(--slate); }
 .pc-foot { justify-content: space-between; }
-.pc-nums { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; color: var(--slate); }
+/* the numbers keep their width; the winner's name gives way to them and ends in an ellipsis */
+.pc-nums, .pc-foot span.pc-nums { flex: none; min-width: auto; display: inline-flex; align-items: center; gap: 12px; margin-left: auto; color: var(--slate); }
+.pc-foot span.pc-win { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.pc-win .ic { flex: none; }
 .pc-nums > * { display: inline-flex; align-items: center; gap: 4px; }
 .pc-nums a { position: relative; z-index: 1; color: var(--slate); }
 .nl .pc-nums a:link, .nl .pc-nums a:visited { color: var(--slate); }
@@ -950,6 +966,9 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl .light a:link, .nl .light a:visited, .nl .dark a:link, .nl .dark a:visited, .nl .darker a:link, .nl .darker a:visited,
 .nl .lighter a:link, .nl .lighter a:visited, .nl .lightest a:link, .nl .lightest a:visited, .nl .darkest a:link, .nl .darkest a:visited { background-color: transparent; color: var(--ink); }
 .nl .light a:hover, .nl .dark a:hover, .nl .darker a:hover, .nl .lighter a:hover { color: var(--red); }
+/* a link drawn as an icon button keeps its circle in a shaded cell (the rules above clear the ground of links) */
+.nl :is(.light, .dark, .darker, .lighter, .lightest, .darkest) a.icon:is(:link, :visited) { background-color: rgba(19,35,58,.13); }
+.nl :is(.light, .dark, .darker, .lighter, .lightest, .darkest) a.icon:hover { background-color: rgba(19,35,58,.22); }
 
 /* the first row of a sheet, when it is darker, is its header: a dark bar */
 .nl table.bordered > tbody > tr.darker:first-child > td, .nl table.bordered > tbody > tr.darker:first-child > th,
@@ -967,6 +986,12 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 /* the role pictures - town, mafia, sheriff, don - are drawn dark: light on the dark header of a table */
 :is(.nl table.bordered > tbody > tr.darker:first-child, .nl table.bordered > tbody > tr.th, .nl table.bordered > tbody > tr.th-short, .nl table.bordered > tbody > tr.th-long, .nl table.bordered > thead > tr)
   :is(img[src$="images/civ.png"], img[src$="images/maf.png"], img[src$="images/don.png"], img[src$="images/sheriff.png"]) { filter: invert(1) brightness(1.6); }
+/* the buttons in the dark header of a table - the plus that adds a row - get a circle lighter than the
+   header, as on the dark band, not the darker one they have on the page */
+:is(.nl table.bordered > tbody > tr.darker:first-child, .nl table.bordered > tbody > tr.th, .nl table.bordered > tbody > tr.th-short, .nl table.bordered > tbody > tr.th-long, .nl table.bordered > thead > tr)
+  :is(button.icon, button.small_icon, button.big_icon) { background: rgba(255,255,255,.3); }
+:is(.nl table.bordered > tbody > tr.darker:first-child, .nl table.bordered > tbody > tr.th, .nl table.bordered > tbody > tr.th-short, .nl table.bordered > tbody > tr.th-long, .nl table.bordered > thead > tr)
+  :is(button.icon, button.small_icon, button.big_icon):hover { background: rgba(255,255,255,.42); }
 /* a column the table can be sorted by, in its header: dim until chosen, bright once it is - as the role
    pictures beside it are */
 .nl table.bordered a.sort-off:link, .nl table.bordered a.sort-off:visited { color: rgba(255,255,255,.5) !important; }
@@ -1014,7 +1039,7 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 
 /* icon buttons - edit, delete, create... - everywhere: a circle a shade off the background it is on,
    darker on a light page, lighter on the dark band (see .mast .eh-actions) */
-.nl button.icon, .nl button.small_icon, .nl button.big_icon,
+.nl button.icon, .nl a.icon, .nl button.small_icon, .nl button.big_icon,
 .ui-dialog button.icon, .ui-dialog button.small_icon, .ui-dialog button.big_icon {
   display: inline-grid; place-items: center; width: 34px; height: 34px; margin: 1px 2px; padding: 0; vertical-align: middle;
   border: 0 !important; border-radius: 50%; background: rgba(19,35,58,.13); cursor: pointer;
@@ -1040,10 +1065,10 @@ button.upload img { width: 56px !important; height: 56px !important; border-radi
 .ui-dialog table.dialog_form td:has(> input ~ button.small_icon), .ui-dialog table.dialog_form td:has(> input ~ button.icon) { white-space: nowrap; }
 .ui-dialog table.dialog_form input:has(~ button.small_icon), .ui-dialog table.dialog_form input:has(~ button.icon) { width: calc(100% - 38px) !important; min-width: 0; }
 .nl button.big_icon, .ui-dialog button.big_icon { width: 48px; height: 48px; }
-.nl button.icon img, .nl button.small_icon img, .ui-dialog button.icon img, .ui-dialog button.small_icon img { max-width: 18px; max-height: 18px; width: auto; height: auto; border-radius: 0 !important; }
+.nl button.icon img, .nl a.icon img, .nl button.small_icon img, .ui-dialog button.icon img, .ui-dialog button.small_icon img { max-width: 18px; max-height: 18px; width: auto; height: auto; border-radius: 0 !important; }
 .nl button.small_icon img, .ui-dialog button.small_icon img { max-width: 14px; max-height: 14px; }
 .nl button.big_icon img, .ui-dialog button.big_icon img { max-width: 28px; max-height: 28px; border-radius: 0 !important; }
-.nl button.icon:hover, .nl button.small_icon:hover, .nl button.big_icon:hover,
+.nl button.icon:hover, .nl a.icon:hover, .nl button.small_icon:hover, .nl button.big_icon:hover,
 .ui-dialog button.icon:hover, .ui-dialog button.small_icon:hover, .ui-dialog button.big_icon:hover { background: rgba(19,35,58,.22); transform: translateY(-1px); }
 .nl button.icon[checked], .nl button.big_icon[checked], .ui-dialog button.icon[checked] { background: var(--red); }
 .nl button.icon:disabled, .ui-dialog button.icon:disabled { opacity: .4; cursor: default; transform: none; }
@@ -1229,10 +1254,6 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 .ui-menu { padding: 6px; border-radius: 12px; border: 1px solid var(--rule); box-shadow: 0 18px 40px -18px rgba(19, 35, 58, 0.35); }
 .ui-menu .ui-menu-item { border-radius: 8px; }
 
-/* an on/off switch has no colour of its own - green and red belong to the three-way filters, where
-   they say "only these" and "none of these": off it is a light track, on a dark one */
-input[type="checkbox"].toggle { background-color: var(--rule-strong); border-color: var(--rule-strong); }
-input[type="checkbox"].toggle:checked { background-color: var(--ink-soft); border-color: var(--ink-soft); }
 
 /* the photos of an album, an event, a player */
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 180px), 1fr)); gap: 10px; }
