@@ -5,6 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/picture.php';
 require_once 'include/user.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -25,18 +26,25 @@ class Page extends SeriesPageBase
 		check_series_permissions($this->owner, $this->id);
 
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM series_regs WHERE series_id = ?', $this->id);
-		show_pages_navigation(PAGE_SIZE, $count);
-
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker">';
+		// The list of the v3 design, after ratings.php: the count and the button that adds a user
+		// in a toolbar, the table in a sheet.
+		echo '<div class="toolbar"><span class="count">' . get_label('[0] users', number_format($count)) . '</span>';
 		if ($is_manager)
 		{
-			echo '<td width="58">';
-			echo '<button class="icon" onclick="mr.addSeriesUser(' . $this->id . ')" title="' . get_label('Add [0]', get_label('user')) . '"><img src="images/create.png" border="0"></button>';
-			echo '</td>';
+			echo '<a class="btn tb-create" href="#" onclick="mr.addSeriesUser(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Add user') . '</span></a>';
 		}
-		echo '<td colspan="3">' . get_label('User') . '</td>';
-		echo '<td width="130">' . get_label('Permissions') . '</td></tr>';
+		echo '</div>';
+		show_pages_navigation(PAGE_SIZE, $count);
+
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr>';
+		if ($is_manager)
+		{
+			echo '<th scope="col"></th>';
+		}
+		echo '<th scope="col">' . get_label('User') . '</th>';
+		echo '<th class="p3" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Permissions') . '</th></tr></thead><tbody>';
 
 		$user_pic = new Picture(USER_PICTURE);
 		$club_pic = new Picture(CLUB_PICTURE);
@@ -57,10 +65,10 @@ class Page extends SeriesPageBase
 			list($id, $name, $flags, $reg_flags, $club_id, $club_name, $club_flags, $city) = $row;
 			$reg_flags = (int)$reg_flags;
 
-			echo '<tr class="light">';
+			echo '<tr>';
 			if ($is_manager)
 			{
-				echo '<td class="dark">';
+				echo '<td class="tb-btns">';
 				echo '<button class="icon" onclick="mr.removeSeriesUser(' . $this->id . ', ' . $id . ', \'' .
 					get_label('Are you sure you want to remove [0] from [1]?', $name, $this->name) . '\')" title="' .
 					get_label('Remove [0] from [1]', $name, $this->name) . '"><img src="images/delete.png" border="0"></button>';
@@ -69,24 +77,14 @@ class Page extends SeriesPageBase
 				echo '</td>';
 			}
 
-			echo '<td width="60" align="center">';
-			$user_pic->set($id, $name, $flags);
-			$user_pic->show(ICONS_DIR, true, 50);
-			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
-			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$club_pic->set($club_id, $club_name, $club_flags);
-				$club_pic->show(ICONS_DIR, true, 40);
-			}
-			echo '</td>';
-
+			echo '<td><a class="who" href="user_info.php?id=' . $id . '&bck=1">' . card_avatar($user_pic, $id, $name, $flags, '') .
+				'<span class="who-txt"><span class="who-name">' . $name . '</span><span class="who-sub">' . $city . '</span></span></a></td>';
+			echo '<td class="p3">' . card_club($club_pic, $club_id, $club_name, $club_flags) . '</td>';
 			// The same three icons in the same order as on the club list, so a row reads the same
 			// wherever permissions are shown. A permission the user does not have is a gap of the
 			// same width rather than nothing, so the icons line up down the column. The exhibition
 			// flag has no icon anywhere and is left to the dialog.
-			echo '<td>';
+			echo '<td class="num perms">';
 			if ($reg_flags & USER_PERM_PLAYER)
 			{
 				echo '<img src="images/player.png" width="32" title="' . get_label('Player') . '">';
@@ -113,7 +111,7 @@ class Page extends SeriesPageBase
 			}
 			echo '</td></tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }

@@ -5,6 +5,7 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
 
 define('FLAG_FILTER_RATING', 0x0001);
 define('FLAG_FILTER_NO_RATING', 0x0002);
@@ -83,20 +84,19 @@ class Page extends EventPageBase
 			$sort = $_REQUEST['sort'];
 		}
 		
-		echo '<table class="transp" width="100%"><tr><td>';
-		show_roles_select($roles, 'filterChanged()', get_label('Use only the stats of a specific role.'));
-		echo '&emsp;&emsp;';
-		show_date_filter();
-		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('rating games')), $filter, 'filterChanged');
-		echo '</td><td align="right">';
-		echo '<select id="nom" onchange="filterChanged()">';
+		// The toolbar of the v3 design: the nomination first, it is what the list is; the filters
+		// after it, the switches on a line of their own.
+		echo '<div class="toolbar">';
+		echo '<select id="nom" onchange="filterChanged()" title="' . get_label('Nomination to view.') . '">';
 		for ($i = 0; $i < count($noms); ++$i)
 		{
 			show_option($i, $nom, $noms[$i][0]);
 		}
 		echo '</select>';
-		echo '</td></tr></table>';
+		show_roles_select($roles, 'filterChanged()', get_label('Use only the stats of a specific role.'));
+		show_date_filter();
+		show_checkbox_filter(array(get_label('rating games')), $filter, 'filterChanged');
+		echo '</div>';
 		
 		$condition = get_roles_condition($roles);
 		if ($filter & FLAG_FILTER_RATING)
@@ -154,52 +154,32 @@ class Page extends EventPageBase
 			$query->add(' ORDER BY val DESC, abs DESC, cnt DESC LIMIT 10');
 		}
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="3">' . get_label('Player') . '</td>';
-		echo '<td width="100" align="center">' . get_label('Games played') . '</td>';
-		echo '<td width="100" align="center">';
+		// The table of the v3 design (see ratings.php): the place, the player, the club, the numbers.
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Games played') . '</th>';
+		// Two columns to sort by, each either way: a click on the one it is sorted by turns the order over.
 		if ($sort & 2)
 		{
-			if ($sort & 1)
-			{
-				echo '&#x25B2; <a href="javascript:goTo({sort:2})">';
-			}
-			else
-			{
-				echo '&#x25BC; <a href="javascript:goTo({sort:3})">';
-			}
+			echo '<th class="num" scope="col" aria-sort="' . (($sort & 1) ? 'ascending' : 'descending') . '"><a class="th-sort" href="' . (($sort & 1) ? 'javascript:goTo({sort:2})' : 'javascript:goTo({sort:3})') . '">';
 		}
 		else
 		{
-			echo '<a href="javascript:goTo({sort:2})">';
+			echo '<th class="num" scope="col"><a class="th-sort" href="javascript:goTo({sort:2})">';
 		}
-		echo get_label('Absolute') . '</a></td>';
-		echo '<td width="100" align="center">';
+		echo get_label('Absolute') . '</a></th>';
 		if (($sort & 2) == 0)
 		{
-			if ($sort & 1)
-			{
-				echo '&#x25B2; <a href="javascript:goTo({sort:0})">';
-			}
-			else
-			{
-				echo '&#x25BC; <a href="javascript:goTo({sort:1})">';
-			}
+			echo '<th class="num" scope="col" aria-sort="' . (($sort & 1) ? 'ascending' : 'descending') . '"><a class="th-sort" href="' . (($sort & 1) ? 'javascript:goTo({sort:0})' : 'javascript:goTo({sort:1})') . '">';
 		}
 		else
 		{
-			echo '<a href="javascript:goTo({sort:0})">';
+			echo '<th class="num" scope="col"><a class="th-sort" href="javascript:goTo({sort:0})">';
 		}
-		if ($noms[$nom][3])
-		{
-			echo '%';
-		}
-		else
-		{
-			echo get_label('Per game');
-		}
-		echo '</a></td></tr>';
+		echo ($noms[$nom][3] ? '%' : get_label('Per game')) . '</a></th>';
+		echo '</tr></thead><tbody>';
 		
 		$event_reg_pic =
 			new Picture(USER_EVENT_PICTURE, 
@@ -213,22 +193,17 @@ class Page extends EventPageBase
 			++$number;
 			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags, $user_nickname, $event_reg_flags, $tournament_reg_flags, $club_reg_flags) = $row;
 
-			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
-			echo '<td width="50">';
+			echo '<tr><td class="rk"><span class="medal' . ($number <= 3 ? ' m' . $number : '') . '">' . sprintf('%02d', $number) . '</span></td>';
 			$event_reg_pic->
 				set($id, $user_nickname, $event_reg_flags, 'e' . $this->id)->
 				set($id, $name, $tournament_reg_flags, 't' . $this->tournament_id)->
 				set($id, $name, $club_reg_flags, 'c' . $this->club_id)->
 				set($id, $name, $flags);
-			$event_reg_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td><a href="event_player.php?id=' . $this->id . '&user_id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td width="50" align="center">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, true, 40);
-			echo '</td>';
-			echo '<td align="center">' . $games_played . '</td>';
-			echo '<td width="100" align="center">' . number_format($abs, 0) . '</td>';
-			echo '<td width="100" align="center">';
+			echo '<td><a class="who" href="event_player.php?id=' . $this->id . '&user_id=' . $id . '&bck=1">' . card_avatar_of($event_reg_pic, $id, $name, '') . '<span class="who-txt"><span class="who-name">' . $name . '</span></span></a></td>';
+			echo '<td class="p2">' . card_club($this->club_pic, $club_id, $club_name, $club_flags) . '</td>';
+			echo '<td class="num p3 dim">' . $games_played . '</td>';
+			echo '<td class="num' . (($sort & 2) ? ' strong' : '') . '">' . number_format($abs, 0) . '</td>';
+			echo '<td class="num' . (($sort & 2) == 0 ? ' strong' : '') . '">';
 			if ($noms[$nom][3])
 			{
 				echo number_format($val * 100, 1) . '%';
@@ -239,7 +214,7 @@ class Page extends EventPageBase
 			}
 			echo '</td></tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 	}
 	
 	protected function js()

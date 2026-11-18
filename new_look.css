@@ -547,6 +547,7 @@ input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min
 .av { position: relative; flex: none; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--sky-deep); display: grid; place-items: center; font-size: 14px; font-weight: 650; color: var(--ink-soft); }
 .av img { width: 100%; height: 100%; object-fit: cover; }
 .av.sm { width: 28px; height: 28px; font-size: 12px; }
+.av.lg { display: inline-grid; width: 48px; height: 48px; font-size: 17px; vertical-align: middle; }
 .av.t1 { background: #DCE8F6; color: #24466F; } .av.t2 { background: #E4E1F3; color: #423A75; }
 .av.t3 { background: #DDEFEA; color: #1F5A4B; } .av.t4 { background: #F3E6DC; color: #6E4325; }
 .av.t5 { background: #E9ECF1; color: #3B4657; } .av.t6 { background: #F4E1E4; color: #722A36; }
@@ -638,7 +639,7 @@ input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min
 
 /* the club/city/country filter, on the band */
 .home-filter { display: flex; align-items: center; }
-.home-filter input.dropdown { width: 230px; height: 36px; padding: 0 36px 0 14px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255,255,255,.08); color: #fff; font: 400 14px var(--font); }
+.home-filter input.dropdown { width: 270px; height: 36px; padding: 0 36px 0 14px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255,255,255,.08); color: #fff; font: 400 14px var(--font); }
 .home-filter input.dropdown::placeholder { color: var(--night-dim); }
 .home-filter input.dropdown:focus { outline: none; border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.12); }
 .home-filter button.dropdown-btn { color: var(--night-dim); }
@@ -766,12 +767,20 @@ div.switch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; 
 .toolbar .tb-line { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
 .toolbar .tb-line .switch-row { flex: 0 1 auto; margin-left: auto; }
 .toolbar .tb-field { display: flex; align-items: center; }
-.nl input.dropdown, .home-page input.dropdown { width: 240px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
+.nl input.dropdown, .home-page input.dropdown { width: 280px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
 /* the arrow of a dropdown field (the club/city/country filter), drawn over the right end of the field */
 button.dropdown-btn { position: relative; top: 0; display: inline-grid; place-items: center; width: 28px; height: 28px; margin: 0 8px 0 -34px; padding: 0; border: 0 !important; border-radius: 50%;
   background: none; color: var(--slate); cursor: pointer; vertical-align: middle; }
 button.dropdown-btn:hover, button.dropdown-btn:active { padding: 0; border: 0; background: var(--frost); color: var(--ink); }
 button.dropdown-btn .ic { width: 16px; height: 16px; }
+.dd-wrap { position: relative; display: inline-flex; align-items: center; max-width: 100%; vertical-align: middle; }
+.dd-wrap button.dropdown-btn, .dd-wrap button.small_icon { position: absolute; top: 50%; right: 6px; margin: 0; transform: translateY(-50%); }
+.dd-wrap button.small_icon { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
+.dd-wrap button.small_icon:hover { transform: translateY(-50%); }
+.dd-wrap button.small_icon img { max-width: 12px; max-height: 12px; }
+.home-filter .dd-wrap button.small_icon { background: rgba(255,255,255,.12); }
+.home-filter .dd-wrap button.small_icon:hover { background: rgba(255,255,255,.22); }
+.home-filter .dd-wrap button.small_icon img { filter: invert(1); }
 .mast button.dropdown-btn:hover { background: rgba(255,255,255,.12); }
 .toolbar .tb-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--slate); font-size: 13.5px; }
 .nl .toolbar .tb-dates input[type=date] { height: 38px !important; border-radius: 999px !important; padding: 0 12px !important; }
@@ -936,7 +945,7 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .pager .pg-gap { padding: 0 4px; color: var(--mist); }
 @media (max-width: 639px) { .pager .pg-end { display: none; } }
 @media (max-width: 639px) {
-  .nl .toolbar input.dropdown, .toolbar .tb-field { width: 100%; }
+  .nl .toolbar input.dropdown, .toolbar .tb-field, .toolbar .dd-wrap { width: 100%; }
   .tile-num { min-width: 44px; }
   .tile-num span { display: none; }
 }
@@ -1012,6 +1021,19 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl table.bordered a.sort-off:hover { color: #fff !important; }
 .nl table.bordered .sort-on { color: #fff; }
 .nl table.bordered > tbody > tr:not(.darker):not(.th):not(.th-short):not(.th-long):hover > td { background-color: #F6F9FC; }
+/* a seating (tournament_seating.php): every seat a framed cell of its own, with room between them */
+.nl table.bordered.seat-grid { border-collapse: separate; border-spacing: 6px; padding: 4px; }
+.nl table.bordered.seat-grid > tbody > tr > td { border: 1px solid var(--rule); border-radius: 12px; padding: 8px 4px; background-color: var(--paper); }
+/* the numbers of the seats over the columns and the names of the rows at their left are not seats:
+   no frames, nothing under them (the shade of the old class "dark" is taken off them too) */
+.nl table.bordered.seat-grid > tbody > tr { background: none; }
+.nl table.bordered.seat-grid > tbody > tr:first-child > td { border: 0; padding: 4px; background: none !important; }
+.nl table.bordered.seat-grid > tbody > tr > td:first-child { border: 0; background: none !important; }
+.nl table.bordered.seat-grid > tbody > tr:not(.darker):not(.th):not(.th-short):not(.th-long):hover > td { background-color: var(--paper); }
+.nl table.bordered.seat-grid > tbody > tr > td:not(:first-child):hover { border-color: var(--mist); }
+td[data-pick] { cursor: pointer; }
+.nl table.bordered.seat-grid > tbody > tr > td.hlt { border-color: var(--red); background-color: #FCF4F4; }
+.nl table.bordered.seat-grid > tbody > tr.dark > td:not(:first-child) { background-color: var(--frost); }
 
 /* dialog forms and plain layout tables stay light */
 .nl table.dialog_form, .nl table.dialog_form td, .nl table.dialog_form th { border: 0; }
@@ -1319,6 +1341,20 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
    the ratings first. A dark head, light rows, the numbers on the right; the place in the display face, the
    first three red on a pink row; the columns a narrow screen can do without go first - p4, then p2, then p3. */
 .sheet { background: var(--paper); border-radius: var(--r-sheet); box-shadow: var(--shadow-card); outline: 1px solid rgba(11,20,34,.06); outline-offset: -1px; overflow: clip; }
+/* the permissions of a member, as pictures in a row */
+.tbl td.perms img { vertical-align: middle; }
+/* a sheet followed by the toolbar of the next one (the registrations of a tournament): room between */
+.sheet + .toolbar { margin-top: 28px; }
+.toolbar.reg-hd > b { font-size: 15px; }
+/* a wide table of counts (the referees): the headings and the numbers wrap, the club's name is cut */
+.tbl.th-wrap th { white-space: normal; vertical-align: bottom; }
+.tbl.th-wrap .club span:not(.club-ini) { max-width: 150px; }
+.tbl.th-wrap td.num { white-space: normal; }
+.tbl.th-wrap td.num small { display: inline-block; line-height: 1.2; font-size: 11px; white-space: nowrap; }
+.tbl.th-wrap th, .tbl.th-wrap td { padding-left: 6px; padding-right: 6px; }
+/* a table wider than the page (a column for every year of a recurring tournament) scrolls sideways;
+   its headings then do not stick to the top */
+.sheet.scroll { overflow-x: auto; }
 .tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
 .tbl th { position: sticky; top: var(--hd-h); z-index: 2; padding: 12px 10px; text-align: left; white-space: nowrap; background: var(--night); color: #C3D0E2;
   font: 500 13px var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
@@ -1346,6 +1382,7 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .tbl .th-sort::after { content: ""; border: 4px solid transparent; border-top-color: rgba(255,255,255,.4); border-bottom-width: 0; }
 .tbl th[aria-sort], .tbl th .th-sort:hover, .nl .tbl a.th-sort:hover { color: #fff; }
 .tbl th[aria-sort] .th-sort::after { border-top-color: currentColor; }
+.tbl th[aria-sort="ascending"] .th-sort::after { transform: rotate(180deg); }
 .tbl .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .nl .tbl a.who:link, .nl .tbl a.who:visited { color: var(--ink); }
 .tbl a.who:hover .who-name { color: var(--red); }
@@ -1356,6 +1393,11 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .club img, .club .club-ini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--rule); background: #fff; object-fit: contain; }
 .club .club-ini { display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--slate); }
 .club span:not(.club-ini) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* the buttons of a row (edit, delete...): as narrow as they are, on one line */
+.tbl td.tb-btns { width: 1%; white-space: nowrap; }
+.tbl td.tb-btns button.icon + button.icon { margin-left: 4px; }
+/* a picture of a role or a permission at the end of a row */
+.tbl td.num > img[width="32"] { width: 26px; height: 26px; vertical-align: middle; }
 /* a picture in a heading (a role, a series): small, and dimmed until it is the order */
 .tbl th.th-pic img { width: 22px; height: 22px; object-fit: contain; vertical-align: middle; }
 .tbl th.th-pic a img { opacity: .6; }
@@ -1385,6 +1427,15 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .field > .ic { position: absolute; left: 12px; width: 17px; height: 17px; color: var(--slate); pointer-events: none; z-index: 1; }
 .nl .field input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=image]):not([type=file]) { width: 100%; height: 40px; padding: 0 40px 0 38px; border: 1px solid #C9D5E3; border-radius: 12px; background: #fff; font: 500 15px var(--font); color: var(--ink); }
 .nl .field input:not([type=checkbox]):focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(200,35,44,.14); }
+/* the club/city/country filter is a field of the same kind as the search for a player beside it:
+   drawn the same way (but for the dark one on the band of the main page) */
+.nl :not(.home-filter) > .dd-wrap > input.dropdown:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=image]):not([type=file]) {
+  height: 40px !important; padding: 0 40px 0 14px !important; border: 1px solid #C9D5E3; border-radius: 12px !important; background: #fff; font: 500 15px var(--font); color: var(--ink); }
+/* in a toolbar beside the search for a player, a third of the line rather than a narrow pill */
+.toolbar .dd-wrap { flex: 0 1 380px; min-width: 240px; }
+.nl .toolbar .dd-wrap > input.dropdown { width: 100%; }
+.nl :not(.home-filter) > .dd-wrap > input.dropdown:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(200,35,44,.14); }
+.nl :not(.home-filter) > .dd-wrap > input.dropdown::placeholder { color: var(--slate); }
 .nl .field button.small_icon { position: absolute; right: 6px; margin: 0; }
 .count { font-size: 13.5px; color: var(--slate); white-space: nowrap; }
 /* the line under the heading of a list - how many there are */

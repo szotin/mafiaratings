@@ -8,6 +8,7 @@ require_once 'include/table_hiding.php';
 require_once 'include/scoring.php';
 require_once 'include/rules.php';
 require_once 'include/tournament_schema.php';
+require_once 'include/cards.php';
 
 // The numbers are stored - tournaments.preparation_stage remembers the tab a tournament was left
 // on - so renumbering the tabs means moving the stored numbers too, the way db/alter210.sql and
@@ -237,47 +238,43 @@ class Page extends TournamentPageBase
 			$pic = new Picture(USER_TOURNAMENT_PICTURE,
 				new Picture(USER_CLUB_PICTURE,
 				new Picture(USER_PICTURE)));
-			echo '<p><b>' . get_label('Not confirmed') . '</b></p>';
-			echo '<p><table class="bordered light" width="100%">';
-			echo '<tr class="th darker">';
-			echo '<td width="160" align="center"></td>';
-			echo '<td width="40"></td>';
-			echo '<td>' . get_label('Player') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Club') . '</td>';
-			echo '<td width="200">' . get_label('Email') . '</td>';
-			echo '</tr>';
+			echo '<div class="toolbar reg-hd"><b>' . get_label('Not confirmed') . '</b></div>';
+			echo '<div class="sheet"><table class="tbl">';
+			echo '<thead><tr>';
+			echo '<th scope="col"></th>';
+			echo '<th class="rk" scope="col">#</th>';
+			echo '<th scope="col">' . get_label('Player') . '</th>';
+			echo '<th class="p3" scope="col">' . get_label('Club') . '</th>';
+			echo '<th class="p2" scope="col">' . get_label('Email') . '</th>';
+			echo '</tr></thead><tbody>';
 			foreach ($unconfirmed as $i => $row)
 			{
 				list($user_id, $name, $email, $user_flags, $tr_flags, $club_reg_flags, $city, $club_id, $club_name, $club_flags) = $row;
-				echo '<tr class="light">';
-				echo '<td class="dark" align="center" nowrap>';
+				echo '<tr>';
+				echo '<td class="tb-btns">';
 				echo '<button onclick="mr.acceptTournamentReg(' . $this->id . ',' . $user_id . ')">' . get_label('Accept application') . '</button>';
 				echo '</td>';
-				echo '<td align="center">' . ($i + 1) . '</td>';
-				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
-				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
-				echo '<td>' . $email . '</td>';
+				echo $this->numberCell($i + 1);
+				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
+				echo '<td class="p3">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
+				echo '<td class="p2 dim">' . $email . '</td>';
 				echo '</tr>';
 			}
-			echo '</table></p>';
+			echo '</tbody></table></div>';
 		}
 	}
 
+	// A player in a row of the v3 tables (see ratings.php): the round picture, the name, the city
+	// under it, and the mark of an exhibition player after the city.
 	private function personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city)
 	{
-		ob_start();
-		echo '<table class="transp"><tr>';
-		echo '<td width="54" align="center" valign="middle">';
 		// The tournament's own photo of the player first, then the club's, then the account one
 		// - the same order as everywhere else the player is drawn, and as the photo dialog.
 		$pic->set($user_id, $name, $tr_flags, 't' . $this->id)->
 			set($user_id, $name, $club_reg_flags, 'c' . $this->club_id)->
 			set($user_id, $name, $user_flags);
-		$pic->show(ICONS_DIR, true, 50);
-		echo '</td>';
-		echo '<td valign="middle"><a href="user_info.php?id=' . $user_id . '&bck=1"><b>' . $name . '</b></a><br>' . $city . '</td>';
-		echo '</tr></table>';
-		return ob_get_clean();
+		return '<a class="who" href="user_info.php?id=' . $user_id . '&bck=1">' . card_avatar_of($pic, $user_id, $name, '') .
+			'<span class="who-txt"><span class="who-name">' . $name . '</span><span class="who-sub">' . $city . $this->exhibitionBadge($tr_flags) . '</span></span></a>';
 	}
 
 	private function exhibitionBadge($tr_flags)
@@ -286,23 +283,36 @@ class Page extends TournamentPageBase
 		{
 			return '';
 		}
-		return '<span title="' . get_label('Excluded from tournament standings and series scoring.') . '" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#a06060;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;">' . get_label('exhibition player') . '</span>';
+		return ' <span title="' . get_label('Excluded from tournament standings and series scoring.') . '" style="margin-left:6px;background:#a06060;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;">' . get_label('exhibition player') . '</span>';
 	}
 
 	private function clubCell($club_id, $club_name, $club_flags)
 	{
-		if ($club_id <= 0) { return ''; }
-		ob_start();
-		echo '<a href="club_main.php?id=' . $club_id . '&bck=1">';
-		$this->club_pic->set($club_id, $club_name, $club_flags);
-		$this->club_pic->show(ICONS_DIR, true, 50);
-		echo '</a>';
-		return ob_get_clean();
+		if ($club_id <= 0)
+		{
+			return '';
+		}
+		return card_club($this->club_pic, $club_id, $club_name, $club_flags);
 	}
 
+	// A place nobody has taken yet: an empty circle where the picture would be.
 	private function emptyPersonCell()
 	{
-		return '<table class="transp"><tr><td width="54"><img src="images/transp.png" width="50" height="50" border="0"></td><td></td></tr></table>';
+		return '<span class="who"><span class="av" aria-hidden="true"></span></span>';
+	}
+
+	// The number of a row: its place in the order of registration.
+	private function numberCell($number)
+	{
+		return '<td class="rk"><span class="medal">' . sprintf('%02d', $number) . '</span></td>';
+	}
+
+	// The heading over a table of registrations, with the button that adds one at its end.
+	private function regHeading($title, $default_flags)
+	{
+		echo '<div class="toolbar reg-hd"><b>' . $title . '</b>';
+		echo '<a class="btn tb-create" href="#" onclick="dlg.form(\'form/registration_create.php?tournament_id=' . $this->id . '&flags=' . $default_flags . '\', refr, 400); return false;" title="' . get_label('Add registration to [0].', $this->name) . '">' . PageBase::icon('plus') . '<span>' . get_label('Add registration') . '</span></a>';
+		echo '</div>';
 	}
 
 	private function showRegTable($title, $regs, $scheme_count, $default_flags, $person_label, $with_rollback = false)
@@ -312,27 +322,26 @@ class Page extends TournamentPageBase
 			new Picture(USER_PICTURE)));
 		$reg_count = count($regs);
 		$row_count = max($scheme_count, $reg_count);
-		$btn_width = $with_rollback ? 120 : 90;
-
-		echo '<p><b>' . $title . '</b></p>';
-		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="th darker">';
-		echo '<td width="' . $btn_width . '" align="center"><button class="icon" onclick="dlg.form(\'form/registration_create.php?tournament_id=' . $this->id . '&flags=' . $default_flags . '\', refr, 400)" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button></td>';
-		echo '<td width="40"></td>';
-		echo '<td>' . $person_label . '</td>';
-		echo '<td width="60" align="center">' . get_label('Club') . '</td>';
-		echo '<td width="200">' . get_label('Email') . '</td>';
-		echo '<td width="40"></td>';
-		echo '</tr>';
+		$this->regHeading($title, $default_flags);
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr>';
+		echo '<th scope="col"></th>';
+		echo '<th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . $person_label . '</th>';
+		echo '<th class="p3" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Email') . '</th>';
+		echo '<th scope="col"></th>';
+		echo '</tr></thead><tbody>';
 
 		for ($i = 0; $i < $row_count; ++$i)
 		{
+			// The places beyond what the scheme of the tournament holds are shaded.
 			$overflow = ($scheme_count > 0 && $i >= $scheme_count);
-			echo '<tr class="' . ($overflow ? 'darker' : 'light') . '">';
+			echo '<tr' . ($overflow ? ' class="darker"' : '') . '>';
 			if ($i < $reg_count)
 			{
 				list($user_id, $name, $email, $user_flags, $tr_flags, $club_reg_flags, $city, $club_id, $club_name, $club_flags) = $regs[$i];
-				echo '<td align="center" nowrap>';
+				echo '<td class="tb-btns">';
 				echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
 				$new_flags = ($tr_flags & USER_PERM_MASK) & ~$default_flags;
 				echo '<button class="icon" onclick="removeTournamentRegFlag(' . $user_id . ', ' . $new_flags . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
@@ -342,26 +351,26 @@ class Page extends TournamentPageBase
 					echo '<button class="icon" onclick="rollbackTournamentReg(' . $user_id . ')" title="' . get_label('Rollback [0] to not confirmed state.', $name) . '"><img src="images/undo.png" border="0"></button>';
 				}
 				echo '</td>';
-				echo '<td align="center">' . ($i + 1) . '</td>';
-				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
-				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
-				echo '<td>' . $email . '</td>';
+				echo $this->numberCell($i + 1);
+				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
+				echo '<td class="p3">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
+				echo '<td class="p2 dim">' . $email . '</td>';
 				$up_style = ($i == 0) ? ' style="visibility:hidden"' : '';
-				echo '<td align="center"><button class="icon"' . $up_style . ' onclick="moveRegistration(' . $user_id . ', ' . $default_flags . ')" title="' . get_label('Move up') . '"><img src="images/up.png" border="0"></button></td>';
+				echo '<td class="tb-btns"><button class="icon"' . $up_style . ' onclick="moveRegistration(' . $user_id . ', ' . $default_flags . ')" title="' . get_label('Move up') . '"><img src="images/up.png" border="0"></button></td>';
 			}
 			else
 			{
 				echo '<td></td>';
-				echo '<td align="center">' . ($i + 1) . '</td>';
+				echo $this->numberCell($i + 1);
 				echo '<td>' . $this->emptyPersonCell() . '</td>';
-				echo '<td></td>';
-				echo '<td></td>';
+				echo '<td class="p3"></td>';
+				echo '<td class="p2"></td>';
 				echo '<td></td>';
 			}
 			echo '</tr>';
 		}
 
-		echo '</table></p>';
+		echo '</tbody></table></div>';
 	}
 
 	private function showTeamPlayerTable($regs, $scheme_count)
@@ -386,17 +395,17 @@ class Page extends TournamentPageBase
 			$groups[$key]['players'][] = $row;
 		}
 
-		echo '<p><b>' . get_label('Players') . '</b></p>';
-		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="th darker">';
-		echo '<td width="120" align="center"><button class="icon" onclick="dlg.form(\'form/registration_create.php?tournament_id=' . $this->id . '&flags=' . $default_flags . '\', refr, 400)" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button></td>';
-		echo '<td width="40"></td>';
-		echo '<td width="100">' . get_label('Team') . '</td>';
-		echo '<td>' . get_label('Player') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Club') . '</td>';
-		echo '<td width="200">' . get_label('Email') . '</td>';
-		echo '<td width="40"></td>';
-		echo '</tr>';
+		$this->regHeading(get_label('Players'), $default_flags);
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr>';
+		echo '<th scope="col"></th>';
+		echo '<th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Team') . '</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th class="p3" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Email') . '</th>';
+		echo '<th scope="col"></th>';
+		echo '</tr></thead><tbody>';
 
 		$row_num = 0;
 		$is_first_group = true;
@@ -415,9 +424,9 @@ class Page extends TournamentPageBase
 				list($user_id, $name, $email, $user_flags, $tr_flags, $club_reg_flags, $city, $club_id, $club_name, $club_flags) = $row;
 
 				$overflow = ($scheme_count > 0 && $row_num >= $scheme_count);
-				echo '<tr class="' . ($overflow ? 'darker' : 'light') . '">';
+				echo '<tr' . ($overflow ? ' class="darker"' : '') . '>';
 
-				echo '<td align="center" nowrap>';
+				echo '<td class="tb-btns">';
 				echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
 				$new_flags = ($tr_flags & USER_PERM_MASK) & ~$default_flags;
 				echo '<button class="icon" onclick="removeTournamentRegFlag(' . $user_id . ', ' . $new_flags . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
@@ -425,27 +434,27 @@ class Page extends TournamentPageBase
 				echo '<button class="icon" onclick="rollbackTournamentReg(' . $user_id . ')" title="' . get_label('Rollback [0] to not confirmed state.', $name) . '"><img src="images/undo.png" border="0"></button>';
 				echo '</td>';
 
-				echo '<td align="center">' . (++$row_num) . '</td>';
+				echo $this->numberCell(++$row_num);
 
 				if ($j == 0)
 				{
 					if ($team_id !== null)
 					{
-						echo '<td' . $rowspan . ' align="center"><b>' . htmlspecialchars((string)$team_name) . '</b></td>';
+						echo '<td' . $rowspan . ' class="strong">' . htmlspecialchars((string)$team_name) . '</td>';
 					}
 					else
 					{
-						echo '<td' . $rowspan . ' class="dark" align="center">' . get_label('No team') . '</td>';
+						echo '<td' . $rowspan . ' class="dim">' . get_label('No team') . '</td>';
 					}
 				}
 
-				echo '<td style="position:relative;">' . $this->exhibitionBadge($tr_flags) . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
-				echo '<td align="center">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
-				echo '<td>' . $email . '</td>';
+				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
+				echo '<td class="p3">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
+				echo '<td class="p2 dim">' . $email . '</td>';
 
 				if ($j == 0)
 				{
-					echo '<td' . $rowspan . ' align="center">';
+					echo '<td' . $rowspan . ' class="tb-btns">';
 					if ($team_id !== null)
 					{
 						echo '<button class="icon"' . $up_style . ' onclick="moveTeamUp(' . $team_id . ', ' . $default_flags . ')" title="' . get_label('Move up') . '"><img src="images/up.png" border="0"></button>';
@@ -465,18 +474,18 @@ class Page extends TournamentPageBase
 
 		for (; $row_num < $scheme_count; ++$row_num)
 		{
-			echo '<tr class="light">';
+			echo '<tr>';
 			echo '<td></td>';
-			echo '<td align="center">' . ($row_num + 1) . '</td>';
+			echo $this->numberCell($row_num + 1);
 			echo '<td></td>';
 			echo '<td>' . $this->emptyPersonCell() . '</td>';
-			echo '<td></td>';
-			echo '<td></td>';
+			echo '<td class="p3"></td>';
+			echo '<td class="p2"></td>';
 			echo '<td></td>';
 			echo '</tr>';
 		}
 
-		echo '</table></p>';
+		echo '</tbody></table></div>';
 	}
 
 	// The leagues a tournament of this club takes a schema from, the one it is in first - the
@@ -750,37 +759,38 @@ class Page extends TournamentPageBase
 			new Picture(USER_CLUB_PICTURE,
 			new Picture(USER_PICTURE)));
 
-		echo '<p><table class="bordered light" width="100%"><tr class="darker"><th width="32"><button class="icon" onclick="createPair()" title="' . get_label('Create new pair') . '"><img src="images/create.png"></button></th>';
-		echo '<th width="200">' . get_label('Player [0]', 1) . '</th>';
-		echo '<th width="200">' . get_label('Player [0]', 2) . '</th>';
-		echo '<th>' . get_label('Policy') . '</th>';
-		echo '<th width="200">' . get_label('Where the policy is set') . '</th></tr>';
+		// The pairs as a list of the v3 design (see ratings.php): the button that makes one in a
+		// toolbar, the table in a sheet.
+		echo '<div class="toolbar"><a class="btn tb-create" href="#" onclick="createPair(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create new pair') . '</span></a></div>';
+		echo '<div class="sheet"><table class="tbl"><thead><tr><th scope="col"></th>';
+		echo '<th scope="col">' . get_label('Player [0]', 1) . '</th>';
+		echo '<th scope="col">' . get_label('Player [0]', 2) . '</th>';
+		echo '<th scope="col">' . get_label('Policy') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Where the policy is set') . '</th></tr></thead><tbody>';
 		foreach ($pairs as $pair)
 		{
 			echo '<tr>';
-			echo '<td><button class="icon" onclick="deletePair(' . $pair->user1_id . ',' . $pair->user2_id . ')" title="' . get_label('Delete pair') . '"><img src="images/delete.png"></button></td>';
+			echo '<td class="tb-btns"><button class="icon" onclick="deletePair(' . $pair->user1_id . ',' . $pair->user2_id . ')" title="' . get_label('Delete pair') . '"><img src="images/delete.png"></button></td>';
 
-			echo '<td><table class="transp" width="100%"><tr><td width="52">';
 			$user_pic->
 				set($pair->user1_id, $pair->user1_name, $pair->user1_tournament_flags, 't' . $this->id)->
 				set($pair->user1_id, $pair->user1_name, $pair->user1_club_flags, 'c' . $this->club_id)->
 				set($pair->user1_id, $pair->user1_name, $pair->user1_flags);
-			$user_pic->show(ICONS_DIR, false, 48);
-			echo '</td><td><a href="user_info.php?id=' . $pair->user1_id . '&bck=1">' . $pair->user1_name . '</a></td></tr></table></td>';
+			echo '<td><a class="who" href="user_info.php?id=' . $pair->user1_id . '&bck=1">' . card_avatar_of($user_pic, $pair->user1_id, $pair->user1_name, '') .
+				'<span class="who-txt"><span class="who-name">' . $pair->user1_name . '</span></span></a></td>';
 
-			echo '<td><table class="transp" width="100%"><tr><td width="52">';
 			$user_pic->
 				set($pair->user2_id, $pair->user2_name, $pair->user2_tournament_flags, 't' . $this->id)->
 				set($pair->user2_id, $pair->user2_name, $pair->user2_club_flags, 'c' . $this->club_id)->
 				set($pair->user2_id, $pair->user2_name, $pair->user2_flags);
-			$user_pic->show(ICONS_DIR, false, 48);
-			echo '</td><td><a href="user_info.php?id=' . $pair->user2_id . '&bck=1">' . $pair->user2_name . '</a></td></tr></table></td>';
+			echo '<td><a class="who" href="user_info.php?id=' . $pair->user2_id . '&bck=1">' . card_avatar_of($user_pic, $pair->user2_id, $pair->user2_name, '') .
+				'<span class="who-txt"><span class="who-name">' . $pair->user2_name . '</span></span></a></td>';
 
-			echo '<td align="center">' . get_pair_policy_name($pair->policy) . '</td>';
-			echo '<td align="center">' . $pair->source . '</td>';
+			echo '<td>' . get_pair_policy_name($pair->policy) . '</td>';
+			echo '<td class="p2 dim">' . $pair->source . '</td>';
 			echo '</tr>';
 		}
-		echo '</table></p>';
+		echo '</tbody></table></div>';
 	}
 
 	protected function show_body()

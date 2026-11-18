@@ -3,6 +3,7 @@
 require_once 'include/event.php';
 require_once 'include/pages.php';
 require_once 'include/event_mailing.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -93,8 +94,9 @@ class Page extends EventPageBase
 			list ($count) = Db::record(get_label('email'), 'SELECT count(*) FROM emails WHERE obj = ' . EMAIL_OBJ_EVENT_INVITATION . ' AND obj_id = ?', $this->mailing_id);
 			show_pages_navigation(PAGE_SIZE, $count);
 		
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker" style="height:40px; font-weight:bold;"><td colspan="2">' . get_label('Sent to') . '</td><td width="160" align="center">' . get_label('Send time') . '</td></tr>';
+			// The people it was sent to: a list of players of the v3 design, after ratings.php.
+			echo '<div class="sheet"><table class="tbl">';
+			echo '<thead><tr><th scope="col">' . get_label('Sent to') . '</th><th class="num" scope="col">' . get_label('Send time') . '</th></tr></thead><tbody>';
 			
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.flags, e.send_time'.
@@ -108,14 +110,12 @@ class Page extends EventPageBase
 			while ($row = $query->next())
 			{
 				list($user_id, $user_name, $user_flags, $send_time) = $row;
-				echo '<tr><td width="50">';
-				$this->user_pic->set($user_id, $user_name, $user_flags);
-				$this->user_pic->show(ICONS_DIR, true, 48);
-				echo '</td><td>' . $user_name . '</td>';
-				echo '<td class="dark" align="center">' . format_date($send_time, $timezone, true) . '</td></tr>';
+				echo '<tr><td><a class="who" href="user_info.php?id=' . $user_id . '&bck=1">' . card_avatar($this->user_pic, $user_id, $user_name, $user_flags, '') .
+					'<span class="who-txt"><span class="who-name">' . $user_name . '</span></span></a></td>';
+				echo '<td class="num dim">' . format_date($send_time, $timezone, true) . '</td></tr>';
 			}
 			
-			echo '</table>';
+			echo '</tbody></table></div>';
 			show_pages_navigation(PAGE_SIZE, $count);
 		}
 	}

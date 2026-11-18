@@ -95,10 +95,22 @@ class CCCFilter
 	
 	function show($title, $on_select = NULL)
 	{
-		echo '<input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '" title="' . $title . '" placeholder="' . get_label('Select country/city/club') . '"/>';
-		// The arrow that opens the list: a line icon of the look of the site, drawn over the right end
-		// of the field.
-		echo '<button type="button" class="dropdown-btn" onclick="cccDrop()" aria-label="' . $title . '"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
+		// The field and its button go together, the button drawn over the right end of the field
+		// whatever is around them. The list opens as soon as the field is focused, so the button is
+		// the cross that clears the filter - the same as the one of the search for a player - unless
+		// the filter cannot be cleared (CCCF_NO_ALL): then it is the arrow that opens the list.
+		echo '<span class="dd-wrap"><input type="text" class="dropdown" id="' . $this->name . '" value="' . $this->value . '" title="' . $title . '" placeholder="' . get_label('Select country/city/club') . '"/>';
+		if ($this->flags & CCCF_NO_ALL)
+		{
+			echo '<button type="button" class="dropdown-btn" onclick="cccDrop()" aria-label="' . $title . '"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>';
+		}
+		else
+		{
+			$all = CCCF_CLUB . CCCF_ALL;
+			$clear = '$(\'#' . $this->name . '\').val(\'\'); ' . (is_null($on_select) ? 'goTo({ ' . $this->name . ': \'' . $all . '\', page: undefined })' : $on_select . '(\'' . $all . '\')');
+			echo '<button type="button" class="small_icon" onclick="' . $clear . '" title="' . get_label('Clear') . '"><img src="images/clear.png" width="12"></button>';
+		}
+		echo '</span>';
 //		echo '<button class="small_icon" onclick="goTo({ccc:undefined,page:undefined})"><img src="images/clear.png" width="12"></button>';
 //		echo '<button class="dropdown-btn" onclick="cccDrop()"><img src="images/down.png" width="16" height="16"></button>';
 ?>

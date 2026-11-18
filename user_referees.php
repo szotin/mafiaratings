@@ -5,6 +5,7 @@ require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
 require_once 'include/ccc_filter.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -21,7 +22,7 @@ class Page extends UserPageBase
 {
 	protected function show_body()
 	{
-		global $_page, $_lang;
+		global $_page, $_lang, $_profile;
 		
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
@@ -36,14 +37,15 @@ class Page extends UserPageBase
 			list($min_time, $max_time) = $row;
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td>';
+		// The filters in a toolbar, as on ratings.php; the three-way filters on a line of their own.
+		echo '<div class="toolbar">';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
-		echo '&emsp;&emsp;';
+		echo '<div class="tb-dates">';
 		show_date_filter();
-		echo '&emsp;&emsp;';
+		echo '</div>';
 		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
-		echo '</td></tr></table></p>';
+		echo '</div>';
 		
 		$condition = new SQL();
 		$ccc_id = $ccc_filter->get_id();
@@ -113,14 +115,17 @@ class Page extends UserPageBase
 			$this->id, $condition);
 		$query->add(' GROUP BY u.id ORDER BY gcount DESC, rating DESC, gwon DESC, p.user_id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2">'.get_label('Referee') . '</td>';
-		echo '<td width="80" align="center">'.get_label('Rating earned').'</td>';
-		echo '<td width="80" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="80" align="center">'.get_label('Wins').'</td>';
-		echo '<td width="80" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="80" align="center">'.get_label('Rating per game').'</td></tr>';
+		// The table of the v3 design, after ratings.php: the place, the referee with a round picture,
+		// the numbers on the right.
+		echo '<div class="sheet"><table class="tbl mid">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Referee') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Rating earned') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Games played') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Wins') . '</th>';
+		echo '<th class="num p2" scope="col">' . get_label('Winning %') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Rating per game') . '</th>';
+		echo '</tr></thead><tbody>';
 
 		$number = $_page * PAGE_SIZE;
 		while ($row = $query->next())
@@ -128,27 +133,24 @@ class Page extends UserPageBase
 			++$number;
 			list ($id, $name, $flags, $games_played, $rating, $games_won) = $row;
 
-			echo '<tr><td align="center" class="dark">' . $number . '</td>';
-			echo '<td width="50">';
-			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
-			echo '<td><a href="user_games.php?id=' . $id . '&moder=1&bck=1">' . cut_long_name($name, 88) . '</a></td>';
-			
-			echo '<td align="center" class="dark">' . number_format($rating, 2) . '</td>';
-			echo '<td align="center">' . $games_played . '</td>';
-			echo '<td align="center">' . $games_won . '</td>';
+			echo '<tr><td class="rk"><span class="medal' . ($number <= 3 ? ' m' . $number : '') . '">' . sprintf('%02d', $number) . '</span></td>';
+			echo '<td><a class="who" href="user_games.php?id=' . $id . '&moder=1&bck=1">' . card_avatar($this->user_pic, $id, $name, $flags, '') .
+				'<span class="who-txt"><span class="who-name">' . cut_long_name($name, 88) . '</span></span></a></td>';
+			echo '<td class="num strong">' . number_format($rating, 2) . '</td>';
+			echo '<td class="num p3">' . $games_played . '</td>';
+			echo '<td class="num p3">' . $games_won . '</td>';
 			if ($games_played != 0)
 			{
-				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . number_format($rating/$games_played, 2) . '</td>';
+				echo '<td class="num p2">' . number_format(($games_won * 100.0) / $games_played, 1) . '%</td>';
+				echo '<td class="num p4 dim">' . number_format($rating / $games_played, 2) . '</td>';
 			}
 			else
 			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
+				echo '<td class="num p2"></td><td class="num p4"></td>';
 			}
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	

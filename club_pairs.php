@@ -2,6 +2,7 @@
 
 require_once 'include/seating.php';
 require_once 'include/club.php';
+require_once 'include/cards.php';
 
 class Page extends ClubPageBase
 {
@@ -90,36 +91,35 @@ class Page extends ClubPageBase
 
 		$user_pic = new Picture(USER_CLUB_PICTURE, new Picture(USER_PICTURE));
 
-		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="dark"><th width="32"><button class="icon" onclick="createPair()" title="' . get_label('Create new pair') . '"><img src="images/create.png"></button></th>';
-		echo '<th width="200">' . get_label('Player [0]', 1) . '</th>';
-		echo '<th width="200">' . get_label('Player [0]', 2) . '</th>';
-		echo '<th>' . get_label('Policy') . '</th>';
-		echo '<th width="200">' . get_label('Where the policy is set') . '</th></tr>';
+		// The list of the v3 design, after ratings.php: the button that creates a pair in the toolbar,
+		// the table in a sheet, a player in each of the two columns.
+		echo '<div class="toolbar"><span class="count">' . get_label('[0] pairs', count($pairs)) . '</span>';
+		echo '<a class="btn tb-create" href="#" onclick="createPair(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create new pair') . '</span></a></div>';
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th scope="col"></th>';
+		echo '<th scope="col">' . get_label('Player [0]', 1) . '</th>';
+		echo '<th scope="col">' . get_label('Player [0]', 2) . '</th>';
+		echo '<th scope="col">' . get_label('Policy') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Where the policy is set') . '</th></tr></thead><tbody>';
 		foreach ($pairs as $pair)
 		{
 			echo '<tr>';
-			echo '<td><button class="icon" onclick="deletePair(' . $pair->user1_id . ',' . $pair->user2_id . ')" title="' . get_label('Delete pair') . '"><img src="images/delete.png"></button></td>';
-
-			echo '<td><table class="transp" width="100%"><tr><td width="52">';
-			$user_pic->
-				set($pair->user1_id, $pair->user1_name, $pair->user1_club_flags, 'c' . $this->id)->
-				set($pair->user1_id, $pair->user1_name, $pair->user1_flags);
-			$user_pic->show(ICONS_DIR, false, 48);
-			echo '</td><td><a href="user_info.php?id=' . $pair->user1_id . '&bck=1">' . $pair->user1_name . '</a></td></tr></table></td>';
-
-			echo '<td><table class="transp" width="100%"><tr><td width="52">';
-			$user_pic->
-				set($pair->user2_id, $pair->user2_name, $pair->user2_club_flags, 'c' . $this->id)->
-				set($pair->user2_id, $pair->user2_name, $pair->user2_flags);
-			$user_pic->show(ICONS_DIR, false, 48);
-			echo '</td><td><a href="user_info.php?id=' . $pair->user2_id . '&bck=1">' . $pair->user2_name . '</a></td></tr></table></td>';
-
-			echo '<td align="center">' . get_pair_policy_name($pair->policy) . '</td>';
-			echo '<td align="center">' . $pair->source . '</td>';
+			echo '<td class="tb-btns"><button class="icon" onclick="deletePair(' . $pair->user1_id . ',' . $pair->user2_id . ')" title="' . get_label('Delete pair') . '"><img src="images/delete.png"></button></td>';
+			for ($i = 1; $i <= 2; ++$i)
+			{
+				$id = $pair->{'user' . $i . '_id'};
+				$name = $pair->{'user' . $i . '_name'};
+				$user_pic->
+					set($id, $name, $pair->{'user' . $i . '_club_flags'}, 'c' . $this->id)->
+					set($id, $name, $pair->{'user' . $i . '_flags'});
+				echo '<td><a class="who" href="user_info.php?id=' . $id . '&bck=1">' . card_avatar_of($user_pic, $id, $name, '') .
+					'<span class="who-txt"><span class="who-name">' . $name . '</span></span></a></td>';
+			}
+			echo '<td class="dim">' . get_pair_policy_name($pair->policy) . '</td>';
+			echo '<td class="p2 dim">' . $pair->source . '</td>';
 			echo '</tr>';
 		}
-		echo '</table></p>';
+		echo '</tbody></table></div>';
 	}
 
 	protected function js()

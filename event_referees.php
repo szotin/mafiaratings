@@ -7,6 +7,7 @@ require_once 'include/user.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
 require_once 'include/scoring.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -59,14 +60,6 @@ class Page extends EventPageBase
 	{
 		global $_page, $_lang;
 		
-		echo '<p>';
-		echo '<table class="transp" width="100%"><tr><td>';
-		show_date_filter();
-		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('rating games'), get_label('canceled games')), $this->filter, 'filterChanged');
-		echo '</td><td align="right"><img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(' WHERE g.event_id = ?', $this->id);
 		if ($this->filter & FLAG_FILTER_RATING)
@@ -121,6 +114,16 @@ class Page extends EventPageBase
 		}
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(DISTINCT g.moderator_id) FROM games g', $condition);
+		// The filters, the search and the count in a toolbar, as on ratings.php; the three-way filters
+		// go on a line of their own under them.
+		echo '<div class="toolbar">';
+		echo '<div class="tb-dates">';
+		show_date_filter();
+		echo '</div><div class="field grow">' . PageBase::icon('search');
+		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific player is located.'));
+		echo '</div><span class="count">' . get_label('[0] referees', number_format($count)) . '</span>';
+		show_checkbox_filter(array(get_label('rating games'), get_label('canceled games')), $this->filter, 'filterChanged');
+		echo '</div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$moders = array();
@@ -158,113 +161,58 @@ class Page extends EventPageBase
 			list($id, $moder->bonus, $moder->warnings, $moder->worst_moves, $moder->kick_offs, $moder->team_kick_offs) = $row;
 		}
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker"><td width="20">&nbsp;</td>';
-		echo '<td colspan="3">'.get_label('User name') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Games refereed').'</td>';
-		echo '<td width="60" align="center">'.get_label('Civil wins').'</td>';
-		echo '<td width="60" align="center">'.get_label('Mafia wins').'</td>';
-		echo '<td width="60" align="center">'.get_label('Ties').'</td>';
-		echo '<td width="80" align="center">'.get_label('Warnings').'</td>';
-		echo '<td width="80" align="center">'.get_label('Mod kills').'</td>';
-		echo '<td width="80" align="center">'.get_label('Mod team kills').'</td>';
-		echo '<td width="80" align="center">'.get_label('Removed auto-bonus').'</td>';
-		echo '<td width="80" align="center">'.get_label('Bonus points').'</td>';
-		echo '</tr>';
-
+		// The table of the v3 design, after ratings.php: the place, the referee with a round picture,
+		// the club with its name, the counts - each with the share of the games or the rate per game
+		// it comes to under it.
+		echo '<div class="sheet"><table class="tbl mid th-wrap">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('User name') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Games refereed') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Civil wins') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Mafia wins') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Ties') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Warnings') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Mod kills') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Mod team kills') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Removed auto-bonus') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Bonus points') . '</th>';
+		echo '</tr></thead><tbody>';
+		
+		// A count, and under it what it comes to; nothing when there is none.
+		$cell = function($value, $shown, $sub, $class)
+		{
+			if ($value <= 0)
+			{
+				return '<td class="num ' . $class . '"></td>';
+			}
+			return '<td class="num ' . $class . '">' . $shown . '<br><small class="dim">' . $sub . '</small></td>';
+		};
+		
+		$club_pic = new Picture(CLUB_PICTURE);
 		$number = $_page * PAGE_SIZE;
 		foreach ($moders as $moder)
 		{
 			++$number;
-
-            if ($moder->id == $this->user_id)
-            {
-                echo '<tr class="dark">';
-            }
-            else
-            {
-                echo '<tr>';
-            }
-            echo '<td class="dark" align="center">' . $number . '</td>';
-			echo '<td width="50">';
-			$this->user_pic->set($moder->id, $moder->name, $moder->flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
-			echo '<td><a href="user_games.php?id=' . $moder->id . '&moder=1&bck=1">' . $moder->name . '</a></td>';
-			echo '<td width="50" align="center">';
-			$this->club_pic->set($moder->club_id, $moder->club_name, $moder->club_flags);
-			$this->club_pic->show(ICONS_DIR, true, 40);
-			echo '</td>';
+			echo '<tr' . ($moder->id == $this->user_id ? ' class="me"' : '') . '>';
+			echo '<td class="rk"><span class="medal' . ($number <= 3 ? ' m' . $number : '') . '">' . sprintf('%02d', $number) . '</span></td>';
+			$avatar = card_avatar($this->user_pic, $moder->id, $moder->name, $moder->flags, '');
+			echo '<td><a class="who" href="user_games.php?id=' . $moder->id . '&moder=1&bck=1">' . $avatar . '<span class="who-txt"><span class="who-name">' . $moder->name . '</span></span></a></td>';
+			echo '<td class="p2">' . card_club($club_pic, $moder->club_id, $moder->club_name, $moder->club_flags) . '</td>';
 			
 			$games = $moder->red_wins + $moder->black_wins + $moder->ties;
-			
-			echo '<td align="center" class="dark">' . $games . '</td>';
-			if ($moder->red_wins > 0)
-			{
-				echo '<td align="center">' . $moder->red_wins . '<br><i>' . number_format(($moder->red_wins*100.0)/$games, 1) . '%</i></td>';
-			}
-			else
-			{
-				echo '<td align="center">&nbsp;</td>';
-			}
-			if ($moder->black_wins > 0)
-			{
-				echo '<td align="center">' . $moder->black_wins . '<br><i>' . number_format(($moder->black_wins*100.0)/$games, 1) . '%</i></td>';
-			}
-			else
-			{
-				echo '<td align="center">&nbsp;</td>';
-			}
-			if ($moder->ties > 0)
-			{
-				echo '<td align="center">' . $moder->ties . '<br><i>' . number_format(($moder->ties*100.0)/$games, 1) . '%</i></td>';
-			}
-			else
-			{
-				echo '<td align="center">&nbsp;</td>';
-			}
-			if ($moder->warnings > 0)
-			{
-				echo '<td align="center">' . $moder->warnings . '<br><i>' . number_format($moder->warnings/$games, 2) . ' ' . get_label('per game') . '</i></td>';
-			}
-			else
-			{
-				echo '<td align="center"></td>';
-			}
-			if ($moder->kick_offs > 0)
-			{
-				echo '<td align="center">' . $moder->kick_offs . '<br><i>' . number_format($moder->kick_offs/$games, 2) . ' ' . get_label('per game') . '</i></td>';
-			}
-			else
-			{
-				echo '<td align="center"></td>';
-			}
-			if ($moder->team_kick_offs > 0)
-			{
-				echo '<td align="center">' . $moder->team_kick_offs . '<br><i>' . number_format($moder->team_kick_offs/$games, 2) . ' ' . get_label('per game') . '</i></td>';
-			}
-			else
-			{
-				echo '<td align="center"></td>';
-			}
-			if ($moder->worst_moves > 0)
-			{
-				echo '<td align="center">' . $moder->worst_moves . '<br><i>' . number_format($moder->worst_moves/$games, 2) . ' ' . get_label('per game') . '</i></td>';
-			}
-			else
-			{
-				echo '<td align="center"></td>';
-			}
-			if ($moder->bonus > 0)
-			{
-				echo '<td align="center">' . number_format($moder->bonus, 1) . '<br><i>' . number_format($moder->bonus/$games, 2) . ' ' . get_label('per game') . '</i></td>';
-			}
-			else
-			{
-				echo '<td align="center"></td>';
-			}
+			echo '<td class="num strong">' . $games . '</td>';
+			echo $cell($moder->red_wins, $moder->red_wins, number_format(($moder->red_wins * 100.0) / $games, 1) . '%', 'p3');
+			echo $cell($moder->black_wins, $moder->black_wins, number_format(($moder->black_wins * 100.0) / $games, 1) . '%', 'p3');
+			echo $cell($moder->ties, $moder->ties, number_format(($moder->ties * 100.0) / $games, 1) . '%', 'p3');
+			echo $cell($moder->warnings, $moder->warnings, number_format($moder->warnings / $games, 2) . ' ' . get_label('per game'), 'p4');
+			echo $cell($moder->kick_offs, $moder->kick_offs, number_format($moder->kick_offs / $games, 2) . ' ' . get_label('per game'), 'p4');
+			echo $cell($moder->team_kick_offs, $moder->team_kick_offs, number_format($moder->team_kick_offs / $games, 2) . ' ' . get_label('per game'), 'p4');
+			echo $cell($moder->worst_moves, $moder->worst_moves, number_format($moder->worst_moves / $games, 2) . ' ' . get_label('per game'), 'p4');
+			echo $cell($moder->bonus, number_format($moder->bonus, 1), number_format($moder->bonus / $games, 2) . ' ' . get_label('per game'), 'p4');
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	

@@ -3,6 +3,7 @@
 require_once 'include/general_page_base.php';
 require_once 'include/pages.php';
 require_once 'include/scoring.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -38,8 +39,9 @@ class Page extends GeneralPageBase
 			list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users WHERE email = ?', $this->email);
 			show_pages_navigation(PAGE_SIZE, $count);
 			
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker"><td width="38"></td><td>'.get_label('Players with the same email').'</td><td width="100">Rating</td><td width="100">'.get_label('Games played').'</td></tr>';
+			// A list of players of the v3 design, after ratings.php.
+			echo '<div class="sheet"><table class="tbl">';
+			echo '<thead><tr><th scope="col">' . get_label('Players with the same email') . '</th><th class="num" scope="col">' . get_label('Rating') . '</th><th class="num" scope="col">' . get_label('Games played') . '</th></tr></thead><tbody>';
 			$query = new DbQuery(
 				'SELECT u.id, nu.name, u.rating, u.games, u.flags'.
 				' FROM users u'.
@@ -50,17 +52,12 @@ class Page extends GeneralPageBase
 			{
 				list ($id, $name, $rating, $games, $flags) = $row;
 				echo '<tr>';
-				
-				echo '<td>';
-				$this->user_pic->set($id, $name, $flags);
-				$this->user_pic->show(ICONS_DIR, false, 36);
-				echo '</td>';
-				
-				echo '<td><a href="merge_user.php?bck=1&id=' . $id . '">' . cut_long_name($name, 80) . '</a></td>';
-				echo '<td>' . format_rating(USER_INITIAL_RATING + $rating) . '</td>';
-				echo '<td>' . $games . '</td></tr>';
+				echo '<td><a class="who" href="merge_user.php?bck=1&id=' . $id . '">' . card_avatar($this->user_pic, $id, $name, $flags, '') .
+					'<span class="who-txt"><span class="who-name">' . cut_long_name($name, 80) . '</span></span></a></td>';
+				echo '<td class="num strong">' . format_rating(USER_INITIAL_RATING + $rating) . '</td>';
+				echo '<td class="num">' . $games . '</td></tr>';
 			}
-			echo '</table>';
+			echo '</tbody></table></div>';
 			show_pages_navigation(PAGE_SIZE, $count);
 		}
 		else
@@ -71,18 +68,18 @@ class Page extends GeneralPageBase
 			$query = new DbQuery(
 				'SELECT email, count(*) as cnt FROM users GROUP BY email HAVING cnt > 1 ORDER BY cnt DESC, email LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker"><td>' . get_label('Email') . '</td><td width="80">' . get_label('Count') . '</td></tr>';
+			echo '<div class="sheet"><table class="tbl">';
+			echo '<thead><tr><th scope="col">' . get_label('Email') . '</th><th class="num" scope="col">' . get_label('Count') . '</th></tr></thead><tbody>';
 			while ($row = $query->next())
 			{
 				list ($email, $count) = $row;
 			
 				echo '<tr>';
 				echo '<td><a href="duplicated_users.php?bck=1&email=' . $email . '">' . ($email == '' ? '[' . get_label('no email') . ']' : $email) . '</a></td>';
-				echo '<td>' . $count . '</td>';
+				echo '<td class="num">' . $count . '</td>';
 				echo '</tr>';
 			}
-			echo '</table>';
+			echo '</tbody></table></div>';
 			show_pages_navigation(PAGE_SIZE, $count);
 		}
 	}

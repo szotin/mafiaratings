@@ -6,6 +6,7 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
 
 define('FLAG_FILTER_RATING', 0x0001);
 define('FLAG_FILTER_NO_RATING', 0x0002);
@@ -142,15 +143,19 @@ class Page extends LeaguePageBase
 	{
 		global $_profile, $_lang;
 		
-		echo '<p><table class="transp" width="100%">';
-		echo '<tr><td>';
+		// The toolbar of the v3 design: the nomination first, it is what the list is; the filters
+		// after it, the switches on a line of their own.
+		echo '<div class="toolbar">';
+		echo '<select id="nom" onchange="filterNom()" title="' . get_label('Nomination to view.') . '">';
+		for ($i = 0; $i < count($this->noms); ++$i)
+		{
+			show_option($i, $this->nom, $this->noms[$i][0]);
+		}
+		echo '</select>';
 		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
-		echo '&emsp;&emsp;';
 		show_roles_select($this->roles, 'filterRoles()', get_label('Use only the stats of a specific role.'));
-		echo '&emsp;&emsp;';
 		show_date_filter();
-		echo '<p>';
-		echo ' <select id="min" onchange="filterNumber()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
+		echo '<select id="min" onchange="filterNumber()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
 		$max_option = round($this->games_count / 20) * 10;
 		for ($i = 0; $i <= $max_option; $i += 10)
 		{
@@ -163,16 +168,9 @@ class Page extends LeaguePageBase
 				show_option($i, $this->min_games, get_label('[0] or more games', $i));
 			}
 		}
-		echo '</select> ';
-		show_checkbox_filter(array(get_label('rating games')), $this->filter);
-		
-		echo '</td><td align="right"><select id="nom" onchange="filterNom()" title="' . get_label('Nomination to view.') . '">';
-		for ($i = 0; $i < count($this->noms); ++$i)
-		{
-			show_option($i, $this->nom, $this->noms[$i][0]);
-		}
 		echo '</select>';
-		echo '</td></tr></table></p>';
+		show_checkbox_filter(array(get_label('rating games')), $this->filter);
+		echo '</div>';
 		
 		$query = new DbQuery(
 			'SELECT p.user_id, nu.name, u.flags, count(*) as cnt, (' . $this->noms[$this->nom][1] . ') as abs, (' . $this->noms[$this->nom][1] . ') / (' . $this->noms[$this->nom][2] . ') as val, c.id, nc.name, c.flags' .
@@ -209,52 +207,32 @@ class Page extends LeaguePageBase
 			$query->add(' ORDER BY val DESC, abs DESC, cnt DESC LIMIT 10');
 		}
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="3">' . get_label('Player') . '</td>';
-		echo '<td width="100" align="center">' . get_label('Games played') . '</td>';
-		echo '<td width="100" align="center">';
+		// The table of the v3 design (see ratings.php): the place, the player, the club, the numbers.
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Games played') . '</th>';
+		// Two columns to sort by, each either way: a click on the one it is sorted by turns the order over.
 		if ($this->sort & 2)
 		{
-			if ($this->sort & 1)
-			{
-				echo '&#x25B2; <a href="javascript:sortBy(2)">';
-			}
-			else
-			{
-				echo '&#x25BC; <a href="javascript:sortBy(3)">';
-			}
+			echo '<th class="num" scope="col" aria-sort="' . (($this->sort & 1) ? 'ascending' : 'descending') . '"><a class="th-sort" href="' . (($this->sort & 1) ? 'javascript:sortBy(2)' : 'javascript:sortBy(3)') . '">';
 		}
 		else
 		{
-			echo '<a href="javascript:sortBy(2)">';
+			echo '<th class="num" scope="col"><a class="th-sort" href="javascript:sortBy(2)">';
 		}
-		echo get_label('Absolute') . '</a></td>';
-		echo '<td width="100" align="center">';
+		echo get_label('Absolute') . '</a></th>';
 		if (($this->sort & 2) == 0)
 		{
-			if ($this->sort & 1)
-			{
-				echo '&#x25B2; <a href="javascript:sortBy(0)">';
-			}
-			else
-			{
-				echo '&#x25BC; <a href="javascript:sortBy(1)">';
-			}
+			echo '<th class="num" scope="col" aria-sort="' . (($this->sort & 1) ? 'ascending' : 'descending') . '"><a class="th-sort" href="' . (($this->sort & 1) ? 'javascript:sortBy(0)' : 'javascript:sortBy(1)') . '">';
 		}
 		else
 		{
-			echo '<a href="javascript:sortBy(0)">';
+			echo '<th class="num" scope="col"><a class="th-sort" href="javascript:sortBy(0)">';
 		}
-		if ($this->noms[$this->nom][3])
-		{
-			echo '%';
-		}
-		else
-		{
-			echo get_label('Per game');
-		}
-		echo '</a></td></tr>';
+		echo ($this->noms[$this->nom][3] ? '%' : get_label('Per game')) . '</a></th>';
+		echo '</tr></thead><tbody>';
 		
 		$number = 0;
 		while ($row = $query->next())
@@ -262,18 +240,13 @@ class Page extends LeaguePageBase
 			++$number;
 			list ($id, $name, $flags, $games_played, $abs, $val, $club_id, $club_name, $club_flags) = $row;
 
-			echo '<tr class="light"><td align="center" class="dark">' . $number . '</td>';
-			echo '<td width="50">';
+			echo '<tr><td class="rk"><span class="medal' . ($number <= 3 ? ' m' . $number : '') . '">' . sprintf('%02d', $number) . '</span></td>';
 			$this->user_pic->set($id, $name, $flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td><a href="series_player.php?id=' . $this->id . '&user_id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			echo '<td width="50" align="center">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, true, 40);
-			echo '</td>';
-			echo '<td align="center">' . $games_played . '</td>';
-			echo '<td width="100" align="center">' . number_format($abs, 0) . '</td>';
-			echo '<td width="100" align="center">';
+			echo '<td><a class="who" href="series_player.php?id=' . $this->id . '&user_id=' . $id . '&bck=1">' . card_avatar_of($this->user_pic, $id, $name, '') . '<span class="who-txt"><span class="who-name">' . $name . '</span></span></a></td>';
+			echo '<td class="p2">' . card_club($this->club_pic, $club_id, $club_name, $club_flags) . '</td>';
+			echo '<td class="num p3 dim">' . $games_played . '</td>';
+			echo '<td class="num' . (($this->sort & 2) ? ' strong' : '') . '">' . number_format($abs, 0) . '</td>';
+			echo '<td class="num' . (($this->sort & 2) == 0 ? ' strong' : '') . '">';
 			if ($this->noms[$this->nom][3])
 			{
 				echo number_format($val * 100, 1) . '%';
@@ -284,7 +257,7 @@ class Page extends LeaguePageBase
 			}
 			echo '</td></tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 	}
 	
 	protected function js()

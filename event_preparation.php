@@ -7,6 +7,7 @@ require_once 'include/preparation.php';
 require_once 'include/event_mailing.php';
 require_once 'include/scoring.php';
 require_once 'include/rules.php';
+require_once 'include/cards.php';
 
 // An event has one round, so it has one seating, where a tournament has one per round and its
 // pairs in between - the two pages do not line up and each numbers its own tabs.
@@ -237,16 +238,24 @@ class Page extends EventPageBase
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic)));
 
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker">';
-		echo '<td width="87">';
+		// The registrations as a list of the v3 design, after ratings.php: the button that adds one
+		// in a toolbar, the table in a sheet.
 		if ($this->can_edit)
 		{
-			echo '<button class="icon" onclick="mr.addEventReg(' . $this->id . ')" title="' . get_label('Add registration to [0].', $this->name) . '"><img src="images/create.png" border="0"></button>';
+			echo '<div class="toolbar"><a class="btn tb-create" href="#" onclick="mr.addEventReg(' . $this->id . '); return false;" title="' . get_label('Add registration to [0].', $this->name) . '">' . PageBase::icon('plus') . '<span>' . get_label('Add registration') . '</span></a></div>';
 		}
-		echo '</td>';
-		echo '<td width="40"></td>';
-		echo '<td colspan="4">' . get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr>';
+		if ($this->can_edit)
+		{
+			echo '<th scope="col"></th>';
+		}
+		echo '<th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('User') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Email') . '</th>';
+		echo '<th class="p3" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Permissions') . '</th></tr></thead><tbody>';
+		$club_pic = new Picture(CLUB_PICTURE);
 
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.email, u.flags, eu.nickname, eu.flags, tu.tournament_id, tu.flags, c.id, nc.name, c.flags, cu.club_id, cu.flags, ni.name' .
@@ -269,49 +278,38 @@ class Page extends EventPageBase
 			list($id, $name, $email, $user_flags, $user_nickname, $event_reg_flags, $tournament_id, $tournament_reg_flags, $club_id, $club_name, $club_flags, $user_club_id, $club_reg_flags, $city) = $row;
 			++$count;
 
-			echo '<tr class="light"><td class="dark">';
+			echo '<tr>';
 			if ($this->can_edit)
 			{
+				echo '<td class="tb-btns">';
 				echo '<button class="icon" onclick="mr.removeEventReg(' . $id . ', ' . $this->id . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editEventAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/edit.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.eventUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
+				echo '</td>';
 			}
-			else
-			{
-				echo '<img src="images/transp.png" height="32" border="0">';
-			}
-			echo '</td>';
 
-			echo '<td align="center"><b>' . $count . '</b></td>';
-			echo '<td width="60" align="center">';
+			echo '<td class="rk"><span class="medal">' . sprintf('%02d', $count) . '</span></td>';
 			$event_reg_pic->
 				set($id, $user_nickname, $event_reg_flags, 'e' . $this->id)->
 				set($id, $name, $tournament_reg_flags, 't' . $tournament_id)->
 				set($id, $name, $club_reg_flags, 'c' . $user_club_id)->
 				set($id, $name, $user_flags);
-			$event_reg_pic->show(ICONS_DIR, true, 50);
-			echo '</td>';
-			echo '<td style="position:relative;">';
+			echo '<td><a class="who" href="user_info.php?id=' . $id . '&bck=1">' . card_avatar_of($event_reg_pic, $id, $name, '') .
+				'<span class="who-txt"><span class="who-name">' . $name . '</span><span class="who-sub">' . $city;
 			if ($event_reg_flags & USER_FLAG_EXHIBITION_PLAYER)
 			{
-				echo '<span title="' . get_label('Excluded from event standings.') . '" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#a06060;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;">' . get_label('exhibition player') . '</span>';
+				echo ' <span title="' . get_label('Excluded from event standings.') . '" style="margin-left:6px;background:#a06060;color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;">' . get_label('exhibition player') . '</span>';
 			}
-			echo '<a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
-			echo '<td width="200">';
+			echo '</span></span></a></td>';
+			echo '<td class="p2 dim">';
 			if ($_profile->is_club_manager($club_id))
 			{
 				echo $email;
 			}
 			echo '</td>';
-			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 40);
-			}
-			echo '</td>';
+			echo '<td class="p3">' . card_club($club_pic, $club_id, $club_name, $club_flags) . '</td>';
 
-			echo '<td>';
+			echo '<td class="num perms">';
 			foreach (array(USER_PERM_PLAYER => 'player.png', USER_PERM_REFEREE => 'referee.png', USER_PERM_MANAGER => 'manager.png') as $perm => $icon)
 			{
 				if ($event_reg_flags & $perm)
@@ -327,9 +325,9 @@ class Page extends EventPageBase
 		}
 		if ($count == 0)
 		{
-			echo '<tr><td colspan="7">' . get_label('Nobody is registered yet.') . '</td></tr>';
+			echo '<tr><td colspan="' . ($this->can_edit ? 6 : 5) . '" class="dim">' . get_label('Nobody is registered yet.') . '</td></tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 	}
 
 	// What has been written to the people coming to this event, and what is still to go out.

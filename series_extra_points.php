@@ -5,6 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/gaining.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -19,20 +20,23 @@ class Page extends SeriesPageBase
 		check_series_permissions($this->owner, $this->id);
 		
 		list ($count) = Db::record(get_label('extra points'), 'SELECT count(*) FROM series_extra_points WHERE series_id = ?', $this->id);
+
+		// The list of the v3 design, after ratings.php: the button that adds points in the toolbar,
+		// the table in a sheet.
+		echo '<div class="toolbar"><span class="count">' . get_label('[0] records', number_format($count)) . '</span>';
+		echo '<a class="btn tb-create" href="#" onclick="addPoints(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Add extra points') . '</span></a></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
-		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td width="60">';
-		echo '<button class="icon" onclick="addPoints(' . $this->id . ')"><img src="images/create.png" border="0"></button>';
-		echo '</td>';
-		echo '<td colspan="2">'.get_label('Player').'</td>';
-		echo '<td width="500" align="center"></td>';
+
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th scope="col"></th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th scope="col">' . get_label('Reason') . '</th>';
 		if ($this->stages > 1)
 		{
-			echo '<td width="110" align="center">' . get_label('Stage') . '</td>';
+			echo '<th class="p2" scope="col">' . get_label('Stage') . '</th>';
 		}
-		echo '<td width="80" align="center">' . get_label('Points') . '</td>';
-		echo '</tr>';
+		echo '<th class="num" scope="col">' . get_label('Points') . '</th>';
+		echo '</tr></thead><tbody>';
 		
 		$timezone = get_timezone();
 		
@@ -48,26 +52,22 @@ class Page extends SeriesPageBase
 			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $time, $stage) = $row;
 			
 			echo '<tr>';
-			echo '<td valign="center">';
+			echo '<td class="tb-btns">';
 			echo '<button class="icon" onclick="deletePoints(' . $points_id . ')"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="editPoints(' . $points_id . ')"><img src="images/edit.png" border="0"></button>';
 			echo '</td>';
-			echo '<td width="60" align="center">';
-			$this->user_pic->set($user_id, $user_name, $user_flags);
-			$this->user_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td>';
-			echo '<a href="user_info.php?id=' . $user_id . '&bck=1">' . $user_name . '</a></td>';
-			echo '<td><i>' . format_date($time, $timezone) . '</i>: <b>' . $reason . '</b></td>';
+			echo '<td><a class="who" href="user_info.php?id=' . $user_id . '&bck=1">' . card_avatar($this->user_pic, $user_id, $user_name, $user_flags, '') .
+				'<span class="who-txt"><span class="who-name">' . $user_name . '</span></span></a></td>';
+			// The reason, with the day the points were given under it.
+			echo '<td><span class="who-name">' . $reason . '</span><span class="who-sub">' . format_date($time, $timezone) . '</span></td>';
 			if ($this->stages > 1)
 			{
-				echo '<td align="center">' . get_series_stage_name($this->type, $this->stages, $stage) . '</td>';
+				echo '<td class="p2 dim">' . get_series_stage_name($this->type, $this->stages, $stage) . '</td>';
 			}
-			echo '<td align="center">';
-			echo format_gain($points);
-			echo '</td>';
+			echo '<td class="num strong">' . format_gain($points) . '</td>';
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	

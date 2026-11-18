@@ -4,6 +4,7 @@ require_once 'include/tournament.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/cards.php';
 
 class Page extends TournamentPageBase
 {
@@ -27,19 +28,22 @@ class Page extends TournamentPageBase
 			echo '<p><big>' . get_label('Warning! This tournament scoring is auto-calculated from the games results. Changing scoring will turn this auto-calculation off.') . '</big></p>';
 		}
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center">';
-		echo '<td width="80">';
-		echo '<button class="icon" onclick="setScore()" title="' . get_label('Create [0]', get_label('score')) . '"><img src="images/create.png" border="0"></button>';
-		echo '</td>';
-		echo '<td width="40"></td>';
-		echo '<td colspan="3" align="left">'.get_label('Player').'</td>';
-		echo '<td width="72">' . get_label('Sum') . '</td>';
-		echo '<td width="72">' . get_label('Main') . '</td>';
-		echo '<td width="72">' . get_label('Bonus') . '</td>';
-		echo '<td width="72">' . get_label('FK') . '</td>';
-		echo '<td width="72">' . get_label('Games played') . '</td>';
-		echo '</tr>';
+		// The list of the v3 design, after tournament_standings.php: the button that adds a score in
+		// a toolbar, the table in a sheet.
+		echo '<div class="toolbar"><a class="btn tb-create" href="#" onclick="setScore(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('score')) . '</span></a></div>';
+		
+		$club_pic = new Picture(CLUB_PICTURE);
+		echo '<div class="sheet"><table class="tbl mid">';
+		echo '<thead><tr><th scope="col"></th>';
+		echo '<th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Sum') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Main') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Bonus') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('FK') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Games played') . '</th>';
+		echo '</tr></thead><tbody>';
 		
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.flags, c.id, nc.name, c.flags, p.place, p.main_points, p.bonus_points, p.shot_points, p.games_count, tu.flags, cu.flags FROM tournament_places p' .
@@ -64,36 +68,28 @@ class Page extends TournamentPageBase
 			}
 			
 			echo '<tr>';
-			echo '<td align="center">';
+			echo '<td class="tb-btns">';
 			echo '<button class="icon" onclick="removeScore(' . $user_id . ')" title="' . get_label('Remove [0]', get_label('score')) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="setScore(' . $user_id . ')" title="' . get_label('Edit [0]', get_label('score')) . '"><img src="images/edit.png" border="0"></button>';
 			echo '</td>';
 			
-			echo '<td align="center" class="dark">' . $place . '</td>';
+			echo '<td class="rk"><span class="medal' . ($place <= 3 ? ' m' . $place : '') . '">' . sprintf('%02d', $place) . '</span></td>';
 			
-			echo '<td width="50"><a href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">';
 			$tournament_reg_pic->
 				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
 				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
-			$tournament_reg_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td><a href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . $user_name . '</a></td>';
-			echo '<td width="50" align="center">';
-			if (!is_null($club_id) && $club_id > 0)
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 40);
-			}
-			
-			echo '</td>';
-			echo '<td align="center" class="dark">' . format_score($sum) . '</td>';
-			echo '<td align="center">' . format_score($main_points) . '</td>';
-			echo '<td align="center">' . (is_null($bonus_points) ? '' : format_score($bonus_points)) . '</td>';
-			echo '<td align="center">' . (is_null($shot_points) ? '' : format_score($shot_points)) . '</td>';
-			echo '<td align="center">' . (is_null($games_count) ? '' : $games_count) . '</td>';
+			echo '<td><a class="who" href="tournament_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . card_avatar_of($tournament_reg_pic, $user_id, $user_name, '') .
+				'<span class="who-txt"><span class="who-name">' . $user_name . '</span></span></a></td>';
+			echo '<td class="p2">' . card_club($club_pic, $club_id > 0 ? $club_id : NULL, $club_name, $club_flags) . '</td>';
+			echo '<td class="num strong">' . format_score($sum) . '</td>';
+			echo '<td class="num p3">' . format_score($main_points) . '</td>';
+			echo '<td class="num p4 dim">' . (is_null($bonus_points) ? '' : format_score($bonus_points)) . '</td>';
+			echo '<td class="num p4 dim">' . (is_null($shot_points) ? '' : format_score($shot_points)) . '</td>';
+			echo '<td class="num p3">' . (is_null($games_count) ? '' : $games_count) . '</td>';
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 	}
 	
 	protected function js()
