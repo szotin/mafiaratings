@@ -10,6 +10,7 @@ require_once 'include/scoring.php';
 require_once 'include/tournament.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/tournament_cards.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
@@ -31,15 +32,15 @@ class Page extends UserPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<table class="transp" width="100%"><tr><td>';
+		// The toolbar of tournaments.php: the filters of the page in a line.
+		echo '<div class="toolbar"><div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
-		echo '&emsp;&emsp;';
+		echo '</div><div class="tb-dates">';
 		show_date_filter();
-		echo '&emsp;&emsp;';
+		echo '</div>';
 		show_checkbox_filter(array(get_label('with video')), $filter, 'filterTournaments');
-		echo '</td></tr></table>';
-		
-		$condition = new SQL(
+		echo '</div>';
+				$condition = new SQL(
 			' FROM tournament_places tp' .
 			' JOIN tournaments t ON tp.tournament_id = t.id' .
 			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
@@ -48,7 +49,8 @@ class Page extends UserPageBase
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN clubs c ON t.club_id = c.id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
-			' JOIN cities ct ON ct.id = a.city_id' . 
+			' JOIN cities ct ON ct.id = a.city_id' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' . 
 			' WHERE tp.user_id = ? AND (t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0', $this->id);
 		$ccc_id = $ccc_filter->get_id();
 		switch($ccc_filter->get_type())
@@ -93,14 +95,12 @@ class Page extends UserPageBase
 		
 		$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
 		$query = new DbQuery(
-			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), ' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, a.id, a.address, a.flags, tp.place, SUM(p.rating_earned), COUNT(DISTINCT p.game_id), SUM(p.won), nct.name, t.num_players, ' .
 			' (SELECT count(*) FROM videos WHERE tournament_id = t.id) as videos',
 			$condition);
 		$query->add(' GROUP BY t.id ' . $order_by . ' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
 		$tournaments = array();
-		$delim = '';
-		$cs_tournaments = '';
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
@@ -108,126 +108,38 @@ class Page extends UserPageBase
 				$tournament->id, $tournament->name, $tournament->flags, $tournament->time, $tournament->duration, $tournament->timezone, 
 				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages, 
 				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->place,
-				$tournament->rating, $tournament->games_played, $tournament->games_won, $tournament->videos_count) = $row;
-			$tournament->series = array();
+				$tournament->rating, $tournament->games_played, $tournament->games_won, $tournament->city, $tournament->num_players, $tournament->videos_count) = $row;
+			// The games on the card are this player's, not all the games of the tournament.
+			$tournament->games_count = 0;
+			$tournament->extra = $this->result_html($tournament);
 			$tournaments[] = $tournament;
-			$cs_tournaments .= $delim . $tournament->id;
-			$delim = ',';
 		}
 		
-		// Get tournaments series
-		if ($cs_tournaments != '')
+		// The cards of tournaments.php (include/tournament_cards.php), each with the result of this
+		// player in it.
+		tournament_cards_load($tournaments, false);
+		tournament_cards_show($tournaments, false, get_label('No tournaments found.'));
+				show_pages_navigation(PAGE_SIZE, $count);
+	}
+	
+	// The result of the player in a tournament, a line of the card under its place and club: the
+	// place, the rating earned, the games (to the player's page of the tournament), the wins and the
+	// rating per game.
+	private function result_html($tournament)
+	{
+		$html = '<div class="pc-meta pc-res">';
+		if (!is_null($tournament->place) && $tournament->place > 0)
 		{
-			$query = new DbQuery(
-				'SELECT st.tournament_id, st.stars, s.id, ns.name, s.flags, ' . series_owner_fields() .
-				' FROM series_tournaments st' .
-				' JOIN series s ON s.id = st.series_id' .
-				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
-				' JOIN tournaments t ON t.id = st.tournament_id' .
-				series_owner_join() .
-				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id DESC');
-			$current_tournament = 0;
-			while ($row = $query->next())
-			{
-				list ($tournament_id, $stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
-				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
-				{
-					++$current_tournament;
-				}
-				if ($current_tournament < count($tournaments))
-				{
-					$series = new stdClass();
-					$series->stars = $stars;
-					$series->id = $series_id;
-					$series->name = $series_name;
-					$series->flags = $series_flags;
-					$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-					$tournaments[$current_tournament]->series[] = $series;
-				}
-			}
+			$html .= '<span class="medal' . ($tournament->place <= 3 ? ' m' . $tournament->place : '') . '" title="' . get_label('Place') . '">' . get_label('[0] place', $tournament->place) . '</span>';
 		}
-			
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="3">' . get_label('Tournament') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Place').'</td>';
-		echo '<td width="60" align="center">'.get_label('Rating earned').'</td>';
-		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
-		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="60" align="center">'.get_label('Rating per game').'</td></tr>';
-
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$club_pic = new Picture(CLUB_PICTURE);
-		$series_pic = new SeriesPicture();
-		foreach ($tournaments as $tournament)
+		if ($tournament->games_played != 0)
 		{
-			echo '<tr>';
-			
-			echo '<td width="60" class="dark" align="center" valign="center">';
-			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-			$tournament_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td width="60" align="center" valign="center">';
-			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
-			echo '</td><td>';
-			echo '<b><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->name . '</b>';
-			echo '<br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</a></td>';
-			foreach ($tournament->series as $series)
-			{
-				echo '<td width="50" align="center" valign="center">';
-				echo '<a href="series_standings.php?bck=1&id=' . $series->id . '">';
-				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 40);
-				echo '</a><br><font style="color:#B8860B; font-size:12px;">' . tournament_stars_str($series->stars) . '</font>';
-				echo '</td>';
-			}
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td width="60" align="center" valign="center">';
-			if ($tournament->videos_count > 0)
-			{
-				echo '<a href="tournament_videos.php?id=' . $tournament->id . '&bck=1" title="' . get_label('[0] videos from [1]', $tournament->videos_count, $tournament->name) . '"><img src="images/video.png" width="40" height="40"></a>';
-			}
-			echo '</td>';
-			
-			echo '<td align="center" class="dark">';
-			if (!is_null($tournament->place))
-			{
-				if ($tournament->place > 0 && $tournament->place < 4)
-				{
-					echo '<img src="images/' . $tournament->place . '-place.png" width="48" title="' . get_label('[0] place', $tournament->place) . '">';
-				}
-				else if ($tournament->place < 11)
-				{
-					echo '<b>' . $tournament->place . '</b>';
-				}
-				else
-				{
-					echo $tournament->place;
-				}
-			}
-			echo '</td>';
-			if ($tournament->games_played != 0)
-			{
-				echo '<td align="center">' . number_format($tournament->rating, 2) . '</td>';
-				echo '<td align="center"><a href="tournament_player.php?bck=1&user_id=' . $this->id . '&id=' . $tournament->id . '">' . $tournament->games_played . '</a></td>';
-				echo '<td align="center">' . $tournament->games_won . '</td>';
-				echo '<td align="center">' . number_format(($tournament->games_won*100.0)/$tournament->games_played, 1) . '%</td>';
-				echo '<td align="center">' . number_format($tournament->rating/$tournament->games_played, 2) . '</td>';
-			}
-			else
-			{
-				echo '<td></td><td></td><td></td><td></td>';
-			}
-			
-			echo '</tr>';
+			$html .= '<span title="' . get_label('Rating earned') . '">' . PageBase::icon('trophy') . number_format($tournament->rating, 2) . '</span>';
+			$html .= '<a href="tournament_player.php?bck=1&user_id=' . $this->id . '&id=' . $tournament->id . '" title="' . get_label('Games played') . '">' . PageBase::icon('play') . $tournament->games_played . '</a>';
+			$html .= '<span title="' . get_label('Winning %') . '">' . number_format(($tournament->games_won * 100.0) / $tournament->games_played, 1) . '%</span>';
+			$html .= '<span title="' . get_label('Rating per game') . '">' . number_format($tournament->rating / $tournament->games_played, 2) . ' ' . get_label('per game') . '</span>';
 		}
-		echo '</table>';
-		show_pages_navigation(PAGE_SIZE, $count);
+		return $html . '</div>';
 	}
 	
 	function js()

@@ -999,19 +999,19 @@ class Page extends TournamentPageBase
 				{
 					if ($count == 0)
 					{
-						echo '<table class="transp"><tr>';
+						echo '<table class="transp seat-cards"><tr>';
 					}
-					else if ($count % 14 == 0)
+					else if ($count % 10 == 0)
 					{
 						echo '</tr><tr>';
 					}
-					$this->showPlayer($user_id, 'width="60"');
+					$this->showPlayer($user_id);
 					++$count;
 				}
 				if ($count > 0)
 				{
-					$cols = 14 - $count % 14;
-					if ($cols < 14)
+					$cols = 10 - $count % 10;
+					if ($cols < 10)
 					{
 						echo '<td colspan="'.$cols.'"></td>';
 					}

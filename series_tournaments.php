@@ -8,6 +8,8 @@ require_once 'include/tournament.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
+require_once 'include/tournament_cards.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
@@ -48,31 +50,35 @@ class Page extends SeriesPageBase
 			$stars = (int)$_REQUEST['stars'];
 		}
 		
-		echo '<p><table class="transp" width="100%">';
-		echo '<tr><td>';
+		// The toolbar of tournaments.php: past or future, the filters, the dates.
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		echo '<div class="toolbar">';
+		echo card_seg(array(
+			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$this->future),
+			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $this->future)), get_label('Tournaments'));
+		echo '<div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
-		echo '&emsp;&emsp;';
+		echo '</div>';
 		// Only as many stars as this series hands out, and none at all when it does not rate its
 		// tournaments - there is nothing to filter by then.
 		if ($this->max_stars > 0)
 		{
-			echo get_label('Stars') . ': <select id="starsfilter" onchange="goTo({page:undefined,stars:$(\'#starsfilter\').val()})">';
+			echo '<label>' . get_label('Stars') . ': <select id="starsfilter" onchange="goTo({page:undefined,stars:$(\'#starsfilter\').val()})">';
 			show_option(0, $stars, '');
 			for ($s = 1; $s <= $this->max_stars; ++$s)
 			{
 				show_option($s, $stars, str_repeat('★', $s));
 			}
-			echo '</select>';
-			echo '&emsp;&emsp;';
+			echo '</select></label>';
 		}
+		echo '<div class="tb-dates">';
 		show_date_filter();
-		echo '&emsp;&emsp;';
+		echo '</div>';
 		if (!$this->future)
 		{
 			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter);
 		}
-		echo '</td></tr></table></p>';
+		echo '</div>';
 		
 		$subseries_csv = get_subseries_csv($this->id);
 		
@@ -157,12 +163,6 @@ class Page extends SeriesPageBase
 			$condition->add(' AND t.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		echo '<div class="tab">';
-		echo '<button ' . ($this->future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
-		echo '<button ' . (!$this->future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
-		echo '</div>';
-		echo '<div class="tabcontent">';
-		
 		list ($count) = Db::record(get_label('tournament'), 'SELECT COUNT(DISTINCT t.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
@@ -175,7 +175,6 @@ class Page extends SeriesPageBase
 			$order_by = ' ORDER BY t.start_time DESC, t.id DESC';
 		}
 		
-		$colunm_counter = 0;
 		$query = new DbQuery(
 			'SELECT DISTINCT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, t.langs, t.num_players, st.flags, a.id, a.address, a.flags, ni.name,' .
 			' (SELECT count(*) FROM games WHERE tournament_id = t.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
@@ -186,9 +185,6 @@ class Page extends SeriesPageBase
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 
 		$tournaments = array();
-		$delim = '';
-		$cs_tournaments = '';
-		$first_month_tournament = NULL;
 		while ($row = $query->next())
 		{
 			$tournament = new stdClass();
@@ -197,187 +193,62 @@ class Page extends SeriesPageBase
 				$tournament->club_id, $tournament->club_name, $tournament->club_flags, $tournament->languages, $tournament->num_players, $tournament->series_tournament_flags,
 				$tournament->addr_id, $tournament->addr, $tournament->addr_flags, $tournament->city,
 				$tournament->games_count, $tournament->rounds_count, $tournament->videos_count) = $row;
-			if ($this->future)
-			{
-				$m = format_month($tournament->time + $tournament->duration, $tournament->timezone);
-			}
-			else
-			{
-				$m = format_month($tournament->time, $tournament->timezone);
-			}
-			if ($first_month_tournament == NULL || $first_month_tournament->month != $m)
-			{
-				$tournament->month = $m;
-				$tournament->month_count = 1;
-				$first_month_tournament = $tournament;
-			}
-			else
-			{
-				++$first_month_tournament->month_count;
-			}
-			
-			$tournament->series = array();
 			$tournaments[] = $tournament;
-			$cs_tournaments .= $delim . $tournament->id;
-			$delim = ',';
 		}
 		
-		// Get tournaments series
-		if ($cs_tournaments != '')
+		// The cards of tournaments.php: see include/tournament_cards.php.
+		tournament_cards_load($tournaments, $this->future);
+		
+		// On the page of a series a tournament wears the stars it has in this series, not the most it
+		// has in any: the series it is in are replaced with this one. Its stage in it, when the series
+		// has a ladder, goes into the hint of the stars.
+		$by_id = array();
+		foreach ($tournaments as $tournament)
+		{
+			$by_id[$tournament->id] = $tournament;
+		}
+		if (count($by_id) > 0)
 		{
 			$query = new DbQuery(
 				'SELECT st.tournament_id, st.stars, st.stage, s.stages, s.start_time, s.max_stars, s.id, ns.name, s.flags, ' . series_owner_fields() .
 				' FROM series_tournaments st' .
 				' JOIN series s ON s.id = st.series_id' .
 				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' .
-				' JOIN tournaments t ON t.id = st.tournament_id' .
 				series_owner_join() .
-				' WHERE st.tournament_id IN (' . $cs_tournaments . ') ' . $order_by . ', s.id');
-			$current_tournament = 0;
+				' WHERE st.series_id = ? AND st.tournament_id IN (' . implode(',', array_keys($by_id)) . ')', $this->id);
 			while ($row = $query->next())
 			{
 				list ($tournament_id, $stars, $stage, $series_stages, $series_start, $series_max_stars, $series_id, $series_name, $series_flags, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags) = $row;
 				// Stars only from a series that grades its tournaments. One that does not - a
 				// recurring tournament - may still hold the single star stored before it stopped.
-				$stars = series_membership_stars($series_max_stars, $stars);
 				$series_stages = series_stage_count($series_stages);
-				// A series with a ladder also says what a tournament of it is - its stage. One can
-				// have both, a season with its finals, and then both are shown.
-				$stage_name = $series_stages > 1
-					? get_series_stage_name(series_type($series_start, $series_max_stars), $series_stages, $stage)
-					: NULL;
-				while ($current_tournament < count($tournaments) && $tournaments[$current_tournament]->id != $tournament_id)
+				$series = new stdClass();
+				$series->stars = series_membership_stars($series_max_stars, $stars);
+				$series->id = $series_id;
+				$series->name = $series_name;
+				$extra = '';
+				if ($series_stages > 1)
 				{
-					++$current_tournament;
+					$stage_name = get_series_stage_name(series_type($series_start, $series_max_stars), $series_stages, $stage);
+					$series->name .= ' (' . $stage_name . ')';
+					$extra .= '<span class="chip stage">' . $stage_name . '</span>';
 				}
-				if ($current_tournament < count($tournaments))
+				// A tournament the series has not been paid for yet, as the old list marked it.
+				if ($by_id[$tournament_id]->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED)
 				{
-					if ($series_id == $this->id)
-					{
-						$tournaments[$current_tournament]->stars = $stars;
-						$tournaments[$current_tournament]->stage_name = $stage_name;
-					}
-					else
-					{
-						$series = new stdClass();
-						$series->stars = $stars;
-						$series->stage_name = $stage_name;
-						$series->id = $series_id;
-						$series->name = $series_name;
-						$series->flags = $series_flags;
-						$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-						$tournaments[$current_tournament]->series[] = $series;
-					}
+					$extra .= '<span class="chip unpaid">' . get_label('not payed') . '</span>';
 				}
+				if ($extra != '')
+				{
+					$by_id[$tournament_id]->extra = '<div class="pc-tags">' . $extra . '</div>';
+				}
+				$series->flags = $series_flags;
+				$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
+				$by_id[$tournament_id]->series = array($series);
 			}
 		}
-
-		echo '<table class="bordered light" width="100%"><tr class="th-long darker">';
-		echo '<td width="100"></td>';
-		echo '<td align="center" colspan="3">' . get_label('Tournament') . '</td>';
-		if ($this->future)
-		{
-			echo '<td width="60" align="center">' . get_label('Expected number of players') . '</td>';
-		}
-		else
-		{
-			echo '<td width="60" align="center">' . get_label('Players') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Games') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Rounds') . '</td>';
-			echo '<td width="60" align="center">' . get_label('Video') . '</td>';
-		}
-		echo '</tr>';
-		$num = $_page * PAGE_SIZE;
-		$now = time();
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$club_pic = new Picture(CLUB_PICTURE);
-		$series_pic = new SeriesPicture();
-		foreach ($tournaments as $tournament)
-		{
-			$playing =($now >= $tournament->time && $now < $tournament->time + $tournament->duration);
-			if ($playing)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
-			
-			if (isset($tournament->month))
-			{
-				echo '<td rowspan="' . $tournament->month_count . '" class="darker" width="100" align="center"><b>' . $tournament->month . '</b></td>';
-			}
-			
-			echo '<td align="center" width="30"><b>' . ++$num . '</b></td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td width="80" align="center" valign="center">';
-			$tournament_pic->set($tournament->id, $tournament->name, $tournament->flags);
-			$tournament_pic->show(ICONS_DIR, true, 60, 60, NULL, ($tournament->series_tournament_flags & SERIES_TOURNAMENT_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
-			echo '</td>';
-			echo '<td><b><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->name;
-			if ($playing)
-			{
-				echo ' (' . get_label('playing now') . ')';
-			}
-			echo '</a></b>';
-			if (isset($tournament->stars) && $tournament->stars > 0)
-			{
-				echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($tournament->stars) . '</font>';
-			}
-			if (isset($tournament->stage_name))
-			{
-				echo '<br><b>' . $tournament->stage_name . '</b>';
-			}
-			echo '</td>';
-			foreach ($tournament->series as $series)
-			{
-				echo '<td width="36" align="center" valign="center">';
-				if ($series->stars > 0)
-				{
-					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($series->stars) . '</font><br>';
-				}
-				if (isset($series->stage_name))
-				{
-					echo '<span style="font-size:11px;">' . $series->stage_name . '</span><br>';
-				}
-				echo '<a href="series_standings.php?bck=1&id=' . $series->id . '">';
-				$series_pic->set($series->id, $series->name, $series->flags, $series->owner)->show(ICONS_DIR, false, 32);
-				echo '</a></td>';
-			}
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td width="160" valign="center" class="dark">';
-			echo '<table width="100%" class="transp"><tr>';
-			echo '<td width="60" align="center" valign="center">';
-			$club_pic->set($tournament->club_id, $tournament->club_name, $tournament->club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
-			echo '</td>';
-			echo '<td><b>' . $tournament->city  . '</b><br>' . format_date_period($tournament->time, $tournament->duration, $tournament->timezone) . '</td>';
-			echo '</tr></table></td>';
-			
-			if ($this->future)
-			{
-				echo '<td align="center">' . $tournament->num_players . '</td>';
-			}
-			else
-			{
-				echo '<td align="center"><a href="tournament.php?bck=1&id=' . $tournament->id . '">' . $tournament->num_players . '</a></td>';
-				echo '<td align="center"><a href="tournament_games.php?bck=1&id=' . $tournament->id . '">' . $tournament->games_count . '</a></td>';
-				echo '<td align="center"><a href="tournament_rounds.php?bck=1&id=' . $tournament->id . '">' . $tournament->rounds_count . '</a></td>';
-				
-				echo '<td align="center" width="60">';
-				if ($tournament->videos_count > 0)
-				{
-					echo '<a href="tournament_videos.php?id=' . $tournament->id . '&bck=1" title="' . get_label('Videos from [0]', $tournament->name) . '"><img src="images/video.png" width="40" height="40"></a>';
-				}
-				echo '</td>';
-			}
-			echo '</tr>';
-		}
-		echo '</table>';
+		
+		tournament_cards_show($tournaments, $this->future, get_label('No tournaments found.'));
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }

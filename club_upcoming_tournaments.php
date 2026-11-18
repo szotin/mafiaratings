@@ -5,6 +5,7 @@ require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/tournament.php';
 require_once 'include/address.php';
+require_once 'include/tournament_cards.php';
 
 define('ROW_COUNT', DEFAULT_ROW_COUNT);
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
@@ -18,103 +19,65 @@ class Page extends ClubPageBase
 		
 		$is_manager = is_permitted(PERMISSION_CLUB_MANAGER, $this->id);
 		$page_size = ROW_COUNT * COLUMN_COUNT;
-		$tournament_count = 0;
-		$column_count = 0;
 		
 		$condition = new SQL('t.club_id = ? AND UNIX_TIMESTAMP() <= t.start_time + t.duration', $this->id);
+		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments t WHERE ', $condition);
+		
+		// The toolbar of tournaments.php: here only the button that makes a new tournament.
 		if ($is_manager)
 		{
-			--$page_size;
-			++$tournament_count;
-			++$column_count;
+			echo '<div class="toolbar"><div class="tb-line tb-start">';
+			echo '<a class="btn tb-create" href="#" onclick="mr.createTournament(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('tournament')) . '</span></a>';
+			echo '</div></div>';
 		}
-		
-		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments t WHERE ', $condition);
 		show_pages_navigation($page_size, $count);
 		
-		if ($is_manager)
-		{
-			echo '<table class="bordered light" width="100%"><tr>';
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';	
-			echo '<table class="transp" width="100%">';
-			echo '<tr class="light"><td align="left" style="padding:2px;>';
-			show_club_buttons(-1, '', 0, 0);
-			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.createTournament(' . $this->id . ')">' . get_label('Create [0]', get_label('tournament'));
-			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '">';
-			echo '</td></tr></table>';
-			echo '</td>';
-		}
-		
-		$query = new DbQuery('SELECT t.id, nt.name, t.start_time, t.duration, t.flags, nct.name, ncr.name, ct.timezone, a.id, a.flags, a.address, a.map_url, na.name FROM tournaments t');
+		$query = new DbQuery('SELECT t.id, nt.name, t.start_time, t.duration, t.flags, t.num_players, nct.name, ct.timezone, a.address, na.name FROM tournaments t');
 		$query->add(
 			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON t.address_id = a.id' .
 			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON a.city_id = ct.id' .
-			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 WHERE ',
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0 WHERE ',
 			$condition);
 		$query->add(' ORDER BY t.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
-
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		
+		$tournaments = array();
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $tournament_timezone, $addr_id, $addr_flags, $addr, $addr_url, $addr_name) = $row;
-			if ($name == $addr_name)
+			$tournament = new stdClass();
+			list ($tournament->id, $tournament->name, $tournament->time, $tournament->duration, $tournament->flags, $tournament->num_players, $tournament->city, $tournament->timezone, $addr, $addr_name) = $row;
+			if ($tournament->name == $addr_name)
 			{
-				$name = $addr;
+				$tournament->name = $addr;
 			}
-			if ($column_count == 0)
-			{
-				if ($tournament_count == 0)
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
+			$tournament->club_id = $this->id;
+			$tournament->club_name = $this->name;
+			$tournament->club_flags = $this->flags;
+			$tournament->games_count = 0;
+			$tournament->videos_count = 0;
 			if ($_profile != NULL)
 			{
-				echo '<tr><td class="dark" style="padding:2px;">';
-				show_tournament_buttons($id, $start_time, $duration, $flags, $this->id, $this->flags);
-				echo '</td></tr>';	
+				$id = $tournament->id;
+				$start_time = $tournament->time;
+				$duration = $tournament->duration;
+				$flags = $tournament->flags;
+				$club_id = $this->id;
+				$club_flags = $this->flags;
+				$tournament->buttons = PageBase::capture(function() use ($id, $start_time, $duration, $flags, $club_id, $club_flags)
+				{
+					show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags);
+				});
 			}
-			
-			echo '<tr><td align="center"><a href="tournament.php?bck=1&id=' . $id . '"><b>' . format_date_period($start_time, $duration, $tournament_timezone) . '</b><br>';
-			$tournament_pic->set($id, $name, $flags);
-			$tournament_pic->show(ICONS_DIR, false);
-			echo '</a><br>' . $name;
-			echo '</td></tr></table>';
-			
-			echo '</td>';
-			
-			++$tournament_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
+			$tournaments[] = $tournament;
 		}
-		if ($tournament_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
+		
+		// The cards of tournaments.php, the future ones: see include/tournament_cards.php.
+		tournament_cards_load($tournaments, true);
+		tournament_cards_show($tournaments, true, get_label('No tournaments found.'));
 		show_pages_navigation($page_size, $count);
 	}
 }
-
 $page = new Page();
 $page->run(get_label('Upcoming tournaments'));
 
