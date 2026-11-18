@@ -658,11 +658,11 @@ class Page extends TournamentPageBase
 			echo '<td width="50" align="center">';
 			if ($_mvp_sorting != SORT_BY_MVP)
 			{
-				echo '<a href="#" onclick="goTo({sort:' . SORT_BY_MVP . ', page:undefined})">' . get_label('MVP') . '</a>';
+				echo '<a class="sort-off" href="#" onclick="goTo({sort:' . SORT_BY_MVP . ', page:undefined})">' . get_label('MVP') . '</a>';
 			}
 			else
 			{
-				echo get_label('MVP');
+				echo '<span class="sort-on">' . get_label('MVP') . '</span>';
 			}
 			echo '</td>';
 		}

@@ -340,7 +340,6 @@ html, body { overflow-x: clip; }
   .mast > .wrap > table > tbody > tr > td[align="right"] { text-align: left; }
   .mast > .wrap > table table.bordered img { max-width: 160px; height: auto; }
   .mast h1 { font-size: 28px; } .mast h2 { font-size: 26px; }
-  .page-hd-side { width: 100%; }
 }
 .mast h2 + h3 { margin-top: 10px; }
 .mast h4 { color: var(--night-dim); padding: 0; }
@@ -358,8 +357,11 @@ html, body { overflow-x: clip; }
 .mast button.icon img { border-radius: 0; filter: brightness(1.15); }
 .mast :focus-visible { outline-color: #fff; }
 
-.page-hd { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; }
-.page-hd-side { display: flex; align-items: center; gap: 10px; }
+/* the title of a page and, at the top right of it whatever the length of the title, the way back -
+   where the heading of a club or a tournament has it too */
+.page-hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px 24px; }
+.page-hd > div:first-child { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.page-hd-side { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; }
 
 /* the way back: a glass pill on the band */
 a.back { float: none; display: inline-flex; align-items: center; gap: 6px; height: 36px; margin: 0; padding: 0 14px 0 12px; border-radius: 999px;
@@ -509,6 +511,9 @@ a.ent > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space
   background: var(--red); color: #fff; font: 500 15px var(--font-display); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
   box-shadow: 0 10px 24px -10px var(--red-glow); }
 .btn:hover { background: var(--red-hi); color: #fff; }
+/* the old fixed width of a button (.norm, 100px) is too narrow for its words in the new type: as wide as
+   the words, no narrower than it was */
+input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min-width: 100px; text-align: center; }
 
 /* =================================================================== blocks of the new markup */
 
@@ -774,7 +779,7 @@ button.dropdown-btn .ic { width: 16px; height: 16px; }
 .fchip:hover { box-shadow: inset 0 0 0 1px var(--mist); }
 .fchip input, .fchip input[type="checkbox"].toggle { position: absolute; opacity: 0; width: 1px; height: 1px; min-width: 0; margin: 0 !important; padding: 0; border: 0; pointer-events: none; }
 .fchip input[type="checkbox"].toggle::after { display: none; }
-.fchip:has(input:checked) { background: var(--red-soft); color: var(--red); box-shadow: inset 0 0 0 1px rgba(200,35,44,.45); }
+.fchip:has(input:checked) { background: var(--ink-soft); color: #fff; box-shadow: none; }
 .fchip:has(input:checked)::before { content: "\2713"; font-weight: 700; }
 .fchip:has(input:focus-visible) { outline: 2.5px solid var(--link); outline-offset: 2px; }
 
@@ -909,6 +914,11 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl h2 { font-size: 24px; }
 .nl h3 { font-size: 19px; }
 .nl h4 { font-size: 16px; }
+/* a section of a long settings page - a round of a tournament's broadcasts, a part of the stream
+   settings: room above it and a hairline, so that the sections do not run into each other */
+.nl h3.stream-section { margin: 34px 0 14px; padding-top: 22px; border-top: 1px solid var(--rule); }
+.nl h3.stream-section:first-child, .nl p + h3.stream-section { margin-top: 18px; }
+.nl p + h3.stream-section { border-top: 0; padding-top: 0; }
 .nl p { line-height: 1.55; }
 
 /* bordered tables are the data sheets */
@@ -927,6 +937,10 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl .dark { background-color: #F2F6FB; }
 .nl .darker { background-color: #E6EEF7; }
 .nl .darkest { background-color: #D8E4F0; }
+/* the player picked out on a page - the seating of a tournament, say: a warm marker, not one more
+   shade of the sheet */
+.nl table td.hlt, .nl table tr.hlt > td { background-color: #FFE29A !important; font-weight: 600; }
+.nl table td.hlt a:link, .nl table td.hlt a:visited, .nl table tr.hlt > td a:link, .nl table tr.hlt > td a:visited { color: var(--ink); }
 .nl .light a:link, .nl .light a:visited, .nl .dark a:link, .nl .dark a:visited, .nl .darker a:link, .nl .darker a:visited,
 .nl .lighter a:link, .nl .lighter a:visited, .nl .lightest a:link, .nl .lightest a:visited, .nl .darkest a:link, .nl .darkest a:visited { background-color: transparent; color: var(--ink); }
 .nl .light a:hover, .nl .dark a:hover, .nl .darker a:hover, .nl .lighter a:hover { color: var(--red); }
@@ -944,6 +958,14 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl table.bordered > tbody > tr.th-short a:link, .nl table.bordered > tbody > tr.th-short a:visited,
 .nl table.bordered > tbody > tr.th-long a:link, .nl table.bordered > tbody > tr.th-long a:visited { color: #fff; }
 .nl table.bordered > tbody > tr.darker:first-child img.icon, .nl table.bordered > tbody > tr.th img.icon { filter: invert(1) brightness(1.4); }
+/* the role pictures - town, mafia, sheriff, don - are drawn dark: light on the dark header of a table */
+:is(.nl table.bordered > tbody > tr.darker:first-child, .nl table.bordered > tbody > tr.th, .nl table.bordered > tbody > tr.th-short, .nl table.bordered > tbody > tr.th-long, .nl table.bordered > thead > tr)
+  :is(img[src$="images/civ.png"], img[src$="images/maf.png"], img[src$="images/don.png"], img[src$="images/sheriff.png"]) { filter: invert(1) brightness(1.6); }
+/* a column the table can be sorted by, in its header: dim until chosen, bright once it is - as the role
+   pictures beside it are */
+.nl table.bordered a.sort-off:link, .nl table.bordered a.sort-off:visited { color: rgba(255,255,255,.5) !important; }
+.nl table.bordered a.sort-off:hover { color: #fff !important; }
+.nl table.bordered .sort-on { color: #fff; }
 .nl table.bordered > tbody > tr:not(.darker):not(.th):not(.th-short):not(.th-long):hover > td { background-color: #F6F9FC; }
 
 /* dialog forms and plain layout tables stay light */
@@ -974,6 +996,16 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl input[type=submit] { background: var(--red); border-color: var(--red); color: #fff; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .05em; }
 .nl input[type=submit]:hover { background: var(--red-hi); border-color: var(--red-hi); }
 
+/* a plain button of the old pages - "Accept application", "Make seating" - in the look of the input
+   buttons beside it: light, rounded, its picture (if any) small and before the words */
+.nl button:not([class]), .ui-dialog .ui-dialog-content button:not([class]) {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 14px; vertical-align: middle;
+  border: 1px solid var(--rule-strong); border-radius: 9px; background: var(--paper); color: var(--ink); font: 500 14px var(--font); cursor: pointer; white-space: nowrap;
+}
+.nl button:not([class]):hover, .ui-dialog .ui-dialog-content button:not([class]):hover { background: var(--frost); border-color: var(--mist); }
+.nl button:not([class]):disabled, .ui-dialog .ui-dialog-content button:not([class]):disabled { opacity: .5; cursor: default; }
+.nl button:not([class]) img, .ui-dialog .ui-dialog-content button:not([class]) img { width: auto; height: auto; max-width: 18px; max-height: 18px; vertical-align: middle; }
+
 /* icon buttons - edit, delete, create... - everywhere: a circle a shade off the background it is on,
    darker on a light page, lighter on the dark band (see .mast .eh-actions) */
 .nl button.icon, .nl button.small_icon, .nl button.big_icon,
@@ -983,6 +1015,24 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
   box-shadow: none; transition: background .15s, transform .15s;
 }
 .nl button.small_icon, .ui-dialog button.small_icon { width: 28px; height: 28px; }
+/* a cell of icon buttons keeps them on one line: the column grows to hold them instead */
+.nl td:has(> button.icon), .nl th:has(> button.icon), .ui-dialog td:has(> button.icon) { white-space: nowrap; }
+/* the buttons that upload a picture or put it back - a picture over its words, a card of its own */
+button.upload { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; min-width: 110px; padding: 10px 12px; vertical-align: top;
+  border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--paper); color: var(--ink); font: 500 13px/1.25 var(--font); cursor: pointer; }
+button.upload:hover { background: var(--frost); border-color: var(--mist); }
+button.upload img { width: 56px !important; height: 56px !important; border-radius: 8px; object-fit: cover; }
+.ui-dialog table.dialog_form td:has(> button.upload) { padding-left: 12px; }
+
+/* the hidden message jQuery UI puts after a field with hints, for screen readers ("15 results are
+   available..."): it is hidden by clipping, which hides it but still lets its words widen the box it is
+   in - a dialog grew a sideways scroll bar of it. Hidden the way that takes no room at all. */
+.ui-helper-hidden-accessible { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important;
+  overflow: hidden !important; clip: rect(0 0 0 0) !important; clip-path: inset(50%) !important; white-space: nowrap !important; border: 0 !important; }
+/* a field with its own small button after it - the clear button of a player picker - takes the width
+   of its cell less the button, so that the two always fit the cell together */
+.ui-dialog table.dialog_form td:has(> input ~ button.small_icon), .ui-dialog table.dialog_form td:has(> input ~ button.icon) { white-space: nowrap; }
+.ui-dialog table.dialog_form input:has(~ button.small_icon), .ui-dialog table.dialog_form input:has(~ button.icon) { width: calc(100% - 38px) !important; min-width: 0; }
 .nl button.big_icon, .ui-dialog button.big_icon { width: 48px; height: 48px; }
 .nl button.icon img, .nl button.small_icon img, .ui-dialog button.icon img, .ui-dialog button.small_icon img { max-width: 18px; max-height: 18px; width: auto; height: auto; border-radius: 0 !important; }
 .nl button.small_icon img, .ui-dialog button.small_icon img { max-width: 14px; max-height: 14px; }
@@ -996,7 +1046,7 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 /* the tabs inside a page (see tabs.js): a line of uppercase labels, the open one underlined in red;
    what they open is a sheet */
 .nl .tab { border: 0; border-bottom: 1px solid var(--rule-strong); background: transparent; }
-.nl .tab button { position: relative; padding: 10px 14px 12px; background: transparent; color: var(--slate);
+.nl .tab button { position: relative; min-height: 0; padding: 10px 14px 12px; border: 0; border-radius: 0; box-shadow: none; background: transparent; color: var(--slate);
   font: 500 15px var(--font-display); text-transform: uppercase; letter-spacing: .05em; transition: color .15s; }
 .nl .tab button:hover { background: transparent; color: var(--ink); }
 .nl .tab button.active { background: transparent; color: var(--ink); }
@@ -1015,6 +1065,60 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 
 /* tables wider than the screen scroll inside the page rather than the page sideways */
 @media (max-width: 1079px) { .nl { overflow-x: auto; } }
+
+/* =================================================================== the standings screens */
+
+/* tournament_screen.php and event_screen.php: the standings on a screen in the hall, read from
+   across it - the dark of the band of the site, big type, the places that matter in red */
+body.scr { display: block; min-height: 100vh; margin: 0; padding: 22px 26px 26px; color: var(--night-text);
+  background: radial-gradient(900px 420px at 92% -10%, rgba(200,35,44,.30), transparent 62%), radial-gradient(760px 420px at -6% 110%, rgba(56,92,170,.30), transparent 64%), linear-gradient(180deg, #0D1729 0%, var(--night) 100%) fixed; }
+body.scr a { color: inherit; }
+body.scr h1, body.scr h2 { margin: 0; padding: 0; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .01em; color: #fff; }
+body.scr center > h2 { margin: 6px 0 16px; font-size: 22px; font-weight: 500; color: var(--night-dim); }
+
+/* the title: the name of the tournament and its picture */
+table.scr-hd { margin-bottom: 18px; border-collapse: collapse; }
+table.scr-hd td { padding: 0; vertical-align: middle; }
+table.scr-hd h2 { font-size: clamp(30px, 3.4vw, 56px); font-weight: 600; line-height: 1; }
+table.scr-hd img { border-radius: 14px; box-shadow: 0 14px 30px -12px rgba(0,0,0,.6); }
+
+/* the columns of the standings, side by side */
+table.scr-cols { border-collapse: separate; border-spacing: 18px 0; margin: 0 -18px; width: calc(100% + 36px); }
+table.scr-cols > tbody > tr > td { padding: 0; vertical-align: top; }
+
+/* a column: a dark sheet, a row per player */
+body.scr table.bordered { width: 100%; border: 0; border-collapse: separate; border-spacing: 0; border-radius: 16px; overflow: hidden;
+  background: rgba(255,255,255,.045); box-shadow: 0 0 0 1px var(--night-line), 0 24px 50px -30px rgba(0,0,0,.8); }
+body.scr table.bordered tr, body.scr table.bordered td, body.scr table.bordered th { border: 0; background: transparent; color: var(--night-text); }
+body.scr table.bordered td { padding: 6px 10px; border-top: 1px solid var(--night-line); font: 500 clamp(14px, 1.15vw, 20px)/1.2 var(--font); vertical-align: middle; }
+body.scr table.bordered tr.th > td, body.scr table.bordered tr.th-long > td, body.scr table.bordered tr.darker > td {
+  border-top: 0; padding: 9px 8px; background: rgba(255,255,255,.06); color: var(--night-dim);
+  font: 500 clamp(11px, .85vw, 14px)/1.15 var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+body.scr table.bordered tr.th + tr.th > td { border-top: 1px solid var(--night-line); }
+body.scr table.bordered tr:nth-child(even):not(.th):not(.th-long):not(.darker) > td { background: rgba(255,255,255,.025); }
+
+/* the place, the sum: the figures read first */
+body.scr table.bordered tr:not(.th):not(.th-long):not(.darker) > td:first-child { width: 2.4em; padding-left: 14px; font: 600 clamp(18px, 1.6vw, 28px)/1 var(--font-display); color: var(--night-dim); background: transparent; }
+body.scr table.bordered tr.top > td:first-child { color: var(--red-hi) !important; }
+body.scr table.bordered td.dark:not(:first-child), body.scr table.bordered td.lighter { font: 600 clamp(17px, 1.5vw, 26px)/1 var(--font-display); color: #fff; background: rgba(200,35,44,.16) !important; }
+body.scr table.bordered td:nth-child(3) { font-weight: 600; color: #fff; }
+
+/* the pictures: a player round, a club on white */
+body.scr table.bordered img { border-radius: 50%; object-fit: cover; }
+body.scr table.bordered td:nth-child(4) img { border-radius: 8px; background: #fff; object-fit: contain; }
+body.scr table.bordered img + img { display: none; }
+
+/* the settings button and form, for the manager */
+body.scr button.icon { width: 30px; height: 30px; padding: 0; display: inline-grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255,255,255,.12); cursor: pointer; }
+body.scr button.icon:hover { background: rgba(255,255,255,.22); }
+body.scr button.icon img { width: 16px; height: 16px; border-radius: 0; }
+body.scr > h1 { margin-bottom: 18px; font-size: 34px; }
+body.scr table.dialog_form { max-width: 560px; border-collapse: collapse; }
+body.scr table.dialog_form, body.scr table.dialog_form tr, body.scr table.dialog_form td { border: 0; background: transparent; }
+body.scr table.dialog_form td { padding: 7px 8px 7px 0; color: var(--night-dim); }
+body.scr input:not([type=checkbox]):not([type=submit]) { height: 36px; padding: 0 12px; border: 1px solid var(--night-line); border-radius: 9px; background: rgba(255,255,255,.08); color: #fff; font: 400 15px var(--font); }
+body.scr input[type=checkbox] { accent-color: var(--red); }
+body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-radius: 10px; background: var(--red); color: #fff; font: 500 15px var(--font-display); text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
 
 /* =================================================================== jQuery UI */
 
@@ -1112,12 +1216,17 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .ui-tabs .ui-tabs-nav li.ui-tabs-active { border-bottom: 3px solid var(--red); }
 .ui-tabs .ui-tabs-nav li.ui-tabs-active a { color: var(--ink); }
 .ui-tabs .ui-tabs-panel { padding: 16px 0 0; }
+/* tabs inside a dialog have less room than on a page: plain words, closer together */
+.ui-dialog .ui-tabs .ui-tabs-nav li a { padding: 8px 10px 10px; font: 500 14px var(--font); text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.ui-dialog .ui-tabs .ui-tabs-nav li { margin-right: 0; }
 
 .ui-menu { padding: 6px; border-radius: 12px; border: 1px solid var(--rule); box-shadow: 0 18px 40px -18px rgba(19, 35, 58, 0.35); }
 .ui-menu .ui-menu-item { border-radius: 8px; }
 
-/* the old on/off switches, in the colour of the site */
-input[type="checkbox"].toggle:checked { background-color: var(--red); border-color: var(--red); }
+/* an on/off switch has no colour of its own - green and red belong to the three-way filters, where
+   they say "only these" and "none of these": off it is a light track, on a dark one */
+input[type="checkbox"].toggle { background-color: var(--rule-strong); border-color: var(--rule-strong); }
+input[type="checkbox"].toggle:checked { background-color: var(--ink-soft); border-color: var(--ink-soft); }
 
 /* the photos of an album, an event, a player */
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 180px), 1fr)); gap: 10px; }

@@ -685,7 +685,7 @@ class Page extends TournamentPageBase
 		$class = '';
 		if ($this->highlight_id == $user_id)
 		{
-			$class = ' class="darker"';
+			$class = ' class="darker hlt"';
 			if ($this->user_id == $user_id)
 			{
 				$ref_beg = '';
@@ -705,7 +705,7 @@ class Page extends TournamentPageBase
 		
 		if (empty($cell_attributes))
 		{
-			$cell_attributes = $this->highlight_id == $user_id ? ' class="darker"' : '';
+			$cell_attributes = $this->highlight_id == $user_id ? ' class="darker hlt"' : '';
 		}
 		echo '<td align="center"' . $cell_attributes . '>';
 		if ($user_id > 0)
@@ -863,8 +863,8 @@ class Page extends TournamentPageBase
 		{
 			if ($player->id == $this->highlight_id)
 			{
-				echo '<tr class="dark">';
-				$cell_attributes = ' class="darker"';
+				echo '<tr class="dark hlt">';
+				$cell_attributes = ' class="darker hlt"';
 			}
 			else
 			{
