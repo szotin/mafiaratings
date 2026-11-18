@@ -443,7 +443,7 @@ class Names
 		// Languages are shown by their three letter codes, the way the language menu of the page shows them.
 		$lang_names = '';
 		$delim = '';
-		echo '<ul id="' . $control_id . '-menu" style="display:none;position:absolute;width:42px;text-align:left;z-index:2147483647;">';
+		echo '<ul id="' . $control_id . '-menu" style="display:none;position:absolute;min-width:42px;width:auto;white-space:nowrap;text-align:left;z-index:2147483647;">';
 		$lang = LANG_NO;
 		while (($lang = get_next_lang($lang)) != LANG_NO)
 		{

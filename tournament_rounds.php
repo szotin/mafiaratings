@@ -6,6 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/address.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/cards.php';
 
 define("CUT_NAME",45);
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
@@ -33,9 +34,13 @@ class Page extends TournamentPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<div class="toolbar">';
+		echo '<div class="toolbar"><div class="tb-line tb-start">';
 		show_checkbox_filter(array(get_label('with video'), get_label('unplayed events'), get_label('canceled events')), $filter, 'filterEvents');
-		echo '</div>';
+		if ($can_create)
+		{
+			echo '<a class="btn tb-create" href="#" onclick="mr.createRound(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('round')) . '</span></a>';
+		}
+		echo '</div></div>';
 		
 		$condition = new SQL(' WHERE e.tournament_id = ?',
 			$this->id);
@@ -82,7 +87,9 @@ class Page extends TournamentPageBase
 				' JOIN scorings s ON s.id = e.scoring_id' .
 				' JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0',
 			$user_id, $condition);
-		$query->add(' ORDER BY e.start_time DESC, e.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		// In the order they are played: the main round (0), then the finals from the farthest to the
+		// last one - ..., quarter-final (3), semi-final (2), final (1).
+		$query->add(' ORDER BY e.round = 0 DESC, e.round DESC, e.start_time, e.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		$buttons_needed = $can_create;
 		$rounds = array();
 		while ($row = $query->next())
@@ -94,23 +101,20 @@ class Page extends TournamentPageBase
 			$rounds[] = $row;
 		}
 			
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker">';
-		if ($buttons_needed)
+		if (count($rounds) == 0)
 		{
-			echo '<th width="112" align="left">';
-			if ($can_create)
-			{
-				echo '<button class="icon" onclick="mr.createRound(' . $this->id . ')" title="'  . get_label('Create [0]', get_label('round')) . '"><img src="images/create.png" border="0"></button>';
-			}
-			echo '</th>';
+			echo '<p class="empty">' . get_label('No rounds found.') . '</p>';
 		}
-		echo '<th>' . get_label('Round') . '</th>';
-		echo '<th width="140" align="center">' . get_label('Scoring') . '</th>';
-		echo '<th width="80" align="center">' . get_label('Scoring coefficient') . '</th>';
-		echo '<th width="80" align="center">' . get_label('Games played') . '</th>';
-		echo '<th width="80" align="center">' . get_label('Players attended') . '</th></tr>';
-		
+		else
+		{
+			echo '<div class="posters">';
+		}
+
+		// The cover of a round is its own picture; without one, its initials with the tournament's
+		// logo in the corner, the way a tournament without a picture shows its club.
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$tournament_pic->set($this->id, $this->name, $this->flags);
+		$event_pic = new Picture(EVENT_PICTURE);
 		$now = time();
 		foreach ($rounds as $row)
 		{
@@ -124,18 +128,17 @@ class Page extends TournamentPageBase
 				$user_event_flags |= USER_PERM_MANAGER;
 			}
 
-			if ($event_flags & EVENT_FLAG_CANCELED)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
-			
+			$canceled = ($event_flags & EVENT_FLAG_CANCELED) != 0;
+			$playing = !$canceled && $now >= $event_time && $now < $event_time + $event_duration;
+			$event_pic->set($event_id, $event_name, $event_flags);
+			echo '<article class="pcard' . ($canceled ? ' is-off' : '') . '"><div class="pc-cover">' . card_cover($event_pic, $tournament_pic, $event_name);
+			echo '<span class="pc-date">' . card_short_period($event_time, $event_duration, $timezone) . '</span>';
+
+			$buttons = '';
 			if ($buttons_needed)
 			{
-				echo '<td>';
+				$buttons = PageBase::capture(function() use ($user_event_flags, $event_id, $event_flags, $event_time, $event_duration, $now)
+				{
 				if ($user_event_flags & USER_PERM_MANAGER)
 				{
 					echo '<button class="icon" onclick="mr.editEvent(' . $event_id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
@@ -152,40 +155,61 @@ class Page extends TournamentPageBase
 					{
 						echo '<button class="icon" onclick="goTo(\'game.php\', {event_id: ' . $event_id . '})" title="' . get_label('Play the game') . '"><img src="images/game.png" border="0"></button>';
 					}
-					$no_buttons = false;
 				}
-				echo '</td>';
+				});
 			}
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
-			echo '<br>' . format_date_period($event_time, $event_duration, $timezone) . '</a></td>';
-			if ($videos_count > 0)
+			if (trim($buttons) != '')
 			{
-				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';
+				echo '<span class="pc-actions">' . $buttons . '</span>';
 			}
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td align="center"><a href="#" onclick="showScoring(' . $scoring_id .', ' .  $scoring_version . ', ' .  $scoring_flags . ')">' . $scoring_name;
+			echo '</div><div class="pc-body"><h3><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</a></h3>';
+
+			// The scoring, with what it adds to the points and the coefficient when it is not the usual 1.
+			$scoring_title = array();
 			if (($scoring_flags & SCORING_OPTION_NO_NIGHT_KILLS) == 0)
 			{
-				echo '<br>' . get_label('with first night kill points');
+				$scoring_title[] = get_label('with first night kill points');
 			}
 			if (($scoring_flags & SCORING_OPTION_NO_GAME_DIFFICULTY) == 0)
 			{
-				echo '<br>' . get_label('with game difficulty points');
+				$scoring_title[] = get_label('with game difficulty points');
 			}
-			echo '</a></td>';
-			
-			echo '<td align="center">' . $scoring_weight . '</td>';
-			
-			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
-			
-			echo '</tr>';
+			echo '<div class="pc-meta"><span>' . PageBase::icon('pin') . $address_name . '</span>';
+			echo '<a href="#" onclick="showScoring(' . $scoring_id .', ' .  $scoring_version . ', ' .  $scoring_flags . '); return false;" title="' . htmlspecialchars(implode("\n", $scoring_title), ENT_QUOTES, 'UTF-8') . '">' . PageBase::icon('layers') . $scoring_name;
+			if ($scoring_weight != 1)
+			{
+				echo ' <b>&times;' . $scoring_weight . '</b>';
+			}
+			echo '</a></div>';
+
+			echo '<div class="pc-foot">';
+			if ($canceled)
+			{
+				echo '<span class="chip off">' . get_label('canceled') . '</span>';
+			}
+			else if ($playing)
+			{
+				echo '<span class="chip live">' . get_label('playing now') . '</span>';
+			}
+			echo '<span class="pc-nums">';
+			if ($users_count > 0)
+			{
+				echo '<span title="' . get_label('Players attended') . '">' . PageBase::icon('users') . $users_count . '</span>';
+			}
+			if ($games_count > 0)
+			{
+				echo '<a href="event_games.php?bck=1&id=' . $event_id . '" title="' . get_label('Games played') . '">' . PageBase::icon('play') . $games_count . '</a>';
+			}
+			if ($videos_count > 0)
+			{
+				echo '<a href="event_videos.php?bck=1&id=' . $event_id . '" title="' . get_label('[0] videos from [1]', $videos_count, strip_tags($event_name)) . '">' . PageBase::icon('video') . $videos_count . '</a>';
+			}
+			echo '</span></div></div></article>';
 		}
-		echo '</table>';
+		if (count($rounds) > 0)
+		{
+			echo '</div>';
+		}
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
