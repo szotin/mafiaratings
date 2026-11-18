@@ -302,9 +302,9 @@ return array
 	'seriesType' =>
 	'<h3>Description</h3>
 		<p><code>seriesType</code></p>
-		<p>The type of the series this system is counting for: 0 - a series of tournaments, 1 - a season, 2 - a recurring tournament. It is the series the system belongs to, not the competition being counted. Lets one system count differently for different types of series. A plain value, written without brackets.</p>
+		<p>The type of the series this system is counting for: 0 - a tour, 1 - a season, 2 - an annual. It is the series the system belongs to, not the competition being counted. Lets one system count differently for different types of series. A plain value, written without brackets.</p>
 	<h3>Examples</h3>
-		<p><code>seriesType = 2 ? 1 : table(stars-1, place-1)</code> one point for every tournament of a recurring tournament, and the table for the others.<br>
+		<p><code>seriesType = 2 ? 1 : table(stars-1, place-1)</code> one point for every tournament of an annual, and the table for the others.<br>
 		<code>seriesType = 1 ? score() : score() / 2</code> half the result outside of a season.</p>',
 );
 

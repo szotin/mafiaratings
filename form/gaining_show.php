@@ -49,7 +49,7 @@ try
 	echo '<table class="transp" width="100%">';
 	echo '<tr><td width="300"><input type="number" style="width: 45px;" step="1" min="1" max="10" id="form-stars" value="' . $stars . '" onChange="onChangeParams()"> ' . get_label('stars') . '</td>';
 	echo '<td><input type="number" style="width: 45px;" step="1" min="10" id="form-players" value="' . $players . '" onChange="onChangeParams()"> ' . get_label('players') . '</td>';
-	echo '<td align="right"><input type="checkbox" id="form-series" onClick="onChangeParams()"> ' . get_label('for series of tournaments') . '</td></tr>';
+	echo '<td align="right"><input type="checkbox" id="form-series" onClick="onChangeParams()"> ' . get_label('for tours') . '</td></tr>';
 	echo '</table>';
 	
 	echo '<p><div id="form-gaining"></div></p>';
