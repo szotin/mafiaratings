@@ -286,7 +286,7 @@ class Page extends GeneralPageBase
 				}
 				echo '</ul></section>';
 			}
-			echo '<a class="now-more" href="tournaments.php?bck=1">' . get_label('All tournaments') . '</a>';
+			echo '<a class="now-more" href="tournaments.php?future=1&bck=1">' . get_label('All upcoming tournaments') . '</a>';
 			echo '</aside>';
 		}
 		echo '</div>';
