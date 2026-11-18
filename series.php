@@ -8,6 +8,7 @@ require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
 require_once 'include/cards.php';
+require_once 'include/series_cards.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -29,7 +30,8 @@ class Page extends GeneralPageBase
 			$this->filter = (int)$_REQUEST['filter'];
 		}
 		
-		$this->types = get_series_type_filter();
+		// Every type at first: the list tells them apart by look (see the classes of the tiles below).
+		$this->types = get_series_type_filter(SERIES_TYPE_FILTER_ALL);
 
 		$this->future = false;
 		if (isset($_REQUEST['future']))
@@ -106,7 +108,7 @@ class Page extends GeneralPageBase
 
 		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
+			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.max_stars, ' . series_owner_fields() . ',' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments',
 			$condition);
 		if ($this->future)
@@ -119,46 +121,16 @@ class Page extends GeneralPageBase
 		}
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 		
-		$timezone = get_timezone();
-		$now = time();
-		$series_pic = new SeriesPicture();
-		$series_count = 0;
+		$list = array();
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $tournaments_count) = $row;
-			$owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-			// A recurring tournament is always under way. Saying so adds nothing to its type.
-			$playing = ($now >= $series_time && $now < $series_time + $series_duration && !series_is_infinite($series_time));
-			$canceled = ($series_flags & SERIES_FLAG_CANCELED) != 0;
-			if ($series_count++ == 0)
-			{
-				echo '<div class="tiles wide">';
-			}
-			
-			echo '<div class="tile' . ($canceled ? ' is-off' : '') . '">' . card_logo($series_pic->set($series_id, $series_name, $series_flags, $owner), $series_name);
-			echo '<div class="who-txt"><a class="who-name" href="series_standings.php?bck=1&id=' . $series_id . '">' . $series_name . '</a>';
-			echo '<span class="who-sub">' . PageBase::icon($owner->is_league() ? 'trophy' : 'users') . $owner->name . '</span>';
-			echo '<span class="tile-meta"><span>' . PageBase::icon('cal') . series_period($series_time, $series_duration, $timezone) . '</span>';
-			if ($canceled)
-			{
-				echo '<span class="chip off">' . get_label('canceled') . '</span>';
-			}
-			else if ($playing)
-			{
-				echo '<span class="chip live">' . get_label('playing now') . '</span>';
-			}
-			echo '</span></div>';
-			echo '<a class="tile-num" href="series_tournaments.php?bck=1&id=' . $series_id . '" title="' . get_label('Tournaments') . '"><b>' . $tournaments_count . '</b><span>' . get_label('Tournaments') . '</span></a>';
-			echo '</div>';
+			$series = new stdClass();
+			list ($series->id, $series->name, $series->flags, $series->start_time, $series->duration, $series->max_stars, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $series->tournaments) = $row;
+			$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
+			$list[] = $series;
 		}
-		if ($series_count > 0)
-		{
-			echo '</div>';
-		}
-		else
-		{
-			echo '<p class="empty">' . get_label('No series found.') . '</p>';
-		}
+		// The tiles: see include/series_cards.php, shared by every list of series.
+		series_tiles_show($list, get_label('No series found.'));
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
