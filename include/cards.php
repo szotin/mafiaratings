@@ -25,15 +25,30 @@ function card_initials($name, $upper = true)
 }
 
 // The round picture of a player, or their initials on a colour of their own. $pic is a
-// Picture(USER_PICTURE) to reuse.
-function card_avatar($pic, $id, $name, $flags)
+// Picture(USER_PICTURE) to reuse. $size: 'sm' for the small one of a list, '' for the one of a table.
+function card_avatar($pic, $id, $name, $flags, $size = 'sm')
 {
+	$cls = 'av' . ($size == '' ? '' : ' ' . $size);
 	$pic->set($id, $name, $flags);
 	if ($pic->has_image())
 	{
-		return '<span class="av sm"><img src="' . $pic->url(ICONS_DIR) . '" alt="" loading="lazy" decoding="async"></span>';
+		return '<span class="' . $cls . '"><img src="' . $pic->url(ICONS_DIR) . '" alt="" loading="lazy" decoding="async"></span>';
 	}
-	return '<span class="av sm t' . (($id % 6) + 1) . '" aria-hidden="true">' . card_initials($name, false) . '</span>';
+	return '<span class="' . $cls . ' t' . (($id % 6) + 1) . '" aria-hidden="true">' . card_initials($name, false) . '</span>';
+}
+
+// A club in a row of a table: its small logo and its name.
+function card_club($pic, $id, $name, $flags)
+{
+	if ($id == NULL)
+	{
+		return '';
+	}
+	$pic->set($id, $name, $flags);
+	$logo = $pic->has_image() ?
+		'<img src="' . $pic->url(ICONS_DIR) . '" alt="" loading="lazy" decoding="async">' :
+		'<span class="club-ini" aria-hidden="true">' . card_initials($name) . '</span>';
+	return '<a class="club" href="club_main.php?bck=1&id=' . $id . '" title="' . strip_tags($name) . '">' . $logo . '<span>' . $name . '</span></a>';
 }
 
 // The picture of a club, a league, a series in a tile: its own logo, or its initials. $pic is set

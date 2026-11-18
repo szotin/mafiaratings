@@ -1290,3 +1290,57 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
   .nl input.dropdown, .nl button.dropdown-btn, .nl button.icon, .nl button.small_icon, .nl button.big_icon, .nl input[type=submit], .nl input[type=button], .nl img[src*="find.png"] { display: none !important; }
   .nl select, .nl input { border: 0 !important; box-shadow: none !important; background: none !important; padding-left: 0 !important; -webkit-appearance: none; appearance: none; }
 }
+
+/* ------------------------------------------------------------ the tables of the v3 design (.tbl in a .sheet):
+   the ratings first. A dark head, light rows, the numbers on the right; the place in the display face, the
+   first three red on a pink row; the columns a narrow screen can do without go first - p4, then p2, then p3. */
+.sheet { background: var(--paper); border-radius: var(--r-sheet); box-shadow: var(--shadow-card); outline: 1px solid rgba(11,20,34,.06); outline-offset: -1px; overflow: clip; }
+.tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+.tbl th { position: sticky; top: var(--hd-h); z-index: 2; padding: 12px 10px; text-align: left; white-space: nowrap; background: var(--night); color: #C3D0E2;
+  font: 500 13px var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+.tbl td { padding: 12px 10px; border-top: 1px solid #EDF1F6; vertical-align: middle; }
+.tbl tbody tr:first-child td { border-top: 0; }
+.tbl tbody tr:hover td { background: #F6F9FC; }
+.tbl .num { text-align: right; white-space: nowrap; }
+.tbl .strong { font-weight: 700; color: var(--ink); }
+.tbl .dim { color: var(--slate); }
+.tbl .rk { width: 56px; text-align: center; }
+.sheet .tbl th:first-child, .sheet .tbl td:first-child { padding-left: 16px; }
+.sheet .tbl th:last-child, .sheet .tbl td:last-child { padding-right: 16px; }
+@media (min-width: 640px) { .sheet .tbl th:first-child, .sheet .tbl td:first-child { padding-left: 22px; } .sheet .tbl th:last-child, .sheet .tbl td:last-child { padding-right: 22px; } }
+.tbl tr.me td { background: #FFF8E6; }
+.medal { font: 600 18px var(--font-display); color: var(--slate); }
+.medal.m1, .medal.m2, .medal.m3 { color: var(--red); }
+.tbl tbody tr:has(.medal.m1) td, .tbl tbody tr:has(.medal.m2) td, .tbl tbody tr:has(.medal.m3) td { background: #FCF4F4; }
+.tbl tbody tr:has(.medal.m1):hover td, .tbl tbody tr:has(.medal.m2):hover td, .tbl tbody tr:has(.medal.m3):hover td { background: #F6F9FC; }
+/* a column the table is sorted by: its heading a link, the arrow dim until it is the order */
+.tbl .th-sort, .nl .tbl a.th-sort:link, .nl .tbl a.th-sort:visited { display: inline-flex; align-items: center; gap: 5px; color: inherit; }
+.tbl th.num .th-sort { flex-direction: row-reverse; }
+.tbl .th-sort::after { content: ""; border: 4px solid transparent; border-top-color: rgba(255,255,255,.4); border-bottom-width: 0; }
+.tbl th[aria-sort], .tbl th .th-sort:hover, .nl .tbl a.th-sort:hover { color: #fff; }
+.tbl th[aria-sort] .th-sort::after { border-top-color: currentColor; }
+.tbl .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.nl .tbl a.who:link, .nl .tbl a.who:visited { color: var(--ink); }
+.tbl a.who:hover .who-name { color: var(--red); }
+.tbl .who-name { white-space: normal; }
+.club { display: inline-flex; align-items: center; gap: 8px; min-width: 0; vertical-align: middle; }
+.nl a.club:link, .nl a.club:visited { color: var(--ink-soft); }
+.nl a.club:hover { color: var(--red); }
+.club img, .club .club-ini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--rule); background: #fff; object-fit: contain; }
+.club .club-ini { display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--slate); }
+.club span:not(.club-ini) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1079px) { .tbl .p4 { display: none; } }
+@media (max-width: 899px)  { .tbl .p2 { display: none; } }
+@media (max-width: 639px)  { .tbl .p3 { display: none; } .tbl td, .tbl th { padding-left: 8px; padding-right: 8px; } .tbl .who .av { width: 30px; height: 30px; } .tbl .who { gap: 10px; } }
+
+/* a field with a picture in front - the search for a player over a table - and the count beside it */
+.toolbar .grow { flex: 1 1 220px; }
+.field { position: relative; display: flex; align-items: center; }
+.field > .ic { position: absolute; left: 12px; width: 17px; height: 17px; color: var(--slate); pointer-events: none; z-index: 1; }
+.nl .field input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=image]):not([type=file]) { width: 100%; height: 40px; padding: 0 40px 0 38px; border: 1px solid #C9D5E3; border-radius: 12px; background: #fff; font: 500 15px var(--font); color: var(--ink); }
+.nl .field input:not([type=checkbox]):focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(200,35,44,.14); }
+.nl .field button.small_icon { position: absolute; right: 6px; margin: 0; }
+.count { font-size: 13.5px; color: var(--slate); white-space: nowrap; }
+/* the line under the heading of a list - how many there are */
+.mast .page-hd h1 + p { margin: 8px 0 0; max-width: 62ch; font-size: 15px; line-height: 1.6; }
+.mast .page-hd h1 + p b { color: #fff; }

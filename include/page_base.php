@@ -899,7 +899,14 @@ class PageBase
 	
 	protected function standard_title()
 	{
-		return '<h1>' . $this->_title . '</h1>';
+		// The titles are written as sentences - "Ratings." - for the title of the window; a heading
+		// on the band goes without the full stop. Only a single one goes: "..." stays.
+		$title = $this->_title;
+		if (substr($title, -1) == '.' && substr($title, -2) != '..')
+		{
+			$title = substr($title, 0, -1);
+		}
+		return '<h1>' . $title . '</h1>';
 	}
 	
 	protected function show_title()
