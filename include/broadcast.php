@@ -8,6 +8,7 @@ require_once __DIR__ . '/stream.php';
 require_once __DIR__ . '/pages.php';
 // And they carry the badge of the club on some of the pages - see show_broadcast_tile().
 require_once __DIR__ . '/picture.php';
+require_once __DIR__ . '/cards.php';
 
 // Finding a game inside a stream.
 //
@@ -1411,38 +1412,37 @@ function show_broadcast_tile($tile)
 	// rows leave. Without that last one the spare height is shared out among all three rows and
 	// the picture and the bar move again, by less. A browser that will not work the height out
 	// leaves the square as it was.
-	$badge = (isset($tile->club_id) && $tile->club_id > 0);
-	echo '<table class="transp" width="100%" style="height: 100%;">';
-	echo '<tr class="dark" style="height: 100%;"><td align="center" style="height: 40px;' .
-		($badge ? ' position: relative;' : '') . '">';
-	if ($badge)
+	//
+	// In the look of the site (new_look.css) the square is a card, as a tournament is: a dark cover
+	// with the kind of broadcast on it, the competition as its heading, the table and the round under
+	// it, the club, and the light at the bottom. The whole card is the link to the broadcast.
+	$lines = explode('<br>', $tile->caption);
+	$heading = array_shift($lines);
+	$is_text = ($tile->icon == 'images/text.png');
+	echo '<article class="pcard bcard"><div class="pc-cover bc-cover"><span class="bc-icon">' . PageBase::icon($is_text ? 'menu' : 'play') . '</span>';
+	echo '<span class="pc-date">' . $tile->kind . '</span></div>';
+	echo '<div class="pc-body"><h3><a href="' . htmlspecialchars($tile->url) . '" target="_blank" title="' .
+		htmlspecialchars(strip_tags(str_replace('<br>', ' ', $tile->caption))) . '">' . $heading . '</a></h3>';
+	if (!empty($lines))
+	{
+		echo '<div class="pc-meta bc-lines">' . implode('<br>', $lines) . '</div>';
+	}
+	if (isset($tile->club_id) && $tile->club_id > 0)
 	{
 		$club_pic = new Picture(CLUB_PICTURE);
-		$club_pic->set($tile->club_id, $tile->club_name, $tile->club_flags);
-		echo '<span style="position: absolute; left: 2px; top: 50%; transform: translateY(-50%);">';
-		$club_pic->show(ICONS_DIR, true, BROADCAST_CLUB_ICON_WIDTH);
-		echo '</span>';
+		echo '<div class="pc-meta">' . card_club($club_pic, $tile->club_id, $tile->club_name, $tile->club_flags) . '</div>';
 	}
-	// A name longer than the room left beside the badge is broken rather than allowed to widen
-	// the square: the columns are shares of the page, and one long word in one of them would
-	// pull the whole row of squares out of true.
-	echo '<b' . ($badge ? (' style="display: block; padding: 0px ' . (BROADCAST_CLUB_ICON_WIDTH + 4) .
-		'px; word-wrap: break-word;"') : '') . '>' . $tile->caption . '</b></td></tr>';
-	echo '<tr style="height: 70px;"><td align="center">';
-	echo '<a href="' . htmlspecialchars($tile->url) . '" target="_blank" title="' .
-		htmlspecialchars(str_replace('<br>', ' ', $tile->caption)) . '">';
-	echo '<img src="' . $tile->icon . '" width="' . BROADCAST_ICON_WIDTH . '"></a>';
-	echo '</td></tr>';
-	echo '<tr class="dark" style="height: 30px;"><td align="center">';
-	// A light before the kind at a table something could be happening at right now - see
-	// show_broadcast_lights_script(). A square for a broadcast that is over, or one that has
-	// not begun, carries none: there is nothing for it to be saying.
+	// A light at a table something could be happening at right now - see
+	// show_broadcast_lights_script(). A card for a broadcast that is over, or one that has not
+	// begun, carries none: there is nothing for it to be saying.
 	if (isset($tile->key) && isset($tile->on))
 	{
-		echo broadcast_light_html($tile->key, $tile->on, isset($tile->played) && $tile->played);
+		$labels = broadcast_light_labels();
+		$played = isset($tile->played) && $tile->played;
+		echo '<div class="pc-foot"><span class="bc-state">' . broadcast_light_html($tile->key, $tile->on, $played) .
+			($tile->on ? $labels->on : ($played ? $labels->idle : $labels->off)) . '</span></div>';
 	}
-	echo $tile->kind . '</td></tr>';
-	echo '</table>';
+	echo '</div></article>';
 }
 
 // A heading and the squares under it, left to right and then down. Nothing is drawn for a
@@ -1454,33 +1454,14 @@ function show_broadcast_group($title, $tiles)
 		return;
 	}
 
-	echo '<p><table class="bordered light" width="100%">';
-	echo '<tr class="darker"><td colspan="' . BROADCAST_COLUMN_COUNT . '"><b>' . $title . '</b></td></tr>';
-	$column = 0;
+	// The cards in the grid of the tournament cards (.posters), the heading over them as a month is
+	// over the tournaments.
+	echo '<div class="posters"><h3 class="grp">' . $title . '</h3>';
 	foreach ($tiles as $tile)
 	{
-		if ($column == 0)
-		{
-			echo '<tr>';
-		}
-		// The one pixel is not a height, it is a statement that there is one: a cell of a row is
-		// as tall as the row whatever is asked of it, and the square inside is only allowed to
-		// fill the cell once the cell has a height of its own to be filled. See
-		// show_broadcast_tile(), where the rest of that is done.
-		echo '<td width="' . floor(100 / BROADCAST_COLUMN_COUNT) . '%" valign="top" style="height: 1px;">';
 		show_broadcast_tile($tile);
-		echo '</td>';
-		if (++$column >= BROADCAST_COLUMN_COUNT)
-		{
-			echo '</tr>';
-			$column = 0;
-		}
 	}
-	if ($column > 0)
-	{
-		echo '<td colspan="' . (BROADCAST_COLUMN_COUNT - $column) . '"></td></tr>';
-	}
-	echo '</table></p>';
+	echo '</div>';
 }
 
 // Puts the club on a square, where the page is one that shows it. A square whose club nothing
@@ -1797,15 +1778,11 @@ function show_broadcasts($scope)
 		$view = ($current_count > 0 || !empty($text)) ? BROADCASTS_VIEW_CURRENT : BROADCASTS_VIEW_PAST;
 	}
 
-	echo '<div class="tab">';
-	echo '<button ' . ($view == BROADCASTS_VIEW_CURRENT ? 'class="active" ' : '') .
-		'onclick="goTo({view:' . BROADCASTS_VIEW_CURRENT . ', page:undefined})">' .
-		get_label('Live and upcoming') . '</button>';
-	echo '<button ' . ($view == BROADCASTS_VIEW_PAST ? 'class="active" ' : '') .
-		'onclick="goTo({view:' . BROADCASTS_VIEW_PAST . ', page:undefined})">' .
-		get_label('Past') . '</button>';
-	echo '</div>';
-	echo '<div class="tabcontent">';
+	// The two choices as the switch of the lists of tournaments (card_seg() in include/cards.php).
+	echo '<div class="toolbar">' . card_seg(array(
+		array(card_url(array('view' => BROADCASTS_VIEW_CURRENT, 'page' => NULL)), get_label('Live and upcoming'), $view == BROADCASTS_VIEW_CURRENT),
+		array(card_url(array('view' => BROADCASTS_VIEW_PAST, 'page' => NULL)), get_label('Past'), $view == BROADCASTS_VIEW_PAST)), get_label('Broadcasts')) . '</div>';
+	echo '<div>';
 
 	if ($view == BROADCASTS_VIEW_PAST)
 	{

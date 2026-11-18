@@ -767,16 +767,20 @@ div.switch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; 
 .toolbar .tb-line { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
 .toolbar .tb-line .switch-row { flex: 0 1 auto; margin-left: auto; }
 .toolbar .tb-field { display: flex; align-items: center; }
-.nl input.dropdown, .home-page input.dropdown { width: 280px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
+.nl input.dropdown, .home-page input.dropdown { width: 300px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
 /* the arrow of a dropdown field (the club/city/country filter), drawn over the right end of the field */
 button.dropdown-btn { position: relative; top: 0; display: inline-grid; place-items: center; width: 28px; height: 28px; margin: 0 8px 0 -34px; padding: 0; border: 0 !important; border-radius: 50%;
   background: none; color: var(--slate); cursor: pointer; vertical-align: middle; }
 button.dropdown-btn:hover, button.dropdown-btn:active { padding: 0; border: 0; background: var(--frost); color: var(--ink); }
 button.dropdown-btn .ic { width: 16px; height: 16px; }
-.dd-wrap { position: relative; display: inline-flex; align-items: center; max-width: 100%; vertical-align: middle; }
-.dd-wrap button.dropdown-btn, .dd-wrap button.small_icon { position: absolute; top: 50%; right: 6px; margin: 0; transform: translateY(-50%); }
+.dd-wrap { position: relative; display: inline-flex; align-items: center; vertical-align: middle; }
+/* the field keeps the width its hint needs even in a narrow cell of an old table, where it would
+   shrink with the cell; on a phone it is the width of the screen at most */
+.nl :not(.home-filter) > .dd-wrap { min-width: min(300px, calc(100vw - 32px)); }
+.nl :not(.home-filter) > .dd-wrap > input.dropdown { width: 100%; min-width: 0; }
+/* centred by top and bottom, not by a transform: the hover of the round buttons moves them with one */
+.dd-wrap button.dropdown-btn, .dd-wrap button.small_icon { position: absolute; top: calc(50% - 14px); right: 6px; margin: 0 !important; transform: none; }
 .dd-wrap button.small_icon { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; }
-.dd-wrap button.small_icon:hover { transform: translateY(-50%); }
 .dd-wrap button.small_icon img { max-width: 12px; max-height: 12px; }
 .home-filter .dd-wrap button.small_icon { background: rgba(255,255,255,.12); }
 .home-filter .dd-wrap button.small_icon:hover { background: rgba(255,255,255,.22); }
@@ -839,13 +843,36 @@ span.switch-item:has(.tri-filter.yes), span.switch-item:has(.tri-filter.no) { ba
 .pc-nums a { position: relative; z-index: 1; color: var(--slate); }
 .nl .pc-nums a:link, .nl .pc-nums a:visited { color: var(--slate); }
 .pc-nums a:hover, .nl .pc-nums a:hover { color: var(--red); }
+/* a broadcast as a card (show_broadcast_tile() in include/broadcast.php): a low dark cover with the
+   kind of it - a recording or a text - and its sign in the middle */
+.bcard .bc-cover { aspect-ratio: auto; height: 104px; display: grid; place-items: center;
+  background: radial-gradient(120% 140% at 85% 0%, rgba(200,35,44,.55), transparent 60%), var(--night); }
+.bcard .bc-cover::after { display: none; }
+.bcard .bc-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: rgba(255,255,255,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
+.bcard .bc-icon .ic { width: 24px; height: 24px; color: #fff; }
+.bcard .bc-icon .ic path[d^="M7 5"] { fill: currentColor; }
+.bcard:hover .bc-icon { background: var(--red); box-shadow: none; }
+.bcard h3 { font-size: 17px; }
+.bcard .bc-lines { display: block; line-height: 1.45; color: var(--ink-soft); }
+.bcard .pc-meta .club { position: relative; z-index: 1; font-size: 13px; }
+.bcard .bc-state { display: inline-flex; align-items: center; gap: 8px; color: var(--slate); }
+/* a line a list adds to a tournament card (include/tournament_cards.php): the result of a player,
+   the stage of a tournament in a series and whether it is paid for */
+.pc-res { margin-top: 2px; color: var(--ink-soft); }
+.pc-res .medal { font-size: 15px; }
+.pc-res a { position: relative; z-index: 1; }
+.pc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.pc-tags .chip { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.pc-tags .chip.stage { background: var(--frost); color: var(--ink-soft); }
+.pc-tags .chip.unpaid { background: #FCF4F4; color: var(--red); }
 /* a link in the meta line of a card (the scoring of a round) is above the link of the whole card */
 .pc-meta a { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .nl .pc-meta a:link, .nl .pc-meta a:visited { color: var(--slate); }
 .nl .pc-meta a:hover { color: var(--red); }
 .pc-meta a b { color: var(--ink-soft); }
-/* the buttons of a manager on the cover of a card, in its top right corner */
-.pc-actions { position: absolute; right: 10px; top: 10px; z-index: 2; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; max-width: 70%; }
+/* the buttons of a manager on the cover of a card, in its bottom right corner: the dates and the stars
+   are at its top, the logo of the club at its bottom left */
+.pc-actions { position: absolute; right: 10px; bottom: 10px; z-index: 2; display: flex; flex-wrap: wrap-reverse; justify-content: flex-end; gap: 4px; max-width: calc(100% - 64px); }
 .nl .pc-actions button.icon { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; background: rgba(255,255,255,.88); }
 .nl .pc-actions button.icon:hover { background: #fff; }
 .nl .pc-actions button.icon img { width: 18px; height: 18px; }
@@ -1032,6 +1059,13 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .nl table.bordered.seat-grid > tbody > tr:not(.darker):not(.th):not(.th-short):not(.th-long):hover > td { background-color: var(--paper); }
 .nl table.bordered.seat-grid > tbody > tr > td:not(:first-child):hover { border-color: var(--mist); }
 td[data-pick] { cursor: pointer; }
+/* the players a player met (the PvP stats of a seating): ten framed cells of one size a row */
+.nl table.transp.seat-cards { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 6px; }
+.nl table.transp.seat-cards > tbody > tr > td { height: 132px; padding: 8px 4px; border: 1px solid var(--rule); border-radius: 12px; background: var(--paper); vertical-align: middle; font-size: 13px; line-height: 1.3; }
+.nl table.transp.seat-cards td table.transp td { height: auto !important; }
+.nl table.transp.seat-cards > tbody > tr > td:hover { border-color: var(--mist); }
+.nl table.transp.seat-cards > tbody > tr > td.hlt { border-color: var(--red); background: #FCF4F4; }
+.nl table.transp.seat-cards > tbody > tr > td[colspan] { border: 0; background: none; }
 .nl table.bordered.seat-grid > tbody > tr > td.hlt { border-color: var(--red); background-color: #FCF4F4; }
 .nl table.bordered.seat-grid > tbody > tr.dark > td:not(:first-child) { background-color: var(--frost); }
 
@@ -1432,7 +1466,9 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .nl :not(.home-filter) > .dd-wrap > input.dropdown:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=image]):not([type=file]) {
   height: 40px !important; padding: 0 40px 0 14px !important; border: 1px solid #C9D5E3; border-radius: 12px !important; background: #fff; font: 500 15px var(--font); color: var(--ink); }
 /* in a toolbar beside the search for a player, a third of the line rather than a narrow pill */
-.toolbar .dd-wrap { flex: 0 1 380px; min-width: 240px; }
+/* never narrower than its hint, "Выберите страну/город/клуб", needs */
+.toolbar .dd-wrap, .toolbar .tb-field:has(> .dd-wrap) { flex: 0 1 380px; min-width: 300px; }
+.toolbar .tb-field > .dd-wrap { flex: 1 1 auto; }
 .nl .toolbar .dd-wrap > input.dropdown { width: 100%; }
 .nl :not(.home-filter) > .dd-wrap > input.dropdown:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(200,35,44,.14); }
 .nl :not(.home-filter) > .dd-wrap > input.dropdown::placeholder { color: var(--slate); }
