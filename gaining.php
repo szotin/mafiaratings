@@ -136,7 +136,7 @@ class Page extends PageBase
 			show_option($type, SERIES_TYPE_SEASON, $type_name);
 		}
 		echo '</select></td>';
-		echo '<td align="right"><input type="checkbox" class="toggle" id="form-series" onclick="refreshGainingPreview()"> ' . get_label('for series of tournaments') . '</td></tr>';
+		echo '<td align="right"><input type="checkbox" class="toggle" id="form-series" onclick="refreshGainingPreview()"> ' . get_label('for tours') . '</td></tr>';
 		echo '</table></p>';
 		echo '<p><i id="form-score-note" style="display: none;">' . get_label('The points depend on the result each player brought from the competition, so the table below counts it as zero.') . '</i></p>';
 		echo '<div id="form-gaining"></div>';

@@ -424,8 +424,8 @@ class ApiPage extends OpsApiPageBase
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_LEAGUE_MANAGER, 'Say which types of series a gaining system is meant for. A series is offered only the systems meant for its type; a series on a system that is not meant for its type any more stays on it.');
 		$help->request_param('gaining_id', 'Gaining system id. One that is not owned by a club or a league requires <em>admin</em> permissions.');
 		$help->request_param('season', '1 if it is for seasons, 0 if not.', 'remains the same.');
-		$help->request_param('series', '1 if it is for series of tournaments, 0 if not.', 'remains the same.');
-		$help->request_param('recurring', '1 if it is for recurring tournaments, 0 if not.', 'remains the same.');
+		$help->request_param('series', '1 if it is for tours, 0 if not.', 'remains the same.');
+		$help->request_param('recurring', '1 if it is for annuals, 0 if not.', 'remains the same.');
 		return $help;
 	}
 

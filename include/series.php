@@ -407,8 +407,8 @@ function get_series_types()
 {
 	return array(
 		SERIES_TYPE_SEASON => get_label('Season'),
-		SERIES_TYPE_SERIES => get_label('Series of tournaments'),
-		SERIES_TYPE_RECURRING => get_label('Recurring tournament'));
+		SERIES_TYPE_SERIES => get_label('Tour'),
+		SERIES_TYPE_RECURRING => get_label('Annual'));
 }
 
 // The shape a series of this type usually has. The type is derived from the three properties, not
@@ -594,8 +594,8 @@ function get_series_type_filter_names()
 {
 	return array(
 		SERIES_TYPE_SEASON => get_label('seasons'),
-		SERIES_TYPE_SERIES => get_label('series of tournaments'),
-		SERIES_TYPE_RECURRING => get_label('recurring tournaments'));
+		SERIES_TYPE_SERIES => get_label('tours'),
+		SERIES_TYPE_RECURRING => get_label('annuals'));
 }
 
 // Which types a list shows. $default is what it shows before anybody touches the checkboxes, and
