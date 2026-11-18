@@ -64,10 +64,12 @@ try
 		echo '<head>';
 		echo '<META content="text/html; charset=utf-8" http-equiv=Content-Type>';
 		echo '<script src="' . versioned_asset('js/labels_' . get_lang_code($_lang) . '.js') . '"></script>';
-		echo '<link rel="stylesheet" href="' . versioned_asset('desktop.css') . '" type="text/css" media="screen" />';
+		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
 		echo '<link rel="stylesheet" href="' . versioned_asset('common.css') . '" type="text/css" media="screen" />';
+		// The look of the site, dark: the screen hangs in the hall and is read from across it.
+		echo '<link rel="stylesheet" href="' . versioned_asset('new_look.css') . '" type="text/css" />';
 		
-		echo '</head><body>';
+		echo '</head><body class="scr">';
 		
 		list ($standings_settings) = Db::record(get_label('tournament'), 'SELECT e.standings_settings FROM tournaments e WHERE e.id = ?', $tournament_id);
 		if (is_null($standings_settings))
@@ -126,7 +128,7 @@ try
 			
 			if ($title)
 			{
-				echo '<table width="100%"><tr><td><h2>' . $tournament_name . '</h2>';
+				echo '<table class="scr-hd" width="100%"><tr><td><h2>' . $tournament_name . '</h2>';
 				if ($logo_height > 0)
 				{
 					echo '</td><td align="right">';
@@ -200,7 +202,7 @@ try
 				}
 				
 				$number = 0;
-				echo '<table width="100%"><tr>';
+				echo '<table class="scr-cols" width="100%"><tr>';
 				for ($i = 0; $i < $cols; ++$i)
 				{
 					for ($j = 0; $j < $rows; ++$j)
@@ -224,7 +226,7 @@ try
 							echo '</tr>';
 						}
 						
-						echo '<tr>';
+						echo '<tr' . ($number <= 3 ? ' class="top"' : '') . '>';
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
 						$tournament_reg_pic->
@@ -251,7 +253,7 @@ try
 			else
 			{
 				$number = 0;
-				echo '<table width="100%"><tr>';
+				echo '<table class="scr-cols" width="100%"><tr>';
 				for ($i = 0; $i < $cols; ++$i)
 				{
 					for ($j = 0; $j < $rows; ++$j)
@@ -280,7 +282,7 @@ try
 							echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . '</td><td width="36">' . get_label('Main') . '</td><td width="36">' . get_label('Legacy') . '</td><td width="36">' . get_label('Bonus') . '</td><td width="36">' . get_label('Penlt') . '</td><td width="36">' . get_label('FK') . '</td></tr>';
 						}
 						
-						echo '<tr>';
+						echo '<tr' . ($number <= 3 ? ' class="top"' : '') . '>';
 						echo '<td align="center" class="dark">' . $number . '</td>';
 						echo '<td width="50">';
 						$tournament_reg_pic->

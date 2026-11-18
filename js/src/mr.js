@@ -1342,17 +1342,17 @@ var mr = new function()
 	
 	this.eventUserPhoto = function(userId, eventId)
 	{
-		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&event_id=" + eventId, 400);
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&event_id=" + eventId, 560);
 	}
 	
 	this.tournamentUserPhoto = function(userId, tournamentId)
 	{
-		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&tournament_id=" + tournamentId, 400);
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&tournament_id=" + tournamentId, 560);
 	}
 	
 	this.clubUserPhoto = function(userId, clubId)
 	{
-		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&club_id=" + clubId, 400);
+		dlg.infoForm("form/user_custom_photo.php?user_id=" + userId + "&club_id=" + clubId, 560);
 	}
 	
 	this.editUser = function(userId)

@@ -933,7 +933,13 @@ class Page extends PageBase
 	function show_round()
 	{
 		$is_day = isset($_REQUEST['day']);
-		
+		// Opened with no round asked for, the view starts at the beginning of the game - night 0 -
+		// rather than at the -1 that means "none" everywhere else on the page.
+		if ($this->round < 0)
+		{
+			$this->round = 0;
+		}
+
 		if ($is_day)
 		{
 			$start = new stdClass();

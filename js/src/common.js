@@ -92,7 +92,7 @@ var dlg = new function()
 		parentElem.append('<div id="' + id + '" title="' + title + '">' + text + '</div>');
 		let elem = $('#' + id);
 		//elem.html(text);
-		return elem.dialog(
+		let result = elem.dialog(
 		{
 			modal: true,
 			resizable: false,
@@ -109,6 +109,33 @@ var dlg = new function()
 			},
 			'buttons': buttons
 		});
+
+		// Enter presses the first button of the dialog - its Ok, Yes or Close. Not where Enter has a
+		// job of its own: a new line in a text area, the button or the link it is on, the hint picked
+		// in an open list of hints - or anything else that has already taken the key.
+		elem.closest('.ui-dialog').on('keydown', function(e)
+		{
+			if (e.which != 13 || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.isDefaultPrevented())
+			{
+				return;
+			}
+			let tag = e.target.tagName;
+			if (tag == 'TEXTAREA' || tag == 'BUTTON' || tag == 'A' || e.target.isContentEditable)
+			{
+				return;
+			}
+			if ($('.ui-autocomplete:visible').length > 0)
+			{
+				return;
+			}
+			let first = $(this).find('.ui-dialog-buttonpane button').first();
+			if (first.length > 0)
+			{
+				e.preventDefault();
+				first.trigger('click');
+			}
+		});
+		return result;
 	}
 	
 	this.onScreen = function()

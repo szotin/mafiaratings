@@ -628,6 +628,9 @@ class PageBase
 		}
 	}
 
+	// The menu on a narrow screen. "More" exists only because the row of the header has no room: in the
+	// drawer, which has, its first items join the sections of the site, and each label inside it -
+	// "Reports", "Resources", "Management" - starts a group of its own.
 	private static function show_drawer_items($menu)
 	{
 		echo '<div class="drawer-group">';
@@ -639,23 +642,31 @@ class PageBase
 				PageBase::show_menu_link($item, 'dl');
 			}
 		}
-		echo '</div>';
 		foreach ($menu as $item)
 		{
 			if (is_null($item->submenu))
 			{
 				continue;
 			}
-			echo '<div class="drawer-group"><div class="drawer-label">' . $item->text . '</div>';
+			// The items of "More" before its first label are sections of the site like the others;
+			// any other submenu opens a group under its own name.
+			if ($item->page != '#more')
+			{
+				echo '</div><div class="drawer-group"><div class="drawer-label">' . $item->text . '</div>';
+			}
 			foreach ($item->submenu as $sub)
 			{
 				if (!is_null($sub->page))
 				{
 					PageBase::show_menu_link($sub, 'dl');
 				}
+				else if (!empty($sub->text))
+				{
+					echo '</div><div class="drawer-group"><div class="drawer-label">' . $sub->text . '</div>';
+				}
 			}
-			echo '</div>';
 		}
+		echo '</div>';
 	}
 
 	private static function show_lang_switch()
