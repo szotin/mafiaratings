@@ -91,13 +91,15 @@ class Page extends GeneralPageBase
 		show_date_filter();
 		echo '</div>';
 		// The type filter belongs on both tabs: a recurring tournament is always under way, so the
-		// future tab is exactly where one shows up.
+		// future tab is exactly where one shows up. It goes on a line of its own with the other
+		// filters: after the dates there is no room for it.
+		echo '<div class="tb-line">';
 		show_series_type_filter($this->types);
 		if (!$this->future)
 		{
 			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
 		}
-		echo '</div>';
+		echo '</div></div>';
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);

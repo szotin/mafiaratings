@@ -302,7 +302,8 @@ class Page extends GeneralPageBase
 			}
 			else if (isset($tournament->winner))
 			{
-				echo '<span class="pc-win">' . PageBase::icon('trophy') . '<span class="dim">' . get_label('Winner') . '</span><b>' . $tournament->winner . '</b></span>';
+				// The cup says what the name is; the word "Winner" left the name no room beside the numbers.
+				echo '<span class="pc-win" title="' . get_label('Winner') . ': ' . $tournament->winner . '">' . PageBase::icon('trophy') . '<b>' . $tournament->winner . '</b></span>';
 			}
 			echo '<span class="pc-nums">';
 			if ($this->future)

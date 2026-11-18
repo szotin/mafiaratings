@@ -127,7 +127,7 @@ class Page extends GeneralPageBase
 		{
 			echo '<tr>';
 			echo '<td class="dark" align="center" style="white-space:nowrap">';
-			echo '<a href="seating.php?bck=1&hash=' . urlencode($seating->hash) . '" title="' . get_label('View') . '">';
+			echo '<a class="icon" href="seating.php?bck=1&hash=' . urlencode($seating->hash) . '" title="' . get_label('View') . '">';
 			echo '<img src="images/details.png" border="0">';
 			echo '</a>';
 			if ($is_admin)
