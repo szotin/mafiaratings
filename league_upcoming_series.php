@@ -4,6 +4,7 @@ require_once 'include/league.php';
 require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/series.php';
+require_once 'include/series_cards.php';
 
 define('ROW_COUNT', DEFAULT_ROW_COUNT);
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
@@ -20,89 +21,41 @@ class Page extends LeaguePageBase
 		$owner->name = $this->name;
 		$owner->flags = $this->flags;
 		$page_size = ROW_COUNT * COLUMN_COUNT;
-		$series_count = 0;
-		$column_count = 0;
 		
 		$condition = new SQL('s.league_id = ? AND UNIX_TIMESTAMP() <= s.start_time + s.duration', $this->id);
+		
+		// The button that makes a new series stands in the toolbar, as in the other lists of the look.
 		if ($is_manager)
 		{
-			--$page_size;
-			++$series_count;
-			++$column_count;
+			echo '<div class="toolbar"><a class="btn tb-create" href="#" onclick="mr.createSeries(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('sеriеs')) . '</span></a></div>';
 		}
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*) FROM series s WHERE ', $condition);
 		show_pages_navigation($page_size, $count);
 		
-		if ($is_manager)
-		{
-			echo '<table class="bordered light" width="100%"><tr>';
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" class="light">';	
-			echo '<table class="transp" width="100%">';
-			echo '<tr class="light"></tr><tr><td align="center"><a href="#" onclick="mr.createSeries(' . $this->id . ')">' . get_label('Create [0]', get_label('sеriеs'));
-			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '">';
-			echo '</td></tr></table>';
-			echo '</td>';
-		}
-		
-		$query = new DbQuery('SELECT s.id, ns.name, s.start_time, s.duration, s.flags FROM series s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $condition);
+		$query = new DbQuery(
+			'SELECT s.id, ns.name, s.start_time, s.duration, s.flags, s.max_stars,' .
+			' (SELECT count(*) FROM series_tournaments _ts JOIN tournaments _t ON _t.id = _ts.tournament_id WHERE _ts.series_id = s.id AND (_t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0) as tournaments' .
+			' FROM series s JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE ', $condition);
 		$query->add(' ORDER BY s.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 
-		$timezone = get_timezone();
-		$series_pic = new Picture(SERIES_PICTURE);
+		// The tiles of series.php (include/series_cards.php), the buttons of a manager on each.
+		$list = array();
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags) = $row;
-			if ($column_count == 0)
-			{
-				if ($series_count == 0)
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
+			$series = new stdClass();
+			list ($series->id, $series->name, $series->start_time, $series->duration, $series->flags, $series->max_stars, $series->tournaments) = $row;
+			$series->owner = $owner;
 			if ($_profile != NULL)
 			{
-				echo '<tr><td class="dark" style="padding:2px;">';
-				show_series_buttons($id, $start_time, $duration, $flags, $owner);
-				echo '</td></tr>';	
+				$series->buttons = PageBase::capture(function() use ($series, $owner) { show_series_buttons($series->id, $series->start_time, $series->duration, $series->flags, $owner); });
 			}
-			
-			echo '<tr><td align="center"><a href="series_info.php?bck=1&id=' . $id . '">' . series_period($start_time, $duration, $timezone) . '<br>';
-			$series_pic->set($id, $name, $flags);
-			$series_pic->show(ICONS_DIR, false);
-			echo '</a><br><b>' . $name;
-			echo '</b></td></tr></table>';
-			
-			echo '</td>';
-			
-			++$series_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
+			$list[] = $series;
 		}
-		if ($series_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
+		series_tiles_show($list, get_label('No series found.'));
 		show_pages_navigation($page_size, $count);
 	}
 }
-
 $page = new Page();
 $page->run(get_label('Upcoming series'));
 

@@ -6,6 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
 require_once 'include/series.php';
+require_once 'include/series_cards.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -29,7 +30,8 @@ class Page extends LeaguePageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		$types = get_series_type_filter();
+		// Every type at first, as in series.php: the tiles tell them apart by look.
+		$types = get_series_type_filter(SERIES_TYPE_FILTER_ALL);
 
 		$future = false;
 		if (isset($_REQUEST['future']))
@@ -75,32 +77,31 @@ class Page extends LeaguePageBase
 			$condition->add(' AND s.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		echo '<div class="tab">';
-		echo '<button ' . ($future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
-		echo '<button ' . (!$future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
-		echo '</div>';
-		echo '<div class="tabcontent">';
-		
-		echo '<p><table class="transp" width="100%">';
+		// The look of series.php: the switch, the dates, the types and the other filters in a toolbar,
+		// the series as tiles (include/series_cards.php).
+		echo '<div class="toolbar">';
+		echo card_seg(array(
+			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$future),
+			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $future)), get_label('Series'));
 		if (!$future)
 		{
-			echo '<tr><td>';
+			echo '<div class="tb-dates">';
 			show_date_filter();
-			echo '&emsp;&emsp;';
-			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $filter, 'filterSeries');
-			echo '</td></tr>';
+			echo '</div>';
 		}
-		echo '<tr><td>';
+		echo '<div class="tb-line">';
 		show_series_type_filter($types);
-		echo '</td></tr></table></p>';
+		if (!$future)
+		{
+			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $filter, 'filterSeries');
+		}
+		echo '</div></div>';
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
-		$series_pic = new Picture(SERIES_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 		$query = new DbQuery(
-			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.langs,' .
+			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.max_stars,' .
 			' (SELECT count(*) FROM series_tournaments _ts JOIN tournaments _t ON _t.id = _ts.tournament_id WHERE _ts.series_id = s.id AND (_t.flags & ' . TOURNAMENT_FLAG_CANCELED . ') = 0) as tournaments',
 			$condition);
 		if ($future)
@@ -112,46 +113,19 @@ class Page extends LeaguePageBase
 			$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 		}
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-			
-		$now = time();
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="2" align="center">' . get_label('Series') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Tournaments') . '</td>';
+		
+		$owner = new SeriesOwner($this->id, 0);
+		$owner->name = $this->name;
+		$owner->flags = $this->flags;
+		$list = array();
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $languages, $tournaments_count) = $row;
-
-			$playing = ($now >= $series_time && $now < $series_time + $series_duration && !series_is_infinite($series_time));
-			if ($playing)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
-			
-			echo '<td width="60" class="dark" align="center" valign="center">';
-			$series_pic->set($series_id, $series_name, $series_flags);
-			$series_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td><b><a href="series_standings.php?bck=1&id=' . $series_id . '">' . $series_name;
-			if ($playing)
-			{
-				echo ' (' . get_label('playing now') . ')';
-			}
-			echo '</b><br>' . series_period($series_time, $series_duration, $timezone) . '</a></td>';
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td align="center"><a href="series_tournaments.php?bck=1&id=' . $series_id . '">' . $tournaments_count . '</a></td>';
-			
-			echo '</tr>';
+			$series = new stdClass();
+			list ($series->id, $series->name, $series->flags, $series->start_time, $series->duration, $series->max_stars, $series->tournaments) = $row;
+			$series->owner = $owner;
+			$list[] = $series;
 		}
-		echo '</table>';
+		series_tiles_show($list, get_label('No series found.'), $timezone);
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	

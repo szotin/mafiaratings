@@ -888,7 +888,7 @@ span.switch-item:has(.tri-filter.yes), span.switch-item:has(.tri-filter.no) { ba
 
 /* tiles: a club, a league, a series */
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); gap: 14px; }
-.tiles.wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); }
+.tiles.wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); grid-auto-rows: 1fr; }
 .tiles-sec { margin-bottom: 26px; }
 .tile { position: relative; display: flex; align-items: center; gap: 14px; min-width: 0; padding: 14px 16px; border-radius: var(--r-sheet); background: var(--paper);
   border: 1px solid rgba(11,20,34,.06); box-shadow: var(--shadow-card); transition: transform .18s, box-shadow .18s; }
@@ -916,6 +916,24 @@ span.switch-item:has(.tri-filter.yes), span.switch-item:has(.tri-filter.no) { ba
 .tile.is-off .logo { filter: grayscale(1); opacity: .6; }
 .tile.is-off .who-name { color: var(--slate) !important; }
 .tile.is-mine { box-shadow: inset 3px 0 0 var(--red), var(--shadow-card); }
+/* the type of a series (series.php): a stripe of its colour down the left edge, its name in a chip */
+.tile.st-season { box-shadow: inset 4px 0 0 #8A97A8, var(--shadow-card); }
+.tile.st-series { box-shadow: inset 4px 0 0 #E0A800, var(--shadow-card); }
+.tile.st-recurring { box-shadow: inset 4px 0 0 #1F8A5B, var(--shadow-card); }
+/* the type over the number of tournaments, in the same place on every tile */
+.tile-side { position: relative; z-index: 1; flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.tile-side .st-chip { justify-content: center; text-align: center; white-space: nowrap; }
+.tile-meta:empty { display: none; }
+/* the line of the subseries of a series (series_series.php): its stars, unpaid, the other series it
+   is in and its players - links above the link of the whole tile */
+.tile-meta .chip.unpaid { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: #FCF4F4; color: var(--red); }
+.ss-extra .ss-parent, .ss-extra .ss-players { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px; }
+.ss-extra .ss-parent + .ss-parent { margin-left: 4px; }
+.tile .pc-res { position: relative; z-index: 1; }
+.tile .st-chip { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .01em; }
+.tile.st-season .st-chip { background: #EDF0F4; color: #4A5668; }
+.tile.st-series .st-chip { background: #FDF3D6; color: #8A6400; }
+.tile.st-recurring .st-chip { background: #E3F3EA; color: #19714A; }
 @media (prefers-reduced-motion: reduce) { .tile { transition: none; } .tile:hover { transform: none; } }
 
 /* the filter field where the page has no .nl to give it the look of a field (the main page) */

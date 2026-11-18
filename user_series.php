@@ -4,6 +4,7 @@ require_once 'include/user.php';
 require_once 'include/pages.php';
 require_once 'include/datetime.php';
 require_once 'include/series.php';
+require_once 'include/series_cards.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -14,7 +15,7 @@ class Page extends UserPageBase
 		global $_profile, $_page, $_lang;
 		$timezone = get_timezone();
 		
-		$condition = new SQL(' FROM series_places sp JOIN series s ON s.id = sp.series_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0 WHERE sp.user_id = ? AND sp.cut_stages = 0', $this->id);
+		$condition = new SQL(' FROM series_places sp JOIN series s ON s.id = sp.series_id JOIN names ns ON ns.id = s.name_id AND (ns.langs & '.$_lang.') <> 0' . series_owner_join() . ' WHERE sp.user_id = ? AND sp.cut_stages = 0', $this->id);
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$condition->add(' AND s.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());
@@ -24,93 +25,51 @@ class Page extends UserPageBase
 			$condition->add(' AND s.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td>';
+		echo '<div class="toolbar"><div class="tb-dates">';
 		show_date_filter();
-		echo '</td></tr></table></p>';
+		echo '</div></div>';
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
-
-		$series_pic = new Picture(SERIES_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		
 		$query = new DbQuery(
-			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.langs, sp.place, sp.score, sp.tournaments, sp.games, sp.wins',
+			'SELECT s.id, ns.name, s.flags, s.start_time, s.duration, s.max_stars, ' . series_owner_fields() . ',' .
+			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments,' .
+			' sp.place, sp.score, sp.tournaments, sp.games, sp.wins',
 			$condition);
 		$query->add(' ORDER BY s.start_time DESC, s.id DESC');
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-			
-		$now = time();
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="2" align="center">' . get_label('Series') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Place') . '</td>';
-		echo '<td width="60" align="center">' . get_label('Tournaments played') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
-		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
+		
+		// The tiles of series.php (include/series_cards.php), each with the player's own result in
+		// it: the place, the points, how many of its tournaments and games they played and won.
+		$list = array();
 		while ($row = $query->next())
 		{
-			list ($series_id, $series_name, $series_flags, $series_time, $series_duration, $languages, $place, $score, $tournaments_count, $games_count, $wins_count) = $row;
-
-			$playing = ($now >= $series_time && $now < $series_time + $series_duration && !series_is_infinite($series_time));
-			if ($playing)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
+			$series = new stdClass();
+			list ($series->id, $series->name, $series->flags, $series->start_time, $series->duration, $series->max_stars,
+				$league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $series->tournaments,
+				$place, $score, $tournaments_count, $games_count, $wins_count) = $row;
+			$series->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
 			
-			echo '<td width="60" class="dark" align="center" valign="center">';
-			$series_pic->set($series_id, $series_name, $series_flags);
-			$series_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td><b><a href="series_standings.php?bck=1&id=' . $series_id . '">' . $series_name;
-			if ($playing)
+			$res = '';
+			if (!is_null($place) && $place > 0)
 			{
-				echo ' (' . get_label('playing now') . ')';
+				$res .= '<span class="medal' . ($place <= 3 ? ' m' . $place : '') . '" title="' . get_label('[0] place', $place) . '">' . get_label('[0] place', $place) . '</span>';
 			}
-			echo '</b><br>' . series_period($series_time, $series_duration, $timezone) . '</a></td>';
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td align="center" class="dark">';
-			if (!is_null($place))
+			if (!is_null($score))
 			{
-				if ($place > 0 && $place < 4)
-				{
-					echo '<img src="images/' . $place . '-place.png" width="48" title="' . get_label('[0] place', $place) . '">';
-				}
-				else if ($place < 11)
-				{
-					echo '<b>' . $place . '</b>';
-				}
-				else
-				{
-					echo $place;
-				}
+				$res .= '<span title="' . get_label('Points') . '">' . PageBase::icon('trophy') . format_score($score) . '</span>';
 			}
-			echo '</td>';
-			
-			echo '<td align="center">' . $tournaments_count . '</td>';
-			echo '<td align="center">' . $games_count . '</td>';
-			echo '<td align="center">' . $wins_count . '</td>';
+			$res .= '<span title="' . get_label('Tournaments played') . '">' . PageBase::icon('layers') . $tournaments_count . '</span>';
+			$res .= '<span title="' . get_label('Games played') . '">' . PageBase::icon('play') . $games_count . '</span>';
 			if ($games_count > 0)
 			{
-				echo '<td align="center">' . number_format(($wins_count*100.0)/$games_count, 1) . '%</td>';
+				$res .= '<span title="' . get_label('Winning %') . '">' . number_format(($wins_count * 100.0) / $games_count, 1) . '%</span>';
 			}
-			else
-			{
-				echo '<td></td>';
-			}
-			
-			echo '</tr>';
+			$series->extra = '<span class="tile-meta pc-res">' . $res . '</span>';
+			$list[] = $series;
 		}
-		echo '</table>';
-		show_pages_navigation(PAGE_SIZE, $count);
+		series_tiles_show($list, get_label('No series found.'));		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
 

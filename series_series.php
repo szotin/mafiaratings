@@ -7,6 +7,8 @@ require_once 'include/series.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
+require_once 'include/series_cards.php';
 
 define('PAGE_SIZE', SERIES_PAGE_SIZE);
 
@@ -49,28 +51,32 @@ class Page extends SeriesPageBase
 			$stars = (int)$_REQUEST['stars'];
 		}
 
-		echo '<p><table class="transp" width="100%">';
-		echo '<tr><td>';
+		// The toolbar of the lists of series (series.php): past and future, the stars, the dates and
+		// the switches.
+		echo '<div class="toolbar">';
+		echo card_seg(array(
+			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$this->future),
+			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $this->future)), get_label('Subseries'));
 		// Only as many stars as this series hands out, and none at all when it does not rate what
 		// is in it - there is nothing to filter by then.
 		if ($this->max_stars > 0)
 		{
-			echo get_label('Stars') . ': <select id="starsfilter" onchange="goTo({page:undefined,stars:$(\'#starsfilter\').val()})">';
+			echo '<label>' . get_label('Stars') . ': <select id="starsfilter" onchange="goTo({page:undefined,stars:$(\'#starsfilter\').val()})">';
 			show_option(0, $stars, '');
 			for ($s = 1; $s <= $this->max_stars; ++$s)
 			{
 				show_option($s, $stars, str_repeat('★', $s));
 			}
-			echo '</select>';
-			echo '&emsp;&emsp;';
+			echo '</select></label>';
 		}
+		echo '<div class="tb-dates">';
 		show_date_filter();
-		echo '&emsp;&emsp;';
+		echo '</div>';
 		if (!$this->future)
 		{
 			show_checkbox_filter(array(get_label('unplayed series'), get_label('canceled series')), $this->filter);
 		}
-		echo '</td></tr></table></p>';
+		echo '</div>';
 
 		$subseries_csv = get_subseries_csv($this->id);
 		$condition = new SQL(
@@ -119,12 +125,6 @@ class Page extends SeriesPageBase
 			$condition->add(' AND s.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 
-		echo '<div class="tab">';
-		echo '<button ' . ($this->future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
-		echo '<button ' . (!$this->future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
-		echo '</div>';
-		echo '<div class="tabcontent">';
-
 		list ($count) = Db::record(get_label('series'), 'SELECT COUNT(DISTINCT s.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
@@ -138,7 +138,7 @@ class Page extends SeriesPageBase
 		}
 
 		$query = new DbQuery(
-			'SELECT DISTINCT s.id, ns.name, s.flags, s.start_time, s.duration, ' . series_owner_fields() . ',' .
+			'SELECT DISTINCT s.id, ns.name, s.flags, s.start_time, s.duration, s.max_stars, ' . series_owner_fields() . ',' .
 			' (SELECT count(*) FROM series_tournaments WHERE series_id = s.id) as tournaments,' .
 			' (SELECT count(*) FROM series_places WHERE series_id = s.id AND cut_stages = 0) as players',
 			$condition);
@@ -149,23 +149,11 @@ class Page extends SeriesPageBase
 		$subseries = array();
 		$delim = '';
 		$cs_subseries = '';
-		$first_month_series = NULL;
 		while ($row = $query->next())
 		{
 			$s = new stdClass();
-			list ($s->id, $s->name, $s->flags, $s->time, $s->duration, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $s->tournaments_count, $s->players_count) = $row;
+			list ($s->id, $s->name, $s->flags, $s->time, $s->duration, $s->max_stars, $league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags, $s->tournaments_count, $s->players_count) = $row;
 			$s->owner = SeriesOwner::from_row($league_id, $league_name, $league_flags, $club_id, $club_name, $club_flags);
-			$m = format_month($this->future ? $s->time + $s->duration : $s->time, $timezone);
-			if ($first_month_series == NULL || $first_month_series->month != $m)
-			{
-				$s->month = $m;
-				$s->month_count = 1;
-				$first_month_series = $s;
-			}
-			else
-			{
-				++$first_month_series->month_count;
-			}
 			$s->parents = array();
 			$s->series_series_flags = 0;
 			$subseries[] = $s;
@@ -213,86 +201,49 @@ class Page extends SeriesPageBase
 			}
 		}
 
-		echo '<table class="bordered light" width="100%"><tr class="th-long darker">';
-		echo '<td width="100"></td>';
-		echo '<td align="center" colspan="3">' . get_label('Series') . '</td>';
-		if (!$this->future)
-		{
-			echo '<td width="60" align="center">' . get_label('Players') . '</td>';
-		}
-		echo '<td width="60" align="center">' . get_label('Tournaments') . '</td>';
-		echo '</tr>';
-
-		$num = $_page * PAGE_SIZE;
-		$now = time();
-		$series_pic = new Picture(SERIES_PICTURE);
+		// The tiles of series.php (include/series_cards.php). Under the dates of each: the stars it
+		// has in this series, whether it is paid for, the other series it is in with their stars, and
+		// how many players it has.
 		$parent_pic = new SeriesPicture();
+		$list = array();
 		foreach ($subseries as $s)
 		{
-			$playing = ($now >= $s->time && $now < $s->time + $s->duration && !series_is_infinite($s->time));
-			if ($playing)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
-
-			if (isset($s->month))
-			{
-				echo '<td rowspan="' . $s->month_count . '" class="darker" width="100" align="center"><b>' . $s->month . '</b></td>';
-			}
-
-			echo '<td align="center" width="30"><b>' . ++$num . '</b></td>';
-
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td width="80" align="center" valign="center">';
-			$series_pic->set($s->id, $s->name, $s->flags);
-			$series_pic->show(ICONS_DIR, true, 60, 60, NULL, ($s->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED) ? 'not_payed.png' : NULL);
-			echo '</td>';
-			echo '<td><b><a href="series_standings.php?bck=1&id=' . $s->id . '">' . $s->name;
-			if ($playing)
-			{
-				echo ' (' . get_label('playing now') . ')';
-			}
-			echo '</a></b>';
+			$series = new stdClass();
+			$series->id = $s->id;
+			$series->name = $s->name;
+			$series->flags = $s->flags;
+			$series->start_time = $s->time;
+			$series->duration = $s->duration;
+			$series->max_stars = $s->max_stars;
+			$series->owner = $s->owner;
+			$series->tournaments = $s->tournaments_count;
+			
+			$extra = '';
 			if (isset($s->stars) && $s->stars > 0)
 			{
-				echo '<br><font style="color:#B8860B; font-size:20px;">' . tournament_stars_str($s->stars) . '</font>';
+				$extra .= '<span class="stars" title="' . htmlspecialchars(strip_tags($this->name), ENT_QUOTES, 'UTF-8') . '">' . tournament_stars_str($s->stars, false) . '</span>';
 			}
-			echo '</td>';
+			if ($s->series_series_flags & SERIES_SERIES_FLAG_NOT_PAYED)
+			{
+				$extra .= '<span class="chip unpaid">' . get_label('not payed') . '</span>';
+			}
 			foreach ($s->parents as $p)
 			{
-				echo '<td width="36" align="center" valign="center">';
-				if ($p->stars > 0)
-				{
-					echo '<font style="color:#B8860B; font-size:14px;">' . tournament_stars_str($p->stars) . '</font><br>';
-				}
-				echo '<a href="series_standings.php?bck=1&id=' . $p->id . '">';
-				$parent_pic->set($p->id, $p->name, $p->flags, $p->owner)->show(ICONS_DIR, false, 32);
-				echo '</a></td>';
+				$pic = PageBase::capture(function() use ($parent_pic, $p) { $parent_pic->set($p->id, $p->name, $p->flags, $p->owner)->show(ICONS_DIR, false, 20); });
+				$extra .= '<a class="ss-parent" href="series_standings.php?bck=1&id=' . $p->id . '" title="' . htmlspecialchars(strip_tags($p->name), ENT_QUOTES, 'UTF-8') . '">' . $pic .
+					($p->stars > 0 ? '<span class="stars">' . tournament_stars_str($p->stars, false) . '</span>' : '') . '</a>';
 			}
-			echo '</tr></table>';
-			echo '</td>';
-
-			echo '<td width="160" valign="center" class="dark">';
-			echo '<table width="100%" class="transp"><tr>';
-			echo '<td width="60" align="center" valign="center">';
-			$s->owner->picture()->show(ICONS_DIR, false, 40);
-			echo '</td>';
-			echo '<td>' . series_period($s->time, $s->duration, $timezone) . '</td>';
-			echo '</tr></table></td>';
-
 			if (!$this->future)
 			{
-				echo '<td align="center"><a href="series_standings.php?bck=1&id=' . $s->id . '">' . $s->players_count . '</a></td>';
+				$extra .= '<a class="ss-players" href="series_standings.php?bck=1&id=' . $s->id . '" title="' . get_label('Players') . '">' . PageBase::icon('users') . $s->players_count . '</a>';
 			}
-			echo '<td align="center"><a href="series_tournaments.php?bck=1&id=' . $s->id . '">' . $s->tournaments_count . '</a></td>';
-			echo '</tr>';
+			if ($extra != '')
+			{
+				$series->extra = '<span class="tile-meta ss-extra">' . $extra . '</span>';
+			}
+			$list[] = $series;
 		}
-		echo '</table>';
-		show_pages_navigation(PAGE_SIZE, $count);
+		series_tiles_show($list, get_label('No series found.'), $timezone);		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
 
