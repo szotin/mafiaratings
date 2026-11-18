@@ -4,6 +4,7 @@ require_once 'include/tournament.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/cards.php';
 //require_once 'include/emo.php';
 
 define('VIEW_EMO_ID', 0);
@@ -127,7 +128,9 @@ class Page extends TournamentPageBase
 		if (!is_null($this->players))
 		{
 			echo '<p><h3>' . get_label('Players') . '</h3>';
-			echo '<table class="bordered light" width="100%">';
+			// The table of the v3 design (see ratings.php): the player of emotion.games, the button that
+			// maps them, the user of this site they are mapped to.
+			echo '<div class="sheet"><table class="tbl"><tbody>';
 			foreach ($this->players as $player)
 			{
 				if (isset($player->candidate_id)) // Skip the autodetected referees for now. Let the system always use the autodetected value.
@@ -135,8 +138,7 @@ class Page extends TournamentPageBase
 					continue;
 				}
 
-				echo '<tr><td width="420">';
-				echo '<table class="transp" width="100%"><tr><td width="32"><button class="icon" onclick="createUser(\'' . $player->emo_name . '\', ' . $player->emo_id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
+				echo '<tr><td class="tb-btns"><button class="icon" onclick="createUser(\'' . $player->emo_name . '\', ' . $player->emo_id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
 				if (!is_null($player->emo_id) && $player->emo_id > 0)
 				{
 					echo '<a href="https://tournament.emotion.games/players/'.$player->emo_id.'" target="_blank">'.$player->emo_name.'</a>';
@@ -145,25 +147,21 @@ class Page extends TournamentPageBase
 				{
 					echo $player->emo_name;
 				}
-				echo '</td></tr></table>';
 				echo '</td>';
-				
-				echo '<td width="40" align="center"><button class="big_icon" onclick="mapPlayer('.$player->emo_id.')"><img src="images/right.png" width="32"></button>';
+
+				echo '<td class="tb-btns"><button class="big_icon" onclick="mapPlayer('.$player->emo_id.')"><img src="images/right.png" width="32"></button></td>';
 				if (isset($player->id))
 				{
-					echo '<td><table class="transp" width="100%"><tr>';
-					echo '<td width="52">';
-					$user_pic->set($player->id, $player->name, $player->flags);
-					$user_pic->show(ICONS_DIR, true, 48);
-					echo '</td><td><a href="user_info.php?id='.$player->id.'&bck=1">' . $player->name . '</a></td></tr></table></td>';
+					echo '<td><a class="who" href="user_info.php?id='.$player->id.'&bck=1">' . card_avatar($user_pic, $player->id, $player->name, $player->flags, '') .
+						'<span class="who-txt"><span class="who-name">' . $player->name . '</span></span></a></td>';
 				}
 				else
 				{
 					echo '<td></td>';
 				}
-				echo '</td></tr>';
+				echo '</tr>';
 			}
-			echo '</table></p>';
+			echo '</tbody></table></div></p>';
 		}
 	}
 	

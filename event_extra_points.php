@@ -5,6 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -22,23 +23,26 @@ class Page extends EventPageBase
 			$this->club_id, $this->id, $this->tournament_id);
 		
 		list ($count) = Db::record(get_label('extra points'), 'SELECT count(*) FROM event_extra_points WHERE event_id = ?', $this->id);
+
+		// The list of the v3 design, after ratings.php: the button that adds points in the toolbar,
+		// the table in a sheet.
+		echo '<div class="toolbar"><span class="count">' . get_label('[0] records', number_format($count)) . '</span>';
+		echo '<a class="btn tb-create" href="#" onclick="addPoints(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Add extra points') . '</span></a></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
-		
+
 		$event_reg_pic =
-			new Picture(USER_EVENT_PICTURE, 
+			new Picture(USER_EVENT_PICTURE,
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic)));
 
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td width="60">';
-		echo '<button class="icon" onclick="addPoints(' . $this->id . ')"><img src="images/create.png" border="0"></button>';
-		echo '</td>';
-		echo '<td colspan="2">'.get_label('Player').'</td>';
-		echo '<td width="180" align="center">' . get_label('Reason') . '</td>';
-		echo '<td width="80" align="center">' . get_label('Points') . '</td>';
-		echo '<td width="80" align="center">' . get_label('MVP') . '</td>';
-		echo '</tr>';
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th scope="col"></th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th scope="col">' . get_label('Reason') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Points') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('MVP') . '</th>';
+		echo '</tr></thead><tbody>';
 		
 		$query = new DbQuery(
 			'SELECT p.id, u.id, nu.name, u.flags, p.reason, p.details, p.points, p.mvp, eu.nickname, eu.flags, tu.flags, cu.flags' . 
@@ -55,22 +59,19 @@ class Page extends EventPageBase
 			list($points_id, $user_id, $user_name, $user_flags, $reason, $details, $points, $mvp, $user_nickname, $event_reg_flags, $tournament_reg_flags, $club_reg_flags) = $row;
 			
 			echo '<tr>';
-			echo '<td valign="center">';
+			echo '<td class="tb-btns">';
 			echo '<button class="icon" onclick="deletePoints(' . $points_id . ')"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="editPoints(' . $points_id . ')"><img src="images/edit.png" border="0"></button>';
 			echo '</td>';
-			echo '<td width="60" align="center">';
-			$this->user_pic->set($user_id, $user_name, $user_flags);
 			$event_reg_pic->
 				set($user_id, $user_nickname, $event_reg_flags, 'e' . $this->id)->
 				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->tournament_id)->
 				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
 				set($user_id, $user_name, $user_flags);
-			$event_reg_pic->show(ICONS_DIR, true, 50);
-			echo '</td><td>';
-			echo '<a href="event_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . $user_name . '</a></td>';
-			echo '<td>' . $reason . '</td>';
-			echo '<td align="center">';
+			echo '<td><a class="who" href="event_player.php?user_id=' . $user_id . '&id=' . $this->id . '&bck=1">' . card_avatar_of($event_reg_pic, $user_id, $user_name, '') .
+				'<span class="who-txt"><span class="who-name">' . $user_name . '</span></span></a></td>';
+			echo '<td class="dim">' . $reason . '</td>';
+			echo '<td class="num strong">';
 			if ($points == 0)
 			{
 				echo get_label('Average');
@@ -80,10 +81,10 @@ class Page extends EventPageBase
 				echo format_score($points);
 			}
 			echo '</td>';
-			echo '<td align="center">' . ($mvp ? get_label('yes') : get_label('no')) . '</td>';
+			echo '<td class="num p3 dim">' . ($mvp ? get_label('yes') : get_label('no')) . '</td>';
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	

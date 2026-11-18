@@ -7,6 +7,7 @@ require_once 'include/pages.php';
 require_once 'include/address.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
@@ -682,30 +683,38 @@ class Page extends TournamentPageBase
 	
 	private function showPlayer($user_id, $cell_attributes = '')
 	{
-		$class = '';
+		$js = '';
 		if ($this->highlight_id == $user_id)
 		{
-			$class = ' class="darker hlt"';
-			if ($this->user_id == $user_id)
+			if ($this->user_id != $user_id)
 			{
-				$ref_beg = '';
-				$ref_end = '';
-			}
-			else
-			{
-				$ref_beg = '<a href="javascript:highlight()">';
-				$ref_end = '</a>';
+				$js = 'highlight()';
 			}
 		}
 		else
 		{
-			$ref_beg = '<a href="javascript:highlight('.$user_id.')">';
+			$js = 'highlight(' . $user_id . ')';
+		}
+		if ($js == '')
+		{
+			$ref_beg = '';
+			$ref_end = '';
+		}
+		else
+		{
+			$ref_beg = '<a href="javascript:' . $js . '">';
 			$ref_end = '</a>';
 		}
-		
+
 		if (empty($cell_attributes))
 		{
 			$cell_attributes = $this->highlight_id == $user_id ? ' class="darker hlt"' : '';
+		}
+		// The whole cell marks the player, not only the picture and the name in it; a click on those
+		// is left to their own links.
+		if ($js != '')
+		{
+			$cell_attributes .= ' data-pick="1" onclick="if (!event.target.closest(\'a\')) ' . $js . '"';
 		}
 		echo '<td align="center"' . $cell_attributes . '>';
 		if ($user_id > 0)
@@ -719,7 +728,8 @@ class Page extends TournamentPageBase
 					set($user->id, $user->name, $user->tournament_reg_flags, 't' . $this->id)->
 					set($user->id, $user->name, $user->club_reg_flags, 'c' . $this->club_id)->
 					set($user->id, $user->name, $user->flags);
-				$this->user_pic->show(ICONS_DIR, false, 48);
+				// A round picture, as in the standings; a player without one gets their initials.
+				echo card_avatar_of($this->user_pic, $user->id, $user->name, 'lg');
 				echo $ref_end.'</td></tr>';
 			}
 			echo '<tr><td align="center" style="height:30px">' . $ref_beg . $user->name;
@@ -782,7 +792,7 @@ class Page extends TournamentPageBase
 			}
 			++$shown;
 			echo '<p><center><h2>' . get_label('Table [0]', $i + 1) . '</h2></center></p>';
-			echo '<table class="bordered light" width="100%">';
+			echo '<table class="bordered light seat-grid" width="100%">';
 			echo '<tr class="dark"><td width="8%"></td>';
 			for ($k = 0; $k < 10; ++$k)
 			{
@@ -1156,7 +1166,7 @@ class Page extends TournamentPageBase
 			
 			++$shown;
 			echo '<p><center><h2>' . get_label('Game [0]', $i + 1) . '</h2></center></p>';
-			echo '<table class="bordered light" width="100%">';
+			echo '<table class="bordered light seat-grid" width="100%">';
 			echo '<tr class="dark"><td width="8%"></td>';
 			for ($k = 0; $k < 10; ++$k)
 			{
@@ -1275,10 +1285,29 @@ class Page extends TournamentPageBase
 			goTo({ops: <?php echo $this->changeOp(ONLY_HIGHLIGHTED); ?>});
 		}
 		
+		// Marking a player reloads the page: it comes back where it was, not at its top.
 		function highlight(userId)
 		{
+			try { sessionStorage.setItem('seatingScroll', window.scrollY); } catch (e) {}
 			goTo({hlt: userId});
 		}
+
+		(function()
+		{
+			var y = null;
+			try
+			{
+				y = sessionStorage.getItem('seatingScroll');
+				sessionStorage.removeItem('seatingScroll');
+			}
+			catch (e) {}
+			if (y !== null)
+			{
+				var restore = function() { window.scrollTo(0, parseInt(y)); };
+				$(restore);
+				$(window).on('load', restore);
+			}
+		})();
 <?php
 	}
 }

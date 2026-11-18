@@ -2,6 +2,7 @@
 
 require_once 'include/club.php';
 require_once 'include/pages.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -66,31 +67,37 @@ class Page extends ClubPageBase
 		}
 		
 		$club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
-
-		echo '<form method="get" name="viewForm">';
-		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		echo '<table class="transp" width="100%"><tr><td align="right">';
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific user is located.'));
-		echo '</td></tr></table></form>';
+		$club_pic = new Picture(CLUB_PICTURE);
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM users u, club_regs uc WHERE ', $condition);
-		show_pages_navigation(PAGE_SIZE, $count);
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker">';
+		// The list of the v3 design, after ratings.php: the search and the count in a toolbar, the
+		// button that adds a member at its end, the table in a sheet.
+		echo '<form method="get" name="viewForm">';
+		echo '<input type="hidden" name="id" value="' . $this->id . '">';
+		echo '<div class="toolbar"><div class="field grow">' . PageBase::icon('search');
+		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific user is located.'));
+		echo '</div><span class="count">' . get_label('[0] members', number_format($count)) . '</span>';
 		if ($this->is_manager)
 		{
-			echo '<td width="112">';
-			echo '<button class="icon" onclick="addMember()" title="' . get_label('Add club member') . '"><img src="images/create.png" border="0"></button>';
-			echo '</td>';
-			echo '<td colspan="4">';
+			echo '<a class="btn tb-create" href="#" onclick="addMember(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Add club member') . '</span></a>';
 		}
-		else
+		echo '</div></form>';
+		show_pages_navigation(PAGE_SIZE, $count);
+		
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr>';
+		if ($this->is_manager)
 		{
-			echo '<td colspan="3">';
+			echo '<th scope="col"></th>';
 		}
-		echo get_label('User') . '</td><td width="130">' . get_label('Permissions') . '</td></tr>';
+		echo '<th scope="col">' . get_label('User') . '</th>';
+		if ($this->is_manager)
+		{
+			echo '<th class="p2" scope="col">' . get_label('Email') . '</th>';
+		}
+		echo '<th class="p3" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Permissions') . '</th></tr></thead><tbody>';
 
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.email, u.flags, uc.flags, c.id, nc.name, c.flags, ni.name' .
@@ -108,17 +115,10 @@ class Page extends ClubPageBase
 		{
 			list($id, $name, $email, $flags, $club_reg_flags, $club_id, $club_name, $club_flags, $city) = $row;
 		
-			if ($id == $this->user_id)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr class="light">';
-			}
+			echo '<tr' . ($id == $this->user_id ? ' class="me"' : '') . '>';
 			if ($this->is_manager)
 			{
-				echo '<td class="dark">';
+				echo '<td class="tb-btns">';
 				echo '<button class="icon" onclick="removeMember(' . $id . ', \'' . $name . '\')" title="' . get_label('Remove [0] from club members.', $name) . '"><img src="images/delete.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.editClubAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
 				echo '<button class="icon" onclick="mr.clubUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
@@ -129,29 +129,21 @@ class Page extends ClubPageBase
 				echo '</td>';
 			}
 			
-			echo '<td width="60" align="center">';
 			$club_reg_pic->set($id, $name, $club_reg_flags, 'c' . $this->id)->set($id, $name, $flags);
-			$club_reg_pic->show(ICONS_DIR, true, 50);
-			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
+			echo '<td><a class="who" href="user_info.php?id=' . $id . '&bck=1">' . card_avatar_of($club_reg_pic, $id, $name, '') .
+				'<span class="who-txt"><span class="who-name">' . $name . '</span><span class="who-sub">' . $city . '</span></span></a></td>';
 			if ($this->is_manager)
 			{
-				echo '<td width="200">';
+				echo '<td class="p2 dim">';
 				if ($club_id == $this->id)
 				{
 					echo $email;
 				}
 				echo '</td>';
 			}
-			echo '<td width="50" align="center">';
-			if (!is_null($club_id))
-			{
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 40);
-			}
-			echo '</td>';
+			echo '<td class="p3">' . card_club($club_pic, $club_id, $club_name, $club_flags) . '</td>';
 			
-			echo '<td>';
+			echo '<td class="num perms">';
 			if ($club_reg_flags & USER_CLUB_FLAG_SUBSCRIBED)
 			{	
 				echo '<img src="images/email.png" width="24" title="' . get_label('Subscribed') . '">';
@@ -186,7 +178,7 @@ class Page extends ClubPageBase
 			}
 			echo '</td></tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	

@@ -2,6 +2,7 @@
 
 require_once 'include/seating.php';
 require_once 'include/page_base.php';
+require_once 'include/cards.php';
 
 class Page extends PageBase
 {
@@ -17,11 +18,14 @@ class Page extends PageBase
 
 		$user_pic = new Picture(USER_PICTURE);
 
-		echo '<p><table class="bordered light" width="100%">';
-		echo '<tr class="dark"><th width="32"><button class="icon" onclick="createPair()" title="' . get_label('Create new pair') . '"><img src="images/create.png"></button></th>';
-		echo '<th width="200">' . get_label('Player [0]', 1) . '</th>';
-		echo '<th width="200">' . get_label('Player [0]', 2) . '</th>';
-		echo '<th>' . get_label('Policy') . '</th></tr>';
+		// The list of the v3 design, after ratings.php: the button that creates a pair in the toolbar,
+		// the table in a sheet, a player in each of the two columns.
+		echo '<div class="toolbar"><a class="btn tb-create" href="#" onclick="createPair(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create new pair') . '</span></a></div>';
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th scope="col"></th>';
+		echo '<th scope="col">' . get_label('Player [0]', 1) . '</th>';
+		echo '<th scope="col">' . get_label('Player [0]', 2) . '</th>';
+		echo '<th scope="col">' . get_label('Policy') . '</th></tr></thead><tbody>';
 
 		$query = new DbQuery(
 			'SELECT u1.id, nu1.name, u1.flags,' .
@@ -38,22 +42,15 @@ class Page extends PageBase
 			list ($user1_id, $user1_name, $user1_flags,
 			      $user2_id, $user2_name, $user2_flags, $policy) = $row;
 			echo '<tr>';
-			echo '<td><button class="icon" onclick="deletePair(' . (int)$user1_id . ',' . (int)$user2_id . ')" title="' . get_label('Delete pair') . '"><img src="images/delete.png"></button></td>';
-
-			echo '<td><table class="transp" width="100%"><tr><td width="52">';
-			$user_pic->set((int)$user1_id, $user1_name, (int)$user1_flags);
-			$user_pic->show(ICONS_DIR, false, 48);
-			echo '</td><td><a href="user_info.php?id=' . (int)$user1_id . '&bck=1">' . $user1_name . '</a></td></tr></table></td>';
-
-			echo '<td><table class="transp" width="100%"><tr><td width="52">';
-			$user_pic->set((int)$user2_id, $user2_name, (int)$user2_flags);
-			$user_pic->show(ICONS_DIR, false, 48);
-			echo '</td><td><a href="user_info.php?id=' . (int)$user2_id . '&bck=1">' . $user2_name . '</a></td></tr></table></td>';
-
-			echo '<td align="center">' . get_pair_policy_name($policy) . '</td>';
+			echo '<td class="tb-btns"><button class="icon" onclick="deletePair(' . (int)$user1_id . ',' . (int)$user2_id . ')" title="' . get_label('Delete pair') . '"><img src="images/delete.png"></button></td>';
+			echo '<td><a class="who" href="user_info.php?id=' . (int)$user1_id . '&bck=1">' . card_avatar($user_pic, (int)$user1_id, $user1_name, (int)$user1_flags, '') .
+				'<span class="who-txt"><span class="who-name">' . $user1_name . '</span></span></a></td>';
+			echo '<td><a class="who" href="user_info.php?id=' . (int)$user2_id . '&bck=1">' . card_avatar($user_pic, (int)$user2_id, $user2_name, (int)$user2_flags, '') .
+				'<span class="who-txt"><span class="who-name">' . $user2_name . '</span></span></a></td>';
+			echo '<td class="dim">' . get_pair_policy_name($policy) . '</td>';
 			echo '</tr>';
 		}
-		echo '</table></p>';
+		echo '</tbody></table></div>';
 	}
 
 	protected function js()

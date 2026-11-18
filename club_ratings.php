@@ -6,6 +6,7 @@ require_once 'include/image.php';
 require_once 'include/club.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 define('SORT_BY_RATING', 0);
@@ -68,14 +69,16 @@ class Page extends ClubPageBase
 		$this->errorMessage($message);
 	}
 	
+	// A column the list can be sorted by: its heading is a link, with an arrow when it is the order.
+	private function sort_th($sort, $label, $class)
+	{
+		$go = ($sort == SORT_BY_RATING) ? 'undefined' : $sort;
+		echo '<th class="num ' . $class . '" scope="col"' . ($this->sort == $sort ? ' aria-sort="descending"' : '') . '><a class="th-sort" href="#" onclick="goTo({sort:' . $go . ',page:undefined}); return false;">' . $label . '</a></th>';
+	}
+	
 	protected function show_body()
 	{
 		global $_page, $_profile, $_lang;
-		
-		echo '<p><table class="transp" width="100%"><tr><td align="right">';
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table></p>';
 		
 		$condition = new SQL(' WHERE u.club_id = ? AND u.games > 0', $this->id);
 		$query = new DbQuery(
@@ -142,41 +145,26 @@ class Page extends ClubPageBase
 		$club_reg_pic = new Picture(USER_CLUB_PICTURE, $this->user_pic);
 			
 		list ($count) = Db::record(get_label('rating'), $count_query);
+		
+		// The list of the v3 design, after ratings.php: the search and the count in a toolbar, the
+		// table in a sheet.
+		echo '<div class="toolbar"><div class="field grow">' . PageBase::icon('search');
+		show_user_input('page', $this->user_name, 'club=' . $this->id, get_label('Go to the page where a specific player is located.'));
+		echo '</div><span class="count">' . get_label('[0] players', number_format($count)) . '</span></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td width="40">&nbsp;</td>';
-		echo '<td colspan="2">'.get_label('Player').'</td>';
-		if ($this->sort == SORT_BY_RATING)
-		{
-			echo '<td width="60" align="center">'.get_label('Rating').'</td>';
-		}
-		else
-		{
-			echo '<td width="60" align="center"><a href="#" onclick="goTo({sort:undefined,page:undefined})">'.get_label('Rating').'</a></td>';
-		}
-		if ($this->sort == SORT_BY_RED_RATING)
-		{
-			echo '<td width="60" align="center">'.get_label('Red rating').'</td>';
-		}
-		else
-		{
-			echo '<td width="60" align="center"><a href="#" onclick="goTo({sort:' . SORT_BY_RED_RATING . ',page:undefined})">'.get_label('Red rating').'</a></td>';
-		}
-		if ($this->sort == SORT_BY_BLACK_RATING)
-		{
-			echo '<td width="60" align="center">'.get_label('Black rating').'</td>';
-		}
-		else
-		{
-			echo '<td width="60" align="center"><a href="#" onclick="goTo({sort:' . SORT_BY_BLACK_RATING . ',page:undefined})">'.get_label('Black rating').'</a></td>';
-		}
-		echo '<td width="60" align="center">'.get_label('Redness').'</td>';
-		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
-		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="60" align="center">'.get_label('Rating per game').'</td>';
-		echo '</tr>';
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		$this->sort_th(SORT_BY_RATING, get_label('Rating'), '');
+		$this->sort_th(SORT_BY_RED_RATING, get_label('Red rating'), 'p4');
+		$this->sort_th(SORT_BY_BLACK_RATING, get_label('Black rating'), 'p4');
+		echo '<th class="num p4" scope="col">' . get_label('Redness') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Games played') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Wins') . '</th>';
+		echo '<th class="num p2" scope="col">' . get_label('Winning %') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Rating per game') . '</th>';
+		echo '</tr></thead><tbody>';
 
 		$number = $_page * PAGE_SIZE;
 		while ($row = $query->next())
@@ -184,63 +172,29 @@ class Page extends ClubPageBase
 			++$number;
 			list ($id, $name, $rating, $red_rating, $black_rating, $games_played, $games_won, $flags, $club_id, $club_name, $club_flags, $club_reg_flags) = $row;
 
-			if ($id == $this->user_id)
-			{
-				echo '<tr class="darker">';
-				$highlight = 'darker';
-			}
-			else
-			{
-				echo '<tr>';
-				$highlight = 'dark';
-			}
-
-			echo '<td align="center" class="' . $highlight . '">' . $number . '</td>';
-			echo '<td width="60" align="center">';
+			echo '<tr' . ($id == $this->user_id ? ' class="me"' : '') . '>';
+			echo '<td class="rk"><span class="medal' . ($number <= 3 ? ' m' . $number : '') . '">' . sprintf('%02d', $number) . '</span></td>';
 			$club_reg_pic->set($id, $name, $club_reg_flags, 'c' . $this->id)->set($id, $name, $flags);
-			$club_reg_pic->show(ICONS_DIR, true, 50);
-			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1">' . cut_long_name($name, 45) . '</a></td>';
-			if ($this->sort == SORT_BY_RATING)
-			{
-				echo '<td align="center" class="' . $highlight . '"><b>' . format_rating($rating + USER_INITIAL_RATING) . '</b></td>';
-			}
-			else
-			{
-				echo '<td align="center">' . format_rating($rating + USER_INITIAL_RATING) . '</td>';
-			}
-			if ($this->sort == SORT_BY_RED_RATING)
-			{
-				echo '<td align="center" class="' . $highlight . '"><b>' . format_rating($red_rating + USER_INITIAL_RATING) . '</b></td>';
-			}
-			else
-			{
-				echo '<td align="center">' . format_rating($red_rating + USER_INITIAL_RATING) . '</td>';
-			}
-			if ($this->sort == SORT_BY_BLACK_RATING)
-			{
-				echo '<td align="center" class="' . $highlight . '"><b>' . format_rating($black_rating + USER_INITIAL_RATING) . '</b></td>';
-			}
-			else
-			{
-				echo '<td align="center">' . format_rating($black_rating + USER_INITIAL_RATING) . '</td>';
-			}
-			echo '<td align="center">' . format_rating($red_rating - $black_rating) . '</td>';
-			
-			echo '<td align="center">' . $games_played . '</td>';
-			echo '<td align="center">' . $games_won . '</td>';
+			echo '<td><a class="who" href="user_info.php?id=' . $id . '&bck=1">' . card_avatar_of($club_reg_pic, $id, $name, '') .
+				'<span class="who-txt"><span class="who-name">' . cut_long_name($name, 45) . '</span></span></a></td>';
+			echo '<td class="num' . ($this->sort == SORT_BY_RATING ? ' strong' : '') . '">' . format_rating($rating + USER_INITIAL_RATING) . '</td>';
+			echo '<td class="num p4' . ($this->sort == SORT_BY_RED_RATING ? ' strong' : ' dim') . '">' . format_rating($red_rating + USER_INITIAL_RATING) . '</td>';
+			echo '<td class="num p4' . ($this->sort == SORT_BY_BLACK_RATING ? ' strong' : ' dim') . '">' . format_rating($black_rating + USER_INITIAL_RATING) . '</td>';
+			echo '<td class="num p4 dim">' . format_rating($red_rating - $black_rating) . '</td>';
+			echo '<td class="num p3">' . $games_played . '</td>';
+			echo '<td class="num p3">' . $games_won . '</td>';
 			if ($games_played != 0)
 			{
-				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . format_rating($rating/$games_played, 2) . '</td>';
+				echo '<td class="num p2">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
+				echo '<td class="num p4 dim">' . format_rating($rating/$games_played, 2) . '</td>';
 			}
 			else
 			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
+				echo '<td class="num p2"></td><td class="num p4"></td>';
 			}
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }

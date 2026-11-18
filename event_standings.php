@@ -5,6 +5,7 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/scoring.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -70,7 +71,7 @@ class Page extends EventPageBase
 				'SELECT nu.name, u.club_id, u.city_id, c.country_id'.
 				' FROM users u'.
 				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' JOIN cities c ON c.id = u.city_id',
+				' JOIN cities c ON c.id = u.city_id'.
 				' WHERE u.id = ?', $this->user_id);
 			if ($row = $query->next())
 			{
@@ -102,9 +103,6 @@ class Page extends EventPageBase
 		echo '<table class="transp" width="100%">';
 		echo '<tr><td>';
 		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, 0, 0, $this->scoring_options, ' ', 'submitScoring', SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER);
-		echo '</td><td align="right">';
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, 'event=' . $this->id, get_label('Go to the page where a specific player is located.'));
 		if ($this->is_manager)
 		{
 			echo '</td><td align="right" width="32"><button class="icon" title="'.get_label('Refresh scoring table').'" onclick="clearCache()"><img src="images/refresh.png"></button>';
@@ -130,119 +128,98 @@ class Page extends EventPageBase
 			new Picture(USER_TOURNAMENT_PICTURE,
 			new Picture(USER_CLUB_PICTURE,
 			$this->user_pic)));
+		$club_pic = new Picture(CLUB_PICTURE);
 		
+		// The list of the v3 design, after tournament_standings.php: the search and the count in a
+		// toolbar, the table in a sheet.
+		echo '<div class="toolbar"><div class="field grow">' . PageBase::icon('search');
+		show_user_input('page', $this->user_name, 'event=' . $this->id, get_label('Go to the page where a specific player is located.'));
+		echo '</div><span class="count">' . get_label('[0] players', number_format($players_count)) . '</span></div>';
 		show_pages_navigation(PAGE_SIZE, $players_count);
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker"><td width="40" rowspan="2">&nbsp;</td>';
-		echo '<td colspan="2" rowspan="2">'.get_label('Player').'</td>';
-		echo '<td width="36" align="center" colspan="' . ($this->show_fk ? 6 : 5) . '">'.get_label('Points').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Games played').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Wins').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Winning %').'</td>';
-		echo '<td width="36" align="center" rowspan="2">'.get_label('Points per game').'</td>';
-		echo '</tr>';
-		echo '<tr class="th darker" align="center"><td width="36">' . get_label('Sum') . 
-			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_MAIN, true) . 
-			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_LEGACY, true) . 
-			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_EXTRA, true) . 
-			'</td><td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_PENALTY, true) . '</td>';
+		echo '<div class="sheet"><table class="tbl mid">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Sum') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_scoring_group_label($this->scoring, SCORING_GROUP_MAIN, true) . '</th>';
+		echo '<th class="num p4" scope="col">' . get_scoring_group_label($this->scoring, SCORING_GROUP_LEGACY, true) . '</th>';
+		echo '<th class="num p4" scope="col">' . get_scoring_group_label($this->scoring, SCORING_GROUP_EXTRA, true) . '</th>';
+		echo '<th class="num p4" scope="col">' . get_scoring_group_label($this->scoring, SCORING_GROUP_PENALTY, true) . '</th>';
 		if ($this->show_fk)
 		{
-			echo '<td width="36">' . get_scoring_group_label($this->scoring, SCORING_GROUP_NIGHT1, true) . '</td>';
+			echo '<th class="num p4" scope="col">' . get_scoring_group_label($this->scoring, SCORING_GROUP_NIGHT1, true) . '</th>';
 		}
-		echo '</tr>';
+		echo '<th class="num p3" scope="col">' . get_label('Games') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Wins') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Winning %') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Points per game') . '</th>';
+		echo '</tr></thead><tbody>';
 		
 		$page_start = $_page * PAGE_SIZE;
-		if ($players_count > $page_start + PAGE_SIZE)
-		{
-			$players_count = $page_start + PAGE_SIZE;
-		}
-		for ($number = $page_start; $number < $players_count; ++$number)
+		$page_count = min($players_count, $page_start + PAGE_SIZE);
+		for ($number = $page_start; $number < $page_count; ++$number)
 		{
 			$player = $players[$number];
-			if ($player->id == $this->user_id)
-			{
-				echo '<tr class="darker">';
-				$highlight = 'darker';
-			}
-			else
-			{
-				echo '<tr>';
-				$highlight = 'dark';
-			}
-			echo '<td align="center" class="' . $highlight . '">' . ($number + 1) . '</td>';
+			$place = $number + 1;
+			echo '<tr' . ($player->id == $this->user_id ? ' class="me"' : '') . '>';
+			echo '<td class="rk"><span class="medal' . ($place <= 3 ? ' m' . $place : '') . '">' . sprintf('%02d', $place) . '</span></td>';
 			
-			
-			
-			echo '<td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">';
-			echo '<table class="transp" width="100%"><tr><td width="56">';
 			$event_reg_pic->
 				set($player->id, $player->nickname, $player->event_reg_flags, 'e' . $this->id)->
 				set($player->id, $player->name, $player->tournament_reg_flags, 't' . $this->tournament_id)->
 				set($player->id, $player->name, $player->club_reg_flags, 'c' . $this->club_id)->
 				set($player->id, $player->name, $player->flags);
-			$event_reg_pic->show(ICONS_DIR, true, 50);
-			echo '</a></td><td><a href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">' . $player->name . '</a></td>';
+			$awards = '';
 			if (isset($player->nom_flags) && $player->nom_flags)
 			{
-				echo '<td align="right">';
 				if ($player->nom_flags & $best_red_flag)
 				{
-					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span></span>';
+					$awards .= '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/civ.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_black_flag)
 				{
-					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span></span>';
+					$awards .= '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/maf.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_don_flag)
 				{
-					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span></span>';
+					$awards .= '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/don.png"></span></span>';
 				}
 				if ($player->nom_flags & $best_sheriff_flag)
 				{
-					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span></span>';
+					$awards .= '<span class="award"><img src="images/wreath.png" width="36"><span class="best-in-role"><img src="images/sheriff.png"></span></span>';
 				}
 				if ($player->nom_flags & $mvp_flag)
 				{
-					echo '<span class="award"><img src="images/wreath.png" width="36"><span class="mvp">MVP</span></span>';
+					$awards .= '<span class="award"><img src="images/wreath.png" width="36"><span class="mvp">MVP</span></span>';
 				}
-				echo '</td>';
 			}
-			echo '</tr></table></a></td>';
-			
-			echo '<td width="50" align="center">';
-			if (!is_null($player->club_id) && $player->club_id > 0)
-			{
-				$this->club_pic->set($player->club_id, $player->club_name, $player->club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 40);
-			}
-			echo '</td>';
-			echo '<td align="center" class="' . $highlight . '">' . format_score($player->points) . '</td>';
-			echo '<td align="center">' . format_score($player->main_points) . '</td>';
-			echo '<td align="center">' . format_score($player->legacy_points, false) . '</td>';
-			echo '<td align="center">' . format_score($player->extra_points, false) . '</td>';
-			echo '<td align="center">' . format_score($player->penalty_points, false) . '</td>';
+			echo '<td><a class="who" href="event_player.php?user_id=' . $player->id . $this->event_player_params . $this->show_all . '">' . card_avatar_of($event_reg_pic, $player->id, $player->name, '') .
+				'<span class="who-txt"><span class="who-name">' . $player->name . '</span></span>' . ($awards == '' ? '' : '<span class="awards">' . $awards . '</span>') . '</a></td>';
+			echo '<td class="p2">' . card_club($club_pic, $player->club_id > 0 ? $player->club_id : NULL, $player->club_name, $player->club_flags) . '</td>';
+			echo '<td class="num strong">' . format_score($player->points) . '</td>';
+			echo '<td class="num p3">' . format_score($player->main_points) . '</td>';
+			echo '<td class="num p4 dim">' . format_score($player->legacy_points, false) . '</td>';
+			echo '<td class="num p4 dim">' . format_score($player->extra_points, false) . '</td>';
+			echo '<td class="num p4 dim">' . format_score($player->penalty_points, false) . '</td>';
 			if ($this->show_fk)
 			{
-				echo '<td align="center">' . format_score($player->night1_points, false) . '</td>';
+				echo '<td class="num p4 dim">' . format_score($player->night1_points, false) . '</td>';
 			}
-			echo '<td align="center">' . $player->games_count . '</td>';
-			echo '<td align="center">' . $player->wins . '</td>';
+			echo '<td class="num p3">' . $player->games_count . '</td>';
+			echo '<td class="num p3">' . $player->wins . '</td>';
 			if ($player->games_count != 0)
 			{
-				echo '<td align="center">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
-				echo '<td align="center">';
-				echo format_score($player->points / $player->games_count);
-				echo '</td>';
+				echo '<td class="num p4 dim">' . number_format(($player->wins * 100.0) / $player->games_count, 1) . '%</td>';
+				echo '<td class="num p4 dim">' . format_score($player->points / $player->games_count) . '</td>';
 			}
 			else
 			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
+				echo '<td class="num p4"></td><td class="num p4"></td>';
 			}
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $players_count);
 		
 		echo '<table width="100%"><tr valign="top"><td>';

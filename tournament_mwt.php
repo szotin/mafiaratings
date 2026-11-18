@@ -5,6 +5,7 @@ require_once 'include/user.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/mwt.php';
+require_once 'include/cards.php';
 
 define('VIEW_MWT_ID', 0);
 define('VIEW_SEATING', 1);
@@ -256,8 +257,9 @@ class Page extends TournamentPageBase
 				{
 					$table = $this->misc->seating->rounds[$i];
 					echo '<p><center><h2>' . get_label('Table [0]', $i + 1) . '</h2></center></p>';
-					echo '<table class="bordered light" width="100%">';
-					echo '<tr class="darker"><td width="8%"></td>';
+					// The seating grid of tournament_seating.php: every seat a framed cell, a round picture in it.
+					echo '<table class="bordered light seat-grid" width="100%">';
+					echo '<tr class="dark"><td width="8%"></td>';
 					for ($k = 0; $k < 10; ++$k)
 					{
 						echo '<td width="9.2%" align="center"><b>'.($k+1).'</b></td>';
@@ -276,11 +278,7 @@ class Page extends TournamentPageBase
 							if ($game[$k] > 0)
 							{
 								list($user_id, $user_name, $user_flags, $user_city) = $users[$game[$k]];
-								echo '<td><table class="transp" width="100%"><tr><td align="center">';
-								$user_pic->set($user_id, $user_name, $user_flags);
-								$user_pic->show(ICONS_DIR, false, 48);
-								echo '</td><tr><tr><td align="center">' . $user_name;
-								echo '</td></tr></table></td>';
+								echo '<td align="center">' . card_avatar($user_pic, $user_id, $user_name, $user_flags, 'lg') . '<br>' . $user_name . '</td>';
 							}
 							else
 							{
@@ -339,11 +337,12 @@ class Page extends TournamentPageBase
 		$user_pic = new Picture(USER_PICTURE);
 		
 		usort($this->mwt_players, "compare_mwt_players");
-		echo '<p><table class="bordered light" width="100%">';
+		// The table of the v3 design (see ratings.php): the player of MWT, the button that maps them,
+		// the user of this site they are mapped to.
+		echo '<div class="sheet"><table class="tbl"><tbody>';
 		foreach ($this->mwt_players as $player)
 		{
-			echo '<tr><td width="420">';
-			echo '<table class="transp" width="100%"><tr><td width="32"><button class="icon" onclick="createUser(\'' . $player->name . '\', ' . $player->id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
+			echo '<tr><td class="tb-btns"><button class="icon" onclick="createUser(\'' . $player->name . '\', ' . $player->id . ')" title="' . get_label('Create new user') . '"><img src="images/create.png"></button></td><td>';
 			if (is_null($player->mwt_id))
 			{
 				echo $player->name;
@@ -352,27 +351,22 @@ class Page extends TournamentPageBase
 			{
 				echo '<a href="'.$_mwt_site.'/user/'.$player->mwt_id.'/show" target="_blank">'.$player->name.'</a>';
 			}
-			echo '</td></tr></table>';
 			echo '</td>';
-			
-			echo '<td width="40" align="center"><button class="big_icon" onclick="mapMwtPlayer('.$player->id.')"><img src="images/right.png" width="32"></button>';
+
+			echo '<td class="tb-btns"><button class="big_icon" onclick="mapMwtPlayer('.$player->id.')"><img src="images/right.png" width="32"></button></td>';
 			if ($player->id > 0)
 			{
 				list($user_id, $user_name, $user_flags, $user_city) = $users[$player->id];
-				
-				echo '<td><table class="transp" width="100%"><tr>';
-				echo '<td width="52">';
-				$user_pic->set($user_id, $user_name, $user_flags);
-				$user_pic->show(ICONS_DIR, true, 48);
-				echo '</td><td><a href="user_info.php?id='.$player->id.'&bck=1">' . $user_name . ', ' . $user_city . '</a></td></tr></table></td>';
+				echo '<td><a class="who" href="user_info.php?id='.$player->id.'&bck=1">' . card_avatar($user_pic, $user_id, $user_name, $user_flags, '') .
+					'<span class="who-txt"><span class="who-name">' . $user_name . '</span><span class="who-sub">' . $user_city . '</span></span></a></td>';
 			}
 			else
 			{
 				echo '<td></td>';
 			}
-			echo '</td></tr>';
+			echo '</tr>';
 		}
-		echo '</table></p>';
+		echo '</tbody></table></div>';
 	}
 	
 	protected function show_body()

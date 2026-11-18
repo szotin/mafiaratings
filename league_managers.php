@@ -2,6 +2,7 @@
 
 require_once 'include/league.php';
 require_once 'include/pages.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -14,17 +15,22 @@ class Page extends LeaguePageBase
 		check_permissions(PERMISSION_LEAGUE_MANAGER, $this->id);
 		
 		list ($count) = Db::record(get_label('user'), 'SELECT count(*) FROM league_managers WHERE league_id = ?', $this->id);
+		// The list of the v3 design, after ratings.php: the count and the button that adds a user
+		// in a toolbar, the table in a sheet.
+		echo '<div class="toolbar"><span class="count">' . get_label('[0] users', number_format($count)) . '</span>';
+		echo '<a class="btn tb-create" href="#" onclick="mr.addLeagueUser(' . $this->id . '); return false;" title="' . get_label('Add [0] to [1]', get_label('user'), $this->name) . '">' . PageBase::icon('plus') . '<span>' . get_label('Add user') . '</span></a>';
+		echo '</div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker">';
-		echo '<td width="58">';
-		echo '<button class="icon" onclick="mr.addLeagueUser(' . $this->id . ')" title="' . get_label('Add [0] to [1]', get_label('user'), $this->name) . '"><img src="images/create.png" border="0"></button>';
-		echo '</td>';
-		echo '<td colspan="4">' . get_label('User') . '</td>';
-		echo '<td width="70">' . get_label('Permissions') . '</td></tr>';
+		echo '<div class="sheet"><table class="tbl">';
+		echo '<thead><tr><th scope="col"></th>';
+		echo '<th scope="col">' . get_label('User') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Email') . '</th>';
+		echo '<th class="p3" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Permissions') . '</th></tr></thead><tbody>';
 
 		$user_pic = new Picture(USER_PICTURE);
+		$club_pic = new Picture(CLUB_PICTURE);
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.email, u.flags, m.flags, c.id, nc.name, c.flags, ni.name' .
 			' FROM league_managers m' .
@@ -42,31 +48,24 @@ class Page extends LeaguePageBase
 			list($id, $name, $email, $flags, $league_flags, $club_id, $club_name, $club_flags, $city) = $row;
 			$league_flags = (int)$league_flags;
 		
-			echo '<tr class="light">';
-			echo '<td class="dark">';
+			echo '<tr>';
+			echo '<td class="tb-btns">';
 			echo '<button class="icon" onclick="mr.removeLeagueUser(' . $this->id . ', ' . $id . ', \'' . get_label('Are you sure you want to remove [0] from [1]?', $name, $this->name) . '\')" title="' . get_label('Remove [0] from [1]', $name, $this->name) . '"><img src="images/delete.png" border="0"></button>';
 			echo '<button class="icon" onclick="mr.editLeagueAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/access.png" border="0"></button>';
 			echo '</td>';
 			
-			echo '<td width="60" align="center">';
-			$user_pic->set($id, $name, $flags);
-			$user_pic->show(ICONS_DIR, true, 50);
-			echo '</td>';
-			echo '<td><a href="user_info.php?id=' . $id . '&bck=1"><b>' . $name . '</b><br>' . $city . '</a></td>';
-			echo '<td width="200">';
+			echo '<td><a class="who" href="user_info.php?id=' . $id . '&bck=1">' . card_avatar($user_pic, $id, $name, $flags, '') .
+				'<span class="who-txt"><span class="who-name">' . $name . '</span><span class="who-sub">' . $city . '</span></span></a></td>';
+			echo '<td class="p2 dim">';
 			if (is_permitted(PERMISSION_CLUB_MANAGER, $club_id))
 			{
 				echo $email;
 			}
 			echo '</td>';
-			echo '<td width="50" align="center">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, true, 40);
-			echo '</td>';
-			
-			// A permission the user does not have is a gap of the same width rather than nothing, so
+			echo '<td class="p3">' . card_club($club_pic, $club_id, $club_name, $club_flags) . '</td>';
+						// A permission the user does not have is a gap of the same width rather than nothing, so
 			// the icons line up down the column.
-			echo '<td>';
+			echo '<td class="num perms">';
 			if ($league_flags & USER_PERM_REFEREE)
 			{
 				echo '<img src="images/referee.png" width="32" title="' . get_label('Referee') . '">';
@@ -85,7 +84,7 @@ class Page extends LeaguePageBase
 			}
 			echo '</td></tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }

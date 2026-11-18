@@ -461,3 +461,69 @@
 		}
 	}, true);
 })();
+
+// A list opened on the page of a player found with the search above it (?page=-<user id>, see
+// mr.gotoFind): the row of that player is marked, and here the window is scrolled to it - the page
+// it is on may be long, and the row far below the top.
+(function()
+{
+	var m = /[?&]page=-(\d+)(&|$)/.exec(location.search);
+	if (!m)
+	{
+		return;
+	}
+	var id = m[1];
+	var link = new RegExp('(user_id=|user_[a-z_]+\\.php\\?id=)' + id + '(\\D|$)');
+	function findRow()
+	{
+		var main = document.getElementById('main') || document.body;
+		var row = main.querySelector('tr.me, tr.hlt');
+		if (row)
+		{
+			return row;
+		}
+		var links = main.querySelectorAll('a[href]');
+		for (var i = 0; i < links.length; ++i)
+		{
+			if (link.test(links[i].getAttribute('href')))
+			{
+				row = links[i].closest('tr:not(.th):not(.th-short):not(.th-long)');
+				// A table inside a cell: the row of the outer table is the one to show.
+				while (row && row.parentNode && row.parentNode.closest && row.parentNode.closest('td'))
+				{
+					var outer = row.parentNode.closest('td').closest('tr');
+					if (!outer)
+					{
+						break;
+					}
+					row = outer;
+				}
+				if (row)
+				{
+					return row;
+				}
+			}
+		}
+		return null;
+	}
+	var scrolled = false;
+	function show()
+	{
+		var row = findRow();
+		if (row)
+		{
+			row.scrollIntoView({ block: 'center' });
+			scrolled = true;
+		}
+	}
+	if (document.readyState == 'loading')
+	{
+		document.addEventListener('DOMContentLoaded', show);
+	}
+	else
+	{
+		show();
+	}
+	// The pictures above the row change its place while they load: once they are in, again.
+	window.addEventListener('load', function() { if (scrolled) { show(); } });
+})();

@@ -6,6 +6,7 @@ require_once 'include/pages.php';
 require_once 'include/user.php';
 require_once 'include/gaining.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', USERS_PAGE_SIZE);
 
@@ -87,27 +88,24 @@ class Page extends SeriesPageBase
 		// What the table is made of goes on the left, the player search on the right, and the empty
 		// cell between them is what holds the two groups apart. The page navigation is a block of
 		// its own and gets its own line below.
-		echo '<p><table class="transp" width="100%"><tr><td nowrap>';
-		echo '<a href="javascript:showGaining()">' . get_label('Scoring system') . '</a>';
-		echo '</td><td width="100%"></td>';
-		echo '<td align="right" width="200" nowrap>';
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, 'series=' . $this->id, get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table></p>';
+		$this->show_toolbar('<a href="javascript:showGaining()">' . get_label('Scoring system') . '</a>', $count);
 		show_pages_navigation(PAGE_SIZE, $count);
 
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td width="40"></td>';
-		echo '<td colspan="3" align="left">' . get_label('Player') . '</td>';
-		echo '<td width="70">' . get_label('Points') . '</td>';
-		echo '<td width="70">' . get_label('Tournaments played') . '</td>';
-		echo '<td width="70">' . get_label('Best place') . '</td>';
-		echo '<td width="70">' . get_label('Average place') . '</td>';
+		// A column a year: a long history is wider than the page, and the sheet scrolls sideways
+		// rather than cutting the latest years off.
+		echo '<div class="sheet scroll"><table class="tbl mid">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+		echo '<th class="num" scope="col">' . get_label('Points') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Tournaments played') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Best place') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Average place') . '</th>';
 		foreach ($tournaments as $t)
 		{
-			echo '<td width="44" align="center" title="' . $t->name . '">' . $t->year . '</td>';
+			echo '<th class="num p4" scope="col" title="' . $t->name . '">' . $t->year . '</th>';
 		}
-		echo '</tr>';
+		echo '</tr></thead><tbody>';
 
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.flags, p.place, p.score, c.id, nc.name, c.flags' .
@@ -144,37 +142,14 @@ class Page extends SeriesPageBase
 				}
 			}
 
-			if ($player_id == $this->user_id)
-			{
-				echo '<tr align="center" class="darker">';
-				$highlight = 'darker';
-			}
-			else
-			{
-				echo '<tr align="center">';
-				$highlight = 'dark';
-			}
-			echo '<td class="' . $highlight . '">' . $place . '</td>';
-
-			echo '<td width="50"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player_id . '&bck=1">';
-			$player_pic->set($player_id, $player_name, $player_flags);
-			$player_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td align="left"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player_id . '&bck=1">' . $player_name . '</a></td>';
-			echo '<td width="50" align="center">';
-			if (isset($club_id))
-			{
-				$club_pic->set($club_id, $club_name, $club_flags);
-				$club_pic->show(ICONS_DIR, true, 40);
-			}
-			echo '</td>';
-
-			echo '<td class="' . $highlight . '">' . format_gain($points) . '</td>';
-			echo '<td>' . $played . '</td>';
-			echo '<td>' . ($best > 0 ? $best : '') . '</td>';
-			echo '<td>' . ($played > 0 ? format_gain($sum / $played) : '') . '</td>';
+			echo $this->player_cells($player_pic, $club_pic, $place, $player_id, $player_name, $player_flags, $club_id, $club_name, $club_flags);
+			echo '<td class="num strong">' . format_gain($points) . '</td>';
+			echo '<td class="num p3">' . $played . '</td>';
+			echo '<td class="num p3">' . ($best > 0 ? $best : '') . '</td>';
+			echo '<td class="num p4 dim">' . ($played > 0 ? format_gain($sum / $played) : '') . '</td>';
 			foreach ($tournaments as $t)
 			{
-				echo '<td align="center">';
+				echo '<td class="num p4">';
 				if (isset($places[$player_id][$t->id]))
 				{
 					echo '<a href="tournament.php?bck=1&id=' . $t->id . '">' . $places[$player_id][$t->id] . '</a>';
@@ -183,8 +158,29 @@ class Page extends SeriesPageBase
 			}
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
+	}
+
+	// The pieces of the tables of the v3 design shared by both views, after ratings.php.
+
+	// Above a table: what it is made of on the left, the search for a player and the count.
+	private function show_toolbar($left, $count)
+	{
+		echo '<div class="toolbar">' . $left . '<div class="field grow">' . PageBase::icon('search');
+		show_user_input('page', $this->user_name, 'series=' . $this->id, get_label('Go to the page where a specific player is located.'));
+		echo '</div><span class="count">' . get_label('[0] players', number_format($count)) . '</span></div>';
+	}
+
+	// The start of a row: the place (the first three in red), the player, the club.
+	private function player_cells($player_pic, $club_pic, $place, $player_id, $player_name, $player_flags, $club_id, $club_name, $club_flags)
+	{
+		$html = '<tr' . ($player_id == $this->user_id ? ' class="me"' : '') . '>';
+		$html .= '<td class="rk"><span class="medal' . ($place <= 3 ? ' m' . $place : '') . '">' . sprintf('%02d', $place) . '</span></td>';
+		$html .= '<td><a class="who" href="series_player.php?id=' . $this->id . '&user_id=' . $player_id . '&bck=1">' . card_avatar($player_pic, $player_id, $player_name, $player_flags, '') .
+			'<span class="who-txt"><span class="who-name">' . $player_name . '</span></span></a></td>';
+		$html .= '<td class="p2">' . card_club($club_pic, $club_id, $club_name, $club_flags) . '</td>';
+		return $html;
 	}
 
 	protected function show_body()
@@ -265,45 +261,44 @@ class Page extends SeriesPageBase
 		// the per-stage rankings is on screen. The player search keeps the right, and the empty cell
 		// between them is what holds the two groups apart. The page navigation is a block of its own
 		// and gets its own line below.
-		echo '<p><table class="transp" width="100%"><tr><td nowrap>';
-		echo '<a href="javascript:showGaining()">' . get_label('Scoring system') . '</a>';
+		$left = '<a href="javascript:showGaining()">' . get_label('Scoring system') . '</a>';
 		if ($this->stages > 1)
 		{
-			echo '&emsp;&emsp;' . get_label('Standings') . ': <select onchange="goTo({cut: this.value, page: undefined})">';
-			for ($c = 0; $c < $this->stages; ++$c)
+			$left .= '<span>' . get_label('Standings') . ': <select onchange="goTo({cut: this.value, page: undefined})">';
+			$left .= PageBase::capture(function() use ($cut_stages)
 			{
-				show_option($c, $cut_stages, get_series_cut_name($this->stages, $c));
-			}
-			echo '</select>';
+				for ($c = 0; $c < $this->stages; ++$c)
+				{
+					show_option($c, $cut_stages, get_series_cut_name($this->stages, $c));
+				}
+			});
+			$left .= '</select></span>';
 		}
-		echo '</td><td width="100%"></td>';
-		echo '<td align="right" width="200" nowrap>';
-		echo '<img src="images/find.png" class="control-icon" title="' . get_label('Find player') . '">';
-		show_user_input('page', $this->user_name, 'series=' . $this->id, get_label('Go to the page where a specific player is located.'));
-		echo '</td></tr></table></p>';
+		$this->show_toolbar($left, $count);
 		show_pages_navigation(PAGE_SIZE, $count);
-		
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td width="40"></td>';
-		echo '<td colspan="3" align="left">'.get_label('Player').'</td>';
+
+		echo '<div class="sheet"><table class="tbl mid">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Player') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
 		if ($this->stages > 1)
 		{
-			echo '<td width="80">'.get_label('Stage').'</td>';
+			echo '<th class="num" scope="col">' . get_label('Stage') . '</th>';
 		}
-		echo '<td width="80">'.get_label('Points').'</td>';
-		echo '<td width="80">'.get_label('Cut off').'</td>';
-		echo '<td width="80">'.get_label('Total cut off').'</td>';
-		echo '<td width="80">'.get_label('Tournaments played').'</td>';
-		echo '<td width="80">'.get_label('Points per tournament').'</td>';
+		echo '<th class="num" scope="col">' . get_label('Points') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Cut off') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Total cut off') . '</th>';
+		echo '<th class="num p3" scope="col">' . get_label('Tournaments played') . '</th>';
+		echo '<th class="num p4" scope="col">' . get_label('Points per tournament') . '</th>';
 		// echo '<td width="80">'.get_label('Games played (won)').'</td>';
 		// echo '<td width="80">'.get_label('Win rate').'</td>';
 		foreach ($parent_series as $s)
 		{
-			echo '<td width="36" align="center">';
-			$parent_series_pic->set($s->id, $s->name, $s->flags, $s->owner)->show(ICONS_DIR, true, 32);
-			echo '</td>';
+			echo '<th class="num p4 th-pic" scope="col" title="' . strip_tags($s->name) . '">';
+			$parent_series_pic->set($s->id, $s->name, $s->flags, $s->owner)->show(ICONS_DIR, true, 24);
+			echo '</th>';
 		}
-		echo '</tr>';
+		echo '</tr></thead><tbody>';
 
 		$query = new DbQuery(
 			'SELECT u.id, nu.name, u.flags, p.place, p.score, p.tournaments, p.games, p.wins, p.total_cut_off, p.cut_off, p.stage, c.id, nc.name, c.flags'.
@@ -321,47 +316,25 @@ class Page extends SeriesPageBase
 		while ($row = $query->next())
 		{
 			list ($player_id, $player_name, $player_flags, $place, $points, $tournaments, $games, $wins, $total_cut_off, $cut_off, $stage, $club_id, $club_name, $club_flags) = $row;
-			if ($player_id == $this->user_id)
-			{
-				echo '<tr align="center" class="darker">';
-				$highlight = 'darker';
-			}
-			else
-			{
-				echo '<tr align="center">';
-				$highlight = 'dark';
-			}
-			echo '<td class="' . $highlight . '">' . $place . '</td>';
-			
-			echo '<td width="50"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player_id . '&bck=1">';
-			$player_pic->set($player_id, $player_name, $player_flags);
-			$player_pic->show(ICONS_DIR, false, 50);
-			echo '</a></td><td align="left"><a href="series_player.php?id=' . $this->id . '&user_id=' . $player_id . '&bck=1">' . $player_name . '</a></td>';
-			echo '<td width="50" align="center">';
-			if (isset($club_id))
-			{
-				$club_pic->set($club_id, $club_name, $club_flags);
-				$club_pic->show(ICONS_DIR, true, 40);
-			}
-			echo '</td>';
-			
+			echo $this->player_cells($player_pic, $club_pic, $place, $player_id, $player_name, $player_flags, $club_id, $club_name, $club_flags);
+
 			if ($this->stages > 1)
 			{
 				// The base stage is left blank. Everybody starts there, so naming it says nothing -
-				// what the column is for is the players who went further than that. Highlighted
-				// like the points next to it: the two of them together are the place.
-				echo '<td class="' . $highlight . '">';
+				// what the column is for is the players who went further than that. Strong like the
+				// points next to it: the two of them together are the place.
+				echo '<td class="num strong">';
 				if ($stage != SERIES_STAGE_BASE)
 				{
 					echo get_series_stage_name($this->type, $this->stages, $stage);
 				}
 				echo '</td>';
 			}
-			echo '<td class="' . $highlight . '">' . format_gain($points) . '</td>';
-			echo '<td>' . format_gain($cut_off) . '</td>';
-			echo '<td>' . format_gain($total_cut_off) . '</td>';
-			echo '<td>' . $tournaments . '</td>';
-			echo '<td>' . ($tournaments > 0 ? format_gain($points / $tournaments) : '') . '</td>';
+			echo '<td class="num strong">' . format_gain($points) . '</td>';
+			echo '<td class="num p4 dim">' . format_gain($cut_off) . '</td>';
+			echo '<td class="num p4 dim">' . format_gain($total_cut_off) . '</td>';
+			echo '<td class="num p3">' . $tournaments . '</td>';
+			echo '<td class="num p4 dim">' . ($tournaments > 0 ? format_gain($points / $tournaments) : '') . '</td>';
 			// echo '<td>' . $games . ' (' . $wins . ')</td>';
 			// echo '<td>' . ($games > 0 ? format_gain($wins / $games) : '') . '</td>';
 			foreach ($parent_series as $s)
@@ -372,17 +345,17 @@ class Page extends SeriesPageBase
 					// own strength of field - the same four numbers the recount gave the series
 					// above to count it with. Passing zeros made every subseries look like a
 					// field of thousand-rated players and paid accordingly.
-					echo '<td align="center">' . format_gain(get_gaining_points($s->id, $s->gaining, $s->stars, $place, $points, $full_count,
+					echo '<td class="num p4 dim">' . format_gain(get_gaining_points($s->id, $s->gaining, $s->stars, $place, $points, $full_count,
 						$this->rating_sum, $this->rating_sum_20, $this->traveling_distance, $this->guest_coeff, true)) . '</td>';
 				}
 				else
 				{
-					echo '<td align="center"></td>';
+					echo '<td class="num p4"></td>';
 				}
 			}
 			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
