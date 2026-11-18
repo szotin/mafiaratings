@@ -198,6 +198,12 @@ a:hover { color: var(--red); }
 .burger:hover { background: var(--frost); }
 .burger .ic { width: 24px; height: 24px; }
 @media (min-width: 1080px) { .burger { display: none; } }
+/* the menu does not fit the row (see fitHeader() in new_look.js): it goes into the drawer */
+.hd.is-snug .search-btn { min-width: 0; width: 38px; padding: 0; justify-content: center; }
+.hd.is-snug .search-btn span, .hd.is-snug .search-btn kbd, .hd.is-snug .btn-create span { display: none; }
+.hd.is-snug .btn-create { width: 38px; padding: 0; }
+.hd.is-tight .nav { display: none; }
+.hd.is-tight .burger { display: grid; }
 
 /* ------------------------------------------------------------ mobile drawer */
 .drawer { position: fixed; inset: 0; z-index: 60; }

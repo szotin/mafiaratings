@@ -105,6 +105,43 @@
 		});
 	}
 
+	// The row of the header holds the logo, the menu and the buttons only as long as the words of the
+	// menu are short enough - which depends on the language, the font the browser ends up with and
+	// whether the visitor is an administrator. When it does not hold them, the menu goes into the
+	// drawer, as on a narrower screen, rather than squeezing the logo.
+	var hd = document.querySelector('.hd');
+	function fitHeader()
+	{
+		if (!hd)
+		{
+			return;
+		}
+		var row = hd.querySelector('.wrap');
+		var brand = hd.querySelector('.brand');
+		function overflows()
+		{
+			return row.scrollWidth > row.clientWidth + 1 || (brand && brand.scrollWidth > brand.clientWidth + 1);
+		}
+		// First the search and the Play button lose their words; only if that is not enough does
+		// the menu go.
+		hd.classList.remove('is-snug', 'is-tight');
+		if (overflows())
+		{
+			hd.classList.add('is-snug');
+			if (overflows())
+			{
+				hd.classList.add('is-tight');
+			}
+		}
+	}
+	fitHeader();
+	window.addEventListener('resize', fitHeader);
+	window.addEventListener('load', fitHeader);
+	if (document.fonts && document.fonts.ready)
+	{
+		document.fonts.ready.then(fitHeader);
+	}
+
 	document.addEventListener('keydown', function(e)
 	{
 		if (e.key != 'Escape')
