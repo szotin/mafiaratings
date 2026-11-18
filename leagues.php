@@ -135,7 +135,7 @@ class Page extends GeneralPageBase
 			echo '<span class="who-sub">' . PageBase::icon('users') . get_label('Clubs') . ': ' . $clubs;
 			if (!empty($url))
 			{
-				echo ' Â· ' . PageBase::url_host($url);
+				echo ' &middot; ' . PageBase::url_host($url);
 			}
 			echo '</span></div>';
 			if ($_profile != NULL)

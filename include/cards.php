@@ -28,8 +28,15 @@ function card_initials($name, $upper = true)
 // Picture(USER_PICTURE) to reuse. $size: 'sm' for the small one of a list, '' for the one of a table.
 function card_avatar($pic, $id, $name, $flags, $size = 'sm')
 {
-	$cls = 'av' . ($size == '' ? '' : ' ' . $size);
 	$pic->set($id, $name, $flags);
+	return card_avatar_of($pic, $id, $name, $size);
+}
+
+// The same for a picture set already - one that falls back from a photo of a tournament to one of
+// a club to the player's own, say.
+function card_avatar_of($pic, $id, $name, $size = 'sm')
+{
+	$cls = 'av' . ($size == '' ? '' : ' ' . $size);
 	if ($pic->has_image())
 	{
 		return '<span class="' . $cls . '"><img src="' . $pic->url(ICONS_DIR) . '" alt="" loading="lazy" decoding="async"></span>';

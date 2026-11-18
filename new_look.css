@@ -786,8 +786,8 @@ button.dropdown-btn .ic { width: 16px; height: 16px; }
 
 /* A filter, and any other switch that takes effect the moment it is touched, is drawn one way
    everywhere: a round mark - empty when off, a tick on a dark ground when on. A filter with three answers
-   (all / only these / none of these, include/checkbox_filter.php) adds a cross, and its two answers are
-   green and red. In a toolbar the mark and its words make a chip together, the words working as the
+   (all / only these / none of these, include/checkbox_filter.php) adds a cross for its third answer, on
+   the same dark ground: no colour tells the answers apart, the mark does. In a toolbar the mark and its words make a chip together, the words working as the
    mark does. Underneath, an on/off one is still the checkbox with the class toggle it always was. */
 .fchips { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .fchips-label { font-size: 13.5px; color: var(--slate); margin-right: 2px; }
@@ -809,12 +809,10 @@ input[type="checkbox"].toggle:checked::after { content: "\2713"; }
 input[type="checkbox"].toggle:disabled { opacity: .4; cursor: default; }
 input[type="checkbox"].toggle:not(:first-child) { margin-left: 16px; }
 span.tri-filter i { display: none; }
-span.tri-filter.yes { background: var(--up); box-shadow: none; }
+span.tri-filter.yes, span.tri-filter.no { background: var(--ink-soft); box-shadow: none; }
 span.tri-filter.yes::after { content: "\2713"; }
-span.tri-filter.no { background: var(--down); box-shadow: none; }
 span.tri-filter.no::after { content: "\2715"; }
-span.switch-item:has(.tri-filter.yes) { background: var(--up-soft); box-shadow: inset 0 0 0 1px rgba(17,121,74,.35); color: var(--up); }
-span.switch-item:has(.tri-filter.no) { background: var(--down-soft); box-shadow: inset 0 0 0 1px rgba(192,48,27,.35); color: var(--down); }
+span.switch-item:has(.tri-filter.yes), span.switch-item:has(.tri-filter.no) { background: var(--frost); box-shadow: inset 0 0 0 1px var(--ink-soft); color: var(--ink); }
 
 /* the month a group of cards belongs to */
 .posters > .grp { grid-column: 1 / -1; margin: 10px 0 -4px; font-size: 15px; letter-spacing: .06em; color: var(--slate); }
@@ -832,6 +830,22 @@ span.switch-item:has(.tri-filter.no) { background: var(--down-soft); box-shadow:
 .pc-nums a { position: relative; z-index: 1; color: var(--slate); }
 .nl .pc-nums a:link, .nl .pc-nums a:visited { color: var(--slate); }
 .pc-nums a:hover, .nl .pc-nums a:hover { color: var(--red); }
+/* a link in the meta line of a card (the scoring of a round) is above the link of the whole card */
+.pc-meta a { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.nl .pc-meta a:link, .nl .pc-meta a:visited { color: var(--slate); }
+.nl .pc-meta a:hover { color: var(--red); }
+.pc-meta a b { color: var(--ink-soft); }
+/* the buttons of a manager on the cover of a card, in its top right corner */
+.pc-actions { position: absolute; right: 10px; top: 10px; z-index: 2; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; max-width: 70%; }
+.nl .pc-actions button.icon { width: 32px; height: 32px; padding: 0; display: inline-grid; place-items: center; background: rgba(255,255,255,.88); }
+.nl .pc-actions button.icon:hover { background: #fff; }
+.nl .pc-actions button.icon img { width: 18px; height: 18px; }
+.pcard.is-off .pc-cover .pc-actions { filter: none; }
+/* a line of a toolbar with its filters on the left, and a button that makes something new at its end */
+.toolbar .tb-line.tb-start .switch-row { margin-left: 0; }
+.toolbar a.btn.tb-create { margin-left: auto; height: 36px; padding: 0 16px 0 12px; font-size: 14px; }
+.toolbar a.btn.tb-create .ic { width: 16px; height: 16px; }
+.nl .toolbar a.btn.tb-create:link, .nl .toolbar a.btn.tb-create:visited { color: #fff; }
 .nl .pcard h3 { margin: 0; }
 .nl .pcard h3 a:link, .nl .pcard h3 a:visited { color: var(--ink); }
 .nl .pcard:hover h3 a { color: var(--red); }
@@ -1084,6 +1098,8 @@ button.upload img { width: 56px !important; height: 56px !important; border-radi
 .nl .tab button.active::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--red); }
 .nl .tabcontent { margin-top: 14px; padding: 16px; border: 0; border-radius: var(--r-sheet); background: var(--paper); box-shadow: var(--shadow-card); }
 .nl .tabcontent table.bordered { box-shadow: none; outline: 1px solid var(--rule-soft); }
+/* a table of the v3 design is a sheet of its own: the tab around it is not another one */
+.nl .tabcontent:has(> .sheet) { padding: 0; background: none; box-shadow: none; border-radius: 0; }
 .tab-menu { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 6px; box-shadow: 0 18px 40px -18px rgba(19, 35, 58, 0.35); font-family: var(--font); }
 .tab-menu-item { border-radius: 8px; }
 .tab-menu-item:hover { background: var(--frost); }
@@ -1198,6 +1214,9 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 /* fields */
 .ui-dialog input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]):not([type=file]):not([type=image]),
 .ui-dialog select, .ui-dialog textarea { max-width: 100%; min-height: 36px; box-sizing: border-box; }
+/* a text area of a dialog is as wide as its cell: the width its columns give it (cols="80") is,
+   in this type, wider than the dialog, and the dialog scrolls sideways */
+.ui-dialog textarea[cols] { width: 100%; min-width: 240px; }
 .ui-dialog select, .nl select { -webkit-appearance: none; appearance: none; padding-right: 30px !important; cursor: pointer;
   background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23516580' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center !important; }
 .ui-dialog select[multiple], .nl select[multiple] { padding-right: 10px !important; background-image: none !important; }
@@ -1253,6 +1272,11 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 
 .ui-menu { padding: 6px; border-radius: 12px; border: 1px solid var(--rule); box-shadow: 0 18px 40px -18px rgba(19, 35, 58, 0.35); }
 .ui-menu .ui-menu-item { border-radius: 8px; }
+/* the names of something in several languages (NameControl, js/src/mr.js): a row for each, with
+   room between them, the language beside its field */
+table.transp:has(img[src="images/sync.png"]) { border-spacing: 0 8px; border-collapse: separate; margin: -8px 0; }
+table.transp:has(img[src="images/sync.png"]) td { padding: 0 6px 0 0; vertical-align: middle; }
+table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; font-size: 13px; color: var(--slate); }
 
 
 /* the photos of an album, an event, a player */
@@ -1316,6 +1340,9 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 /* a column the table is sorted by: its heading a link, the arrow dim until it is the order */
 .tbl .th-sort, .nl .tbl a.th-sort:link, .nl .tbl a.th-sort:visited { display: inline-flex; align-items: center; gap: 5px; color: inherit; }
 .tbl th.num .th-sort { flex-direction: row-reverse; }
+/* a table of narrow numbers under long headings (the parts of the points of a tournament): the
+   numbers in the middle of their columns, not pressed to the right of a heading wider than them */
+.tbl.mid .num { text-align: center; }
 .tbl .th-sort::after { content: ""; border: 4px solid transparent; border-top-color: rgba(255,255,255,.4); border-bottom-width: 0; }
 .tbl th[aria-sort], .tbl th .th-sort:hover, .nl .tbl a.th-sort:hover { color: #fff; }
 .tbl th[aria-sort] .th-sort::after { border-top-color: currentColor; }
@@ -1329,6 +1356,25 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 .club img, .club .club-ini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--rule); background: #fff; object-fit: contain; }
 .club .club-ini { display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--slate); }
 .club span:not(.club-ini) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a picture in a heading (a role, a series): small, and dimmed until it is the order */
+.tbl th.th-pic img { width: 22px; height: 22px; object-fit: contain; vertical-align: middle; }
+.tbl th.th-pic a img { opacity: .6; }
+/* the pictures of the roles are dark: on the dark heading they are turned light */
+.tbl th.th-pic img:is([src="images/civ.png"], [src="images/maf.png"], [src="images/sheriff.png"], [src="images/don.png"]) { filter: invert(1) brightness(1.4); }
+.tbl th.th-pic[aria-sort] img, .tbl th.th-pic a:hover img { opacity: 1; }
+.tbl th.th-pic a:not(.th-sort) { display: inline-block; }
+/* the wreaths of a player's nominations, after the name */
+.tbl .who .awards { flex: none; display: inline-flex; margin-left: auto; padding-left: 6px; }
+.tbl .awards .award { width: 30px; height: 30px; }
+.tbl .awards .award > img { width: 30px !important; }
+.tbl .awards .award span.best-in-role img { width: 17px; height: 17px; }
+.tbl .awards .award span.mvp { font-size: 8px; }
+/* a team: the pictures of its players overlapping, its name after them */
+.tbl .team { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.tbl .team-avs { display: inline-flex; flex: none; }
+.tbl .team-avs a { display: inline-flex; margin-left: -8px; border-radius: 50%; box-shadow: 0 0 0 2px var(--paper); }
+.tbl .team-avs a:first-child { margin-left: 0; }
+.tbl .team-avs a:hover { position: relative; z-index: 1; }
 @media (max-width: 1079px) { .tbl .p4 { display: none; } }
 @media (max-width: 899px)  { .tbl .p2 { display: none; } }
 @media (max-width: 639px)  { .tbl .p3 { display: none; } .tbl td, .tbl th { padding-left: 8px; padding-right: 8px; } .tbl .who .av { width: 30px; height: 30px; } .tbl .who { gap: 10px; } }
