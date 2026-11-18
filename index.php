@@ -624,11 +624,6 @@ class Page extends GeneralPageBase
 		$this->series_pic = new Picture(SERIES_PICTURE);
 		$this->event_pic = new Picture(EVENT_PICTURE, $this->tournament_pic);
 
-		// NEW_LOOK: the way to the new look of the site while it is tried out at /new_look. Remove it
-		// when the new look replaces this one.
-		echo '<p><a href="new_look/index.php" style="display:block; padding:12px 16px; border-radius:8px; background:#0B1422; color:#fff; text-decoration:none; font-size:15px;">';
-		echo '<b>' . get_label('Try the new look of the site') . ' &rarr;</b> <span style="color:#A3B4CB;">' . get_label('It is still being tested. Please tell us what is wrong with it.') . '</span></a></p>';
-
 		echo '<p><table class="transp" width="100%">';
 		echo '<tr><td>';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
@@ -768,6 +763,10 @@ class Page extends GeneralPageBase
 		}
 		
 		echo '</td></tr></table>';
+
+		// NEW_LOOK: the way to the new look of the site while it is tried out at /new_look. Remove it
+		// when the new look replaces this one.
+		echo '<p align="center" style="color:#888;"><a href="new_look/index.php">' . get_label('Try the new look of the site') . '</a>. ' . get_label('It is still being tested. Please tell us what is wrong with it.') . '</p>';
 	}
 }
 
