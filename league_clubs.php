@@ -6,25 +6,39 @@ require_once 'include/city.php';
 require_once 'include/country.php';
 require_once 'include/image.php';
 require_once 'include/user_location.php';
+require_once 'include/checkbox_filter.php';
+require_once 'include/club_cards.php';
 
-define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
-
-define('FLAG_SHOW_ACTIVE', 1);
-define('FLAG_SHOW_CLOSED', 2);
+define('FLAG_FILTER_CLOSED', 0x0001);
+define('FLAG_FILTER_NOT_CLOSED', 0x0002);
 
 class Page extends LeaguePageBase
 {
-	private $view_flags;
+	private $filter;
 	
 	protected function prepare()
 	{
 		parent::prepare();
 		
-		$this->view_flags = FLAG_SHOW_ACTIVE;
-		if (isset($_REQUEST['flags']))
+		// Closed clubs as a filter of three states, as clubs.php has it: all of them, only the
+		// closed ones, or none of them - the last is where the list starts. The old address with
+		// "flags" in it (1 - the active ones, 2 - the closed ones) still says the same.
+		$this->filter = FLAG_FILTER_NOT_CLOSED;
+		if (isset($_REQUEST['filter']))
 		{
-			$this->view_flags = (int)$_REQUEST['flags'];
+			$this->filter = (int)$_REQUEST['filter'];
+		}
+		else if (isset($_REQUEST['flags']))
+		{
+			$flags = (int)$_REQUEST['flags'];
+			if (($flags & 3) == 3)
+			{
+				$this->filter = 0;
+			}
+			else if ($flags & 2)
+			{
+				$this->filter = FLAG_FILTER_CLOSED;
+			}
 		}
 	}
 	
@@ -33,13 +47,13 @@ class Page extends LeaguePageBase
 		global $_profile, $_lang;
 		
 		$condition = new SQL();
-		if (($this->view_flags & FLAG_SHOW_CLOSED) == 0)
-		{
-			$condition->add(' AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0');
-		}
-		if (($this->view_flags & FLAG_SHOW_ACTIVE) == 0)
+		if ($this->filter & FLAG_FILTER_CLOSED)
 		{
 			$condition->add(' AND (c.flags & ' . CLUB_FLAG_CLOSED . ') <> 0');
+		}
+		if ($this->filter & FLAG_FILTER_NOT_CLOSED)
+		{
+			$condition->add(' AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0');
 		}
 		
 		$managed_clubs_not_in_league_count = 0;
@@ -54,7 +68,7 @@ class Page extends LeaguePageBase
 			}
 		}
 		
-		$clubs = array();
+		$rows = array();
 		$query = new DbQuery(
 			'SELECT c.id, nc.name, c.flags, c.web_site, l.flags, ni.name, (SELECT count(*) FROM games g WHERE g.club_id = c.id) as games FROM league_clubs l' .
 				' JOIN clubs c ON l.club_id = c.id' .
@@ -71,143 +85,90 @@ class Page extends LeaguePageBase
 			if ($is_club_manager)
 			{
 				--$managed_clubs_not_in_league_count;
-				$clubs[] = $row;
+				$rows[] = $row;
 			}
 			else if ($this->is_manager || $league_flags == 0)
 			{
-				$clubs[] = $row;
+				$rows[] = $row;
 			}
 		}
-		$can_add = ($this->is_manager || $managed_clubs_not_in_league_count > 0) && ($this->view_flags & FLAG_SHOW_ACTIVE) != 0;
+		$can_add = ($this->is_manager || $managed_clubs_not_in_league_count > 0) && ($this->filter & FLAG_FILTER_CLOSED) == 0;
 		
-		$column_count = 0;
-		$clubs_count = 0;
+		echo '<div class="toolbar"><div class="tb-line tb-start">';
+		show_checkbox_filter(array(get_label('closed~plural')), $this->filter, 'filterClosed');
 		if ($can_add)
 		{
-			++$column_count;
-			++$clubs_count;
+			echo '<a class="btn tb-create" href="#" onclick="mr.addLeagueClub(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Add [0]', get_label('club')) . '</span></a>';
 		}
+		echo '</div></div>';
 		
-		echo '<table class="transp"><tr><td><input type="checkbox" class="toggle" id="closed" onclick="filter()"';
-		if ($this->view_flags & FLAG_SHOW_CLOSED)
+		// The tiles of clubs.php (include/club_cards.php). The state of a club in the league - it
+		// wants to join, it is invited - is a chip under its city, and the buttons that answer it
+		// are under that.
+		$clubs = array();
+		foreach ($rows as $row)
 		{
-			echo ' checked';
-		}
-		echo '> ' . get_label('Show closed clubs') . '</td></tr></table>';
-		
-		if ($can_add)
-		{
-			echo '<table class="bordered" width="100%"><tr>';
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';	
-			echo '<table class="transp" width="100%">';
-			echo '<tr><td align="left" class="light wide">';
-			echo '<img src="images/transp.png" height="26">';
-			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.addLeagueClub(' . $this->id . ')">' . get_label('Add [0]', get_label('club'));
-			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" height="' . ICON_HEIGHT . '">';
-			echo '</td></tr></table>';
-			echo '</td>';
-		}
-		foreach ($clubs as $row)
-		{
-			list ($id, $name, $flags, $url, $league_flags, $city_name) = $row;
-			if ($column_count == 0)
-			{
-				if ($clubs_count == 0)
-				{
-					echo '<table class="bordered" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';
+			list ($id, $name, $flags, $url, $league_flags, $city_name, $games) = $row;
+			$club = new stdClass();
+			$club->id = $id;
+			$club->name = $name;
+			$club->flags = $flags;
+			$club->city = $city_name;
+			$club->games = $games;
 			
-			echo '<table class="transp" width="100%"><tr class="darker"><td align="left" style="padding:2px;">';
+			$state = '';
+			$buttons = '';
 			if ($this->is_manager)
 			{
 				if ($league_flags & LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED)
 				{
-					echo '<button class="icon" onclick="mr.removeLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Decline request') . '"><img src="images/delete.png" border="0"></button>';
-					echo '<button class="icon" onclick="mr.acceptLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Approve request') . '"><img src="images/accept.png" border="0"></button>';
-					echo '</td><td><b>' . get_label('Wants to join') . '</b>';
+					$buttons .= '<button class="icon" onclick="mr.removeLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Decline request') . '"><img src="images/delete.png" border="0"></button>';
+					$buttons .= '<button class="icon" onclick="mr.acceptLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Approve request') . '"><img src="images/accept.png" border="0"></button>';
+					$state = get_label('Wants to join');
 				}
 				else
 				{
-					echo '<button class="icon" onclick="mr.removeLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Remove [0] from [1]', $name, $this->name) . '"><img src="images/delete.png" border="0"></button>';
+					$buttons .= '<button class="icon" onclick="mr.removeLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Remove [0] from [1]', $name, $this->name) . '"><img src="images/delete.png" border="0"></button>';
 					if ($league_flags & LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED)
 					{
 						if (is_permitted(PERMISSION_CLUB_MANAGER, $id))
 						{
-							echo '<button class="icon" onclick="mr.acceptLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Accept invitation') . '"><img src="images/accept.png" border="0"></button>';
+							$buttons .= '<button class="icon" onclick="mr.acceptLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Accept invitation') . '"><img src="images/accept.png" border="0"></button>';
 						}
-						echo '</td><td><b>' . get_label('Invited') . '</b>';
+						$state = get_label('Invited');
 					}
 				}
 			}
 			else if (is_permitted(PERMISSION_CLUB_MANAGER, $id))
 			{
-				echo '<button class="icon" onclick="mr.removeLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Remove [0] from [1]', $name, $this->name) . '"><img src="images/delete.png" border="0"></button>';
+				$buttons .= '<button class="icon" onclick="mr.removeLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Remove [0] from [1]', $name, $this->name) . '"><img src="images/delete.png" border="0"></button>';
 				if ($league_flags & LEAGUE_CLUB_FLAGS_CLUB_APROVEMENT_NEEDED)
 				{
-					echo '<button class="icon" onclick="mr.acceptLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Accept invitation') . '"><img src="images/accept.png" border="0"></button>';
-					echo '</td><td><b>' . get_label('Invited') . '</b>';
+					$buttons .= '<button class="icon" onclick="mr.acceptLeagueClub(' . $this->id . ', ' . $id . ')" title="' . get_label('Accept invitation') . '"><img src="images/accept.png" border="0"></button>';
+					$state = get_label('Invited');
 				}
 				else if ($league_flags & LEAGUE_CLUB_FLAGS_LEAGUE_APROVEMENT_NEEDED)
 				{
-					echo '</td><td><b>' . get_label('Wants to join') . '</b>';
+					$state = get_label('Wants to join');
 				}
 			}
-			else
+			if ($state != '')
 			{
-				echo '<img src="images/transp.png" height="26">';
+				$club->extra = '<span class="tile-meta"><span class="chip pending">' . $state . '</span></span>';
 			}
-			echo '</td></tr>';
-			
-			echo '<tr><td colspan="2" align="center"><a href="club_main.php?bck=1&id=' . $id . '">';
-			echo '<b>' . $name . '</b><br>';
-			$this->club_pic->set($id, $name, $flags);
-			$this->club_pic->show(ICONS_DIR, false);
-			echo '<br></a>' . $city_name . '<br>';
-			
-			echo '</td></tr></table>';
-			echo '</td>';
-			
-			++$clubs_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
+			$club->buttons = $buttons;
+			$clubs[] = $club;
 		}
-		if ($clubs_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
+		club_tiles_show($clubs, get_label('No clubs found.'));
 	}
 	
 	protected function js()
 	{
 		parent::js();
 ?>
-		function filter()
+		function filterClosed()
 		{
-			var flags = <?php echo $this->view_flags; ?>;
-			if ($("#closed").attr("checked"))
-			{
-				flags |= <?php echo FLAG_SHOW_CLOSED; ?>;
-			}
-			else
-			{
-				flags &= ~<?php echo FLAG_SHOW_CLOSED; ?>;
-			}
-			goTo({ flags: flags, page: 0 });
+			goTo({ filter: checkboxFilterFlags(), flags: undefined, page: undefined });
 		}
 <?php	
 	}

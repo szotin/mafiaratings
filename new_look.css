@@ -926,6 +926,11 @@ span.switch-item:has(.tri-filter.yes), span.switch-item:has(.tri-filter.no) { ba
 .tile-meta:empty { display: none; }
 /* two numbers side by side (the clubs and the series of a league) */
 .tile-side.tile-nums { flex-direction: row; gap: 6px; }
+/* the state of a club in a league or a series, the role of a player in a club (include/club_cards.php) */
+.tile .chip.pending { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--frost); color: var(--ink-soft); }
+.sheet + .tiles { margin-top: 18px; }
+.toolbar .tb-note { font-size: 13.5px; color: var(--slate); }
+.toolbar .tb-note + button, .toolbar .tb-note + .btn { margin-left: auto; }
 /* a club of the viewer (clubs.php) */
 .tile .chip.mine { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: #FCEDEE; color: #B0252E; }
 /* the buttons of a manager as a line of their own under the name */

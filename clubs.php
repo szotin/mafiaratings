@@ -8,6 +8,7 @@ require_once 'include/country.php';
 require_once 'include/image.php';
 require_once 'include/user_location.php';
 require_once 'include/cards.php';
+require_once 'include/club_cards.php';
 require_once 'include/checkbox_filter.php';
 
 define('FLAG_FILTER_CLOSED', 0x0001);
@@ -109,56 +110,23 @@ class Page extends GeneralPageBase
 			$user_id, $condition);
 		$query->add(' ORDER BY ISNULL(u.flags), games DESC, nc.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		
-		$clubs_count = 0;
+		$clubs = array();
 		while ($row = $query->next())
 		{
-			list ($id, $name, $flags, $url, $city_name, $memb_flags, $games) = $row;
-			if ($clubs_count++ == 0)
-			{
-				// The tiles of series.php and leagues.php: as wide, all as tall, the number on the right.
-				echo '<div class="tiles wide">';
-			}
-			$closed = ($flags & CLUB_FLAG_CLOSED) != 0;
-			$this->club_pic->set($id, $name, $flags);
-			echo '<div class="tile' . ($closed ? ' is-off' : '') . '">' . card_logo($this->club_pic, $name);
-			echo '<div class="who-txt"><a class="who-name" href="club_main.php?bck=1&id=' . $id . '">' . $name . '</a>';
-			echo '<span class="who-sub">' . PageBase::icon('pin') . $city_name . '</span>';
-			// The clubs of the viewer say so in words: a coloured edge alone said nothing anybody
-			// could read.
-			if (!is_null($memb_flags) || $closed)
-			{
-				echo '<span class="tile-meta">';
-				if (!is_null($memb_flags))
-				{
-					echo '<span class="chip mine">' . get_label('My club') . '</span>';
-				}
-				if ($closed)
-				{
-					echo '<span class="chip off">' . get_label('closed') . '</span>';
-				}
-				echo '</span>';
-			}
-			// The buttons of a manager under the name: beside it they left the name and the city no room.
+			$club = new stdClass();
+			list ($club->id, $club->name, $club->flags, $url, $club->city, $memb_flags, $club->games) = $row;
+			$club->mine = !is_null($memb_flags);
 			if ($_profile != NULL)
 			{
-				$buttons = PageBase::capture(function() use ($id, $name, $flags, $memb_flags) { show_club_buttons($id, $name, $flags, $memb_flags); });
-				if (trim(strip_tags($buttons, '<button>')) != '')
-				{
-					echo '<div class="tile-actions under">' . $buttons . '</div>';
-				}
+				$id = $club->id;
+				$name = $club->name;
+				$flags = $club->flags;
+				$club->buttons = PageBase::capture(function() use ($id, $name, $flags, $memb_flags) { show_club_buttons($id, $name, $flags, $memb_flags); });
 			}
-			echo '</div>';
-			echo '<div class="tile-side"><a class="tile-num" href="club_games.php?bck=1&id=' . $id . '" title="' . get_label('Games') . '"><b>' . number_format($games) . '</b><span>' . get_label('Games') . '</span></a></div>';
-			echo '</div>';
+			$clubs[] = $club;
 		}
-		if ($clubs_count > 0)
-		{
-			echo '</div>';
-		}
-		else
-		{
-			echo '<p class="empty">' . get_label('No clubs found.') . '</p>';
-		}
+		// The tiles: see include/club_cards.php, shared by every list of clubs.
+		club_tiles_show($clubs, get_label('No clubs found.'));
 		show_pages_navigation($page_size, $count);
 	}
 	
