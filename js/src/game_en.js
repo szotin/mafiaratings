@@ -89,6 +89,7 @@ _l["Night"] = "Night {1}";
 _l["Night0"] = "Initial night";
 _l["GenRoles"] = "Generate roles";
 _l["ErrVersion"] = "A newer version of the software is available. Click ok to reload the page, or press Ctrl-F5.";
+_l["GameTaken"] = "{1} has taken this game over, and nothing you do here is being saved any more. Take it back?";
 _l["Rating"] = "rating game";
 _l["Warn"] = "Give player a warning";
 _l["TechFoul"] = "Give player a technical foul";

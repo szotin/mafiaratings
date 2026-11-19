@@ -195,14 +195,16 @@ function gameSave(onSuccess)
 					onSuccess();
 				}
 			},
-			function(message) // error
+			function(message, data) // error
 			{
 				// Save it to the local storage if server is not accessible
 				if (typeof localStorage == "object")
 				{
 					localStorage['game'] = gameStr;
 				}
-				_errorListener(1, message);
+				// The answer and not only the message: a refusal can name whoever took the game
+				// over, and the screen then offers to take it back - see _uiErrorListener().
+				_errorListener(1, message, data);
 			},
 			SAVE_TIMEOUT);
 			http.waiter(w);

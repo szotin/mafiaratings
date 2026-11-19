@@ -4,6 +4,15 @@ var _settingsFlags = 0;
 // What the site last said when it would not take a save, so that it is said once rather than
 // once a second for as long as it goes on. Forgotten again as soon as a save gets through.
 var _lastSaveRefusal = null;
+// Set while the question about the game having been taken over is on the screen, so that a
+// refusal arriving every second does not stack one dialog on top of another.
+var _takenDialog = false;
+// The table this screen was opened on. A save takes these out of the game it is saving, but a
+// load the site refused leaves no game to take them out of, and the offer to take it back has
+// to name a table either way. Set by uiStart().
+var _openedEventId = 0;
+var _openedTableNum = 0;
+var _openedGameNum = 0;
 
 //-----------------------------------------------------------
 // Private API. Don't use it outside of this file.
@@ -802,8 +811,19 @@ function _uiErrorListener(type, message, data)
 	switch (type)
 	{
 	case 0: // error getting data
-		// dlg.error(text, title, width, onClose)
-		dlg.error(message);
+		// A game that would not load because somebody took it over asks the same question as a
+		// save that was refused for it. Nothing is pending here to carry the game on once it is
+		// back, so the page is loaded again and the game comes up as it would have.
+		var takenOnLoad = _takenFrom(data);
+		if (takenOnLoad != null)
+		{
+			_uiGameTaken(takenOnLoad, refr);
+		}
+		else
+		{
+			// dlg.error(text, title, width, onClose)
+			dlg.error(message);
+		}
 		break;
 	case 1: // error setting data
 		// A save the site refused is not the line coming and going: the game has been taken
@@ -814,7 +834,17 @@ function _uiErrorListener(type, message, data)
 		if (_connectionState == 3 && message != _lastSaveRefusal)
 		{
 			_lastSaveRefusal = message;
-			dlg.error(message);
+			// Having been taken over is the one refusal there is something to do about, so it
+			// is put as a question rather than read out as an error.
+			var takenBy = _takenFrom(data);
+			if (takenBy != null)
+			{
+				_uiGameTaken(takenBy);
+			}
+			else
+			{
+				dlg.error(message);
+			}
 		}
 		break;
 	case 2: // version mismatch
@@ -832,6 +862,69 @@ function _uiErrorListener(type, message, data)
 	}
 }
 
+// Who holds the game now, when a save was refused because somebody took it over, and null when
+// it was refused for anything else. Read out of the answer rather than out of the message: the
+// message is a sentence in whichever language this moderator reads, and a name cannot be picked
+// out of one.
+function _takenFrom(data)
+{
+	if (!isString(data))
+	{
+		return null;
+	}
+	try
+	{
+		var obj = jQuery.parseJSON(data);
+		return (obj != null && isString(obj.takenBy)) ? obj.takenBy : null;
+	}
+	catch (err)
+	{
+		return null;
+	}
+}
+
+// The game was taken over while it was being run. Every save from here on is refused, so there
+// is no carrying on as though nothing had happened: either it comes back, or this is not the
+// screen to be sitting in front of. Saying no leads out to the list of tables, where the same
+// offer stands - the game can still be taken back from there.
+function _uiGameTaken(name, afterTakingBack)
+{
+	if (_takenDialog)
+	{
+		return;
+	}
+	_takenDialog = true;
+	dlg.yesNo(l('GameTaken', name), undefined, undefined,
+	function() // yes
+	{
+		json.post('api/ops/game.php',
+			{ op: 'own_current', event_id: _openedEventId, table_num: _openedTableNum, game_num: _openedGameNum },
+			function()
+			{
+				// A save that was turned down is still waiting, with everything played since in
+				// it, and the next tick of the second sends it - so there the game carries on by
+				// itself. A load that was turned down left nothing to carry on from, and what
+				// comes in here loads the page again.
+				_takenDialog = false;
+				_lastSaveRefusal = null;
+				if (isFunction(afterTakingBack))
+				{
+					afterTakingBack();
+				}
+			},
+			function()
+			{
+				// Taking it back did not work either. Let the question be asked again rather
+				// than leave the screen silent - the next refusal that reads differently will.
+				_takenDialog = false;
+			});
+	},
+	function() // no
+	{
+		goTo({game_num: undefined, demo: undefined});
+	});
+}
+
 function _uiConnectionListener(state)
 {
 	// A save that got through says the last refusal is over with, so the next one is told
@@ -839,6 +932,7 @@ function _uiConnectionListener(state)
 	if (state == 0)
 	{
 		_lastSaveRefusal = null;
+		_takenDialog = false;
 	}
 
 	let url = "images/connected.png";
@@ -1356,6 +1450,9 @@ setInterval(timer.tick, 1000);
 //-----------------------------------------------------------
 function uiStart(eventId, tableNum, roundNum)
 {
+	_openedEventId = eventId;
+	_openedTableNum = tableNum;
+	_openedGameNum = roundNum;
 	$('#ops').click(function()
 	{
 		let menu = $('#ops-menu').menu();

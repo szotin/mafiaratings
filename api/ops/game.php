@@ -644,6 +644,10 @@ class ApiPage extends OpsApiPageBase
 				if ($user_id != $_profile->user_id)
 				{
 					list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+					// As in set_current_op(): who holds it now, beside the sentence saying so,
+					// because the screen offers to take the game back and cannot pick a name
+					// out of a sentence written in whichever language this moderator reads.
+					$this->response['takenBy'] = $user_name;
 					throw new Exc(get_label('The game is moderated by [0].', $user_name));
 				}
 				$game = json_decode($game);
@@ -987,6 +991,11 @@ class ApiPage extends OpsApiPageBase
 				if ($user_id != $_profile->user_id)
 				{
 					list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $user_id);
+					// Who holds it now, beside the sentence that says so. The screen offers to
+					// take the game back, and it cannot pick a name out of a sentence written
+					// in whichever language this moderator reads. Set before the throw: what an
+					// operation puts in the answer is still in it when the error joins it.
+					$this->response['takenBy'] = $user_name;
 					throw new Exc(get_label('The game is moderated by [0].', $user_name));
 				}
 				if ($log_changed)
