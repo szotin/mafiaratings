@@ -4,37 +4,51 @@ require_once 'include/languages.php';
 require_once 'include/user.php';
 require_once 'include/club.php';
 require_once 'include/scoring.php';
+require_once 'include/club_cards.php';
 
-function show_permissions($user_flags)
+// The highest role a member has in a club, as the chip of the tile: a manager is a referee and a
+// player as well, and the chip names the most of it. The rest is in the hint.
+function club_role_chip($user_flags)
 {
-	$sep = '';
-	$title = '';
-	$image = NULL;
+	$roles = array();
+	$chip = NULL;
 	if (($user_flags & USER_PERM_PLAYER) != 0)
 	{
-		$title .= $sep . get_label('player');
-		$sep = '; ';
-		$image = 'player.png';
+		$roles[] = get_label('player');
+		$chip = get_label('Player');
 	}
-	
 	if (($user_flags & USER_PERM_REFEREE) != 0)
 	{
-		$title .= $sep . get_label('Referee');
-		$sep = '; ';
-		$image = 'referee.png';
+		$roles[] = get_label('Referee');
+		$chip = get_label('Referee');
 	}
-	
 	if (($user_flags & USER_PERM_MANAGER) != 0)
 	{
-		$title .= $sep . get_label('manager');
-		$sep = '; ';
-		$image = 'manager.png';
+		$roles[] = get_label('manager');
+		$chip = get_label('Manager');
 	}
-	
-	if ($image != NULL)
+	if (is_null($chip))
 	{
-		echo '<img src="images/' . $image . '" title="' . $title . '">';
+		$chip = get_label('Member');
 	}
+	return '<span class="chip mine" title="' . implode('; ', $roles) . '">' . $chip . '</span>';
+}
+
+// A line of numbers: the games, the wins and the rating earned, with every role in the hint.
+function club_stats_html($stats, $role_titles)
+{
+	if ($stats->games <= 0)
+	{
+		return '';
+	}
+	$hint = array();
+	foreach ($stats->roles as $role => $r)
+	{
+		$hint[] = $role_titles[$role] . ': ' . $r->games . ', ' . number_format($r->won * 100 / $r->games) . '%, ' . format_rating($r->rating);
+	}
+	return '<span class="tile-meta pc-res" title="' . htmlspecialchars(implode("\n", $hint), ENT_QUOTES, 'UTF-8') . '">' .
+		'<span title="' . get_label('Wins') . '">' . PageBase::icon('trophy') . $stats->won . ' (' . number_format($stats->won * 100 / $stats->games) . '%)</span>' .
+		'<span title="' . get_label('Rating earned') . '">' . get_label('[0] ([1] per game)', format_rating($stats->rating), format_rating($stats->rating / $stats->games, 1)) . '</span></span>';
 }
 
 class Page extends UserPageBase
@@ -43,140 +57,109 @@ class Page extends UserPageBase
 	{
 		global $_profile, $_lang;
 
-		$prev_club_id = 0;
 		$role_titles = array(
-			get_label('Total'),
-			get_label('As a red'),
-			get_label('As a black'),
 			get_label('As a civilian'),
 			get_label('As a sheriff'),
 			get_label('As a mafiosi'),
 			get_label('As a don'));
-		$role_titles1 = array(
-			get_label('As a civilian'),
-			get_label('As a sheriff'),
-			get_label('As a mafiosi'),
-			get_label('As a don'));
-			
-		$total_rating = 0;
-		$total_games = 0;
-		$total_won = 0;
-		echo '<table class="bordered light" width="100%"><tr class="darker"><td>';
-		echo '<table class="transp" width="100%"><tr><td width="52"></td><td>' . get_label('Total') . '</td></tr></table>';
-		echo '</td><td width="200">' . get_label('Games played');
-		echo ':</td><td width="200">' . get_label('Wins') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
-		$query = new DbQuery(
-			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
-				' JOIN games g ON g.id = p.game_id' .
-				' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 GROUP BY p.role ORDER BY p.role',
-			$this->id);
-		while ($row = $query->next())
-		{
-			list ($role, $rating, $games, $games_won) = $row;
-			$total_rating += $rating;
-			$total_games += $games;
-			$total_won += $games_won;
-			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($rating), format_rating($rating/$games, 1)) . '</td></tr>';
-		}
 		
+		// The clubs: the ones the player is a member of first, then the ones they only played in.
+		// Each is a tile of clubs.php (include/club_cards.php) with the player's role as its chip,
+		// their wins and rating under the city, and their games in the frame on the right.
+		$clubs = array();
 		$query = new DbQuery(
-			'SELECT c.id, nc.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won, u.flags FROM clubs c' .
+			'SELECT c.id, nc.name, c.flags, ni.name, u.flags, p.role, SUM(p.rating_earned), COUNT(p.game_id), SUM(p.won) FROM clubs c' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
-				' JOIN games g ON g.club_id = c.id' .
-				' JOIN club_regs u ON u.club_id = c.id' .
-				' JOIN players p ON p.user_id = u.user_id AND p.game_id = g.id' .
-				' WHERE u.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 GROUP BY c.id, p.role ORDER BY c.id, p.role',
-			$this->id);
-		while ($row = $query->next())
-		{
-			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won, $user_flags) = $row;
-			if ($club_id != $prev_club_id)
-			{
-				if ($total_games > 0)
-				{
-					echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
-				}
-				$total_rating = 0;
-				$total_games = 0;
-				$total_won = 0;
-				echo '</table>';
-				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-				echo '<table class="transp" width="100%"><tr><td width="52">';
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 48);
-				echo '</td><td>' . $club_name . '</td><td align="right">';
-				show_permissions($user_flags);
-				echo '</td></tr></table>';
-				echo '</td><td width="200">' . get_label('Games played');
-				echo ':</td><td width="200">' . get_label('Wins') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
-				$prev_club_id = $club_id;
-			}
-			$total_rating += $rating;
-			$total_games += $games;
-			$total_won += $games_won;
-			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($rating), format_rating($rating/$games, 1)) . '</td></tr>';
-		}
-		
-		$query = new DbQuery(
-			'SELECT c.id, nc.name, c.flags, c.web_site, p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM clubs c' .
-				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
+				' JOIN cities i ON i.id = c.city_id' .
+				' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 				' JOIN games g ON g.club_id = c.id' .
 				' JOIN players p ON p.game_id = g.id' .
-				' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND c.id NOT IN (SELECT u.club_id FROM club_regs u WHERE u.user_id = p.user_id) GROUP BY c.id, p.role ORDER BY c.id, p.role',
+				' LEFT OUTER JOIN club_regs u ON u.club_id = c.id AND u.user_id = p.user_id' .
+				' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 GROUP BY c.id, p.role',
 			$this->id);
 		while ($row = $query->next())
 		{
-			list ($club_id, $club_name, $club_flags, $club_url, $role, $rating, $games, $games_won) = $row;
-			if ($club_id != $prev_club_id)
+			list ($club_id, $club_name, $club_flags, $city_name, $user_flags, $role, $rating, $games, $won) = $row;
+			if (!isset($clubs[$club_id]))
 			{
-				if ($total_games > 0)
-				{
-					echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
-				}
-				$total_rating = 0;
-				$total_games = 0;
-				$total_won = 0;
-				echo '</table>';
-				echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-				echo '<table class="transp" width="100%"><tr><td width="52">';
-				$this->club_pic->set($club_id, $club_name, $club_flags);
-				$this->club_pic->show(ICONS_DIR, true, 48);
-				echo '</td><td>' . $club_name . '</td></tr></table>';
-				echo '</td><td width="200">' . get_label('Games played');
-				echo ':</td><td width="200">' . get_label('Wins') . ':</td><td width="200">' . get_label('Rating earned') . ':</td></tr>';
-				$prev_club_id = $club_id;
+				$club = new stdClass();
+				$club->id = $club_id;
+				$club->name = $club_name;
+				$club->flags = $club_flags;
+				$club->city = $city_name;
+				$club->member = !is_null($user_flags);
+				$club->user_flags = (int)$user_flags;
+				$club->stats = new stdClass();
+				$club->stats->rating = 0;
+				$club->stats->games = 0;
+				$club->stats->won = 0;
+				$club->stats->roles = array();
+				$clubs[$club_id] = $club;
 			}
-			$total_rating += $rating;
-			$total_games += $games;
-			$total_won += $games_won;
-			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($rating), format_rating($rating/$games, 1)) . '</td></tr>';
-		}
-		if ($total_games > 0)
-		{
-			echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
+			$stats = $clubs[$club_id]->stats;
+			$r = new stdClass();
+			$r->rating = $rating;
+			$r->games = $games;
+			$r->won = $won;
+			$stats->roles[$role] = $r;
+			$stats->rating += $rating;
+			$stats->games += $games;
+			$stats->won += $won;
 		}
 		
+		// The clubs the player is a member of but never played in.
 		$query = new DbQuery(
-			'SELECT c.id, nc.name, c.flags, c.web_site, u.flags FROM clubs c' .
+			'SELECT c.id, nc.name, c.flags, ni.name, u.flags FROM clubs c' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
+			' JOIN cities i ON i.id = c.city_id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
 			' JOIN club_regs u ON u.club_id = c.id' .
-			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT g.club_id FROM players p, games g WHERE p.game_id = g.id AND p.user_id = u.user_id) ORDER BY u.flags DESC', $this->id);
+			' WHERE u.user_id = ? AND u.club_id NOT IN (SELECT g.club_id FROM players p, games g WHERE p.game_id = g.id AND p.user_id = u.user_id)', $this->id);
 		while ($row = $query->next())
 		{
-			list ($club_id, $club_name, $club_flags, $club_url, $user_flags) = $row;
-			echo '</table>';
-			echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-			echo '<table class="transp" width="100%"><tr><td width="52">';
-			$this->club_pic->set($club_id, $club_name, $club_flags);
-			$this->club_pic->show(ICONS_DIR, true, 48);
-			echo '</td><td>' . $club_name . '</td><td align="right">';
-			show_permissions($user_flags);
-			echo '</td></tr></table>';
-			echo '</td><td width="200"></td><td width="200"></td><td width="200"></td></tr>';
-			$prev_club_id = $club_id;
+			list ($club_id, $club_name, $club_flags, $city_name, $user_flags) = $row;
+			$club = new stdClass();
+			$club->id = $club_id;
+			$club->name = $club_name;
+			$club->flags = $club_flags;
+			$club->city = $city_name;
+			$club->member = true;
+			$club->user_flags = (int)$user_flags;
+			$club->stats = new stdClass();
+			$club->stats->rating = 0;
+			$club->stats->games = 0;
+			$club->stats->won = 0;
+			$club->stats->roles = array();
+			$clubs[$club_id] = $club;
 		}
 		
-		echo '</table>';
+		// Members first, the higher role first; then the most games.
+		uasort($clubs, function($a, $b)
+		{
+			if ($a->member != $b->member)
+			{
+				return $a->member ? -1 : 1;
+			}
+			if ($a->user_flags != $b->user_flags)
+			{
+				return $b->user_flags - $a->user_flags;
+			}
+			return $b->stats->games - $a->stats->games;
+		});
+		
+		$tiles = array();
+		foreach ($clubs as $club)
+		{
+			$club->extra = '';
+			if ($club->member)
+			{
+				$club->extra .= '<span class="tile-meta">' . club_role_chip($club->user_flags) . '</span>';
+			}
+			$club->extra .= club_stats_html($club->stats, $role_titles);
+			$club->num = array($club->stats->games, get_label('Games'), 'user_games.php?bck=1&id=' . $this->id . '&ccc=' . CCCF_CLUB . $club->id);
+			$tiles[] = $club;
+		}
+		club_tiles_show($tiles, get_label('No clubs found.'));
 	}
 }
 
