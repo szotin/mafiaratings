@@ -527,7 +527,7 @@ class Page extends GeneralPageBase
 			{
 				break;
 			}
-			// The space at the end of a label means the female form, for the languages where it matters.
+			// A label ending in ~fem is the female form, for the languages where it matters (see get_label()).
 			$male = ($player->user_flags & USER_FLAG_MALE) != 0;
 			$name = $player->user_name;
 			if (!isset($player->src))
@@ -535,28 +535,28 @@ class Page extends GeneralPageBase
 				$mark = '<span class="mv new">' . get_label('new') . '</span>';
 				$title = $male ?
 					get_label('[0] entered top 100 and gained [1] place.', $name, $player->dst) :
-					get_label('[0] entered top 100 and gained [1] place. ', $name, $player->dst);
+					get_label('[0] entered top 100 and gained [1] place.~fem', $name, $player->dst);
 			}
 			else if (!isset($player->dst))
 			{
 				$mark = '<span class="mv dn">&#9660;</span>';
 				$title = $male ?
 					get_label('[0] left top 100.', $name, $player->src) :
-					get_label('[0] left top 100. ', $name, $player->src);
+					get_label('[0] left top 100.~fem', $name, $player->src);
 			}
 			else if ($player->src > $player->dst)
 			{
 				$mark = '<span class="mv up">&#9650;' . ($player->src - $player->dst) . '</span>';
 				$title = $male ?
 					get_label('[0] moved up from [1] to [2] place.', $name, $player->src, $player->dst) :
-					get_label('[0] moved up from [1] to [2] place. ', $name, $player->src, $player->dst);
+					get_label('[0] moved up from [1] to [2] place.~fem', $name, $player->src, $player->dst);
 			}
 			else
 			{
 				$mark = '<span class="mv dn">&#9660;' . ($player->dst - $player->src) . '</span>';
 				$title = $male ?
 					get_label('[0] moved down from [1] to [2] place.', $name, $player->src, $player->dst) :
-					get_label('[0] moved down from [1] to [2] place. ', $name, $player->src, $player->dst);
+					get_label('[0] moved down from [1] to [2] place.~fem', $name, $player->src, $player->dst);
 			}
 			echo '<li title="' . htmlspecialchars(strip_tags($title), ENT_QUOTES, 'UTF-8') . '"><span class="n">' . (isset($player->dst) ? $player->dst : '&mdash;') . '</span>';
 			echo '<a class="who" href="user_info.php?bck=1&id=' . $player->id . '">' . card_avatar($this->user_pic, $player->id, $player->user_name, $player->user_flags);

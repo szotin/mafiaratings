@@ -646,7 +646,7 @@ class EventPageBase extends PageBase
 		$h->off = ($this->flags & EVENT_FLAG_CANCELED) != 0;
 		if ($h->off)
 		{
-			$h->sub = '<span class="chip off">' . get_label('canceled') . '</span>';
+			$h->sub = '<span class="chip off">' . get_label('Canceled') . '</span>';
 		}
 
 		$event_pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));

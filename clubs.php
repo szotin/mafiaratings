@@ -8,6 +8,10 @@ require_once 'include/country.php';
 require_once 'include/image.php';
 require_once 'include/user_location.php';
 require_once 'include/cards.php';
+require_once 'include/checkbox_filter.php';
+
+define('FLAG_FILTER_CLOSED', 0x0001);
+define('FLAG_FILTER_NOT_CLOSED', 0x0002);
 
 define('ROW_COUNT', DEFAULT_ROW_COUNT);
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
@@ -29,27 +33,36 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_lang, $_page;
 		
-		$closed = isset($_REQUEST['closed']);
-		$root_only = isset($_REQUEST['root']);
-		
+		// Closed clubs as a filter of three states, as the other lists have them: all of them, only
+		// the closed ones, or none of them - the last is where the list starts. The old address with
+		// "closed" in it, which added the closed ones to the rest, still does.
+		$filter = FLAG_FILTER_NOT_CLOSED;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		else if (isset($_REQUEST['closed']))
+		{
+			$filter = 0;
+		}
+
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		echo '<div class="toolbar"><div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
 		echo '</div>';
-		echo '<label class="fchip"><input type="checkbox" class="toggle" id="closed" onclick="filter()"' . ($closed ? ' checked' : '') . '>' . get_label('Show closed clubs') . '</label>';
-		echo '<label class="fchip"><input type="checkbox" class="toggle" id="root" onclick="filter()"' . ($root_only ? ' checked' : '') . '>' . get_label('Root clubs only') . '</label>';
+		show_checkbox_filter(array(get_label('closed~plural')), $filter, 'filterClosed');
 		echo '</div>';
-		
+
 		$delimiter = ' WHERE ';
 		$condition = new SQL();
-		if (!$closed)
+		if ($filter & FLAG_FILTER_CLOSED)
 		{
-			$condition->add($delimiter . '(c.flags & ' . CLUB_FLAG_CLOSED . ') = 0');
+			$condition->add($delimiter . '(c.flags & ' . CLUB_FLAG_CLOSED . ') <> 0');
 			$delimiter = ' AND ';
 		}
-		if ($root_only)
+		if ($filter & FLAG_FILTER_NOT_CLOSED)
 		{
-			$condition->add($delimiter . 'c.parent_id IS NULL');
+			$condition->add($delimiter . '(c.flags & ' . CLUB_FLAG_CLOSED . ') = 0');
 			$delimiter = ' AND ';
 		}
 		$ccc_id = $ccc_filter->get_id();
@@ -102,29 +115,40 @@ class Page extends GeneralPageBase
 			list ($id, $name, $flags, $url, $city_name, $memb_flags, $games) = $row;
 			if ($clubs_count++ == 0)
 			{
-				echo '<div class="tiles">';
+				// The tiles of series.php and leagues.php: as wide, all as tall, the number on the right.
+				echo '<div class="tiles wide">';
 			}
-			$classes = 'tile';
-			if ($flags & CLUB_FLAG_CLOSED)
-			{
-				$classes .= ' is-off';
-			}
-			if (!is_null($memb_flags))
-			{
-				$classes .= ' is-mine';
-			}
+			$closed = ($flags & CLUB_FLAG_CLOSED) != 0;
 			$this->club_pic->set($id, $name, $flags);
-			echo '<div class="' . $classes . '">' . card_logo($this->club_pic, $name);
+			echo '<div class="tile' . ($closed ? ' is-off' : '') . '">' . card_logo($this->club_pic, $name);
 			echo '<div class="who-txt"><a class="who-name" href="club_main.php?bck=1&id=' . $id . '">' . $name . '</a>';
-			echo '<span class="who-sub">' . PageBase::icon('pin') . $city_name . '</span></div>';
+			echo '<span class="who-sub">' . PageBase::icon('pin') . $city_name . '</span>';
+			// The clubs of the viewer say so in words: a coloured edge alone said nothing anybody
+			// could read.
+			if (!is_null($memb_flags) || $closed)
+			{
+				echo '<span class="tile-meta">';
+				if (!is_null($memb_flags))
+				{
+					echo '<span class="chip mine">' . get_label('My club') . '</span>';
+				}
+				if ($closed)
+				{
+					echo '<span class="chip off">' . get_label('closed') . '</span>';
+				}
+				echo '</span>';
+			}
+			// The buttons of a manager under the name: beside it they left the name and the city no room.
 			if ($_profile != NULL)
 			{
 				$buttons = PageBase::capture(function() use ($id, $name, $flags, $memb_flags) { show_club_buttons($id, $name, $flags, $memb_flags); });
 				if (trim(strip_tags($buttons, '<button>')) != '')
 				{
-					echo '<div class="tile-actions">' . $buttons . '</div>';
+					echo '<div class="tile-actions under">' . $buttons . '</div>';
 				}
 			}
+			echo '</div>';
+			echo '<div class="tile-side"><a class="tile-num" href="club_games.php?bck=1&id=' . $id . '" title="' . get_label('Games') . '"><b>' . number_format($games) . '</b><span>' . get_label('Games') . '</span></a></div>';
 			echo '</div>';
 		}
 		if ($clubs_count > 0)
@@ -142,14 +166,9 @@ class Page extends GeneralPageBase
 	{
 		parent::js();
 ?>
-		function filter()
+		function filterClosed()
 		{
-			var params = 
-			{
-				closed: $("#closed").attr("checked") ? null : undefined,
-				root: $("#root").attr("checked") ? null : undefined
-			};
-			goTo(params);
+			goTo({filter: checkboxFilterFlags(), closed: undefined, root: undefined, page: undefined});
 		}
 <?php
 	}

@@ -103,7 +103,7 @@ class Page extends AddressPageBase
 			echo '<div class="tb-dates">';
 			show_date_filter();
 			echo '</div>';
-			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $filter);
+			show_checkbox_filter(array(get_label('with video'), get_label('unplayed'), get_label('canceled')), $filter);
 		}
 		echo '</div>';
 		

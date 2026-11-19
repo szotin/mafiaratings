@@ -924,6 +924,14 @@ span.switch-item:has(.tri-filter.yes), span.switch-item:has(.tri-filter.no) { ba
 .tile-side { position: relative; z-index: 1; flex: none; display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 .tile-side .st-chip { justify-content: center; text-align: center; white-space: nowrap; }
 .tile-meta:empty { display: none; }
+/* two numbers side by side (the clubs and the series of a league) */
+.tile-side.tile-nums { flex-direction: row; gap: 6px; }
+/* a club of the viewer (clubs.php) */
+.tile .chip.mine { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: #FCEDEE; color: #B0252E; }
+/* the buttons of a manager as a line of their own under the name */
+.tile .tile-actions.under { justify-content: flex-start; max-width: none; margin-top: 6px; }
+.nl .tile .tile-actions.under button.icon { width: 28px; height: 28px; }
+.nl .tile .tile-actions.under button.icon img { width: 15px; height: 15px; }
 /* the line of the subseries of a series (series_series.php): its stars, unpaid, the other series it
    is in and its players - links above the link of the whole tile */
 .tile-meta .chip.unpaid { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: #FCF4F4; color: var(--red); }

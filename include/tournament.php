@@ -305,7 +305,7 @@ class TournamentPageBase extends PageBase
 	{
 		if (($this->flags & TOURNAMENT_FLAG_CANCELED) != 0)
 		{
-			return '<span class="chip off">' . get_label('canceled') . '</span>';
+			return '<span class="chip off">' . get_label('Canceled') . '</span>';
 		}
 		if (($this->flags & TOURNAMENT_FLAG_FINISHED) != 0)
 		{

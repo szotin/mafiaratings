@@ -6,10 +6,16 @@ require_once __DIR__ . '/db.php';
 // Example:
 // get_label('Hi [1]! You scored [0] points! [2] [aaa]', 40, 'Vasya');
 // returns: 'Hi Vasya! You scored 40 points! [2] [aaa]'
+//
+// A label may end in a context after a tilde: 'closed~plural'. English says the same word in both
+// places - "closed" of a club and of a list of them - while Russian needs two ("закрыт",
+// "закрытые"), and the key is all there is to tell them apart by. The context is part of the key,
+// so every language can translate each on its own; where there is no translation - English - it
+// is cut off and the word alone is shown.
 function get_label($labelitem)
 {
 	global $labelMenu; #from the included labels file
-	
+
 	$label = $labelitem;
 	if (isset($labelMenu[$labelitem]))
 	{
@@ -18,6 +24,10 @@ function get_label($labelitem)
 		{
 			$label = $labelitem;
 		}
+	}
+	if ($label === $labelitem && ($context = strpos($label, '~')) !== false)
+	{
+		$label = substr($label, 0, $context);
 	}
 	
 	$num_args = func_num_args() - 1;
