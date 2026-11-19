@@ -779,6 +779,10 @@ class ApiPage extends OpsApiPageBase
 				if ($owner_id != $_profile->user_id)
 				{
 					list($user_name) = Db::record(get_label('user'), 'SELECT n.name FROM users u JOIN names n ON n.id = u.name_id AND (n.langs & '.$_lang.') <> 0 WHERE u.id = ?', $owner_id);
+					// And here too, so that the screen can offer to take it over rather than
+					// only say it is not yours - this is the one a moderator meets without
+					// having done anything wrong.
+					$this->response['takenBy'] = $user_name;
 					throw new Exc(get_label('The game is moderated by [0].', $user_name));
 				}
 			}

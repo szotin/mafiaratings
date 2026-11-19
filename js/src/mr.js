@@ -1242,10 +1242,18 @@ var mr = new function()
 	{
 		function _own()
 		{
+			// The game is opened once the site says it has been handed over, and not at the same
+			// moment as the asking. goTo() was being called here rather than passed along, so the
+			// browser set off for the game while the request to be given it was still in the air,
+			// and the two raced: when the page got there first it was told the game still belongs
+			// to somebody else and came up empty.
 			json.post(
 				"api/ops/game.php",
 				{op:'own_current', event_id: eventId, "table_num": tableNum, "game_num": gameNum},
-				goTo('game.php?event_id=' + eventId + '&table_num=' + tableNum + '&game_num=' + gameNum));
+				function()
+				{
+					goTo('game.php?event_id=' + eventId + '&table_num=' + tableNum + '&game_num=' + gameNum);
+				});
 		}
 
 		if (isString(promptStr))
