@@ -497,9 +497,9 @@ class Page extends StreamsPageBase
 			echo '<h3 class="stream-section">' . get_label('OBS integration') . '</h3>';
 			$this->open_settings_table();
 			$this->show_setting(get_label('Turn on'),
-				'<input type="checkbox" class="toggle" id="obs-on" onchange="obsChanged()"' . ($obs_on ? ' checked' : '') . '>');
+				'<input type="checkbox" class="toggle" id="obs-on" onchange="obsChanged()"' . ($obs_on ? ' checked' : '') . '>' .
+				'<div class="stream-hint">' . get_label('The browser sources at this table change the scenes of the OBS Studio they run in. Switch this off and they stop touching it altogether: they go on drawing what they draw, and the scenes are left to be changed by hand. Nothing set up here is forgotten by it.') . '</div>');
 			echo '</table>';
-			echo '<p>' . get_label('The browser sources at this table change the scenes of the OBS Studio they run in. Switch this off and they stop touching it altogether: they go on drawing what they draw, and the scenes are left to be changed by hand. Nothing set up here is forgotten by it.') . '</p>';
 
 			echo '<div id="scene-switching"' . ($obs_on ? '' : ' style="display: none"') . '>';
 			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';

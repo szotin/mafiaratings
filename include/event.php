@@ -578,14 +578,24 @@ class EventPageBase extends PageBase
 				$manager_menu[] = new MenuItem(null, null, null);
 				// Called by what it is about rather than by what the page is called - see the
 				// same entry in include/tournament.php. The page keeps its own title.
+				//
+				// Opened on this round and not on the tournament it belongs to, even though the
+				// settings themselves belong to the tournament: that page works the owner out
+				// for itself, and what it lists at the foot of a tab - the recordings a table is
+				// streamed to - is then this round's rather than every round the tournament has
+				// ever played. Coming from a round and being shown all of them is being shown
+				// somebody else's page.
 				$manager_menu[] = new MenuItem(
-					is_null($this->tournament_id) ? ('streams.php?event_id=' . $this->id) : ('streams.php?tournament_id=' . $this->tournament_id),
+					'streams.php?event_id=' . $this->id,
 					get_label('Broadcasts'),
 					get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.'));
 			}
 			
 			if ($this->is_manager && is_null($this->tournament_id))
 			{
+				// Turning an event into a tournament is not one of the things above it: those
+				// set this event up, and this one makes it something else. A line says so.
+				$manager_menu[] = new MenuItem(null, null, null);
 				$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->id . ', \'' . get_label('Are you sure you want to convert [0] to a tournament?', $this->name) . '\')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->name));				
 			}
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);

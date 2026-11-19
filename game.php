@@ -606,20 +606,14 @@ class Page extends PageBase
 			// Everything about the stream is set up on one page now - the addresses of the
 			// overlays, what is shown between games, and which scene goes with which phase
 			// of the game. A round of a tournament is set up through its tournament, so the
-			// question asked here is the one that page will ask.
+			// question asked here is the one that page will ask - but the page is opened on
+			// the round being played, so that the recordings it lists are this round's.
 			if (is_null($tournament_id)
 				? is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $club_id, $this->event_id)
 				: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id))
 			{
 				echo '<li id="obs" class="ops-item"><a href="#" onclick="goTo(\'streams.php\',{bck:1,';
-				if (is_null($tournament_id))
-				{
-					echo 'event_id:' . $this->event_id;
-				}
-				else
-				{
-					echo 'tournament_id:' . $tournament_id;
-				}
+				echo 'event_id:' . $this->event_id;
 				echo '})"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
 			}
 		}
