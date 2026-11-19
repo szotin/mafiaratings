@@ -561,8 +561,12 @@ class ApiPage extends OpsApiPageBase
 			return;
 		}
 		
+		// Same email, and not merely both without one. Three hundred accounts here were made
+		// with no email at all - the page that creates a player does that - so "" = "" would
+		// let whoever has none take over every other account that has none either. It takes an
+		// administrator to merge accounts that are not shown to belong to the same person.
 		list($user_email) = Db::record(get_label('user'), 'SELECT email FROM users WHERE id = ?', $src_id);
-		if ($dst_id != $_profile->user_id || $user_email != $_profile->user_email)
+		if ($dst_id != $_profile->user_id || trim($user_email) === '' || $user_email != $_profile->user_email)
 		{
 			check_permissions(PERMISSION_ADMIN);
 		}
@@ -596,7 +600,9 @@ class ApiPage extends OpsApiPageBase
 			return;
 		}
 
-		if ($user_email != $_profile->user_email)
+		// As in merge_op: having no email is not having the same one. Without this, an account
+		// left without an address could delete every other account left without one.
+		if (trim($user_email) === '' || $user_email != $_profile->user_email)
 		{
 			check_permissions(PERMISSION_ADMIN);
 		}
@@ -628,7 +634,9 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		$query = new DbQuery('SELECT u2.id FROM users u1 JOIN users u2 ON u1.email = u2.email AND u1.id <> u2.id WHERE u1.id = ?', $user_id);
+		// u1.email <> '': an account with no address has nobody to share one with. Left out,
+		// this gathered up every emailless account on the site into whichever one asked.
+		$query = new DbQuery('SELECT u2.id FROM users u1 JOIN users u2 ON u1.email = u2.email AND u1.id <> u2.id WHERE u1.id = ? AND u1.email <> \'\'', $user_id);
 		while ($row = $query->next())
 		{
 			list ($src_id) = $row;
@@ -659,7 +667,8 @@ class ApiPage extends OpsApiPageBase
 		}
 		
 		Db::begin();
-		$query = new DbQuery('SELECT u2.id FROM users u1 JOIN users u2 ON u1.email = u2.email AND u1.id <> u2.id WHERE u1.id = ?', $user_id);
+		// And here it would have deleted them rather than gathered them up. Same guard.
+		$query = new DbQuery('SELECT u2.id FROM users u1 JOIN users u2 ON u1.email = u2.email AND u1.id <> u2.id WHERE u1.id = ? AND u1.email <> \'\'', $user_id);
 		while ($row = $query->next())
 		{
 			list ($src_id) = $row;
@@ -820,15 +829,28 @@ class ApiPage extends OpsApiPageBase
 		
 		if ($email != $old_email)
 		{
-			if (empty($email))
+			if (trim($email) === '')
 			{
-				throw new Exc(get_label('Please enter [0].', get_label('email address')));
+				// An account with no email at all is a thing - the page that creates users has
+				// always made them that way - so one can be emptied here as well, by whoever
+				// may edit the account. Not your own, though: changing your own address is
+				// finished by following a link sent to the new one, and an empty address is
+				// nowhere to send it; and it is the way back in when the password is gone, so
+				// taking your own away is a door locked behind you.
+				//
+				// trim() rather than empty(): the string "0" is empty to PHP and is not an
+				// empty address, and it would be stored as one.
+				if ($user_id == $_profile->user_id)
+				{
+					throw new Exc(get_label('Please enter [0].', get_label('email address')));
+				}
+				$email = '';
 			}
 			else if (!is_email($email))
 			{
 				throw new Exc(get_label('[0] is not a valid email address.', $email));
 			}
-			if ($user_id == $_profile->user_id)
+			else if ($user_id == $_profile->user_id)
 			{
 				send_activation_email($user_id, $name, $email);
 				echo get_label('You are trying to change your email address. Please check your email and click a link in it to finalize the change.');
