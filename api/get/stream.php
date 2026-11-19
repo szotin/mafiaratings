@@ -113,15 +113,26 @@ class ApiPage extends GetApiPageBase
 		// played, and what somebody has asked for by hand. The order from a person carries the
 		// time it was given, which is how a source tells a new one from the one it has already
 		// carried out - it stands until the game moves the automatic scene on by itself.
+		// Whether this table touches the OBS it is shown in at all. It is the switch to reach
+		// for when the scenes are misbehaving and there is no time to work out why: with it off
+		// the sources go on drawing the overlays and the between-games screens and leave the
+		// program they are running in alone. Nothing is forgotten by it - what is set up
+		// against the phases, and any order given by hand, are both still there when it goes
+		// back on.
+		//
+		// The scenes are emptied here rather than only said to be off, so that a source running
+		// a script from before this switch existed is quietened by it too.
+		$obs = (($settings->flags & STREAM_FLAG_NO_OBS) == 0);
 		$stream->scene = new stdClass();
-		$stream->scene->auto = stream_played_scene($owner, $table_num, $settings);
-		$stream->scene->manual = $settings->scene;
+		$stream->scene->obs = $obs ? 1 : 0;
+		$stream->scene->auto = $obs ? stream_played_scene($owner, $table_num, $settings) : '';
+		$stream->scene->manual = $obs ? $settings->scene : '';
 		$stream->scene->manualTime = $settings->scene_time;
 		// And what somebody could ask for. The moderator's screen offers these as buttons when
 		// the game is not switching the scenes by itself, so that the scene can be changed
 		// without leaving the game for OBS.
 		$stream->scene->names = $settings->scenes;
-		$stream->scene->switching = (($settings->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0) ? 1 : 0;
+		$stream->scene->switching = ($obs && ($settings->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0) ? 1 : 0;
 
 		$this->response['stream'] = $stream;
 	}
@@ -147,7 +158,7 @@ class ApiPage extends GetApiPageBase
 			$param->sub_param('hideGlyphs', '1 when the sources carrying the cards over the game are to show nothing at all, 0 otherwise.');
 			$param->sub_param('hideBetween', '1 when the source filling the time between games is to show nothing at all, 0 otherwise.');
 			$param->sub_param('show', 'Which parts of the overlay are drawn, each 1 or 0. "top" is the strip along the top and "cards" the players along the bottom; under top stand phase, game, judge, donChecks, sheriffChecks and nominees, and under cards stand votes, warnings, bestMove and speaker. A half that is off takes its parts with it whatever they say.');
-			$param->sub_param('scene', 'Which OBS scene the table should be showing. "auto" is what the game being played is asking for, "manual" what somebody asked for by hand, and "manualTime" when they asked. A browser source follows the manual one when its time is newer than the last it carried out, and the automatic one whenever that changes. "names" are all the scenes the OBS at this table reported, and "switching" is 1 when the scenes are changed by the phase of the game and 0 when they are left to be changed by hand.');
+			$param->sub_param('scene', 'Which OBS scene the table should be showing. "auto" is what the game being played is asking for, "manual" what somebody asked for by hand, and "manualTime" when they asked. A browser source follows the manual one when its time is newer than the last it carried out, and the automatic one whenever that changes. "names" are all the scenes the OBS at this table reported, "switching" is 1 when the scenes are changed by the phase of the game and 0 when they are left to be changed by hand, and "obs" is 0 when this table has been taken off OBS altogether - the sources then draw their pages and change nothing, and "auto" and "manual" come back empty.');
 		return $help;
 	}
 }

@@ -487,6 +487,21 @@ class Page extends StreamsPageBase
 		// says nothing at all; this says what is missing.
 		if (!is_null($stored))
 		{
+			// Whether this table touches OBS at all, above everything it governs. It is the
+			// switch to reach for when the scenes are misbehaving in the middle of a stream and
+			// there is nobody to work out why: off, the sources go on drawing the overlays and
+			// the between-games screens, and the scene is left to whoever is at the keyboard.
+			// Nothing is forgotten - what is set up below, and any order given by hand, are
+			// both still there when it goes back on.
+			$obs_on = ($stored->flags & STREAM_FLAG_NO_OBS) == 0;
+			echo '<h3 class="stream-section">' . get_label('OBS integration') . '</h3>';
+			$this->open_settings_table();
+			$this->show_setting(get_label('Turn on'),
+				'<input type="checkbox" class="toggle" id="obs-on" onchange="obsChanged()"' . ($obs_on ? ' checked' : '') . '>');
+			echo '</table>';
+			echo '<p>' . get_label('The browser sources at this table change the scenes of the OBS Studio they run in. Switch this off and they stop touching it altogether: they go on drawing what they draw, and the scenes are left to be changed by hand. Nothing set up here is forgotten by it.') . '</p>';
+
+			echo '<div id="scene-switching"' . ($obs_on ? '' : ' style="display: none"') . '>';
 			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';
 			if (empty($stored->scenes))
 			{
@@ -523,6 +538,7 @@ class Page extends StreamsPageBase
 				echo '</table>';
 				echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';
 			}
+			echo '</div>';
 		}
 
 		// The other end of a broadcast: not what OBS puts on the screen but where what it put
@@ -658,6 +674,18 @@ class Page extends StreamsPageBase
 		function escapeHtml(text)
 		{
 			return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+		}
+
+		// Taking the table off OBS hides everything that is about OBS, for the same reason the
+		// rows below are hidden rather than forgotten: it is one flag, and what it governs is
+		// still there when it comes back.
+		function obsChanged()
+		{
+			let on = document.getElementById('obs-on').checked;
+			document.getElementById('scene-switching').style.display = on ? '' : 'none';
+			json.post("api/ops/stream.php",
+			Object.assign({ op: "set", table_num: tableNum, obs: on ? 1 : 0 }, owner),
+			saved);
 		}
 
 		// Turning the switching off hides the rows rather than forgetting them: nothing is sent

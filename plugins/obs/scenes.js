@@ -21,7 +21,8 @@ var obsScenes = new function()
 	var params;        // which table that is
 	var interval;      // how long between one asking and the next
 	var lastAuto;      // the last scene the game asked for, carried out or not
-	var lastManual;    // when the last order from a person was given
+	var lastManual;    // when the last order from a person was given, or null before the
+	                   // first answer has been read - see poll()
 
 	// The scene the table should be on, and whether OBS has been seen on it. Asking is one
 	// thing and OBS carrying it out is another - see press(), which is where they are told
@@ -66,7 +67,7 @@ var obsScenes = new function()
 		params = tableParams;
 		interval = delay;
 		lastAuto = null;
-		lastManual = 0;
+		lastManual = null;
 		wanted = null;
 		wantedAt = 0;
 		settled = false;
@@ -212,7 +213,37 @@ var obsScenes = new function()
 	// next second putting it straight back.
 	function follow(scene)
 	{
-		if (scene.manualTime > lastManual)
+		// The table has been taken off OBS altogether - see the switch on the stream settings
+		// page. Nothing is asked of the program we are running in from here on: whatever we were
+		// in the middle of asking for is dropped, and what is on the screen is whatever the
+		// person at the keyboard put there. The site empties the scenes as well, so a source
+		// still running a script from before this existed is quietened the same way - this is
+		// only what makes it happen at once rather than within the next few seconds.
+		if (scene.obs === 0)
+		{
+			lastManual = scene.manualTime;
+			lastAuto = scene.auto;
+			want('');
+			return;
+		}
+
+		// The first answer is read and not acted on. An order by hand is something somebody did
+		// at a moment, not a state the table is in, and a source that has only just opened was
+		// not there when it was given: carrying it out now would be answering for a person who
+		// has long since walked away.
+		//
+		// That is what happened to a table at MafClub LA on the 18th of November 2026. An order
+		// to show the scene called Day was given early in the evening; from then on every source
+		// that opened - a source added to OBS, an OBS restarted, a second machine, this page
+		// loading itself again after a deploy - read it as news and dragged the scene back onto
+		// Day. Nobody could hold a scene for more than a second, and the order could not be
+		// taken back either, because the buttons that give one are drawn only from the list of
+		// scenes the site has, and that list had been emptied by then.
+		if (lastManual === null)
+		{
+			lastManual = scene.manualTime;
+		}
+		else if (scene.manualTime > lastManual)
 		{
 			lastManual = scene.manualTime;
 			lastAuto = scene.auto;
@@ -343,9 +374,18 @@ var obsScenes = new function()
 		});
 	}
 
+	// An empty list is not sent, and nor is one sent for an OBS that would not answer at all:
+	// not being able to ask what scenes there are is not the same as there being none, and the
+	// site keeps this to draw the buttons that switch them. A source whose page permissions are
+	// too low to enumerate them used to report an empty list and take the buttons away from
+	// everybody - including the buttons that would have taken back a standing order.
 	function send(level, scenes)
 	{
-		var list = JSON.stringify(scenes ? scenes : []);
+		if (!scenes || !scenes.length)
+		{
+			scenes = null;
+		}
+		var list = (scenes === null) ? null : JSON.stringify(scenes);
 		if (list === reportedScenes && level === reportedLevel)
 		{
 			return; // the site already knows this
@@ -356,7 +396,10 @@ var obsScenes = new function()
 		var body = new URLSearchParams(params);
 		body.set('op', 'scenes');
 		body.set('control_level', level);
-		body.set('scenes', list);
+		if (list !== null)
+		{
+			body.set('scenes', list);
+		}
 		fetch('../../api/ops/stream.php', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

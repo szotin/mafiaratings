@@ -190,24 +190,52 @@ class ApiPage extends OpsApiPageBase
 		}
 
 		$control_level = (int)get_optional_param('control_level', -1);
-		$scenes = json_decode(get_optional_param('scenes', '[]'));
-		$names = array();
-		if (is_array($scenes))
+
+		// What the source could find out, which may be nothing. A source whose page permissions
+		// are too low to ask OBS for its scenes sends no list at all, and no list is not a list
+		// of none: it is the absence of an answer. What is already known is kept in that case,
+		// because this is where the buttons that switch a scene by hand come from - and one
+		// source reporting an empty list used to take those buttons away from everybody,
+		// including from whoever needed them to take back a standing order. See send() in
+		// plugins/obs/scenes.js.
+		$said = get_optional_param('scenes', NULL);
+		$names = NULL;
+		if (!is_null($said))
 		{
-			foreach ($scenes as $name)
+			$scenes = json_decode($said);
+			$names = array();
+			if (is_array($scenes))
 			{
-				if (is_string($name) && $name != '' && mb_strlen($name) <= 128 && !in_array($name, $names))
+				foreach ($scenes as $name)
 				{
-					$names[] = $name;
+					if (is_string($name) && $name != '' && mb_strlen($name) <= 128 && !in_array($name, $names))
+					{
+						$names[] = $name;
+					}
+					if (count($names) >= 64)
+					{
+						break;
+					}
 				}
-				if (count($names) >= 64)
-				{
-					break;
-				}
+			}
+			if (empty($names))
+			{
+				$names = NULL; // nothing came of it, so nothing is claimed
 			}
 		}
 
 		$settings = stream_settings($owner, $table_num);
+		if (is_null($names))
+		{
+			Db::exec(get_label('event'),
+				'INSERT INTO ' . $owner->table . ' (' . $owner->column . ', table_num, lang, delay, screens, flags, control_level)'.
+				' VALUES (?, ?, ?, ?, ?, ?, ?)'.
+				' ON DUPLICATE KEY UPDATE control_level = ?',
+				$owner->id, $table_num, $settings->lang, $settings->delay, implode(',', $settings->screens), $settings->flags, $control_level,
+				$control_level);
+			return;
+		}
+
 		$names = json_encode($names);
 		Db::exec(get_label('event'),
 			'INSERT INTO ' . $owner->table . ' (' . $owner->column . ', table_num, lang, delay, screens, flags, scenes, control_level)'.
@@ -337,6 +365,10 @@ class ApiPage extends OpsApiPageBase
 			{
 				$flags = ((int)$_REQUEST['auto_scenes'] != 0) ? ($flags & ~STREAM_FLAG_NO_AUTO_SCENE) : ($flags | STREAM_FLAG_NO_AUTO_SCENE);
 			}
+			if (isset($_REQUEST['obs']))
+			{
+				$flags = ((int)$_REQUEST['obs'] != 0) ? ($flags & ~STREAM_FLAG_NO_OBS) : ($flags | STREAM_FLAG_NO_OBS);
+			}
 
 			Db::exec(get_label('event'),
 				'INSERT INTO ' . $owner->table . ' (' . $owner->column . ', table_num, lang, delay, screens, flags) VALUES (?, ?, ?, ?, ?, ?)'.
@@ -373,6 +405,7 @@ class ApiPage extends OpsApiPageBase
 		$help->request_param('show_warnings', '1 draws the fouls in the corner of a card, 0 leaves them out. The way a player left the game goes with them.', 'left as it is.');
 		$help->request_param('show_best_move', '1 draws the best move of the player shot on the first night, 0 leaves it out.', 'left as it is.');
 		$help->request_param('show_speaker', '1 lights the card of whoever is speaking, 0 leaves every card alike.', 'left as it is.');
+		$help->request_param('obs', '1 lets the browser sources at this table change the scenes of the OBS they run in, 0 leaves that OBS alone altogether - they go on drawing their pages, and neither the phase of the game nor an order given by hand moves a scene. What is set up against the phases is kept either way.', 'left as it is.');
 		$help->request_param('auto_scenes', '1 switches the OBS scenes at this table by the phase of the game being played, 0 leaves them to be switched by hand. What is set up against the phases is kept either way.', 'left as it is.');
 		$help->request_param('hide_roles', '1 keeps the roles off the overlays. It belongs to the tournament rather than to one table, so it is set for the whole of it and every round follows.', 'left as it is.');
 		$help->request_param('streaming', '1 - the games are video streamed: the game screen takes one more step at the end of the night, so that the stream can show the night before the moderator says what came of it. 0 - they are not. It belongs to the tournament rather than to one table, so it is set for the whole of it and every round follows.', 'left as it is.');

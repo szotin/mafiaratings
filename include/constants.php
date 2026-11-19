@@ -252,6 +252,10 @@ define('GAME_FLAG_TEAM_KICK_OUT', 0x8);
 define('STREAM_FLAG_DARK', 0x1);
 define('STREAM_FLAG_TRANSPARENT', 0x2);
 define('STREAM_FLAG_NO_AUTO_SCENE', 0x4);
+// The browser sources of a table leave the OBS they run in alone: no scene is switched,
+// neither by the phase of the game nor by anybody pressing a button. Stored the other way
+// round, as "do not", so that a table nobody has said anything about goes on as it did.
+define('STREAM_FLAG_NO_OBS', 0x20000);
 
 // Nothing at all shown at this table, by the browser sources that carry the cards over the
 // game and by the one that fills the time between games. They are set apart because they are
