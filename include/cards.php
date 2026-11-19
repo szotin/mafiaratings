@@ -153,6 +153,29 @@ function card_seg($items, $label)
 	return $html . '</nav>';
 }
 
+// The actions of a row of a table as one button, "≡", that opens a menu of them - rather than a
+// row of icons nobody can tell apart. $items is an array of array(onclick, image, words); the
+// image is one of images/*.png the buttons used to show. new_look.js closes the menu on a click
+// anywhere else and on Escape.
+function card_row_menu($items, $label = NULL)
+{
+	if (count($items) == 0)
+	{
+		return '';
+	}
+	if (is_null($label))
+	{
+		$label = get_label('Actions');
+	}
+	$html = '<details class="row-menu"><summary title="' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '" aria-label="' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '">' . PageBase::icon('menu') . '</summary><div class="rm-list" role="menu">';
+	foreach ($items as $item)
+	{
+		list($onclick, $image, $words) = $item;
+		$html .= '<button type="button" role="menuitem" onclick="this.closest(\'details\').open = false; ' . htmlspecialchars($onclick, ENT_QUOTES, 'UTF-8') . '"><img src="images/' . $image . '" alt="">' . $words . '</button>';
+	}
+	return $html . '</div></details>';
+}
+
 // The address of the current page with some of its parameters changed: NULL removes one.
 function card_url($changes)
 {

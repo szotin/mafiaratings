@@ -1458,6 +1458,45 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .club img, .club .club-ini { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--rule); background: #fff; object-fit: contain; }
 .club .club-ini { display: grid; place-items: center; font-size: 9px; font-weight: 700; color: var(--slate); }
 .club span:not(.club-ini) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a list of games (games.php): the result as a chip - town red, mafia dark, a tie grey - and under
+   it what makes the game count less; the video beside the game; a canceled game dimmed */
+.tbl td.res { white-space: nowrap; }
+.tbl .chip.res { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font: 600 12px var(--font); text-transform: none; letter-spacing: 0; box-shadow: none; }
+.tbl .chip.res::before { display: none; }
+.tbl .chip.res.town { background: var(--red); color: #fff; }
+.tbl .chip.res.maf { background: var(--night); color: #fff; }
+.tbl .chip.res.tie { background: var(--frost); color: var(--ink-soft); }
+.tbl .chip.res.note { display: flex; width: max-content; margin-top: 4px; padding: 1px 8px; background: none; color: var(--slate); box-shadow: inset 0 0 0 1px var(--rule-strong); font-size: 11px; }
+.tbl .game-cell { display: flex; align-items: center; gap: 10px; }
+.tbl .game-cell a.video { flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--frost); color: var(--ink-soft); }
+.tbl .game-cell a.video:hover { background: var(--red); color: #fff; }
+.tbl .game-cell a.video .ic { width: 16px; height: 16px; }
+.tbl tr.off td > * { opacity: .55; }
+.tbl.games td .who .av { width: 30px; height: 30px; }
+/* the line under a game (tournament, round, time) wraps rather than pushing the table off the page */
+.tbl.games .who-sub { white-space: normal; }
+.tbl.games td:nth-child(2) { min-width: 190px; }
+.tbl.games th, .tbl.games td { padding-left: 8px; padding-right: 8px; }
+@media (max-width: 899px) { .tbl.games td:nth-child(2) { min-width: 0; } }
+.tbl.games .club span:not(.club-ini) { max-width: 130px; }
+/* the part of a player in a game (user_games.php): their role, whether they won, their rating */
+.tbl .chip.res.win { background: #E3F3EA; color: #19714A; box-shadow: none; }
+.tbl .chip.res.loss { background: var(--frost); color: var(--slate); box-shadow: none; }
+.tbl td.role .role-cell { display: flex; align-items: center; gap: 6px; }
+.tbl td.role .chip.res { margin-top: 4px; }
+/* the actions of a row as a menu under "≡" (card_row_menu() in include/cards.php) */
+.row-menu { position: relative; display: inline-block; }
+.row-menu > summary { list-style: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; color: var(--ink-soft); background: var(--frost); }
+.row-menu > summary::-webkit-details-marker { display: none; }
+.row-menu > summary .ic { width: 18px; height: 18px; }
+.row-menu > summary:hover, .row-menu[open] > summary { background: var(--ink-soft); color: #fff; }
+.row-menu .rm-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 220px; padding: 6px; border-radius: 12px; background: var(--paper);
+  border: 1px solid var(--rule); box-shadow: 0 18px 40px -18px rgba(19,35,58,.35); }
+.row-menu .rm-list button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: none; cursor: pointer;
+  font: 500 14px var(--font); color: var(--ink); text-align: left; white-space: nowrap; }
+.row-menu .rm-list button:hover, .row-menu .rm-list button:focus-visible { background: var(--frost); outline: none; }
+.row-menu .rm-list button img { width: 18px; height: 18px; flex: none; }
+.nl .row-menu .rm-list button { justify-content: flex-start; min-width: 0; height: auto; box-shadow: none; transform: none; }
 /* the buttons of a row (edit, delete...): as narrow as they are, on one line */
 .tbl td.tb-btns { width: 1%; white-space: nowrap; }
 .tbl td.tb-btns button.icon + button.icon { margin-left: 4px; }

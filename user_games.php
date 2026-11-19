@@ -8,6 +8,7 @@ require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
 require_once 'include/ccc_filter.php';
+require_once 'include/game_rows.php';
 
 define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
@@ -26,7 +27,7 @@ class Page extends UserPageBase
 {
 	protected function show_body()
 	{
-		global $_page, $_lang;
+		global $_page, $_lang, $_profile;
 	
 		$moder = 0;
 		if (isset($_REQUEST['moder']))
@@ -46,25 +47,54 @@ class Page extends UserPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<p>';
-		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
-		echo '&emsp;&emsp;';
-		show_date_filter();
-		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
-		echo '</p>';
-		
-		echo '<div class="tab">';
-		echo '<button' . ($moder ? '' : ' class="active"') . ' onclick="goTo({moder:0})">' . get_label('As a player') . '</button>';
-		echo '<button' . ($moder ? ' class="active"' : '') . ' onclick="goTo({moder:1})">' . get_label('As a referee') . '</button>';
-		echo '</div>';
-		
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$event_pic = new Picture(EVENT_PICTURE);
-		$club_pic = new Picture(CLUB_PICTURE);
+		$roles = 0;
+		if (isset($_REQUEST['roles']))
+		{
+			$roles = (int)$_REQUEST['roles'];
+		}
 		
 		$condition = new SQL();
+		// The filter by name of the preview (include/game_rows.php).
+		$search = game_search_condition($condition);
+		
+		// The toolbar of the lists of games (games.php), in two lines: as a player or as a referee, the
+		// filter by name, the club/city/country, the result - which for a player also says whether
+		// they won - and their role; then the dates and the three-state filters.
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		echo '<div class="toolbar">';
+		echo card_seg(array(
+			array(card_url(array('moder' => NULL, 'result' => NULL, 'page' => NULL)), get_label('As a player'), $moder == 0),
+			array(card_url(array('moder' => 1, 'result' => NULL, 'roles' => NULL, 'page' => NULL)), get_label('As a referee'), $moder != 0)), get_label('Games'));
+		echo game_search_field($search);
+		echo '<div class="tb-field">';
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('games')));
+		echo '</div>';
+		if ($moder != 0)
+		{
+			$options = array(0 => get_label('All games'), GAME_RESULT_TOWN => get_label('Town wins'), GAME_RESULT_MAFIA => get_label('Mafia wins'), GAME_RESULT_TIE => get_label('Ties'));
+		}
+		else
+		{
+			$options = array(0 => get_label('All games'), 1 => get_label('Town wins'), 2 => get_label('Mafia wins'), 3 => get_label('[0] wins', $this->name), 4 => get_label('[0] losses', $this->name));
+		}
+		$results = array();
+		foreach ($options as $r => $words)
+		{
+			$results[] = array(card_url(array('result' => ($r > 0 ? $r : NULL), 'page' => NULL)), $words, $result_filter == $r);
+		}
+		echo card_seg($results, get_label('Filter games by result.'));
+		if ($moder == 0)
+		{
+			echo '<div class="tb-field">';
+			show_roles_select($roles, 'filterChanged()', get_label('Games where [0] was in a specific role.', $this->name), ROLE_NAME_FLAG_SINGLE);
+			echo '</div>';
+		}
+		echo '<div class="tb-line"><div class="tb-dates">';
+		show_date_filter();
+		echo '</div>';
+		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+		echo '</div></div>';
+		
 		$ccc_id = $ccc_filter->get_id();
 		switch($ccc_filter->get_type())
 		{
@@ -130,14 +160,6 @@ class Page extends UserPageBase
 		
 		if ($moder != 0)
 		{
-			echo '<p><select id="result" onChange="filterChanged()">';
-			show_option(0, $result_filter, get_label('All games'));
-			show_option(GAME_RESULT_TOWN, $result_filter, get_label('Town wins'));
-			show_option(GAME_RESULT_MAFIA, $result_filter, get_label('Mafia wins'));
-			show_option(GAME_RESULT_TIE, $result_filter, get_label('Ties'));
-			echo '</select>';
-			echo '</p>';
-			
 			if ($result_filter > 0)
 			{
 				$condition->add(' AND g.result = ?', $result_filter);
@@ -146,11 +168,18 @@ class Page extends UserPageBase
 			list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g WHERE g.moderator_id = ?', $this->id, $condition);
 			show_pages_navigation(PAGE_SIZE, $count);
 			
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker" align="center"><td width="48"></td><td colspan="2"></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Result').'</td></tr>';
+			// The games the user refereed: the table of games.php without the referee - that is them.
+			echo '<div class="sheet"><table class="tbl games">';
+			echo '<thead><tr><th class="rk" scope="col">#</th>';
+			echo '<th scope="col">' . get_label('Game') . '</th>';
+			echo '<th scope="col">' . get_label('Result') . '</th>';
+			echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+			echo '<th class="p3" scope="col">' . get_label('Tournament') . '</th>';
+		echo '<th class="p4" scope="col">' . get_label('Event') . '</th>';
+			echo '</tr></thead><tbody>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, nc.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.flags, g.video_id, e.id, ne.name, e.flags, t.id, nt.name, t.flags, a.id, na.name, a.flags, g.table_num, g.game_num FROM games g' .
+				'SELECT g.id, c.id, nc.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.flags, g.video_id, e.id, ne.name, e.flags, t.id, nt.name, t.flags, g.table_num, g.game_num FROM games g' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 				' JOIN events e ON e.id = g.event_id' .
@@ -158,7 +187,6 @@ class Page extends UserPageBase
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = e.address_id' .
-				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE g.moderator_id = ?',
 				$this->id, $condition);
@@ -166,126 +194,19 @@ class Page extends UserPageBase
 			$num = $_page * PAGE_SIZE;
 			while ($row = $query->next())
 			{
-				list ($game_id, $club_id, $club_name, $club_flags, $timezone, $start, $duration, $game_result, $flags, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $table_num, $game_num) = $row;
-				
-				echo '<tr align="center"';
-				if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
-				{
-					echo ' class="dark"';
-				}
-				echo '>';
-				echo '<td>' . ++$num . '</td>';
-
-				if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
-				{
-					echo '<td align="left" style="padding-left:12px;">';
-				}
-				else
-				{
-					echo '<td align="left" colspan="2" style="padding-left:12px;">';
-				}
-				
-				if ($video_id != NULL)
-				{
-					echo '<table class="transp" width="100%"><tr><td>';
-				}
-				echo '<a href="view_game.php?id=' . $game_id . '&moderator_id=' . $this->id . '&bck=1"><b>';
-				if (is_null($game_num))
-				{
-					echo get_label('Game #[0]', $game_id);
-				}
-				else if (is_null($table_num))
-				{
-					echo  get_label('Game [0]', $game_num);
-				}
-				else
-				{
-					echo  get_label('Table [0], Game [1]', $table_num, $game_num);
-				}
-				echo '<br>';
-				if ($tournament_name != NULL)
-				{
-					echo $tournament_name . '</b>, ' . $event_name;
-				}
-				else
-				{
-					echo $event_name . '</b>';
-				}
-				echo '<br>' . format_date($start, $timezone, true) . '</a>';
-				if ($video_id != NULL)
-				{
-					echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
-					echo '</td></tr></table>';
-				}
-			
-				if ($flags & GAME_FLAG_CANCELED)
-				{
-					echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
-					if (($flags & GAME_FLAG_RATING) == 0)
-					{
-						echo '<br>' . get_label('Non-rating');
-					}
-					echo '</b></td>';
-				}
-				else if (($flags & GAME_FLAG_RATING) == 0)
-				{
-					echo '</s></td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
-				}
-				echo '</td>';
-				
-				echo '<td>';
-				$club_pic->set($club_id, $club_name, $club_flags);
-				$club_pic->show(ICONS_DIR, true, 48);
-				echo '</td>';
-				
-				echo '<td>';
-				$event_pic->set($event_id, $event_name, $event_flags);
-				$event_pic->show(ICONS_DIR, true, 48);
-				echo '</td>';
-				
-				echo '<td>';
-				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-				$tournament_pic->show(ICONS_DIR, true, 48);
-				echo '</td>';
-				
-				echo '<td>';
-				switch ($game_result)
-				{
-					case GAME_RESULT_TOWN:
-						echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
-						break;
-					case GAME_RESULT_MAFIA:
-						echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
-						break;
-					case GAME_RESULT_TIE:
-					echo '<img src="images/tie.png" title="' . get_label('tie') . '" style="opacity: 0.5;">';
-						break;
-				}
-				echo '</td></tr>';
-				++$count;
+				$g = new stdClass();
+				list ($g->id, $g->club_id, $g->club_name, $g->club_flags, $g->timezone, $g->start, $duration, $g->result, $g->flags, $g->video_id, $g->event_id, $g->event_name, $g->event_flags, $g->tournament_id, $g->tournament_name, $g->tournament_flags, $g->table_num, $g->game_num) = $row;
+				echo '<tr' . (($g->flags & GAME_FLAG_CANCELED) ? ' class="off"' : '') . '><td class="rk">' . ++$num . '</td>';
+				// The game opens on the referee's side, as it always did. The round and the tournament have columns of their own.
+				echo game_row_cell($g, array('time'), '&moderator_id=' . $this->id);
+				echo game_result_cell($g) . game_club_cell($g) . game_tournament_cell($g) . game_event_cell($g, 'p4');
+				echo '</tr>';
 			}
-			echo '</table>';
+			echo '</tbody></table></div>';
 			show_pages_navigation(PAGE_SIZE, $count);
 		}
 		else
 		{
-			$roles = 0;
-			if (isset($_REQUEST['roles']))
-			{
-				$roles = (int)$_REQUEST['roles'];
-			}
-
-			echo '<p><select id="result" onChange="filterChanged()">';
-			show_option(0, $result_filter, get_label('All games'));
-			show_option(1, $result_filter, get_label('Town wins'));
-			show_option(2, $result_filter, get_label('Mafia wins'));
-			show_option(3, $result_filter, get_label('[0] wins', $this->name));
-			show_option(4, $result_filter, get_label('[0] losses', $this->name));
-			echo '</select> ';
-			echo '&emsp;&emsp;';
-			show_roles_select($roles, 'filterChanged()', get_label('Games where [0] was in a specific role.', $this->name), ROLE_NAME_FLAG_SINGLE);
-			echo '</p>';
-			
 			$condition->add(get_roles_condition($roles));
 			switch ($result_filter)
 			{
@@ -305,11 +226,22 @@ class Page extends UserPageBase
 			
 			list ($count) = Db::record(get_label('player'), 'SELECT count(*) FROM players p JOIN games g ON g.id = p.game_id WHERE p.user_id = ?', $this->id, $condition);
 			show_pages_navigation(PAGE_SIZE, $count);
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="th darker" align="center"><td width="48"></td><td></td><td width="48">'.get_label('Club').'</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Role').'</td><td width="48">'.get_label('Result').'</td><td width="100">'.get_label('Rating').'</td></tr>';
+			
+			// The games the user played: the table of games.php with their own part in each - their
+			// role, whether they won, and the rating it brought them - instead of the referee.
+			echo '<div class="sheet"><table class="tbl games">';
+			echo '<thead><tr><th class="rk" scope="col">#</th>';
+			echo '<th scope="col">' . get_label('Game') . '</th>';
+			echo '<th scope="col">' . get_label('Result') . '</th>';
+			echo '<th scope="col">' . get_label('Role') . '</th>';
+			echo '<th class="num" scope="col">' . get_label('Rating') . '</th>';
+			echo '<th class="p2" scope="col">' . get_label('Club') . '</th>';
+			echo '<th class="p3" scope="col">' . get_label('Tournament') . '</th>';
+		echo '<th class="p4" scope="col">' . get_label('Event') . '</th>';
+			echo '</tr></thead><tbody>';
 			
 			$query = new DbQuery(
-				'SELECT g.id, c.id, nc.name, c.flags, ct.timezone, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, ne.name, e.flags, t.id, nt.name, t.flags, a.id, na.name, a.flags, g.table_num, g.game_num FROM players p' .
+				'SELECT g.id, c.id, nc.name, c.flags, ct.timezone, g.start_time, g.end_time - g.start_time, g.result, g.flags, p.role, p.rating_before, p.rating_earned, g.video_id, e.id, ne.name, e.flags, t.id, nt.name, t.flags, g.table_num, g.game_num FROM players p' .
 				' JOIN games g ON g.id = p.game_id' .
 				' JOIN clubs c ON c.id = g.club_id' .
 				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
@@ -318,9 +250,6 @@ class Page extends UserPageBase
 				' LEFT OUTER JOIN tournaments t ON t.id = g.tournament_id' .
 				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' JOIN addresses a ON a.id = e.address_id' .
-				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
-				' LEFT OUTER JOIN users m ON m.id = g.moderator_id' .
-				' LEFT OUTER JOIN names nm ON nm.id = m.name_id AND (nm.langs & '.$_lang.') <> 0'.
 				' JOIN cities ct ON ct.id = a.city_id' .
 				' WHERE p.user_id = ?', 
 				$this->id, $condition);
@@ -328,134 +257,66 @@ class Page extends UserPageBase
 			$num = $_page * PAGE_SIZE;
 			while ($row = $query->next())
 			{
-				list (
-					$game_id, $club_id, $club_name, $club_flags, $timezone, $moder_id, $moder_name, $moder_flags, $start, $duration, 
-					$game_result, $flags, $role, $rating_before, $rating_earned, $video_id, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $table_num, $game_num) = $row;
-			
-				echo '<tr align="center"';
-				if (($flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
-				{
-					echo ' class="dark"';
-				}
-				echo '>';
-				echo '<td>' . ++$num . '</td>';
-			
-				echo '<td align="left" style="padding-left:12px;">';
-				if ($video_id != NULL)
-				{
-					echo '<table class="transp" width="100%"><tr><td>';
-				}
-				echo '<a href="view_game.php?id=' . $game_id . '&user_id=' . $this->id . '&bck=1"><b>';
-				if (is_null($game_num))
-				{
-					echo get_label('Game #[0]', $game_id);
-				}
-				else if (is_null($table_num))
-				{
-					echo  get_label('Game [0]', $game_num);
-				}
-				else
-				{
-					echo  get_label('Table [0], Game [1]', $table_num, $game_num);
-				}
-				echo '<br>';
-				if ($tournament_name != NULL)
-				{
-					echo $tournament_name . '</b>, ' . $event_name;
-				}
-				else
-				{
-					echo $event_name . '</b>';
-				}
-				echo '<br>' . format_date($start, $timezone, true) . '</a>';
-				if ($video_id != NULL)
-				{
-					echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
-					echo '</td></tr></table>';
-				}
-				echo '</td>';
+				$g = new stdClass();
+				list ($g->id, $g->club_id, $g->club_name, $g->club_flags, $g->timezone, $g->start, $duration, 
+					$g->result, $g->flags, $role, $rating_before, $rating_earned, $g->video_id, $g->event_id, $g->event_name, $g->event_flags, $g->tournament_id, $g->tournament_name, $g->tournament_flags, $g->table_num, $g->game_num) = $row;
+				echo '<tr' . (($g->flags & GAME_FLAG_CANCELED) ? ' class="off"' : '') . '><td class="rk">' . ++$num . '</td>';
+				// The game opens on the player's side, as it always did. The round and the tournament have columns of their own.
+				echo game_row_cell($g, array('time'), '&user_id=' . $this->id);
+				echo game_result_cell($g);
 				
-				echo '<td>';
-				$club_pic->
-					set($club_id, $club_name, $club_flags);
-				$club_pic->show(ICONS_DIR, true, 48);
-				echo '</td>';
-				
-				echo '<td>';
-				$event_pic->set($event_id, $event_name, $event_flags);
-				$event_pic->show(ICONS_DIR, true, 48);
-				echo '</td>';
-				
-				echo '<td>';
-				$tournament_pic->
-					set($tournament_id, $tournament_name, $tournament_flags);
-				$tournament_pic->show(ICONS_DIR, true, 48);
-				echo '</td>';
-
+				// The role, and whether the player won in it: a role of the town wins with the town.
 				$win = 0;
-				echo '<td>';
 				switch ($role)
 				{
-					case 0: // civil;
-						echo '<img src="images/civ.png" title="' . get_label('civil') . '" style="opacity: 0.5;">';
-						$win = $game_result == GAME_RESULT_TOWN ? 1 : 2;
+					case 0: // civil
+						$role_img = 'civ.png';
+						$role_name = get_label('civil');
+						$win = $g->result == GAME_RESULT_TOWN ? 1 : 2;
 						break;
-					case 1: // sherif;
-						echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
-						$win = $game_result == GAME_RESULT_TOWN ? 1 : 2;
+					case 1: // sheriff
+						$role_img = 'sheriff.png';
+						$role_name = get_label('sheriff');
+						$win = $g->result == GAME_RESULT_TOWN ? 1 : 2;
 						break;
-					case 2: // mafia;
-						echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
-						$win = $game_result == GAME_RESULT_MAFIA ? 1 : 2;
+					case 2: // mafia
+						$role_img = 'maf.png';
+						$role_name = get_label('mafia');
+						$win = $g->result == GAME_RESULT_MAFIA ? 1 : 2;
 						break;
-					case 3: // don
-						echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
-						$win = $game_result == GAME_RESULT_MAFIA ? 1 : 2;
+					default: // don
+						$role_img = 'don.png';
+						$role_name = get_label('don');
+						$win = $g->result == GAME_RESULT_MAFIA ? 1 : 2;
 						break;
+				}
+				echo '<td class="role"><span class="role-cell"><img src="images/' . $role_img . '" alt="" width="20" height="20">' . $role_name . '</span>';
+				if ($win == 1)
+				{
+					echo '<span class="chip res win">' . get_label('win') . '</span>';
+				}
+				else if ($win == 2)
+				{
+					echo '<span class="chip res loss">' . get_label('loss') . '</span>';
 				}
 				echo '</td>';
-				echo '<td>';
-				switch ($win)
+				
+				// The rating: what the game brought, and under it the rating after (before and after in the hint). A canceled or non-rating game brought
+				// none - its result says which.
+				if (($g->flags & (GAME_FLAG_RATING | GAME_FLAG_CANCELED)) != GAME_FLAG_RATING)
 				{
-					case 1:
-						echo '<img src="images/won.png" title="' . get_label('win') . '" style="opacity: 0.8;">';
-						break;
-					case 2:
-						echo '<img src="images/lost.png" title="' . get_label('loss') . '" style="opacity: 0.8;">';
-						break;
-				}
-				echo '</td>';
-				if ($flags & GAME_FLAG_CANCELED)
-				{
-					echo '<td class="darker">' . get_label('Canceled');
-					if (($flags & GAME_FLAG_RATING) == 0)
-					{
-						echo '<br>' . get_label('Non-rating');
-					}
-					echo '';
-				}
-				else if (($flags & GAME_FLAG_RATING) == 0)
-				{
-					echo '<td class="darker">' . get_label('Non-rating') . '';
+					echo '<td class="num dim">&ndash;</td>';
 				}
 				else
 				{
-					echo '<td>';
-					echo format_rating(USER_INITIAL_RATING + $rating_before);
-					if ($rating_earned >= 0)
-					{
-						echo ' + ' . format_rating($rating_earned);
-					}
-					else
-					{
-						echo ' - ' . format_rating(-$rating_earned);
-					}
-					echo ' = ' . format_rating(USER_INITIAL_RATING + $rating_before + $rating_earned);
+					echo '<td class="num"><span class="strong">' . ($rating_earned >= 0 ? '+' : '&minus;') . format_rating(abs($rating_earned)) . '</span><span class="who-sub" style="white-space: nowrap;" title="' .
+						format_rating(USER_INITIAL_RATING + $rating_before) . ' &rarr; ' . format_rating(USER_INITIAL_RATING + $rating_before + $rating_earned) . '">&rarr; ' . format_rating(USER_INITIAL_RATING + $rating_before + $rating_earned) . '</span></td>';
 				}
-				// echo '<td>' . format_rating($rating_earned);
-				echo '</td></tr>';
+				
+				echo game_club_cell($g) . game_tournament_cell($g) . game_event_cell($g, 'p4');
+				echo '</tr>';
 			}
-			echo '</table>';
+			echo '</tbody></table></div>';
 			show_pages_navigation(PAGE_SIZE, $count);
 		}
 	}
@@ -465,12 +326,11 @@ class Page extends UserPageBase
 ?>
 		function filterChanged()
 		{
-			goTo({roles: $('#roles').val(), result: $('#result').val(), filter: checkboxFilterFlags(), page: 0 });
+			goTo({roles: $('#roles').val(), filter: checkboxFilterFlags(), page: undefined});
 		}
 <?php
 	}
 }
-
 $page = new Page();
 $page->run(get_label('Games'));
 
