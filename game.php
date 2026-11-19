@@ -275,10 +275,15 @@ class Page extends PageBase
 		if (!is_null($misc))
 		{
 			$misc = json_decode($misc);
-			if (isset($misc->seating))
+			// The rounds themselves and not just the seating around them: a seating saved
+			// without them lays nothing out, and reading them off it handed count() a null,
+			// which on PHP 8 is a TypeError and takes the page down instead of warning. Such
+			// a seating is no seating, so the count below falls through to what has actually
+			// been played. The same guard stream_text_tables() makes.
+			if (isset($misc->seating->rounds) && is_array($misc->seating->rounds))
 			{
 				$t = $misc->seating->rounds;
-				$num_tables = count($t) > 0 ? count($t[0]) : 0;
+				$num_tables = (count($t) > 0 && is_array($t[0])) ? count($t[0]) : 0;
 			}
 		}
 		

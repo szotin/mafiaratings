@@ -46,30 +46,60 @@ function stream_is_live($start_time, $finished, $canceled)
 // The tables a text broadcast is offered for, by number.
 //
 // The seating says both how many tables there are and how many games each of them plays, so
-// where there is one it settles the question twice over: a table that has played all the games
-// it was laid out for is left out, because there is nothing more to read there. Tables do not
-// finish together - the numbers rarely divide evenly, and one table always runs late - so this
-// is a table at a time rather than the whole thing at once.
+// for the tables it lays out it settles the question twice over: a table that has played all
+// the games it was laid out for is left out, because there is nothing more to read there.
+// Tables do not finish together - the numbers rarely divide evenly, and one table always runs
+// late - so this is a table at a time rather than the whole thing at once. It settles nothing
+// about a table it does not lay out, and there are such tables: a seating is made beforehand
+// and an evening can open one more.
 //
 // Where there is no seating nothing says how many games a table has coming, so what has been
 // played is all there is to go by: a table somebody has played at is a table, and the first
-// table is offered whatever happens, since a tournament that has begun is being played
-// somewhere.
+// table is offered whatever happens, since a round that has begun is being played somewhere.
+//
+// All of it asked of the rounds being played and not of the whole competition that owns them -
+// see the top of the function.
 //
 // This is not stream_table_count(). That one counts the tables a stream can be set up for,
 // which takes in tables nobody has reached yet, because the setting up is done beforehand.
 // Reading is done while it happens, so here only what is being played at counts.
 function stream_text_tables($owner)
 {
+	// Which rounds to ask. The tables belong to the tournament - they keep their numbers from
+	// round to round, which is why the streams are the tournament's - but a seating and the
+	// games played are a round's own. A club season is one tournament with thirty rounds under
+	// it, so asking all of them at once weighed tonight's games against half a year of seatings
+	// and answered about the tournament rather than about the evening somebody wants to read.
+	// A round that is over is over however long the tournament it belongs to runs, which is the
+	// same answer broadcast_live_competitions() gives for a round asked about on its own.
+	$events = array();
+	$query = $owner->is_tournament
+		? new DbQuery('SELECT id, misc, start_time, flags FROM events WHERE tournament_id = ?', $owner->id)
+		: new DbQuery('SELECT id, misc, start_time, flags FROM events WHERE id = ?', $owner->id);
+	while ($row = $query->next())
+	{
+		list ($id, $misc, $start_time, $flags) = $row;
+		if (!stream_is_live($start_time, ($flags & EVENT_FLAG_FINISHED) != 0, ($flags & EVENT_FLAG_CANCELED) != 0))
+		{
+			continue;
+		}
+		$events[(int)$id] = $misc;
+	}
+	if (empty($events))
+	{
+		// The competition is on but no round of it is being played: a season between its
+		// evenings has nothing to read, and saying table 1 anyway offered an empty page.
+		return array();
+	}
+	// Built from the ids just read, each of them cast to an integer, so it carries nothing but
+	// numbers of our own making.
+	$ids = implode(', ', array_keys($events));
+
 	// How many games the seating lays out at each table. It is kept game by game -
 	// rounds[game][table][seat] - so a table is in it once for every game it plays.
 	$seated = array();
-	$query = $owner->is_tournament
-		? new DbQuery('SELECT misc FROM events WHERE tournament_id = ?', $owner->id)
-		: new DbQuery('SELECT misc FROM events WHERE id = ?', $owner->id);
-	while ($row = $query->next())
+	foreach ($events as $misc)
 	{
-		list ($misc) = $row;
 		$misc = is_null($misc) ? NULL : json_decode($misc);
 		if (is_null($misc) || !isset($misc->seating->rounds) || !is_array($misc->seating->rounds))
 		{
@@ -88,9 +118,12 @@ function stream_text_tables($owner)
 		}
 	}
 
-	$where = $owner->is_tournament ? 'tournament_id' : 'event_id';
+	// A game nobody said the table of is at no table anybody is watching, and it must not be
+	// counted as table 0 either - the list below is built from these numbers, so a null that
+	// got this far would be offered as a table of its own. stream_played_keys() guards the
+	// same way.
 	$played = array();
-	$query = new DbQuery('SELECT table_num, COUNT(*) FROM games WHERE ' . $where . ' = ? GROUP BY table_num', $owner->id);
+	$query = new DbQuery('SELECT table_num, COUNT(*) FROM games WHERE table_num IS NOT NULL AND event_id IN (' . $ids . ') GROUP BY table_num');
 	while ($row = $query->next())
 	{
 		list ($table_num, $count) = $row;
@@ -100,9 +133,7 @@ function stream_text_tables($owner)
 	// A game being played right now is not in games yet, and it is the very game somebody
 	// would be reading - so a table playing one is offered whatever the counting says.
 	$playing = array();
-	$query = $owner->is_tournament
-		? new DbQuery('SELECT DISTINCT g.table_num FROM current_games g JOIN events e ON e.id = g.event_id WHERE e.tournament_id = ?', $owner->id)
-		: new DbQuery('SELECT DISTINCT table_num FROM current_games WHERE event_id = ?', $owner->id);
+	$query = new DbQuery('SELECT DISTINCT table_num FROM current_games WHERE event_id IN (' . $ids . ')');
 	while ($row = $query->next())
 	{
 		$playing[(int)$row[0]] = true;
@@ -111,11 +142,22 @@ function stream_text_tables($owner)
 	$tables = array();
 	if (!empty($seated))
 	{
-		ksort($seated);
-		foreach ($seated as $table_num => $games)
+		// Every table anything knows of, and not only the ones the seating lays out. A table
+		// put up for the evening on top of the seating is in no seating at all, so the loop
+		// never reached it and neither test below was ever applied to it: a club seating one
+		// table and opening a second had the second missing from the broadcasts while a game
+		// was being played at it.
+		$all = $seated + $played + $playing;
+		ksort($all);
+		foreach (array_keys($all) as $table_num)
 		{
+			// What the seating lays out is what a table has to get through. A table it does
+			// not lay out has nothing to get through, so for that one what is being played -
+			// or has been played - is all there is to go by, exactly as it is below for a
+			// competition with no seating at all.
 			$done = isset($played[$table_num]) ? $played[$table_num] : 0;
-			if (isset($playing[$table_num]) || $done < $games)
+			$games = isset($seated[$table_num]) ? $seated[$table_num] : 0;
+			if (isset($playing[$table_num]) || !isset($seated[$table_num]) || $done < $games)
 			{
 				$tables[] = $table_num;
 			}
