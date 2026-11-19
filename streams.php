@@ -487,22 +487,28 @@ class Page extends StreamsPageBase
 		// says nothing at all; this says what is missing.
 		if (!is_null($stored))
 		{
-			// Whether this table touches OBS at all, above everything it governs. It is the
-			// switch to reach for when the scenes are misbehaving in the middle of a stream and
-			// there is nobody to work out why: off, the sources go on drawing the overlays and
-			// the between-games screens, and the scene is left to whoever is at the keyboard.
-			// Nothing is forgotten - what is set up below, and any order given by hand, are
-			// both still there when it goes back on.
+			// Whether this table switches the scenes of the OBS it is shown in at all, and,
+			// where it does, whether the game does the switching or a person does. One is under
+			// the other: turn the first off and everything that is only about switching goes off
+			// the page with it, because there is nothing left for any of it to mean.
+			//
+			// The first is the switch to reach for when the scenes are misbehaving in the middle
+			// of a stream and there is nobody to work out why: off, the sources go on drawing the
+			// overlays and the between-games screens and leave the program they are running in
+			// alone. Nothing is forgotten by it - what is set up under it, and any order given by
+			// hand, are both still there when it goes back on.
 			$obs_on = ($stored->flags & STREAM_FLAG_NO_OBS) == 0;
-			echo '<h3 class="stream-section">' . get_label('OBS integration') . '</h3>';
+			echo '<h3 class="stream-section">' . get_label('Scene switching in OBS') . '</h3>';
 			$this->open_settings_table();
 			$this->show_setting(get_label('Turn on'),
-				'<input type="checkbox" class="toggle" id="obs-on" onchange="obsChanged()"' . ($obs_on ? ' checked' : '') . '>' .
-				'<div class="stream-hint">' . get_label('The browser sources at this table change the scenes of the OBS Studio they run in. Switch this off and they stop touching it altogether: they go on drawing what they draw, and the scenes are left to be changed by hand. Nothing set up here is forgotten by it.') . '</div>');
+				'<input type="checkbox" class="toggle" id="obs-on" onchange="obsChanged()"' . ($obs_on ? ' checked' : '') . '>');
 			echo '</table>';
 
+			// What is under it stands in a table of its own rather than in more rows of the one
+			// above, because it is put away as a whole and a row cannot be hidden by hiding
+			// something around it. The two line up all the same: the column the names stand in is
+			// given its width rather than measured - see table.stream-settings in common.css.
 			echo '<div id="scene-switching"' . ($obs_on ? '' : ' style="display: none"') . '>';
-			echo '<h3 class="stream-section">' . get_label('Automatic scene switching') . '</h3>';
 			if (empty($stored->scenes))
 			{
 				// In the settings table all the same, under the name the switch stands under
@@ -517,11 +523,11 @@ class Page extends StreamsPageBase
 				$this->open_settings_table();
 				if ($stored->control_level >= 0 && $stored->control_level < STREAM_CONTROL_ADVANCED)
 				{
-					$this->show_setting(get_label('Turn on'), '<b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b>');
+					$this->show_setting(get_label('Automatic switching'), '<b>' . get_label('The browser source is not allowed to change scenes. Set Page permissions to Advanced in its properties in OBS Studio.') . '</b>');
 				}
 				else
 				{
-					$this->show_setting(get_label('Turn on'), get_label('The OBS Studio at this table has not said what scenes it has. A browser source of ours says it by itself, once its Page permissions are set to Advanced in its properties in OBS Studio - and a source that was already open when that was set has to be refreshed once. Until then there is nothing here to point a phase of the game at.'));
+					$this->show_setting(get_label('Automatic switching'), get_label('The OBS Studio at this table has not said what scenes it has. A browser source of ours says it by itself, once its Page permissions are set to Advanced in its properties in OBS Studio - and a source that was already open when that was set has to be refreshed once. Until then there is nothing here to point a phase of the game at.'));
 				}
 				echo '</table>';
 			}
@@ -533,7 +539,7 @@ class Page extends StreamsPageBase
 				// nobody has said anything about goes on switching as it always did.
 				$auto = ($stored->flags & STREAM_FLAG_NO_AUTO_SCENE) == 0;
 				$this->open_settings_table();
-				$this->show_setting(get_label('Turn on'),
+				$this->show_setting(get_label('Automatic switching'),
 					'<input type="checkbox" class="toggle" id="auto-scenes" onchange="autoScenesChanged()"' . ($auto ? ' checked' : '') . '>');
 				echo '</table>';
 				echo '<div id="scene-events"' . ($auto ? '' : ' style="display: none"') . '></div>';

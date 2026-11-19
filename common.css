@@ -350,9 +350,6 @@ span.broadcast-url a { min-width: 0; overflow-wrap: anywhere; }
    The names beside them are right-aligned against the column of switches and so cannot be
    indented - that is the edge they are not at - which is why the switches carry it. */
 table.stream-settings td.stream-lvl1 { padding-left: 26px; }
-/*  A sentence standing under a switch, saying what it does. Quieter than the setting itself:
-    it is there to be read once, not to compete with the row it belongs to. */
-table.stream-settings div.stream-hint { margin-top: 3px; color: #506060; }
 table.stream-settings td.stream-lvl2 { padding-left: 50px; }
 
 /* A switch that has others under it, with a little air over it to set the group apart. */
