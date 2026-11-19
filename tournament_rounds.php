@@ -185,7 +185,7 @@ class Page extends TournamentPageBase
 			echo '<div class="pc-foot">';
 			if ($canceled)
 			{
-				echo '<span class="chip off">' . get_label('canceled') . '</span>';
+				echo '<span class="chip off">' . get_label('Canceled') . '</span>';
 			}
 			else if ($playing)
 			{

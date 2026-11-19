@@ -3,11 +3,16 @@
 require_once 'include/general_page_base.php';
 require_once 'include/pages.php';
 require_once 'include/league.php';
+require_once 'include/series.php';
 require_once 'include/city.php';
 require_once 'include/country.php';
 require_once 'include/image.php';
 require_once 'include/user_location.php';
 require_once 'include/cards.php';
+require_once 'include/checkbox_filter.php';
+
+define('FLAG_FILTER_CLOSED', 0x0001);
+define('FLAG_FILTER_NOT_CLOSED', 0x0002);
 
 define('ROW_COUNT', DEFAULT_ROW_COUNT);
 define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
@@ -70,24 +75,35 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
-		$closed = isset($_REQUEST['closed']);
+		// Closed leagues as a filter of three states, as the other lists have them: all of them,
+		// only the closed ones, or none of them - the last is where the list starts. The old address
+		// with "closed" in it still opens the closed ones.
+		$filter = FLAG_FILTER_NOT_CLOSED;
+		if (isset($_REQUEST['filter']))
+		{
+			$filter = (int)$_REQUEST['filter'];
+		}
+		else if (isset($_REQUEST['closed']))
+		{
+			$filter = FLAG_FILTER_CLOSED;
+		}
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
 		echo '<div class="toolbar"><div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('leagues')));
 		echo '</div>';
-		echo '<label class="fchip"><input type="checkbox" class="toggle" id="closed" onclick="filterClosed()"' . ($closed ? ' checked' : '') . '>' . get_label('Show closed leagues') . '</label>';
+		show_checkbox_filter(array(get_label('closed~plural')), $filter, 'filterClosed');
 		echo '</div>';
-		
+
 		$this->show_requests();
-		
-		$condition = new SQL(' WHERE (l.flags & ' . LEAGUE_FLAG_CLOSED);
-		if ($closed)
+
+		$condition = new SQL(' WHERE TRUE');
+		if ($filter & FLAG_FILTER_CLOSED)
 		{
-			$condition->add(') <> 0');
+			$condition->add(' AND (l.flags & ' . LEAGUE_FLAG_CLOSED . ') <> 0');
 		}
-		else
+		if ($filter & FLAG_FILTER_NOT_CLOSED)
 		{
-			$condition->add(') = 0');
+			$condition->add(' AND (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0');
 		}
 		
 		$ccc_id = $ccc_filter->get_id();
@@ -116,7 +132,8 @@ class Page extends GeneralPageBase
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery(
-			'SELECT l.id, nl.name, l.flags, l.web_site, (SELECT count(*) FROM league_clubs lc WHERE lc.league_id = l.id AND lc.flags = 0) FROM leagues l' .
+			'SELECT l.id, nl.name, l.flags, l.web_site, (SELECT count(*) FROM league_clubs lc WHERE lc.league_id = l.id AND lc.flags = 0),' .
+			' (SELECT count(*) FROM series s WHERE s.league_id = l.id AND (s.flags & ' . SERIES_FLAG_CANCELED . ') = 0) FROM leagues l' .
 			' JOIN names nl ON nl.id = l.name_id AND (nl.langs & '.$_lang.') <> 0', $condition);
 		$query->add(' ORDER BY nl.name LIMIT ' . ($_page * $page_size) . ',' . $page_size);
 		
@@ -124,28 +141,38 @@ class Page extends GeneralPageBase
 		$leagues_count = 0;
 		while ($row = $query->next())
 		{
-			list ($id, $name, $flags, $url, $clubs) = $row;
+			list ($id, $name, $flags, $url, $clubs, $series_count) = $row;
+			$closed = ($flags & LEAGUE_FLAG_CLOSED) != 0;
 			if ($leagues_count++ == 0)
 			{
-				echo '<div class="tiles">';
+				// The tiles of series.php: as wide, all as tall, the numbers in frames on the right.
+				echo '<div class="tiles wide">';
 			}
 			$league_pic->set($id, $name, $flags);
-			echo '<div class="tile' . (($flags & LEAGUE_FLAG_CLOSED) ? ' is-off' : '') . '">' . card_logo($league_pic, $name);
+			echo '<div class="tile' . ($closed ? ' is-off' : '') . '">' . card_logo($league_pic, $name);
 			echo '<div class="who-txt"><a class="who-name" href="league_main.php?bck=1&id=' . $id . '">' . $name . '</a>';
-			echo '<span class="who-sub">' . PageBase::icon('users') . get_label('Clubs') . ': ' . $clubs;
 			if (!empty($url))
 			{
-				echo ' &middot; ' . PageBase::url_host($url);
+				echo '<span class="who-sub">' . PageBase::icon('link') . PageBase::url_host($url) . '</span>';
 			}
-			echo '</span></div>';
+			if ($closed)
+			{
+				echo '<span class="tile-meta"><span class="chip off">' . get_label('closed~fem') . '</span></span>';
+			}
+			// The buttons of a manager under the name: beside it they left the name no room.
 			if ($_profile != NULL)
 			{
 				$buttons = PageBase::capture(function() use ($id, $name, $flags) { show_league_buttons($id, $name, $flags); });
 				if (trim(strip_tags($buttons, '<button>')) != '')
 				{
-					echo '<div class="tile-actions">' . $buttons . '</div>';
+					echo '<div class="tile-actions under">' . $buttons . '</div>';
 				}
 			}
+			echo '</div>';
+			echo '<div class="tile-side tile-nums">';
+			echo '<a class="tile-num" href="league_clubs.php?bck=1&id=' . $id . '" title="' . get_label('Clubs') . '"><b>' . $clubs . '</b><span>' . get_label('Clubs') . '</span></a>';
+			echo '<a class="tile-num" href="league_series.php?bck=1&id=' . $id . '" title="' . get_label('Series') . '"><b>' . $series_count . '</b><span>' . get_label('Series') . '</span></a>';
+			echo '</div>';
 			echo '</div>';
 		}
 		if ($leagues_count > 0)
@@ -165,7 +192,7 @@ class Page extends GeneralPageBase
 ?>
 		function filterClosed()
 		{
-			goTo({closed: ($("#closed").attr("checked") ? null : undefined), page: undefined});
+			goTo({filter: checkboxFilterFlags(), closed: undefined, page: undefined});
 		}
 <?php
 	}

@@ -85,7 +85,7 @@ function series_tile_show($series, $timezone = NULL)
 	}
 	if ($canceled)
 	{
-		echo '<span class="chip off">' . get_label('canceled') . '</span>';
+		echo '<span class="chip off">' . get_label('Canceled') . '</span>';
 	}
 	else if ($playing)
 	{

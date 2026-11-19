@@ -1052,7 +1052,7 @@ class SeriesPageBase extends PageBase
 		$is_manager = is_series_manager($this->owner, $this->id);
 		$menu = array
 		(
-			new MenuItem('series_info.php?id=' . $this->id, get_label('Sеriеs '), get_label('General series information')),
+			new MenuItem('series_info.php?id=' . $this->id, get_label('Series~singular'), get_label('General series information')),
 			new MenuItem('series_standings.php?id=' . $this->id, get_label('Standings'), get_label('Series standings')),
 			new MenuItem('series_series.php?id=' . $this->id, get_label('Subseries'), get_label('Subseries of this series')),
 			new MenuItem('series_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('Tournaments of this series')),
@@ -1104,7 +1104,7 @@ class SeriesPageBase extends PageBase
 		// A series with no dates is always under way, which is what series_period() already says.
 		if ($h->off)
 		{
-			$h->sub = '<span class="chip off">' . get_label('canceled') . '</span>';
+			$h->sub = '<span class="chip off">' . get_label('Canceled') . '</span>';
 		}
 		else if (($this->flags & SERIES_FLAG_FINISHED) != 0)
 		{

@@ -72,7 +72,7 @@ class Page extends LeaguePageBase
 		echo '</div>';
 		if (!$this->future)
 		{
-			show_checkbox_filter(array(get_label('with video'), get_label('unplayed tournaments'), get_label('canceled tournaments')), $this->filter);
+			show_checkbox_filter(array(get_label('with video'), get_label('unplayed'), get_label('canceled')), $this->filter);
 		}
 		echo '</div>';
 		

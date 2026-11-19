@@ -31,30 +31,13 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 		}
 		else 
 		{
+			// Joining a club and leaving it are done in the profile (form/club_membership.php), not
+			// with a button on every club: the button looked like one more control of a manager and
+			// said nothing about what it was for.
 			$can_manage = is_permitted(PERMISSION_ADMIN);
-			if ($memb_flags != NULL)
+			if ($memb_flags != NULL && ($memb_flags & USER_PERM_MANAGER))
 			{
-				$quit_params = $id;
-				if ($memb_flags & USER_PERM_MANAGER)
-				{
-					$quit_params .= ', \'' . get_label('You are a manager of this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
-				}
-				else if ($memb_flags & USER_PERM_REFEREE)
-				{
-					$quit_params .= ', \'' . get_label('You are a referee in this club. You lose your status once you leave it. Are you sure you want to quit?') . '\'';
-				}
-			
-				echo '<button class="icon" onclick="mr.quitClub(' . $quit_params . ')" title="' . get_label('Quit [0]', $name) . '"><img src="images/accept.png" border="0"></button>';
-				$no_buttons = false;
-				if ($memb_flags & USER_PERM_MANAGER)
-				{
-					$can_manage = true;
-				}
-			}
-			else
-			{
-				echo '<button class="icon" onclick="mr.joinClub(' . $id . ')" title="' . get_label('Join [0]', $name) . '"><img src="images/empty.png" border="0"></button>';
-				$no_buttons = false;
+				$can_manage = true;
 			}
 			
 			if ($can_manage)

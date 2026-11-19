@@ -91,6 +91,8 @@ While `new_look` is the current branch, its production is `public_html/new_look/
 
 All user-visible strings must be wrapped in the `get_label` function. The string argument must be in English. Translations for each language are stored in `labels.php` in the corresponding directory (e.g., alongside the PHP file that uses them). Never hardcode translated strings directly — always use `get_label`.
 
+When one English word needs different translations in different places (gender, number, a menu tab against a list), add a context after a tilde: `get_label('closed~fem')` (`'закрыта'`), `'closed~plural'` (`'закрытые'`), `'Series~singular'` (`'Серия'`). The context is part of the key, so each gets its own translation; where there is no translation (English) `get_label()` cuts it off and shows just the word. Do not use a trailing space or look-alike letters for this.
+
 ## Key Domain Concepts
 
 - **Ratings:** Players start at 1000 points. Red/black rating tracks are separate. Scoring logic in `include/scoring.php` and `include/evaluator.php`.
