@@ -51,12 +51,17 @@ var statusWaiter = new function()
 		setState(http.connected() ? 0 : 2);
 	}
 	
-	this.error = function(message, onError)
+	// data is the answer the site sent, which http.post hands to whichever waiter is current.
+	// It was being taken as far as here and no further: a refusal that named whoever had taken
+	// the game over arrived at the screen as a bare sentence, and the screen, having nothing to
+	// read a name out of, could only put the sentence up. A load went through the ordinary
+	// waiter, which passes it on, so the two behaved differently for the same refusal.
+	this.error = function(message, onError, data)
 	{
 		setState(http.connected() ? 3 : 2);
 		if (onError)
 		{
-			onError(message);
+			onError(message, data);
 		}
 	}
 	
@@ -167,7 +172,10 @@ function gameInit(eventId, tableNum, gameNum, gameOnChange, errorListener, conne
 	function (message, data)
 	{
 		_errorListener(0, message, data);
-		return false; // no error dialog
+		// True, and not false: the waiter reads this as "it has been dealt with, say nothing
+		// more". False let it put a plain error up over whatever the screen had just decided
+		// to show - and over the question offering the game back.
+		return true;
 	});
 }
 
@@ -205,6 +213,11 @@ function gameSave(onSuccess)
 				// The answer and not only the message: a refusal can name whoever took the game
 				// over, and the screen then offers to take it back - see _uiErrorListener().
 				_errorListener(1, message, data);
+				// And the screen is the only one to say anything about it. What it says is
+				// decided there - once rather than once a second, and as a question where there
+				// is something to be done - so the plain error the waiter would otherwise put
+				// up on top of it is turned off.
+				return true;
 			},
 			SAVE_TIMEOUT);
 			http.waiter(w);

@@ -868,19 +868,22 @@ function _uiErrorListener(type, message, data)
 // out of one.
 function _takenFrom(data)
 {
-	if (!isString(data))
+	// What arrives here is the answer itself and not the text of it: http.waiter().error()
+	// parses it before handing it on, and only leaves it as text when it will not parse. Both
+	// are taken, because reading an object as though it were a string finds nothing in it and
+	// says the game was refused for some other reason - which is how this went out once already.
+	if (isString(data))
 	{
-		return null;
+		try
+		{
+			data = jQuery.parseJSON(data);
+		}
+		catch (err)
+		{
+			return null;
+		}
 	}
-	try
-	{
-		var obj = jQuery.parseJSON(data);
-		return (obj != null && isString(obj.takenBy)) ? obj.takenBy : null;
-	}
-	catch (err)
-	{
-		return null;
-	}
+	return (data != null && isString(data.takenBy)) ? data.takenBy : null;
 }
 
 // The game was taken over while it was being run. Every save from here on is refused, so there
