@@ -587,6 +587,25 @@ class Page extends StreamsPageBase
 		// Which of the two the tables belong to, named the way the api asks for it.
 		var owner = { <?php echo STREAMS_UNDER_EVENT ? 'event_id' : 'tournament_id'; ?>: <?php echo $this->id; ?> };
 		var tableNum = <?php echo $this->view; ?>;
+
+		// Taking the table off OBS hides everything that is about OBS, for the same reason the
+		// rows under it are hidden rather than forgotten: it is one flag, and what it governs is
+		// still there when it comes back.
+		//
+		// Up here with the two things the page always knows, and not down among the rest of the
+		// script, because the switch it belongs to is drawn on the tab of every table while all
+		// of that is printed only for a table whose OBS has said what scenes it has. It was down
+		// there at first, so on a table whose OBS had said nothing the switch called a function
+		// that was not on the page - and a table whose OBS is not answering is exactly the table
+		// somebody reaches for that switch on.
+		function obsChanged()
+		{
+			let on = document.getElementById('obs-on').checked;
+			document.getElementById('scene-switching').style.display = on ? '' : 'none';
+			json.post("api/ops/stream.php",
+			Object.assign({ op: "set", table_num: tableNum, obs: on ? 1 : 0 }, owner),
+			saved);
+		}
 <?php
 		// Everything below belongs to a tab that has the scene sections on it, which is the
 		// tab of one table whose OBS has said what scenes it has. Where they are not shown
@@ -680,18 +699,6 @@ class Page extends StreamsPageBase
 		function escapeHtml(text)
 		{
 			return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-		}
-
-		// Taking the table off OBS hides everything that is about OBS, for the same reason the
-		// rows below are hidden rather than forgotten: it is one flag, and what it governs is
-		// still there when it comes back.
-		function obsChanged()
-		{
-			let on = document.getElementById('obs-on').checked;
-			document.getElementById('scene-switching').style.display = on ? '' : 'none';
-			json.post("api/ops/stream.php",
-			Object.assign({ op: "set", table_num: tableNum, obs: on ? 1 : 0 }, owner),
-			saved);
 		}
 
 		// Turning the switching off hides the rows rather than forgetting them: nothing is sent
