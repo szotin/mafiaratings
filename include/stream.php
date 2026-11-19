@@ -31,6 +31,44 @@ define('STREAM_MAX_DELAY', 600);
 // short enough that yesterday says nothing about tonight.
 define('STREAM_PLAYED_SINCE', 12 * 60 * 60);
 
+// When an unfinished game was last known to be alive. Not a time of last touch - nothing writes
+// one down - so it is when the game began, which for a game that takes an hour against the half
+// day it is measured by is near enough the same thing.
+//
+// Two clocks stamp it. current_games.start_time is the site's own, written on the first save that
+// says the roles are being handed out; the startTime inside the game is stamped by the browser of
+// whoever is refereeing, and is the older arrangement, so most of what is in that table carries
+// only that one. The later of the two is taken: a clock that is out should not cut short a game
+// that is genuinely being played.
+//
+// A screen that was opened and never played on carries neither, nothing having started. The round
+// it stands in is then what is left to go by, which is the right thing anyway - such a screen is
+// worth showing while its own evening is on and not a day later.
+function stream_game_time($g, $game_start_time, $event_start_time)
+{
+	$time = (int)$game_start_time;
+	if (is_object($g) && isset($g->startTime) && is_numeric($g->startTime) && (int)$g->startTime > $time)
+	{
+		$time = (int)$g->startTime;
+	}
+	if ($time <= 0)
+	{
+		$time = (int)$event_start_time;
+	}
+	return $time;
+}
+
+// And whether it is still the game of its table. An unfinished game is kept for months - a game
+// left open on a laptop and never written down sits in current_games until the garbage collector
+// takes it - so without asking this, an idle table went on showing a game from September over the
+// picture and in its text broadcast, and its light went on saying a game was under way there.
+// Thirty four of the thirty nine tables holding an unfinished game were in that state. "Current"
+// has to mean current.
+function stream_game_is_current($g, $game_start_time, $event_start_time)
+{
+	return stream_game_time($g, $game_start_time, $event_start_time) > time() - STREAM_PLAYED_SINCE;
+}
+
 // Whether this thing can be followed in words right now: it has begun, and nobody has marked
 // it over or called it off. A text broadcast of a tournament that is finished would show the
 // standings and nothing else, which the tournament's own pages say better, and one of a
@@ -132,11 +170,28 @@ function stream_text_tables($owner)
 
 	// A game being played right now is not in games yet, and it is the very game somebody
 	// would be reading - so a table playing one is offered whatever the counting says.
+	//
+	// Being played right now, that is, and not merely left unfinished: a round can stand open
+	// for months with a game somebody walked away from halfway through still in it, and that
+	// table has nothing to read. Same clock as the lights and the overlay go by - see
+	// stream_game_is_current(). A game that has just been played out and is being written down
+	// is still counted, because its log is what a reader is there for.
 	$playing = array();
-	$query = new DbQuery('SELECT DISTINCT table_num FROM current_games WHERE event_id IN (' . $ids . ')');
+	$query = new DbQuery(
+		'SELECT g.table_num, g.game, g.start_time, e.start_time FROM current_games g' .
+		' JOIN events e ON e.id = g.event_id WHERE g.event_id IN (' . $ids . ')');
 	while ($row = $query->next())
 	{
-		$playing[(int)$row[0]] = true;
+		list ($table_num, $game, $game_start_time, $event_start_time) = $row;
+		if (is_null($table_num))
+		{
+			continue;
+		}
+		if (!stream_game_is_current(json_decode($game), $game_start_time, $event_start_time))
+		{
+			continue;
+		}
+		$playing[(int)$table_num] = true;
 	}
 
 	$tables = array();
@@ -221,17 +276,24 @@ function stream_live_keys($condition)
 {
 	$playing = array();
 	$query = new DbQuery(
-		'SELECT e.tournament_id, g.event_id, g.table_num, g.game FROM current_games g' .
+		'SELECT e.tournament_id, g.event_id, g.table_num, g.game, g.start_time, e.start_time FROM current_games g' .
 		' JOIN events e ON e.id = g.event_id WHERE ', $condition);
 	while ($row = $query->next())
 	{
-		list ($tournament_id, $event_id, $table_num, $game) = $row;
+		list ($tournament_id, $event_id, $table_num, $game, $game_start_time, $event_start_time) = $row;
 		if (is_null($table_num))
 		{
 			continue; // a game nobody said the table of is at no table anybody is watching
 		}
 		$g = json_decode($game);
 		if (is_null($g) || !isset($g->time) || !isset($g->time->time) || $g->time->time == GAMETIME_END)
+		{
+			continue;
+		}
+		// And a game that was left halfway through months ago is not being played now, however
+		// unfinished it still is. The light here and the game api/get/current_game.php hands out
+		// have to agree, or a green table leads to a broadcast with nothing in it.
+		if (!stream_game_is_current($g, $game_start_time, $event_start_time))
 		{
 			continue;
 		}

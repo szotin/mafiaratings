@@ -5,6 +5,7 @@ require_once '../../include/game.php';
 require_once '../../include/game_log.php';
 require_once '../../include/datetime.php';
 require_once '../../include/rounds.php';
+require_once '../../include/stream.php'; // STREAM_PLAYED_SINCE - how long ago is still tonight
 
 define('CURRENT_VERSION', 0);
 
@@ -628,7 +629,7 @@ class ApiPage extends GetApiPageBase
 		}
 
 		$query = new DbQuery(
-			'SELECT g.game, e.id, ne.name, e.flags, t.id, nt.name, t.flags, e.round, c.id, nc.name, c.flags, ni.name, no.name, e.misc'.
+			'SELECT g.game, e.id, ne.name, e.flags, t.id, nt.name, t.flags, e.round, c.id, nc.name, c.flags, ni.name, no.name, e.misc, g.start_time, e.start_time'.
 			' FROM current_games g'.
 			' JOIN events e ON e.id = g.event_id'.
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
@@ -666,17 +667,31 @@ class ApiPage extends GetApiPageBase
 		
 		// A moderator can have more than one unfinished game on their hands: opening a game screen
 		// leaves a row here even when nothing was ever played on it. So the highest game number is
-		// not the game being played - take the one that is actually under way, and fall back on
-		// the order above only between games of the same standing.
+		// not the game being played - take the one that is actually under way, and between games of
+		// the same standing the one started later. The order above settles only what the two clocks
+		// cannot tell apart.
+		//
+		// And nothing that has not been started within the last half day is taken at all - see
+		// stream_game_time(), which is also what the lights on a page of broadcasts go by, so that
+		// a table shown as playing and the game handed out for it cannot disagree. Where nothing at
+		// the table is fresh, the honest answer is that there is nothing to show.
 		$best_row = NULL;
 		$best_rank = -1;
+		$best_time = 0;
+		$oldest = time() - STREAM_PLAYED_SINCE;
 		while ($row = $query->next())
 		{
-			list($game) = $row;
-			$rank = $this->game_rank($game);
-			if ($rank > $best_rank)
+			$g = json_decode($row[0]);
+			$time = stream_game_time($g, $row[14], $row[15]);
+			if ($time <= $oldest)
+			{
+				continue;
+			}
+			$rank = $this->game_rank($g);
+			if ($rank > $best_rank || ($rank == $best_rank && $time > $best_time))
 			{
 				$best_rank = $rank;
+				$best_time = $time;
 				$best_row = $row;
 			}
 		}
@@ -690,9 +705,8 @@ class ApiPage extends GetApiPageBase
 	}
 
 	// How much this unfinished game looks like the one being played right now.
-	private function game_rank($game)
+	private function game_rank($g)
 	{
-		$g = json_decode($game);
 		if (!isset($g->time))
 		{
 			return 0; // the screen was opened, nothing has happened on it yet
@@ -713,7 +727,7 @@ class ApiPage extends GetApiPageBase
 		$help->request_param('log', 'Set to 1 to receive the game told in words as well - what a text broadcast shows. Left out otherwise: it is long, and the overlays have no use for it.', 'the game is not told in words.');
 		$help->request_param('game_num', 'Game number at the table, starting from 1.', 'whichever game of the table is under way.');
 		$help->request_param('user_id', 'Return the game being moderated by this user account.', 'event_id or tournament_id must be set');
-		$param = $help->response_param('game', 'Game state.');
+		$param = $help->response_param('game', 'Game state. It is left out when the table has nothing current on it - either nothing unfinished at all, or nothing that has been started within the last twelve hours. An unfinished game is kept for months, and one left open and never written down stops being the current game of its table long before it is cleared away.');
 			$param->sub_param('id', 'Game id.');
 			$tournament = $param->sub_param('tournament', 'Tournament information.', 'this is not a tournament game.');
 				$tournament->sub_param('name', 'Tournament name.');

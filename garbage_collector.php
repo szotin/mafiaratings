@@ -6,6 +6,7 @@ require_once 'include/game.php';
 define('ONE_YEAR', 31536000);
 define('ONE_WEEK', 604800);
 define('ONE_DAY', 86400);
+define('ONE_MONTH', ONE_DAY * 30);
 define('THREE_MONTHS', ONE_DAY * 90);
 
 define('CLUB_IDLE_TIME', 60 * 60 * 24 * 365); // one year
@@ -55,15 +56,26 @@ class GarbageCollector extends Updater
 				$start_time = $json->startTime;
 			}
 			
-			// We immediatly delete the games that are not started after two weeks. 
-			// We also delete all incomplete games that are older than one year. One year is enough to find them and complete.
-			if (isset($json->time))
+			// How long an unfinished game is kept, by how far it got and so by what is in it.
+			//
+			// A screen that was opened and never played on holds nothing at all - a fortnight, as
+			// it always has. A game abandoned halfway cannot be written down as it stands: it would
+			// have to be played again, so after a month it is only taking up room. A game that was
+			// played out and never written down is the one worth keeping, because the result is in
+			// there and the players it belongs to are still waiting for it - but it too was being
+			// kept for a year, and a year of them simply piles up. Three months is long enough for
+			// anybody who means to finish one to have finished it.
+			if (!isset($json->time))
 			{
-				$timeout = ONE_YEAR;
+				$timeout = ONE_WEEK * 2;
+			}
+			else if (isset($json->time->time) && $json->time->time == GAMETIME_END)
+			{
+				$timeout = THREE_MONTHS;
 			}
 			else
 			{
-				$timeout = ONE_WEEK * 2;
+				$timeout = ONE_MONTH;
 			}
 			
 			if ($start_time + $timeout < time())
