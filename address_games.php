@@ -8,6 +8,7 @@ require_once 'include/user.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/game_rows.php';
 
 define('PAGE_SIZE', GAMES_PAGE_SIZE);
 
@@ -27,7 +28,7 @@ class Page extends AddressPageBase
 	protected function show_body()
 	{
 		global $_page, $_lang;
-		
+
 		$result_filter = -1;
 		if (isset($_REQUEST['results']))
 		{
@@ -37,32 +38,19 @@ class Page extends AddressPageBase
 				$result_filter = -1;
 			}
 		}
-		
+
 		$filter = FLAG_FILTER_DEFAULT;
 		if (isset($_REQUEST['filter']))
 		{
 			$filter = (int)$_REQUEST['filter'];
 		}
-		
-		echo '<p><table class="transp" width="100%"><tr><td>';
-		echo '<select id="results" onChange="filterChanged()">';
-		show_option(-1, $result_filter, get_label('All games'));
-		show_option(GAME_RESULT_TOWN, $result_filter, get_label('Town wins'));
-		show_option(GAME_RESULT_MAFIA, $result_filter, get_label('Mafia wins'));
-		show_option(GAME_RESULT_TIE, $result_filter, get_label('Ties'));
-		echo '</select>';
-		echo '&emsp;&emsp;';
-		show_date_filter();
-		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
-		echo '</td></tr></table></p>';
 
 		$condition = new SQL(' WHERE e.address_id = ?', $this->id);
 		if ($result_filter > 0)
 		{
 			$condition->add(' AND g.result = ?', $result_filter);
 		}
-		
+
 		if ($filter & FLAG_FILTER_VIDEO)
 		{
 			$condition->add(' AND g.video_id IS NOT NULL');
@@ -104,25 +92,35 @@ class Page extends AddressPageBase
 		{
 			$condition->add(' AND g.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
-		
+
+		// The filter by name and the toolbar of games.php (include/game_rows.php): the name and the
+		// result on the first line, the dates and the three-state filters on the second.
+		$search = game_search_condition($condition);
+		echo '<div class="toolbar">' . game_search_field($search) . game_result_seg($result_filter);
+		echo '<div class="tb-line"><div class="tb-dates">';
+		show_date_filter();
+		echo '</div>';
+		show_checkbox_filter(array(get_label('with video'), get_label('tournament games'), get_label('rating games'), get_label('canceled games')), $filter, 'filterChanged');
+		echo '</div></div>';
+
 		list ($count) = Db::record(get_label('game'), 'SELECT count(*) FROM games g JOIN events e ON e.id = g.event_id', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
-		
-		$event_pic = new Picture(EVENT_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-		$referee_pic = new Picture(USER_PICTURE);
-		$is_user = is_permitted(PERMISSION_USER);
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th darker" align="center"><td width="48"></td><td';
-		if ($is_user)
+
+		// The table of games.php with the columns this page had: the game day, the tournament and the
+		// referee. The address is the page's own.
+		echo '<div class="sheet"><table class="tbl games">';
+		echo '<thead><tr><th class="rk" scope="col">#</th>';
+		echo '<th scope="col">' . get_label('Game') . '</th>';
+		echo '<th scope="col">' . get_label('Result') . '</th>';
+		echo '<th class="p3" scope="col">' . get_label('Tournament') . '</th>';
+		echo '<th class="p4" scope="col">' . get_label('Event') . '</th>';
+		echo '<th class="p2" scope="col">' . get_label('Referee') . '</th>';
+		if ($this->is_manager)
 		{
-			echo ' colspan="3"';
+			echo '<th scope="col"></th>';
 		}
-		else
-		{
-			echo ' colspan="2"';
-		}
-		echo '>&nbsp;</td><td width="48">'.get_label('Event').'</td><td width="48">'.get_label('Tournament').'</td><td width="48">'.get_label('Referee').'</td><td width="48">'.get_label('Result').'</td></tr>';
+		echo '</tr></thead><tbody>';
+
 		$query = new DbQuery(
 			'SELECT g.id, m.id, nm.name, m.flags, g.start_time, g.end_time - g.start_time, g.result, g.video_id, g.flags, e.id, ne.name, e.flags, t.id, nt.name, t.flags, g.table_num, g.game_num FROM games g' .
 			' JOIN events e ON e.id = g.event_id' .
@@ -136,139 +134,30 @@ class Page extends AddressPageBase
 		$num = $_page * PAGE_SIZE;
 		while ($row = $query->next())
 		{
-			list ($game_id, $referee_id, $referee_name, $referee_flags, $start, $duration, $game_result, $video_id, $flags, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $table_num, $game_num) = $row;
-			
-			echo '<tr align="center"';
-			if (($flags & (GAME_FLAG_CANCELED | GAME_FLAG_RATING)) != GAME_FLAG_RATING)
-			{
-				echo ' class="dark"';
-			}
-			echo '>';
-			echo '<td>' . ++$num . '</td>';
-			
+			$g = new stdClass();
+			list ($g->id, $g->moder_id, $g->moder_name, $g->moder_flags, $g->start, $duration, $g->result, $g->video_id, $g->flags, $g->event_id, $g->event_name, $g->event_flags, $g->tournament_id, $g->tournament_name, $g->tournament_flags, $g->table_num, $g->game_num) = $row;
+			$g->timezone = $this->timezone;
+
+			echo '<tr' . (($g->flags & GAME_FLAG_CANCELED) ? ' class="off"' : '') . '><td class="rk">' . ++$num . '</td>';
+			// The game opens in the context of the address, as it did.
+			echo game_row_cell($g, array('time'), '&address_id=' . $this->id);
+			echo game_result_cell($g) . game_tournament_cell($g) . game_event_cell($g, 'p4') . game_referee_cell($g);
 			if ($this->is_manager)
 			{
-				echo '<td class="dark" width="116" align="left">';
-				echo '<button class="icon" onclick="mr.deleteGame(' . $game_id . ', \'' . get_label('Are you sure you want to delete the game [0]?', $game_id) . '\')" title="' . get_label('Delete game [0]', $game_id) . '"><img src="images/delete.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.editGame(' . $game_id . ')" title="' . get_label('Edit game [0]', $game_id) . '"><img src="images/edit.png" border="0"></button>';
-				if ($video_id == NULL)
-				{
-					echo '<button class="icon" onclick="mr.setGameVideo(' . $game_id . ')" title="' . get_label('Add game [0] video', $game_id) . '"><img src="images/film-add.png" border="0"></button>';
-				}
-				else
-				{
-					echo '<button class="icon" onclick="mr.setGameVideo(' . $game_id . ')" title="' . get_label('Change game [0] video', $game_id) . '"><img src="images/film.png" border="0"></button>';
-					echo '<button class="icon" onclick="mr.deleteVideo(' . $video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $game_id) . '\')" title="' . get_label('Remove game [0] video', $game_id) . '"><img src="images/film-delete.png" border="0"></button>';
-				}
-				echo '</td>';
+				echo game_actions_cell($g, true);
 			}
-			else if ($is_user)
-			{
-				echo '<td class="dark" width="30">';
-				echo '</td>';
-			}
-			
-			if (($flags & (GAME_FLAG_CANCELED | GAME_FLAG_RATING)) != GAME_FLAG_RATING)
-			{
-				echo '<td align="left" style="padding-left:12px;">';
-			}
-			else
-			{
-				echo '<td align="left" colspan="2" style="padding-left:12px;">';
-			}
-			
-			if ($video_id != NULL)
-			{
-				echo '<table class="transp" width="100%"><tr><td>';
-			}
-
-
-			echo '<a href="view_game.php?id=' . $game_id . '&address_id=' . $this->id . '&bck=1"><b>';
-			if (is_null($game_num))
-			{
-				echo get_label('Game #[0]', $game_id);
-			}
-			else if (is_null($table_num))
-			{
-				echo  get_label('Game [0]', $game_num);
-			}
-			else
-			{
-				echo  get_label('Table [0], Game [1]', $table_num, $game_num);
-			}
-			echo '<br>';
-			if ($tournament_name != NULL)
-			{
-				echo $tournament_name . '</b>, ' . $event_name;
-			}
-			else
-			{
-				echo $event_name . '</b>';
-			}
-			echo '<br>' . format_date($start, $this->timezone, true) . '</a>';
-
-			if ($video_id != NULL)
-			{
-				echo '</td><td align="right"><a href="javascript:mr.watchGameVideo(' . $game_id . ')" title="' . get_label('Watch game [0] video', $game_id) . '"><img src="images/video.png" width="40" height="40"></a>';
-				echo '</td></tr></table>';
-			}
-			
-			if (($flags & GAME_FLAG_CANCELED) != 0)
-			{
-				echo '</td><td width="100" class="darker"><b>' . get_label('Canceled');
-				if (($flags & GAME_FLAG_RATING) == 0)
-				{
-					echo '<br>' . get_label('Non-rating');
-				}
-				echo '</b></td>';
-			}
-			else if (($flags & GAME_FLAG_RATING) == 0)
-			{
-				echo '</td><td width="100" class="darker"><b>' . get_label('Non-rating') . '</b></td>';
-			}
-			echo '</td>';
-			
-			echo '<td>';
-			$event_pic->set($event_id, $event_name, $event_flags);
-			$event_pic->show(ICONS_DIR, true, 48);
-			echo '</td>';
-			
-			echo '<td>';
-			$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-			$tournament_pic->show(ICONS_DIR, true, 48);
-			echo '</td>';
-			
-			echo '<td>';
-			$referee_pic->set($referee_id, $referee_name, $referee_flags);
-			$referee_pic->show(ICONS_DIR, true, 48);
-			echo '</td>';
-			
-			echo '<td>';
-			switch ($game_result)
-			{
-				case GAME_RESULT_TOWN:
-					echo '<img src="images/civ.png" title="' . get_label('town\'s vicory') . '" style="opacity: 0.5;">';
-					break;
-				case GAME_RESULT_MAFIA:
-					echo '<img src="images/maf.png" title="' . get_label('mafia\'s vicory') . '" style="opacity: 0.5;">';
-					break;
-				case GAME_RESULT_TIE:
-					echo '<img src="images/tie.png" title="' . get_label('tie') . '" style="opacity: 0.5;">';
-					break;
-			}
-
-			echo '</td></tr>';
+			echo '</tr>';
 		}
-		echo '</table>';
+		echo '</tbody></table></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
-	
+
 	protected function js()
 	{
 ?>
 		function filterChanged()
 		{
-			goTo({results: $('#results').val(), filter: checkboxFilterFlags(), page: 0 });
+			goTo({filter: checkboxFilterFlags(), page: 0});
 		}
 <?php
 	}

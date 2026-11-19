@@ -527,3 +527,32 @@
 	// The pictures above the row change its place while they load: once they are in, again.
 	window.addEventListener('load', function() { if (scrolled) { show(); } });
 })();
+
+// The menus of the actions of a row (card_row_menu() in include/cards.php): one open at a time,
+// closed by a click anywhere else and by Escape.
+(function()
+{
+	function closeAll(except)
+	{
+		var open = document.querySelectorAll('details.row-menu[open]');
+		for (var i = 0; i < open.length; ++i)
+		{
+			if (open[i] !== except)
+			{
+				open[i].open = false;
+			}
+		}
+	}
+	document.addEventListener('click', function(e)
+	{
+		var menu = e.target.closest ? e.target.closest('details.row-menu') : null;
+		closeAll(menu);
+	});
+	document.addEventListener('keydown', function(e)
+	{
+		if (e.key == 'Escape')
+		{
+			closeAll(null);
+		}
+	});
+})();
