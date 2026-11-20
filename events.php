@@ -8,6 +8,7 @@ require_once 'include/event.php';
 require_once 'include/ccc_filter.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/event_cards.php';
 
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
@@ -44,7 +45,7 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
-		$condition = new SQL(' FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 JOIN cities ct ON ct.id = a.city_id');
+		$condition = new SQL(' FROM events e JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0 JOIN addresses a ON e.address_id = a.id JOIN clubs c ON e.club_id = c.id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 JOIN cities ct ON ct.id = a.city_id JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0');
 		if ($this->future)
 		{
 			$condition->add(' WHERE e.start_time + e.duration >= UNIX_TIMESTAMP() AND (e.flags & ' . EVENT_FLAG_HIDDEN_BEFORE . ') = 0');
@@ -87,18 +88,27 @@ class Page extends GeneralPageBase
 			}
 		}
 		
-		echo '<p><table class="transp" width="100%">';
-		echo '<tr><td>';
+		// The filter by name: of the event, or of the tournament it is a round of.
+		$search = event_search_condition($condition);
+		
+		// The toolbar of a list (see new_look.css): the name, the place and the switch; then the dates
+		// and the three-state filters.
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Game day, tournament or club'));
+		echo '<div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('events')));
-		echo '&emsp;&emsp;';
+		echo '</div>';
+		echo card_seg(array(
+			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$this->future),
+			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $this->future)), get_label('Events'));
+		echo '<div class="tb-line"><div class="tb-dates">';
 		show_date_filter();
+		echo '</div>';
 		if (!$this->future)
 		{
-			echo '&emsp;&emsp;';
-			show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed events'), get_label('canceled events')), $this->filter);
+			show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed'), get_label('canceled')), $this->filter);
 		}
-		echo '</td></tr></table></p>';
+		echo '</div></div>';
 		
 		$ccc_id = $ccc_filter->get_id();
 		switch($ccc_filter->get_type())
@@ -130,18 +140,11 @@ class Page extends GeneralPageBase
 			$condition->add(' AND e.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		echo '<div class="tab">';
-		echo '<button ' . ($this->future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
-		echo '<button ' . (!$this->future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
-		echo '</div>';
-		echo '<div class="tabcontent">';
-		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 
-		$colunm_counter = 0;
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, nt.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags,' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, nt.name, t.flags, c.id, nc.name, c.flags, nct.name,' .
 			' (SELECT count(*) FROM games WHERE event_id = e.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 			' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
@@ -156,72 +159,15 @@ class Page extends GeneralPageBase
 		}
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 			
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="2">' . get_label('Event') . '</td>';
-		echo '<td width="100" align="center">' . get_label('Games played') . '</td>';
-		echo '<td width="100" align="center">' . get_label('Players attended') . '</td></tr>';
-		
-		$now = time();
-		$event_pic = new Picture(EVENT_PICTURE);
-		$club_pic = new Picture(CLUB_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$events = array();
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $event_duration, $timezone, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $languages, $addr_id, $addr, $addr_flags, $games_count, $users_count, $videos_count) = $row;
-			$playing =($now >= $event_time && $now < $event_time + $event_duration);
-			
-			if ($tournament_name != NULL)
-			{
-				$event_name = $tournament_name . ': ' . $event_name;
-			}
-			if ($playing)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
-			
-			echo '<td width="60" class="dark">';
-			$event_pic->set($event_id, $event_name, $event_flags);
-			$event_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td width="40" align="center" valign="center" style="padding-left:12px;>';
-			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
-			echo '</td>';
-			if ($tournament_id != NULL)
-			{
-				echo '<td width="40" align="center" valign="center" style="padding-left:4px;>';
-				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-				$tournament_pic->show(ICONS_DIR, false, 40);
-				echo '</td>';
-			}
-			
-			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name;
-			if ($playing)
-			{
-				echo ' (' . get_label('playing now') . ')';
-			}
-			echo '</b><br>' . format_date($event_time, $timezone, true) . '</a></td>';
-			
-			if ($videos_count > 0)
-			{
-				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';
-			}
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
-			
-			echo '</tr>';
+			$event = new stdClass();
+			list ($event->id, $event->name, $event->flags, $event->time, $event->duration, $event->timezone, $event->tournament_id, $event->tournament_name, $event->tournament_flags, $event->club_id, $event->club_name, $event->club_flags, $event->city, $event->games_count, $event->users_count, $event->videos_count) = $row;
+			$events[] = $event;
 		}
-		echo '</table>';
+		// The cards: see include/event_cards.php.
+		event_cards_show($events, $this->future, get_label('No events found.'));
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }

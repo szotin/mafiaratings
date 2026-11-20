@@ -47,15 +47,19 @@ class Page extends GeneralPageBase
 			$filter = 0;
 		}
 
-		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-		echo '<div class="toolbar"><div class="tb-field">';
-		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
-		echo '</div>';
-		show_checkbox_filter(array(get_label('closed~plural')), $filter, 'filterClosed');
-		echo '</div>';
+		$delimiter = ' AND ';
+		$condition = new SQL(' WHERE TRUE');
 
-		$delimiter = ' WHERE ';
-		$condition = new SQL();
+		// The toolbar of a list (see new_look.css), in one line: the name, the place, closed.
+		$search = card_search_condition($condition, 'c.name_id');
+		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Club name'));
+		echo '<div class="tb-field">';
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('clubs')));
+		echo '</div><div class="tb-inline">';
+		show_checkbox_filter(array(get_label('closed~plural')), $filter, 'filterClosed');
+		echo '</div></div>';
+
 		if ($filter & FLAG_FILTER_CLOSED)
 		{
 			$condition->add($delimiter . '(c.flags & ' . CLUB_FLAG_CLOSED . ') <> 0');

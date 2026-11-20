@@ -323,7 +323,7 @@ function show_seating_quality_bar($percent, $task, $hash, $can_optimize, $note =
 	$pct = round($percent);
 	echo '<p><div style="display:flex;align-items:center;gap:8px;">';
 	echo '<span style="white-space:nowrap;">' . get_label('Quality') . ':</span>';
-	echo '<div style="position:relative;flex:1;height:24px;line-height:24px;overflow:hidden;">';
+	echo '<div style="position:relative;flex:1;height:24px;line-height:24px;overflow:hidden;border-radius:8px;">';
 	echo '<img id="opt-fill-' . $task . '" src="images/red_dot.png" style="position:absolute;left:0;top:0;width:' . $pct . '%;height:24px;opacity:0.6;">';
 	echo '<img id="opt-rest-' . $task . '" src="images/black_dot.png" style="position:absolute;left:' . $pct . '%;top:0;width:' . (100 - $pct) . '%;height:24px;opacity:0.6;">';
 	echo '<b id="opt-pct-' . $task . '" style="position:absolute;left:0;top:0;width:100%;text-align:center;color:white;">' . $pct . '%</b>';

@@ -1297,7 +1297,10 @@ function broadcast_light_labels()
 	$labels = new stdClass();
 	$labels->on = get_label('A game is on');
 	$labels->idle = get_label('Between games');
-	$labels->off = get_label('No games yet');
+	// Not "no games yet": the table counts as played for half a day after a game (see
+	// STREAM_PLAYED_SINCE), and one that last played the day before has played, and its broadcast
+	// shows that game - it is only today that it has not.
+	$labels->off = get_label('Not played yet today');
 	return $labels;
 }
 

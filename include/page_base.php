@@ -309,7 +309,7 @@ class PageBase
 		{
 			echo '<a class="hd-lock" onclick="mr.lockSite(false)" title="The site is locked"><img src="images/repairs.png" alt=""></a>';
 		}
-		echo '<a class="brand" href="index.php" title="' . get_label('Home') . '"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
+		echo '<a class="brand" href="index.php?bck=0" title="' . get_label('Home') . '"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
 
 		echo '<nav class="nav" aria-label="' . get_label('Menu') . '">';
 		PageBase::show_nav_items($menu);
@@ -385,7 +385,7 @@ class PageBase
 		// The same menu, for a screen too narrow for the row in the header.
 		echo '<div class="drawer" id="drawer" hidden><div class="drawer-scrim" data-close></div>';
 		echo '<div class="drawer-panel" role="dialog" aria-modal="true" aria-label="' . get_label('Menu') . '" tabindex="-1">';
-		echo '<div class="drawer-top"><a class="brand" href="index.php"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
+		echo '<div class="drawer-top"><a class="brand" href="index.php?bck=0"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
 		echo '<button type="button" class="drawer-close" data-close aria-label="' . get_label('Close') . '">' . PageBase::icon('close') . '</button></div>';
 		echo '<nav class="drawer-body">';
 		if ($_profile != NULL)
@@ -433,7 +433,7 @@ class PageBase
 		echo '</main>';
 
 		echo '<footer class="ft"><div class="wrap">';
-		echo '<a class="brand" href="index.php"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
+		echo '<a class="brand" href="index.php?bck=0"><span class="wm-a">Mafia</span><span class="wm-b">Ratings</span></a>';
 		echo '<nav class="ft-nav">';
 		foreach (PageBase::get_main_menu() as $item)
 		{
@@ -523,7 +523,31 @@ class PageBase
 				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
 			));
 		}
+
+		// A page picked from the menu of the site starts the way over: bck=0 empties the list the
+		// button "Back" goes through (see include/session.php), so it does not lead back into
+		// wherever one happened to be before.
+		foreach ($menu as $item)
+		{
+			$item->page = PageBase::menu_url($item->page);
+			if (!is_null($item->submenu))
+			{
+				foreach ($item->submenu as $sub)
+				{
+					$sub->page = PageBase::menu_url($sub->page);
+				}
+			}
+		}
 		return $menu;
+	}
+
+	private static function menu_url($page)
+	{
+		if (is_null($page) || $page == '' || $page[0] == '#')
+		{
+			return $page;
+		}
+		return $page . (strpos($page, '?') === false ? '?' : '&') . 'bck=0';
 	}
 
 	// Is this item the page being shown? Compares the script names, not the parameters.

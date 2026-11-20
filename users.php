@@ -84,10 +84,11 @@ class Page extends GeneralPageBase
 
 		// The list of the v3 design, after ratings.php: the filter and the search in a toolbar, the
 		// table in a sheet.
-		echo '<div class="toolbar">';
-		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('users')));
-		echo '<div class="field grow">' . PageBase::icon('search');
+		// The toolbar of a list (see new_look.css): the search first, then the place.
+		echo '<div class="toolbar"><div class="field grow">' . PageBase::icon('search');
 		show_user_input('page', $this->user_name, '', get_label('Go to the page where a specific user is located.'));
+		echo '</div><div class="tb-field">';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('users')));
 		echo '</div><span class="count">' . get_label('[0] users', number_format($count)) . '</span></div>';
 		show_pages_navigation(PAGE_SIZE, $count);
 
