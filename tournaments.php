@@ -44,21 +44,25 @@ class Page extends GeneralPageBase
 	{
 		global $_profile, $_page, $_lang;
 		
+		// The toolbar of a list (see new_look.css): the name, the place and the switch; then the dates
+		// and the three-state filters.
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-		echo '<div class="toolbar">';
+		$search = isset($_REQUEST['search']) ? trim($_REQUEST['search']) : '';
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Tournament, club, series or league'));
+		echo '<div class="tb-field">';
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
+		echo '</div>';
 		echo card_seg(array(
 			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$this->future),
 			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $this->future)), get_label('Tournaments'));
-		echo '<div class="tb-field">';
-		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('tournaments')));
-		echo '</div><div class="tb-dates">';
+		echo '<div class="tb-line"><div class="tb-dates">';
 		show_date_filter();
 		echo '</div>';
 		if (!$this->future)
 		{
 			show_checkbox_filter(array(get_label('with video'), get_label('unplayed'), get_label('canceled')), $this->filter);
 		}
-		echo '</div>';
+		echo '</div></div>';
 		
 		$condition = new SQL(
 			' FROM tournaments t' .
@@ -103,6 +107,7 @@ class Page extends GeneralPageBase
 			}
 		}
 		
+		tournament_search_condition($condition);
 		if (isset($_REQUEST['from']) && !empty($_REQUEST['from']))
 		{
 			$condition->add(' AND t.start_time >= ?', get_datetime($_REQUEST['from'])->getTimestamp());

@@ -15,6 +15,25 @@ require_once __DIR__ . '/cards.php';
 // the html of a line of the card under its place and club. Then it calls
 // tournament_cards_load() for their series and winners and tournament_cards_show() to print them.
 
+// The filter by name of a list of tournaments: the name of the tournament, of its club, of a series
+// it is in, or of the league of that series. The query must have the tournament as t. Returns the
+// words looked for, for card_search_field().
+function tournament_search_condition($condition)
+{
+	$search = isset($_REQUEST['search']) ? trim($_REQUEST['search']) : '';
+	if ($search != '')
+	{
+		$like = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $search) . '%';
+		$condition->add(
+			' AND (t.name_id IN (SELECT n.id FROM names n WHERE n.name LIKE ?)' .
+			' OR t.club_id IN (SELECT _c.id FROM clubs _c JOIN names n ON n.id = _c.name_id WHERE n.name LIKE ?)' .
+			' OR t.id IN (SELECT _st.tournament_id FROM series_tournaments _st JOIN series _s ON _s.id = _st.series_id JOIN names n ON n.id = _s.name_id WHERE n.name LIKE ?)' .
+			' OR t.id IN (SELECT _st.tournament_id FROM series_tournaments _st JOIN series _s ON _s.id = _st.series_id JOIN leagues _l ON _l.id = _s.league_id JOIN names n ON n.id = _l.name_id WHERE n.name LIKE ?))',
+			$like, $like, $like, $like);
+	}
+	return $search;
+}
+
 // The series every tournament is in (the stars on its cover), and, unless $future, its winner.
 function tournament_cards_load($tournaments, $future = false)
 {

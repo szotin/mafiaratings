@@ -604,8 +604,10 @@ input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min
 .pcard { position: relative; display: flex; flex-direction: column; background: var(--paper); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-card); border: 1px solid rgba(11,20,34,.06); transition: transform .18s, box-shadow .18s; }
 .pcard:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
 .pc-cover, .feat-cover { position: relative; overflow: hidden; background: var(--night); }
-.pc-cover { aspect-ratio: 16 / 9; }
-.pc-cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,20,34,0) 45%, rgba(11,20,34,.55)); pointer-events: none; }
+.pc-cover { aspect-ratio: 16 / 9; background: var(--sky-deep); }
+/* a light ground: on a dark one the dark logos of clubs were hardly seen */
+.pc-cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,20,34,0) 60%, rgba(11,20,34,.12)); pointer-events: none; }
+.pc-cover .cv-blur { opacity: .35; }
 /* a logo is not a photo: it sits whole in the middle, over a blurred copy of itself */
 .cv-blur { position: absolute; inset: -20px; background-size: cover; background-position: center; filter: blur(22px) saturate(1.2); opacity: .55; }
 .cv-logo { position: absolute; inset: 12% 0; width: 100%; height: 76%; object-fit: contain; }
@@ -766,6 +768,15 @@ div.switch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; 
    the series): they share it rather than each taking one */
 .toolbar .tb-line { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
 .toolbar .tb-line .switch-row { flex: 0 1 auto; margin-left: auto; }
+/* The toolbar of a list, the same everywhere as far as the list allows:
+   - the first line says what and where: the filter by name (it takes the room that is left), the
+     club/city/country, the switch of the list (past/future, a result); the dates too when there is
+     no club/city/country;
+   - the second line (.tb-line) says which: the dates, the types, and the three-state filters at its
+     right end;
+   - a list with a filter or two keeps them on the first line (.tb-inline) and has one line. */
+.toolbar .tb-inline { flex: none; display: flex; align-items: center; }
+.toolbar .tb-inline .switch-row { flex: none; margin: 0; }
 .toolbar .tb-field { display: flex; align-items: center; }
 .nl input.dropdown, .home-page input.dropdown { width: 300px; height: 38px !important; padding: 0 34px 0 14px !important; border-radius: 999px !important; }
 /* the arrow of a dropdown field (the club/city/country filter), drawn over the right end of the field */
@@ -1026,7 +1037,9 @@ a.person:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 
 /* bordered tables are the data sheets */
 .nl table.bordered {
-  border: 0; border-collapse: separate; border-spacing: 0; background: var(--paper);
+  /* no padding: common.css gives it 4px, and the dark header then stood inside the rounded corners
+     with square ones of its own */
+  border: 0; border-collapse: separate; border-spacing: 0; padding: 0; background: var(--paper);
   border-radius: var(--r-sheet); box-shadow: var(--shadow-card); outline: 1px solid rgba(11,20,34,.06); outline-offset: -1px; overflow: hidden;
 }
 .nl table.bordered > tbody > tr > td, .nl table.bordered > tbody > tr > th, .nl table.bordered > tr > td, .nl table.bordered > tr > th,

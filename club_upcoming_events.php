@@ -5,10 +5,10 @@ require_once 'include/pages.php';
 require_once 'include/image.php';
 require_once 'include/event.php';
 require_once 'include/address.php';
+require_once 'include/cards.php';
+require_once 'include/event_cards.php';
 
-define('ROW_COUNT', DEFAULT_ROW_COUNT);
-define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
+define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
 class Page extends ClubPageBase
 {
@@ -16,126 +16,79 @@ class Page extends ClubPageBase
 	{
 		global $_page, $_lang, $_profile;
 		
-		$page_size = ROW_COUNT * COLUMN_COUNT;
-		$event_count = 0;
-		$column_count = 0;
 		$can_create = $this->is_manager || $this->is_referee;
 		
-		$condition = new SQL('e.club_id = ? AND UNIX_TIMESTAMP() <= e.start_time + e.duration', $this->id);
+		$condition = new SQL(' WHERE e.club_id = ? AND UNIX_TIMESTAMP() <= e.start_time + e.duration', $this->id);
 		if ($can_create)
 		{
 			$condition->add(' + ' . EVENT_ALIVE_TIME); // managers should see the event for some time after the end to be able to extend it
-			
-			--$page_size;
-			++$event_count;
-			++$column_count;
 		}
+		$search = event_search_condition($condition);
 		
-		list ($count) = Db::record(get_label('event'), 'SELECT count(*) FROM events e WHERE ', $condition);
-		show_pages_navigation($page_size, $count);
-		
+		// The toolbar of a list (see new_look.css): the name, and the button that creates one.
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Game day, tournament or club'));
 		if ($can_create)
 		{
-			echo '<table class="bordered light" width="100%"><tr>';
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top" class="light">';	
-			echo '<table class="transp" width="100%">';
-			echo '<tr class="light"><td align="left" style="padding:2px;>';
-			show_club_buttons(-1, '', 0, 0);
-			echo '</td></tr><tr><td align="center"><a href="#" onclick="mr.createEvent(' . $this->id . ')">' . get_label('Create [0]', get_label('event'));
-			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '">';
-			echo '</td></tr></table>';
-			echo '</td>';
+			echo '<a class="btn" href="#" onclick="mr.createEvent(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('event')) . '</span></a>';
 		}
+		echo '</div>';
 		
-		$query = new DbQuery('SELECT e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, nt.name, t.flags, a.id, a.flags, a.address, a.map_url, na.name');
-		if ($_profile != null)
-		{
-			$query->add(', eu.coming_odds, eu.people_with_me, eu.late FROM events e LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
-		}
-		else
-		{
-			$query->add(', NULL, NULL, NULL FROM events e');
-		}
-		$query->add(
+		$from = 
+			' FROM events e' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN addresses a ON e.address_id = a.id' .
-			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' JOIN cities ct ON a.city_id = ct.id' .
-			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 WHERE ',
-			$condition);
-		$query->add(' ORDER BY e.start_time LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0';
+		list ($count) = Db::record(get_label('event'), 'SELECT count(*)' . $from, $condition);
+		show_pages_navigation(PAGE_SIZE, $count);
+		
+		$query = new DbQuery('SELECT e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ct.timezone, t.id, nt.name, t.flags,' .
+			' (SELECT count(*) FROM games WHERE event_id = e.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
+			' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
+			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos');
+		if ($_profile != null)
+		{
+			$query->add(', eu.coming_odds, eu.people_with_me, eu.late' . $from . ' LEFT OUTER JOIN event_regs eu ON eu.event_id = e.id AND eu.user_id = ?', $_profile->user_id);
+		}
+		else
+		{
+			$query->add(', NULL, NULL, NULL' . $from);
+		}
+		$query->add($condition);
+		$query->add(' ORDER BY e.start_time, e.id LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
 
+		$events = array();
 		while ($row = $query->next())
 		{
-			list ($id, $name, $start_time, $duration, $flags, $city_name, $country_name, $event_timezone, $tour_id, $tour_name, $tour_flags, $addr_id, $addr_flags, $addr, $addr_url, $addr_name, $come_odds, $bringing, $late) = $row;
-			if ($name == $addr_name)
-			{
-				$name = $addr;
-			}
-			if (!is_null($tour_name))
-			{
-				$name = $tour_name . ': ' . $name;
-			}
-			
-			if ($column_count == 0)
-			{
-				if ($event_count == 0)
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
+			$event = new stdClass();
+			list ($event->id, $event->name, $event->time, $event->duration, $event->flags, $event->city, $event->timezone, $event->tournament_id, $event->tournament_name, $event->tournament_flags, $event->games_count, $event->users_count, $event->videos_count, $come_odds, $bringing, $late) = $row;
+			$event->club_id = $this->id;
+			$event->club_name = $this->name;
+			$event->club_flags = $this->flags;
 			if ($_profile != NULL)
 			{
-				echo '<tr><td class="dark" style="padding:2px;">';
-				show_event_buttons($id, $tour_id, $start_time, $duration, $flags, $this->id, $this->flags, ($come_odds != NULL && $come_odds > 0));
-				echo '</td></tr>';	
+				$id = $event->id;
+				$tournament_id = $event->tournament_id;
+				$time = $event->time;
+				$duration = $event->duration;
+				$flags = $event->flags;
+				$club_id = $this->id;
+				$club_flags = $this->flags;
+				$attending = ($come_odds != NULL && $come_odds > 0);
+				$event->buttons = PageBase::capture(function() use ($id, $tournament_id, $time, $duration, $flags, $club_id, $club_flags, $attending) { show_event_buttons($id, $tournament_id, $time, $duration, $flags, $club_id, $club_flags, $attending); });
 			}
-			
-			echo '<tr><td align="center"><a href="event.php?bck=1&id=' . $id . '"><b>' . format_date($start_time, $event_timezone, true) . '</b><br>';
-			$this->event_pic->
-				set($id, $name, $flags)->
-				set($tour_id, $tour_name, $tour_flags)->
-				set($addr_id, $addr, $addr_flags);
-			$this->event_pic->show(ICONS_DIR, false);
-			echo '</a><br>' . $name;
-			
+			// Whether the viewer is coming.
 			if ($come_odds != NULL)
 			{
-				echo '<br><br><b>' . event_odds_str($come_odds, $bringing, $late) . '</b>';
+				$event->extra = '<div class="pc-meta pc-res"><span>' . event_odds_str($come_odds, $bringing, $late) . '</span></div>';
 			}
-			echo '</td></tr></table>';
-			
-			echo '</td>';
-			
-			++$event_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
+			$events[] = $event;
 		}
-		if ($event_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
-		show_pages_navigation($page_size, $count);
+		// The cards of events.php: see include/event_cards.php.
+		event_cards_show($events, true, get_label('No events found.'));
+		show_pages_navigation(PAGE_SIZE, $count);
 	}
 }
 

@@ -9,6 +9,8 @@ require_once 'include/ccc_filter.php';
 require_once 'include/scoring.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
+require_once 'include/event_cards.php';
 
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 define('ETYPE_ALL', 0);
@@ -33,14 +35,6 @@ class Page extends UserPageBase
 			$filter = (int)$_REQUEST['filter'];
 		}
 		
-		echo '<table class="transp" width="100%"><tr><td>';
-		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('events')));
-		echo '&emsp;&emsp;';
-		show_date_filter();
-		echo '&emsp;&emsp;';
-		show_checkbox_filter(array(get_label('with video'), get_label('tournament events')), $filter, 'filterEvents');
-		echo '</td></tr></table>';
-		
 		$condition = new SQL(
 			' FROM events e' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
@@ -52,7 +46,8 @@ class Page extends UserPageBase
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN event_places ep ON ep.event_id = e.id AND ep.user_id = p.user_id' . 
-			' JOIN cities ct ON ct.id = c.city_id' .
+			' JOIN cities ct ON ct.id = a.city_id' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
 			' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 AND (e.flags & ' . EVENT_FLAG_HIDDEN_AFTER . ') = 0', $this->id);
 		$ccc_id = $ccc_filter->get_id();
 		switch($ccc_filter->get_type())
@@ -101,114 +96,59 @@ class Page extends UserPageBase
 			$condition->add(' AND e.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
+		$search = event_search_condition($condition);
+		
+		// The toolbar of a list (see new_look.css): the name and the place; then the dates and the
+		// three-state filters.
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Game day, tournament or club'));
+		echo '<div class="tb-field">';
+		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('events')));
+		echo '</div><div class="tb-line"><div class="tb-dates">';
+		show_date_filter();
+		echo '</div>';
+		show_checkbox_filter(array(get_label('with video'), get_label('tournament events')), $filter);
+		echo '</div></div>';
+		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(DISTINCT e.id)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.flags, e.start_time, ct.timezone, t.id, nt.name, t.flags, c.id, nc.name, c.flags, e.languages, a.id, a.address, a.flags, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, nt.name, t.flags, c.id, nc.name, c.flags, nct.name, ep.place, SUM(p.rating_earned), COUNT(g.id), SUM(p.won),' .
+			' (SELECT count(*) FROM games WHERE event_id = e.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
+			' (SELECT count(distinct _p.user_id) FROM players _p JOIN games _g ON _g.id = _p.game_id WHERE _g.event_id = e.id) as users,' .
 			' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
 			$condition);
-		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-			
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker">';
-		echo '<td colspan="2">' . get_label('Event') . '</td>';
-		echo '<td width="60" align="center">'.get_label('Place').'</td>';
-		echo '<td width="60" align="center">'.get_label('Rating earned').'</td>';
-		echo '<td width="60" align="center">'.get_label('Games played').'</td>';
-		echo '<td width="60" align="center">'.get_label('Wins').'</td>';
-		echo '<td width="60" align="center">'.get_label('Winning %').'</td>';
-		echo '<td width="60" align="center">'.get_label('Rating per game').'</td></tr>';
-
-		$event_pic = new Picture(EVENT_PICTURE);
-		$club_pic = new Picture(CLUB_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$query->add(' GROUP BY e.id ORDER BY e.start_time DESC, e.id DESC LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
+		
+		$events = array();
 		while ($row = $query->next())
 		{
-			list ($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $languages, $address_id, $address, $address_flags, $place, $rating, $games_played, $games_won, $videos_count) = $row;
-			
-			if ($tournament_name != NULL)
-			{
-				$event_name = $tournament_name . ': ' . $event_name;
-			}
-			
-			echo '<tr>';
-			
-			echo '<td width="60" class="dark">';
-			$event_pic->set($event_id, $event_name, $event_flags);
-			$event_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			echo '<td width="40" align="center" valign="center" style="padding-left:12px;>';
-			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, false, 40);
-			echo '</td>';
-			if ($tournament_id != NULL)
-			{
-				echo '<td width="40" align="center" valign="center" style="padding-left:4px;>';
-				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-				$tournament_pic->show(ICONS_DIR, false, 40);
-				echo '</td>';
-			}
-			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
-			echo '<br>' . format_date($event_time, $timezone, true) . '</a></td>';
-			if ($videos_count > 0)
-			{
-				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';
-			}
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td align="center" class="dark">';
-			if (!is_null($place))
-			{
-				if ($place > 0 && $place < 4)
-				{
-					echo '<img src="images/' . $place . '-place.png" width="60" title="' . get_label('[0] place', $place) . '">';
-				}
-				else if ($place < 11)
-				{
-					echo '<b>' . $place . '</b>';
-				}
-				else
-				{
-					echo $place;
-				}
-			}
-			echo '</td>';
-			echo '<td align="center">' . number_format($rating, 2) . '</td>';
-			echo '<td align="center">' . $games_played . '</td>';
-			echo '<td align="center">' . $games_won . '</td>';
-			if ($games_played != 0)
-			{
-				echo '<td align="center">' . number_format(($games_won*100.0)/$games_played, 1) . '%</td>';
-				echo '<td align="center">' . number_format($rating/$games_played, 2) . '</td>';
-			}
-			else
-			{
-				echo '<td align="center">&nbsp;</td><td width="60">&nbsp;</td>';
-			}
-			
-			echo '</tr>';
+			$event = new stdClass();
+			list ($event->id, $event->name, $event->flags, $event->time, $event->duration, $event->timezone, $event->tournament_id, $event->tournament_name, $event->tournament_flags, $event->club_id, $event->club_name, $event->club_flags, $event->city, $event->place, $event->rating, $event->games_played, $event->games_won, $event->games_count, $event->users_count, $event->videos_count) = $row;
+			$event->extra = $this->result_html($event);
+			$events[] = $event;
 		}
-		echo '</table>';
+		// The cards of events.php, with the result of the player: see include/event_cards.php.
+		event_cards_show($events, false, get_label('No events found.'));
 		show_pages_navigation(PAGE_SIZE, $count);
 	}
 	
-	function js()
+	// The result of the player on the card, as user_tournaments.php shows it.
+	private function result_html($event)
 	{
-?>
-		function onCCC(code)
+		$html = '<div class="pc-meta pc-res">';
+		if (!is_null($event->place) && $event->place > 0)
 		{
-			goTo({ ccc: code, page: 0 });
+			$html .= '<span class="medal' . ($event->place <= 3 ? ' m' . $event->place : '') . '" title="' . get_label('Place') . '">' . get_label('[0] place', $event->place) . '</span>';
 		}
-
-		function filterEvents()
+		if ($event->games_played != 0)
 		{
-			goTo({ filter: checkboxFilterFlags(), page: 0 });
+			$html .= '<span title="' . get_label('Rating earned') . '">' . PageBase::icon('trophy') . number_format($event->rating, 2) . '</span>';
+			$html .= '<a href="event_player.php?bck=1&user_id=' . $this->id . '&id=' . $event->id . '" title="' . get_label('Games played') . '">' . PageBase::icon('play') . $event->games_played . '</a>';
+			$html .= '<span title="' . get_label('Winning %') . '">' . number_format(($event->games_won * 100.0) / $event->games_played, 1) . '%</span>';
+			$html .= '<span title="' . get_label('Rating per game') . '">' . number_format($event->rating / $event->games_played, 2) . ' ' . get_label('per game') . '</span>';
 		}
-<?php	
+		return $html . '</div>';
 	}
 }
 

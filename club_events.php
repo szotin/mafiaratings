@@ -7,6 +7,8 @@ require_once 'include/address.php';
 require_once 'include/event.php';
 require_once 'include/checkbox_filter.php';
 require_once 'include/datetime.php';
+require_once 'include/cards.php';
+require_once 'include/event_cards.php';
 
 define("CUT_NAME",45);
 define('PAGE_SIZE', EVENTS_PAGE_SIZE);
@@ -46,6 +48,7 @@ class Page extends ClubPageBase
 				' JOIN addresses a ON e.address_id = a.id' .
 				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 				' JOIN cities ct ON ct.id = a.city_id' .
+				' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
 				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
 				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 				' WHERE e.club_id = ?',
@@ -100,26 +103,30 @@ class Page extends ClubPageBase
 		{
 			$condition->add(' AND e.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
+		$search = event_search_condition($condition);
 		
-		echo '<div class="tab">';
-		echo '<button ' . ($future ? '' : 'class="active" ') . 'onclick="goTo({future:0,page:0})">' . get_label('Past') . '</button>';
-		echo '<button ' . (!$future ? '' : 'class="active" ') . 'onclick="goTo({future:1,page:0})">' . get_label('Future') . '</button>';
+		// The toolbar of a list (see new_look.css): the name, the switch and - there is no place to
+		// filter by - the dates; then the three-state filters.
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Game day, tournament or club'));
+		echo card_seg(array(
+			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$future),
+			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $future)), get_label('Events'));
+		echo '<div class="tb-dates">';
+		show_date_filter();
 		echo '</div>';
-		
 		if (!$future)
 		{
-			echo '<p><table class="transp" width="100%"><tr><td>';
-			show_date_filter();
-			echo '&emsp;&emsp;';
-			show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed events'), get_label('canceled events')), $filter, 'filterEvents');
-			echo '</td></tr></table></p>';
+			echo '<div class="tb-line">';
+			show_checkbox_filter(array(get_label('with video'), get_label('tournament events'), get_label('unplayed'), get_label('canceled')), $filter);
+			echo '</div>';
 		}
+		echo '</div>';
 		
 		list ($count) = Db::record(get_label('event'), 'SELECT count(*)', $condition);
 		show_pages_navigation(PAGE_SIZE, $count);
 		
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.flags, e.start_time, ct.timezone, t.id, nt.name, t.flags, a.id, na.name, a.flags, a.address,' .
+			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, nt.name, t.flags, nct.name,' .
 				' (SELECT count(*) FROM games WHERE event_id = e.id AND (flags & '.GAME_FLAG_CANCELED.') = 0) as games,' .
 				' (SELECT count(distinct p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id) as users,' .
 				' (SELECT count(*) FROM videos WHERE event_id = e.id) as videos',
@@ -133,75 +140,24 @@ class Page extends ClubPageBase
 			$query->add(' ORDER BY e.start_time DESC, e.id DESC');
 		}
 		$query->add(' LIMIT ' . ($_page * PAGE_SIZE) . ',' . PAGE_SIZE);
-			
-		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="darker">';
-		echo '<td colspan="2">' . get_label('Event') . '</td>';
-		echo '<td width="100" align="center">' . get_label('Games played') . '</td>';
-		echo '<td width="100" align="center">' . get_label('Players attended') . '</td></tr>';
 		
-		$event_pic = new Picture(EVENT_PICTURE);
-		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		$events = array();
 		while ($row = $query->next())
 		{
-			list($event_id, $event_name, $event_flags, $event_time, $timezone, $tournament_id, $tournament_name, $tournament_flags, $address_id, $address_name, $address_flags, $address, $games_count, $users_count, $videos_count) = $row;
-
-			if ($tournament_name != NULL)
-			{
-				$event_name = $tournament_name . ': ' . $event_name;
-			}
-			
-			if ($event_flags & EVENT_FLAG_CANCELED)
-			{
-				echo '<tr class="dark">';
-			}
-			else
-			{
-				echo '<tr>';
-			}
-						echo '<td width="60" class="dark">';
-			$event_pic->set($event_id, $event_name, $event_flags);
-			$event_pic->show(ICONS_DIR, true, 60);
-			echo '</td>';
-			
-			echo '<td><table width="100%" class="transp"><tr>';
-			if ($tournament_id != NULL)
-			{
-				echo '<td width="40" align="center" valign="center" style="padding-left:12px;>';
-				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-				$tournament_pic->show(ICONS_DIR, false, 40);
-				echo '</td>';
-			}
-			echo '<td style="padding-left:12px;"><b><a href="event.php?bck=1&id=' . $event_id . '">' . $event_name . '</b>';
-			echo '<br>' . format_date($event_time, $timezone, true) . '</a></td>';
-			if ($videos_count > 0)
-			{
-				echo '<td align="right"><a href="event_videos.php?id=' . $event_id . '&bck=1" title="' . get_label('[0] videos from [1]', $videos_count, $event_name) . '"><img src="images/video.png" width="40" height="40"></a></td>';
-			}
-			echo '</tr></table>';
-			echo '</td>';
-			
-			echo '<td align="center"><a href="event_games.php?bck=1&id=' . $event_id . '">' . $games_count . '</a></td>';
-			echo '<td align="center"><a href="event.php?bck=1&id=' . $event_id . '">' . $users_count . '</a></td>';
-			
-			echo '</tr>';
+			$event = new stdClass();
+			list ($event->id, $event->name, $event->flags, $event->time, $event->duration, $event->timezone, $event->tournament_id, $event->tournament_name, $event->tournament_flags, $event->city, $event->games_count, $event->users_count, $event->videos_count) = $row;
+			$event->club_id = $this->id;
+			$event->club_name = $this->name;
+			$event->club_flags = $this->flags;
+			$events[] = $event;
 		}
-		echo '</table>';
+		// The cards of events.php: see include/event_cards.php.
+		event_cards_show($events, $future, get_label('No events found.'));
 		show_pages_navigation(PAGE_SIZE, $count);
-	}
-	
-	protected function js()
-	{
-?>
-		function filterEvents()
-		{
-			goTo({ filter: checkboxFilterFlags(), page: 0 });
-		}
-<?php
 	}
 }
 
 $page = new Page();
 $page->run(get_label('Events history'));
 
-?>
+?>

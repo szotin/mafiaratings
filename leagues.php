@@ -87,16 +87,20 @@ class Page extends GeneralPageBase
 		{
 			$filter = FLAG_FILTER_CLOSED;
 		}
+		$condition = new SQL(' WHERE TRUE');
+
+		// The toolbar of a list (see new_look.css), in one line: the name, the place, closed.
+		$search = card_search_condition($condition, 'l.name_id');
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
-		echo '<div class="toolbar"><div class="tb-field">';
+		echo '<div class="toolbar">' . card_search_field($search, get_label('League name'));
+		echo '<div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('leagues')));
-		echo '</div>';
+		echo '</div><div class="tb-inline">';
 		show_checkbox_filter(array(get_label('closed~plural')), $filter, 'filterClosed');
-		echo '</div>';
+		echo '</div></div>';
 
 		$this->show_requests();
 
-		$condition = new SQL(' WHERE TRUE');
 		if ($filter & FLAG_FILTER_CLOSED)
 		{
 			$condition->add(' AND (l.flags & ' . LEAGUE_FLAG_CLOSED . ') <> 0');

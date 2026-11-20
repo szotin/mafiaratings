@@ -176,6 +176,37 @@ function card_row_menu($items, $label = NULL)
 	return $html . '</div></details>';
 }
 
+// The filter by name of a list, asked of the database (a list is a page out of many): the words
+// searched for, from ?search=, and the condition on a name_id column - "t.name_id", "s.name_id" -
+// added to $condition. The names of a thing are rows of the table names, one for each language,
+// sharing an id; any of them matches.
+function card_search_condition($condition, $name_id_column)
+{
+	$search = isset($_REQUEST['search']) ? trim($_REQUEST['search']) : '';
+	if ($search != '')
+	{
+		$like = '%' . str_replace(array('\\', '%', '_'), array('\\\\', '\\%', '\\_'), $search) . '%';
+		$condition->add(' AND ' . $name_id_column . ' IN (SELECT n.id FROM names n WHERE n.name LIKE ?)', $like);
+	}
+	return $search;
+}
+
+// Its field, first on the first line of the toolbar of a list (see the toolbar pattern in
+// new_look.css). Its id is not "search": that is the search of the site in the header.
+function card_search_field($search, $placeholder = NULL)
+{
+	if (is_null($placeholder))
+	{
+		$placeholder = get_label('Filter by name');
+	}
+	$html = '<div class="field grow">' . PageBase::icon('search');
+	$html .= '<input type="text" id="list-search" value="' . htmlspecialchars($search, ENT_QUOTES, 'UTF-8') . '" placeholder="' . htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8') . '" onkeydown="if (event.key == \'Enter\') listSearch()">';
+	$html .= '<button class="small_icon" onclick="$(\'#list-search\').val(\'\'); listSearch()" title="' . get_label('Clear') . '"><img src="images/clear.png" width="12"></button>';
+	$html .= '</div>';
+	$html .= '<script>function listSearch() { var s = $.trim($("#list-search").val()); goTo({search: (s == "" ? undefined : s), page: undefined}); }</script>';
+	return $html;
+}
+
 // The address of the current page with some of its parameters changed: NULL removes one.
 function card_url($changes)
 {

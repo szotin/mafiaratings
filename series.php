@@ -85,7 +85,10 @@ class Page extends GeneralPageBase
 			$condition->add(' AND s.start_time < ?', get_datetime($_REQUEST['to'])->getTimestamp() + 86200);
 		}
 		
-		echo '<div class="toolbar">';
+		// The toolbar of a list (see new_look.css): the name, the switch and - there is no place to
+		// filter by - the dates; then the types and the three-state filters.
+		$search = card_search_condition($condition, 's.name_id');
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Series name'));
 		echo card_seg(array(
 			array(card_url(array('future' => NULL, 'page' => NULL)), get_label('Past'), !$this->future),
 			array(card_url(array('future' => 1, 'page' => NULL)), get_label('Future'), $this->future)), get_label('Series'));
