@@ -499,30 +499,8 @@ class PageBase
 			)),
 		);
 
-		// What only an administrator sees goes into "More" as a section of its own, not into a
-		// dropdown beside it: the row of the header has no room for one more.
-		if ($_profile != NULL && $_profile->is_admin())
-		{
-			$more = $menu[count($menu) - 1];
-			$more->submenu = array_merge($more->submenu, array
-			(
-				new MenuItem(NULL, get_label('Management'), NULL),
-				new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
-				new MenuItem('pairs.php' . $ccc, get_label('Pairs'), get_label('Global pair policies')),
-				new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
-				new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
-				new MenuItem('currencies.php' . $ccc, get_label('Currencies'), get_label('Manage currencies')),
-				new MenuItem('scorings.php' . $ccc, get_label('Rules'), get_label('Game rules and scoring systems of [0]', PRODUCT_NAME)),
-				new MenuItem('sounds.php' . $ccc, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.')),
-				new MenuItem('game_issues.php' . $ccc, get_label('Game issues'), get_label('List of the games that have issues.')),
-				new MenuItem('game_bugs.php' . $ccc, get_label('Game bugs'), get_label('List of the bug reports in the game.')),
-				new MenuItem('duplicated_games.php' . $ccc, get_label('Duplicated games'), get_label('Search for duplicated games suspects.')),
-				new MenuItem('duplicated_users.php' . $ccc, get_label('Duplicated users'), get_label('Merge duplicated user accounts.')),
-				new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
-				new MenuItem('maintenance_tasks.php' . $ccc, get_label('Maintenance tasks'), get_label('Manage recuring maintanance scripts')),
-				new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
-			));
-		}
+		// What only an administrator manages is not in this menu: it is the menu "≡" on the band of
+		// every page of the whole site - see get_admin_menu().
 
 		// A page picked from the menu of the site starts the way over: bck=0 empties the list the
 		// button "Back" goes through (see include/session.php), so it does not lead back into
@@ -789,6 +767,9 @@ class PageBase
 		case 'video':
 			$path = '<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3z"/>';
 			break;
+		case 'photo':
+			$path = '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 15.5l-4.5-4.5-8 8"/>';
+			break;
 		case 'plus':
 			$path = '<path d="M12 5v14M5 12h14"/>';
 			break;
@@ -853,6 +834,92 @@ class PageBase
 		return '<a class="ent" href="' . $url . '">' . PageBase::capture(function() use ($pic) { $pic->show(ICONS_DIR, false, 22, 22); }) . '<span>' . $name . '</span></a>';
 	}
 
+	// The menu "≡" on the band: the buttons of an entity - edit, delete, play the game... - as its
+	// first items, each with the picture it had and its title for the words, and after them the
+	// pages it is managed on ($items, MenuItems as in a dropdown: a NULL page is a separator, with
+	// the name of the group after it if it has text). $buttons is what the show_*_buttons()
+	// functions print: <button onclick="..." title="..."><img src="images/..."></button> each, and
+	// a transparent picture holding the place when there is none. Anything else in it - not a
+	// button of that shape - is returned as it is, before the menu. '' when there is nothing at all.
+	static function manage_menu($buttons, $items)
+	{
+		$rest = trim(preg_replace('#<img src="images/transp.png"[^>]*>#', '', $buttons));
+		$list = '';
+		if (preg_match_all('#<button\b([^>]*)>\s*<img\b[^>]*\bsrc="images/([^"]+)"[^>]*>\s*</button>#', $rest, $matches, PREG_SET_ORDER))
+		{
+			foreach ($matches as $m)
+			{
+				if (!preg_match('#\bonclick="([^"]*)"#', $m[1], $onclick))
+				{
+					continue;
+				}
+				$title = preg_match('#\btitle="([^"]*)"#', $m[1], $t) ? $t[1] : '';
+				$list .= '<button type="button" role="menuitem" onclick="this.closest(\'details\').open = false; ' . $onclick[1] . '"><img src="images/' . $m[2] . '" alt="">' . $title . '</button>';
+				$rest = str_replace($m[0], '', $rest);
+			}
+		}
+		$rest = trim($rest);
+
+		$current = false;
+		if (count($items) > 0)
+		{
+			if ($list != '')
+			{
+				$list .= '<div class="menu-sep" role="separator"></div>';
+			}
+			ob_start();
+			PageBase::show_dropdown_items($items);
+			$list .= ob_get_clean();
+			foreach ($items as $item)
+			{
+				$current = $current || PageBase::is_current_page($item->page);
+			}
+		}
+		if ($list == '')
+		{
+			return $rest;
+		}
+		$label = get_label('Management');
+		return $rest . '<details class="row-menu eh-menu' . ($current ? ' is-active' : '') . '"><summary title="' . $label . '" aria-label="' . $label . '">' . PageBase::icon('menu') . '</summary><div class="rm-list" role="menu">' . $list . '</div></details>';
+	}
+
+	// The pages of the whole site only an administrator manages: the menu "≡" of the band of every
+	// page that is not one of an entity (see show_title()).
+	static function get_admin_menu()
+	{
+		global $_profile;
+
+		if ($_profile == NULL || !$_profile->is_admin())
+		{
+			return array();
+		}
+		$ccc = '';
+		if (isset($_REQUEST['ccc']))
+		{
+			$ccc = '?ccc=' . urlencode($_REQUEST['ccc']);
+		}
+		return array
+		(
+			new MenuItem('users.php' . $ccc, get_label('Users'), get_label('Manage [0] users', PRODUCT_NAME)),
+			new MenuItem('pairs.php' . $ccc, get_label('Pairs'), get_label('Global pair policies')),
+			new MenuItem('countries.php' . $ccc, get_label('Countries'), get_label('Manage countries')),
+			new MenuItem('cities.php' . $ccc, get_label('Cities'), get_label('Manage cities')),
+			new MenuItem('currencies.php' . $ccc, get_label('Currencies'), get_label('Manage currencies')),
+			new MenuItem(NULL, NULL, NULL),
+			new MenuItem('scorings.php' . $ccc, get_label('Rules'), get_label('Game rules and scoring systems of [0]', PRODUCT_NAME)),
+			new MenuItem('sounds.php' . $ccc, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.')),
+			new MenuItem(NULL, NULL, NULL),
+			new MenuItem('game_issues.php' . $ccc, get_label('Game issues'), get_label('List of the games that have issues.')),
+			new MenuItem('game_bugs.php' . $ccc, get_label('Game bugs'), get_label('List of the bug reports in the game.')),
+			new MenuItem('duplicated_games.php' . $ccc, get_label('Duplicated games'), get_label('Search for duplicated games suspects.')),
+			new MenuItem('duplicated_users.php' . $ccc, get_label('Duplicated users'), get_label('Merge duplicated user accounts.')),
+			new MenuItem(NULL, NULL, NULL),
+			new MenuItem('repairs.php' . $ccc, get_label('Repairs'), get_label('Repairing broken things')),
+			new MenuItem('maintenance_tasks.php' . $ccc, get_label('Maintenance tasks'), get_label('Manage recuring maintanance scripts')),
+			new MenuItem('log.php' . $ccc, get_label('Log'), get_label('Log')),
+		);
+	}
+
 	// The heading of a club, an event, a tournament, a series, a league, a player or an address on
 	// the band: where it is on the site, its picture and name, a line of facts about it, what can
 	// be done with it, and its tabs. $h is an EntityHeader.
@@ -887,9 +954,24 @@ class PageBase
 		}
 		echo '</div>';
 
-		// Buttons with nothing to do print a transparent picture to hold their place; there is no
-		// place to hold here.
-		$actions = trim(preg_replace('#<img src="images/transp.png"[^>]*>#', '', $h->actions));
+		// What can be done with the entity - its buttons (edit, delete...) and the pages it is managed
+		// on, the tab "Management" of old - is one menu "≡" beside the name rather than a row of icons
+		// and a tab. See manage_menu().
+		$manage = array();
+		$tabs = array();
+		foreach ($menu as $item)
+		{
+			if (!is_null($item->submenu) && $item->text == get_label('Management'))
+			{
+				$manage = $item->submenu;
+			}
+			else
+			{
+				$tabs[] = $item;
+			}
+		}
+		$menu = $tabs;
+		$actions = PageBase::manage_menu($h->actions, $manage);
 		if (!empty($h->side) || !empty($actions))
 		{
 			echo '<div class="eh-side">' . $h->side;
@@ -936,6 +1018,7 @@ class PageBase
 	protected function show_title()
 	{
 		echo '<div class="page-hd"><div>' . $this->standard_title() . '</div><div class="page-hd-side">';
+		echo '<div class="page-hd-acts">' . PageBase::manage_menu('', PageBase::get_admin_menu()) . '</div>';
 		show_back_button();
 		echo '</div></div>';
 	}

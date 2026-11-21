@@ -5,6 +5,7 @@ require_once __DIR__ . '/image.php';
 require_once __DIR__ . '/pages.php';
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/club.php';
+require_once __DIR__ . '/cards.php';
 
 define('ALBUM_SHOW_CLUB', 1);
 define('ALBUM_SHOW_OWNER', 2);
@@ -322,15 +323,6 @@ class PhotoAlbum
 		}
 		
 		$page_size = 20;
-		$column_count = 0;
-		$albums_count = 0;
-		if ($create_link != NULL)
-		{
-			--$page_size;
-			++$column_count;
-			++$albums_count;
-		}
-		
 		$where = PhotoAlbum::viewers_condition();
 		if ($condition != NULL)
 		{
@@ -340,17 +332,16 @@ class PhotoAlbum
 
 		list ($count) = Db::record(get_label('photo album'), 'SELECT count(*) FROM photo_albums a WHERE ', $where);
 		
-		show_pages_navigation($page_size, $count);
-		
+		// Creating an album: a button at the right end of a line of its own, as on the other lists.
 		if ($create_link != NULL)
 		{
-			echo '<table class="bordered" width="100%"><tr><td class="light" width="20%" align="center">';
-			echo '<a href="' . $create_link . '" title="' . get_label('Create [0]', get_label('album')) . '"><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" height="' . ICON_HEIGHT . '"></a>';
-			echo '</td>';
+			echo '<div class="toolbar"><a class="btn tb-create" href="' . $create_link . '">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('album')) . '</span></a></div>';
 		}
+		show_pages_navigation($page_size, $count);
 		
 		$album_pic = new Picture(ALBUM_PICTURE, new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE))));
-		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, nu.name, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags FROM photo_albums a' .
+		$query = new DbQuery('SELECT a.id, a.name, a.flags, a.viewers, u.id, nu.name, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags,' .
+			' (SELECT count(*) FROM photos p WHERE p.album_id = a.id) FROM photo_albums a' .
 			' JOIN users u ON u.id = a.user_id' .
 			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
 			' JOIN clubs c ON c.id = a.club_id' .
@@ -361,69 +352,70 @@ class PhotoAlbum
 			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
 			' WHERE TRUE AND ', $where);
 		$query->add(' ORDER BY a.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		
+		// The cards of the v3 design (see include/event_cards.php): the picture of the album - or of
+		// the game day, the tournament, the club it is from - and under it its name, where it is from
+		// and how many photos it has.
+		$html = '';
 		while ($row = $query->next())
 		{
-			list($album_id, $album_name, $album_flags, $album_viewers, $owner_id, $owner_name, $e_id, $e_name, $e_flags, $t_id, $t_name, $t_flags, $c_id, $c_name, $c_flags) = $row;
-			if ($column_count == 0)
-			{
-				if ($albums_count == 0)
-				{
-					echo '<table class="bordered" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td class="light"';
-			echo ' width="20%" align="center" valign="top"  style="position:relative;left:0px;">';
-			if (PhotoAlbum::can_delete($album_id, $album_viewers, $owner_id, $c_id))
-			{
-				echo '<a href="?del=' . $album_id;
-				foreach ($link_params as $pname => $pval)
-				{
-					echo '&' . $pname . '=' . $pval;
-				}
-				echo '" title="' . get_label('Delete [0]', $album_name) . '"><img src="images/delete.png" style="position:absolute;left:2px;top:2px;" border="0"></a>';
-			}
-			if ($flags & ALBUM_SHOW_CLUB)
-			{
-				echo '<b>' . $c_name . '</b>';
-			}
-			echo '<br>';
+			list($album_id, $album_name, $album_flags, $album_viewers, $owner_id, $owner_name, $e_id, $e_name, $e_flags, $t_id, $t_name, $t_flags, $c_id, $c_name, $c_flags, $photos_count) = $row;
+			$url = 'album_photos.php?bck=1&id=' . $album_id;
 			$album_pic->
 				set($album_id, $album_name, $album_flags)->
 				set($e_id, $e_name, $e_flags)->
 				set($t_id, $t_name, $t_flags)->
 				set($c_id, $c_name, $c_flags);
-			$album_pic->show(ICONS_DIR, true);
-			echo '<br>' . $album_name;
+			if ($album_pic->has_image())
+			{
+				$pic_url = $album_pic->url(TNAILS_DIR);
+				$cover = '<span class="cv-blur" style="background-image: url(\'' . $pic_url . '\');"></span><img class="cv-logo" src="' . $pic_url . '" alt="" loading="lazy" decoding="async">';
+			}
+			else
+			{
+				$cover = '<span class="pc-fallback"><span class="pc-mono">' . card_initials($album_name) . '</span></span>';
+			}
+			
+			$html .= '<article class="pcard"><div class="pc-cover">' . $cover;
+			if (PhotoAlbum::can_delete($album_id, $album_viewers, $owner_id, $c_id))
+			{
+				$del = '?del=' . $album_id;
+				foreach ($link_params as $pname => $pval)
+				{
+					$del .= '&' . $pname . '=' . $pval;
+				}
+				$html .= '<span class="pc-actions"><button class="icon" onclick="window.location.href=\'' . $del . '\'" title="' . get_label('Delete [0]', $album_name) . '"><img src="images/delete.png" border="0"></button></span>';
+			}
+			$html .= '</div><div class="pc-body"><h3><a href="' . $url . '">' . $album_name . '</a></h3>';
+			$html .= '<div class="pc-meta">';
+			if (!is_null($t_id))
+			{
+				$html .= '<a href="tournament.php?bck=1&id=' . $t_id . '">' . PageBase::icon('trophy') . $t_name . '</a>';
+			}
+			else if (!is_null($e_id))
+			{
+				$html .= '<a href="event.php?bck=1&id=' . $e_id . '">' . PageBase::icon('cal') . $e_name . '</a>';
+			}
+			if ($flags & ALBUM_SHOW_CLUB)
+			{
+				$html .= '<a href="club_main.php?bck=1&id=' . $c_id . '">' . PageBase::icon('users') . $c_name . '</a>';
+			}
 			if ($flags & ALBUM_SHOW_OWNER)
 			{
-				echo '<br>' . get_label('By [0]', $owner_name);
+				$html .= '<a href="user_info.php?bck=1&id=' . $owner_id . '">' . PageBase::icon('user') . $owner_name . '</a>';
 			}
-			echo '</td>';
-			
-			++$albums_count;
-			++$column_count;
-			if ($column_count >= 5)
-			{
-				$column_count = 0;
-			}
+			$html .= '</div><div class="pc-foot"><span class="pc-nums">';
+			$html .= '<a href="' . $url . '" title="' . get_label('Photos') . '">' . PageBase::icon('photo') . $photos_count . '</a>';
+			$html .= '</span></div></div></article>';
 		}
-		if ($albums_count > 0)
+		if ($html == '')
 		{
-			if ($column_count > 0)
-			{
-				echo '<td class="light" colspan="' . (5 - $column_count) . '"></td>';
-			}
-			echo '</tr></table>';
+			echo '<p class="empty">' . get_label('No albums found.') . '</p>';
 		}
 		else
 		{
-			echo get_label('No albums found.');
+			echo '<div class="posters">' . $html . '</div>';
+			show_pages_navigation($page_size, $count);
 		}
 	}
 	

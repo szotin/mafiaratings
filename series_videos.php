@@ -7,11 +7,9 @@ require_once 'include/club.php';
 require_once 'include/event.php';
 require_once 'include/image.php';
 require_once 'include/languages.php';
+require_once 'include/video_cards.php';
 
-define('ROW_COUNT', DEFAULT_ROW_COUNT);
-define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
-define('PICTURE_WIDTH', (CONTENT_WIDTH / COLUMN_COUNT) - 10);
+define('PAGE_SIZE', 24);
 
 class Page extends SeriesPageBase
 {
@@ -35,13 +33,22 @@ class Page extends SeriesPageBase
 			$langs = $_profile->user_langs;
 		}
 		
-		echo '<p><table class="transp" width="100%"><tr><td>';
+		// The toolbar of a list (see new_look.css): the kind of video; the languages and adding one at
+		// the right end.
+		echo '<div class="toolbar">';
 		$ccc_filter = new CCCFilter('ccc', CCCF_CLUB . CCCF_ALL);
+		echo '<div class="tb-field">';
 		$ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('videos')));
+		echo '</div>';
 		show_video_type_select($video_type, 'vtype', 'filter()');
-		echo '</td><td align="right">';
+		echo '<div class="tb-langs">';
 		langs_checkboxes($langs, LANG_ALL, NULL, ' ', '', 'filter()');
-		echo '</tr></table></p>';
+		echo '</div>';
+		if ($_profile != NULL && $_profile->user_club_id != NULL)
+		{
+			echo '<a class="btn tb-create" href="#" onclick="mr.createVideo(' . $video_type . ', ' . $_profile->user_club_id . ', null, null); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Add [0]', get_label('video')) . '</span></a>';
+		}
+		echo '</div>';
 		
 		$condition = new SQL(' WHERE (v.lang & ?) <> 0 AND st.series_id = ?', $langs, $this->id);
 		if ($video_type >= 0)
@@ -78,32 +85,14 @@ class Page extends SeriesPageBase
 			break;
 		}
 		
-		$page_size = ROW_COUNT * COLUMN_COUNT;
-		$video_count = 0;
-		$column_count = 0;
-		$can_add = $_profile != NULL && $_profile->user_club_id != NULL;
-		
-		if ($can_add)
-		{
-			--$page_size;
-			++$video_count;
-			++$column_count;
-		}
+		$page_size = PAGE_SIZE;
 		
 		list ($count) = Db::record(get_label('video'), 'SELECT count(*) FROM videos v JOIN series_tournaments st ON st.tournament_id = v.tournament_id', $condition);
 		
 		show_pages_navigation($page_size, $count);
 		
-		if ($can_add)
-		{
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr><td align="center" width="' . COLUMN_WIDTH . '%"><a href="#" onclick="mr.createVideo(' . $video_type . ', ' . $_profile->user_club_id , ', null, null)">';
-			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" title="' . get_label('Add [0]', get_label('video')) . '">';
-			echo '</td>';
-		}
-		
 		$query = new DbQuery(
-			'SELECT v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, e.id, ne.name, e.flags, g.table_num, g.game_num FROM videos v' .
+			'SELECT v.video_time, v.id, v.video, v.name, v.lang, v.type, g.id, c.id, nc.name, c.flags, e.id, ne.name, e.flags, g.table_num, g.game_num FROM videos v' .
 			' JOIN clubs c ON c.id = v.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
 			' JOIN series_tournaments st ON st.tournament_id = v.tournament_id' .
@@ -111,66 +100,28 @@ class Page extends SeriesPageBase
 			' LEFT OUTER JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN games g ON g.video_id = v.id', $condition);
 		$query->add(' ORDER BY v.video_time DESC, v.post_time DESC, v.id DESC LIMIT ' . ($_page * $page_size) . ',' . $page_size);
+		$videos = array();
 		while ($row = $query->next())
 		{
-			list($video_id, $video, $title, $lang, $type, $game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $table_num, $game_num) = $row;
-			if ($column_count == 0)
-			{
-				if ($video_count == 0)
-				{
-					echo '<table class="bordered" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td valign="top"';
-			echo ' width="' . COLUMN_WIDTH . '%" align="center" valign="center">';
-			
-			echo '<table width="100%" class="transp"><tr class="darker" style="height: 30px;" align="center"><td><b>';
-			if (is_null($game_id))
-			{
-				echo get_video_title($type);
-			}
-			else if (is_null($game_num))
-			{
-				echo get_label('Game #[0]', $game_id);
-			}
-			else if (is_null($table_num))
-			{
-				echo get_label('Game [0]', $game_num);
-			}
-			else
-			{
-				echo get_label('Table [0], Game [1]', $table_num, $game_num);
-			}
-			echo '</b></td></tr>';
-			
-			echo '<tr><td><span style="position:relative;">';
-			echo '<a href="video.php?bck=1&id=' . $video_id . '&vtype=' . $video_type . '&langs=' . $langs . '"><img src="https://img.youtube.com/vi/' . $video . '/0.jpg" width="' . PICTURE_WIDTH . '" title="' . $title . '">';
-			echo '<span class="video-lang">' . get_short_lang_str($lang) . '</span>';
-			echo '</a></span></td></tr>';
-			echo '<tr><td align="center">' . $title . '</td></tr>';
-			echo '</table>';
-			
-			++$video_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
+			list($v_time, $video_id, $video, $title, $lang, $type, $game_id, $club_id, $club_name, $club_flags, $event_id, $event_name, $event_flags, $table_num, $game_num) = $row;
+			$v = new stdClass();
+			$v->id = $video_id;
+			$v->video = $video;
+			$v->name = $title;
+			$v->lang = $lang;
+			$v->type = $type;
+			$v->time = $v_time;
+			$v->game_id = $game_id;
+			$v->table_num = $table_num;
+			$v->game_num = $game_num;
+			$v->club_id = $club_id;
+			$v->club_name = $club_name;
+			$v->event_id = $event_id;
+			$v->event_name = $event_name;
+			$videos[] = $v;
 		}
-		if ($video_count > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td class="light" colspan="' . (COLUMN_COUNT - $column_count) . '"></td>';
-			}
-			echo '</tr></table>';
-		}
+		// The cards: see include/video_cards.php.
+		video_cards_show($videos, '&vtype=' . $video_type . '&langs=' . $langs . '', get_label('No videos found.'));
 		show_pages_navigation($page_size, $count);
 	}
 	

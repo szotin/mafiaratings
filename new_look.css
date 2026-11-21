@@ -640,7 +640,10 @@ input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min
 @media (prefers-reduced-motion: no-preference) { .pulse { animation: pulse 2.2s ease-out infinite; } }
 
 /* the club/city/country filter, on the band */
-.home-filter { display: flex; align-items: center; }
+.home-filter { display: flex; align-items: center; gap: 10px; }
+.home-filter .dd-wrap { flex: 1 1 auto; min-width: 0; }
+.home-filter .eh-menu { flex: none; }
+.toolbar > .eh-menu { margin-left: auto; }
 .home-filter input.dropdown { width: 270px; height: 36px; padding: 0 36px 0 14px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255,255,255,.08); color: #fff; font: 400 14px var(--font); }
 .home-filter input.dropdown::placeholder { color: var(--night-dim); }
 .home-filter input.dropdown:focus { outline: none; border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.12); }
@@ -848,6 +851,18 @@ span.switch-item:has(.tri-filter.yes), span.switch-item:has(.tri-filter.no) { ba
 .nl .posters > h3.grp { margin: 10px 0 -4px; font-size: 15px; color: var(--slate); }
 .nl .posters > h3.grp:first-child { margin-top: 0; }
 .pcard.is-off .pc-cover { filter: grayscale(1); opacity: .65; }
+/* a video (include/video_cards.php): the picture YouTube makes of it fills the cover, with "play"
+   over it and the language in the corner */
+.vcard .pc-cover { background: var(--night); }
+.vcard .vc-thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+.vcard .vc-play { position: absolute; left: 50%; top: 50%; z-index: 1; width: 52px; height: 52px; margin: -26px 0 0 -26px; display: grid; place-items: center;
+  border-radius: 50%; background: rgba(11,20,34,.62); color: #fff; box-shadow: 0 8px 20px -8px rgba(0,0,0,.6); transition: background .15s, transform .15s; }
+.vcard .vc-play .ic { width: 22px; height: 22px; margin-left: 3px; fill: currentColor; }
+.vcard:hover .vc-play { background: var(--red); transform: scale(1.06); }
+.vcard .vc-lang { position: absolute; right: 10px; top: 10px; z-index: 1; padding: 3px 8px; border-radius: 999px; background: rgba(11,20,34,.62); color: #fff; font-size: 12px; font-weight: 650; letter-spacing: .04em; }
+.toolbar .tb-langs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-left: auto; font-size: 13.5px; color: var(--slate); }
+.toolbar .tb-langs:empty { display: none; }
+.toolbar .tb-langs + a.btn.tb-create { margin-left: 8px; }
 .pcard.is-off h3 a { color: var(--slate); }
 .pc-foot { justify-content: space-between; }
 /* the numbers keep their width; the winner's name gives way to them and ends in an ellipsis */
@@ -1514,6 +1529,30 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .row-menu .rm-list button:hover, .row-menu .rm-list button:focus-visible { background: var(--frost); outline: none; }
 .row-menu .rm-list button img { width: 18px; height: 18px; flex: none; }
 .nl .row-menu .rm-list button { justify-content: flex-start; min-width: 0; height: auto; box-shadow: none; transform: none; }
+/* The same menu on the band (PageBase::manage_menu()): what can be done with a club, a tournament...
+   - its buttons, then the pages it is managed on - or, on the pages of the whole site, what an
+   administrator manages. A round button like the others of the band; the list can be long. */
+.mast .eh-menu > summary { width: 40px; height: 40px; color: #fff; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.18); transition: background .15s, border-color .15s; }
+.mast .eh-menu > summary .ic { width: 20px; height: 20px; }
+.mast .eh-menu > summary:hover, .mast .eh-menu[open] > summary, .mast .eh-menu.is-active > summary { background: rgba(255,255,255,.28); border-color: rgba(255,255,255,.4); color: #fff; }
+/* Always in the bottom right corner of the band, wherever the name, the facts or the title end:
+   on the row of the tabs at its right end when there are tabs (they keep clear of it). The main page
+   keeps it beside its filter. */
+.mast .eh-actions .eh-menu { position: absolute; right: var(--gutter); bottom: 6px; }
+/* On a page of the whole site the side of the title is a column as tall as the band: the way back
+   at its top, what the page offers ("New club") and "≡" in a row at its bottom. */
+.page-hd { align-items: stretch; }
+.page-hd-side { flex-direction: column; align-items: flex-end; justify-content: flex-start; }
+.page-hd-side > a.back { order: -1; }
+.page-hd-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; margin-top: auto; }
+.page-hd-acts:empty { display: none; }
+.mast:has(.eh-menu) .tabs { padding-right: 56px; }
+.eh-menu .rm-list { min-width: 260px; max-height: min(70vh, 560px); overflow-y: auto; text-align: left; }
+.eh-menu .rm-list a { display: block; padding: 8px 10px; border-radius: 8px; font: 500 14px var(--font); color: var(--ink); white-space: nowrap; }
+.eh-menu .rm-list a:hover { background: var(--frost); color: var(--ink); }
+.eh-menu .rm-list a[aria-current] { color: var(--red); }
+.eh-menu .rm-list .menu-sep { height: 1px; background: var(--rule); margin: 6px 8px; }
+.eh-menu .rm-list .menu-label { padding: 6px 10px 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--slate); }
 /* the buttons of a row (edit, delete...): as narrow as they are, on one line */
 .tbl td.tb-btns { width: 1%; white-space: nowrap; }
 .tbl td.tb-btns button.icon + button.icon { margin-left: 4px; }

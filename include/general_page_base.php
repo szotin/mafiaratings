@@ -15,7 +15,9 @@ class GeneralPageBase extends PageBase
 	protected function show_title()
 	{
 		echo '<div class="page-hd"><div>' . $this->standard_title() . '</div><div class="page-hd-side">';
-		echo $this->title_actions();
+		// What the page offers and the menu "≡" at the bottom of the band, side by side; the way back
+		// above them (see .page-hd-acts in new_look.css).
+		echo '<div class="page-hd-acts">' . $this->title_actions() . PageBase::manage_menu('', PageBase::get_admin_menu()) . '</div>';
 		show_back_button();
 		echo '</div></div>';
 	}

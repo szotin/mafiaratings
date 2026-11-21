@@ -111,7 +111,7 @@ function show_event_buttons($id, $tournament_id, $start_time, $duration, $flags,
 			echo '<button class="icon" onclick="mr.editEvent(' . $id . ')" title="' . get_label('Edit the event') . '"><img src="images/edit.png" border="0"></button>';
 			if (($flags & EVENT_FLAG_CANCELED) != 0)
 			{
-				echo '<button class="icon" onclick="mr.restoreEvent(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.restoreEvent(' . $id . ')" title="' . get_label('Restore the event') . '"><img src="images/undelete.png" border="0"></button>';
 			} 
 			echo '<button class="icon" onclick="mr.deleteEvent(' . $id . ', ' . $back_url . ')" title="' . get_label('Delete the event') . '"><img src="images/delete.png" border="0"></button>';
 			$no_buttons = false;

@@ -45,7 +45,7 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 			echo '<button class="icon" onclick="mr.editTournament(' . $id . ')" title="' . get_label('Edit the tournament') . '"><img src="images/edit.png" border="0"></button>';
 			if (($flags & TOURNAMENT_FLAG_CANCELED) != 0)
 			{
-				echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.restoreTournament(' . $id . ')" title="' . get_label('Restore the tournament') . '"><img src="images/undelete.png" border="0"></button>';
 			} 
 			echo '<button class="icon" onclick="mr.deleteTournament(' . $id . ', ' . $back_url . ')" title="' . get_label('Delete the tournament') . '"><img src="images/delete.png" border="0"></button>';
 			

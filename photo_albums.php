@@ -23,10 +23,9 @@ class Page extends GeneralPageBase
 	{
 		global $_profile;
 		
-		echo '<p><table class="transp" width="100%">';
-		echo '<tr><td>';
+		echo '<div class="toolbar"><div class="tb-field">';
 		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('albums')));
-		echo '</td></tr></table></p>';
+		echo '</div></div>';
 		
 		$create_link = NULL;
 		$condition = NULL;

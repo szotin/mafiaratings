@@ -241,6 +241,8 @@ class Page extends GeneralPageBase
 		}
 		echo '<div class="home-filter">';
 		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', ''));
+		// What an administrator manages, as on the band of every page of the whole site.
+		echo PageBase::manage_menu('', PageBase::get_admin_menu());
 		echo '</div></div>';
 
 		echo '<div class="now-grid"><div class="now-main">';
@@ -617,7 +619,7 @@ class Page extends GeneralPageBase
 		{
 			echo '<div class="toolbar"><div class="tb-field">';
 			$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', ''));
-			echo '</div></div>';
+			echo '</div>' . PageBase::manage_menu('', PageBase::get_admin_menu()) . '</div>';
 		}
 		echo '<div class="cols wide-rail home"><div class="stack">';
 		$this->show_adverts();

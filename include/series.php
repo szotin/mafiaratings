@@ -924,7 +924,7 @@ function show_series_buttons($id, $start_time, $duration, $flags, $owner)
 		{
 			if (($flags & SERIES_FLAG_CANCELED) != 0)
 			{
-				echo '<button class="icon" onclick="mr.restoreSeries(' . $id . ')"><img src="images/undelete.png" border="0"></button>';
+				echo '<button class="icon" onclick="mr.restoreSeries(' . $id . ')" title="' . get_label('Restore the series') . '"><img src="images/undelete.png" border="0"></button>';
 			}
 			else
 			{
