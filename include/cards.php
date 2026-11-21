@@ -226,4 +226,31 @@ function card_url($changes)
 	return basename($_SERVER['SCRIPT_NAME']) . ($query == '' ? '' : '?' . $query);
 }
 
+// The options of the select "who played at least that many games" on the pages of nominations. A
+// round scale instead of every tenth number: a club with 30000 games would get 1500 options. The
+// scale stops at the half of the games; the current value is kept even when it is not on it.
+function card_min_games_options($min_games, $games_count)
+{
+	$min_games = (int)$min_games;
+	$values = array();
+	foreach (array(0, 10, 20, 50, 100, 200, 300, 500, 1000, 1500, 2000, 3000, 5000, 10000) as $i)
+	{
+		if ($i <= $games_count / 2)
+		{
+			$values[] = $i;
+		}
+	}
+	if (!in_array($min_games, $values))
+	{
+		$values[] = $min_games;
+		sort($values);
+	}
+	$html = '';
+	foreach ($values as $i)
+	{
+		$html .= '<option value="' . $i . '"' . ($i == $min_games ? ' selected' : '') . '>' . ($i == 0 ? get_label('All players') : get_label('[0] or more games', $i)) . '</option>';
+	}
+	return $html;
+}
+
 ?>

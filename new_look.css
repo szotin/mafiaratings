@@ -768,6 +768,10 @@ div.switch-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; 
    the series): they share it rather than each taking one */
 .toolbar .tb-line { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
 .toolbar .tb-line .switch-row { flex: 0 1 auto; margin-left: auto; }
+/* Two selects that belong together - the nomination and the role - side by side at the right end. */
+.toolbar .tb-line .tb-pair { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; }
+/* The last control of the first line pushed to its right end, over the pair below. */
+.toolbar > .tb-end { margin-left: auto; }
 /* The toolbar of a list, the same everywhere as far as the list allows:
    - the first line says what and where: the filter by name (it takes the room that is left), the
      club/city/country, the switch of the list (past/future, a result); the dates too when there is
@@ -1425,7 +1429,7 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .sheet + .toolbar { margin-top: 28px; }
 .toolbar.reg-hd > b { font-size: 15px; }
 /* a wide table of counts (the referees): the headings and the numbers wrap, the club's name is cut */
-.tbl.th-wrap th { white-space: normal; vertical-align: bottom; }
+.tbl.th-wrap th { white-space: normal; vertical-align: middle; }
 .tbl.th-wrap .club span:not(.club-ini) { max-width: 150px; }
 .tbl.th-wrap td.num { white-space: normal; }
 .tbl.th-wrap td.num small { display: inline-block; line-height: 1.2; font-size: 11px; white-space: nowrap; }

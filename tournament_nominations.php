@@ -85,9 +85,16 @@ class Page extends TournamentPageBase
 			$sort = $_REQUEST['sort'];
 		}
 		
-		// The toolbar of the v3 design: the nomination first, it is what the list is; the filters
-		// after it, the switches on a line of their own.
+		// The toolbar of a list (see new_look.css): the place, the dates and how many games a player
+		// needs on the first line; on the second the kinds of games, and at its right end what is
+		// counted - the nomination and the role.
 		echo '<div class="toolbar">';
+		echo '<div class="tb-dates">';
+		show_date_filter();
+		echo '</div>';
+		echo '<div class="tb-line tb-start">';
+		show_checkbox_filter(array(get_label('rating games')), $filter, 'filterChanged');
+		echo '<div class="tb-pair">';
 		echo '<select id="nom" onchange="filterChanged()" title="' . get_label('Nomination to view.') . '">';
 		for ($i = 0; $i < count($noms); ++$i)
 		{
@@ -95,8 +102,7 @@ class Page extends TournamentPageBase
 		}
 		echo '</select>';
 		show_roles_select($roles, 'filterChanged()', get_label('Use only the stats of a specific role.'));
-		show_date_filter();
-		show_checkbox_filter(array(get_label('rating games')), $filter, 'filterChanged');
+		echo '</div></div>';
 		echo '</div>';
 		
 		$condition = get_roles_condition($roles);

@@ -118,7 +118,7 @@ class Page extends LeaguePageBase
 		}
 		else
 		{
-			$this->min_games = round($this->games_count / 100) * 10;
+			$this->min_games = (int)round($this->games_count / 100) * 10;
 			$this->min_games -= $this->min_games % 10;
 		}
 		
@@ -143,33 +143,28 @@ class Page extends LeaguePageBase
 	{
 		global $_profile, $_lang;
 		
-		// The toolbar of the v3 design: the nomination first, it is what the list is; the filters
-		// after it, the switches on a line of their own.
+		// The toolbar of a list (see new_look.css): the place, the dates and how many games a player
+		// needs on the first line; on the second the kinds of games, and at its right end what is
+		// counted - the nomination and the role.
 		echo '<div class="toolbar">';
+		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
+		echo '<div class="tb-dates">';
+		show_date_filter();
+		echo '</div>';
+		echo '<select id="min" class="tb-end" onchange="filterNumber()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
+		echo card_min_games_options($this->min_games, $this->games_count);
+		echo '</select>';
+		echo '<div class="tb-line tb-start">';
+		show_checkbox_filter(array(get_label('rating games')), $this->filter);
+		echo '<div class="tb-pair">';
 		echo '<select id="nom" onchange="filterNom()" title="' . get_label('Nomination to view.') . '">';
 		for ($i = 0; $i < count($this->noms); ++$i)
 		{
 			show_option($i, $this->nom, $this->noms[$i][0]);
 		}
 		echo '</select>';
-		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
 		show_roles_select($this->roles, 'filterRoles()', get_label('Use only the stats of a specific role.'));
-		show_date_filter();
-		echo '<select id="min" onchange="filterNumber()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
-		$max_option = round($this->games_count / 20) * 10;
-		for ($i = 0; $i <= $max_option; $i += 10)
-		{
-			if ($i == 0)
-			{
-				show_option($i, $this->min_games, get_label('All players'));
-			}
-			else
-			{
-				show_option($i, $this->min_games, get_label('[0] or more games', $i));
-			}
-		}
-		echo '</select>';
-		show_checkbox_filter(array(get_label('rating games')), $this->filter);
+		echo '</div></div>';
 		echo '</div>';
 		
 		$query = new DbQuery(
@@ -185,7 +180,7 @@ class Page extends LeaguePageBase
 				' JOIN addresses a ON a.id = e.address_id' . 
 				' JOIN cities ct ON ct.id = a.city_id',
 			$this->condition);
-		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $this->min_games);
+		$query->add(' GROUP BY p.user_id HAVING cnt >= ?', $this->min_games);
 		
 		if ($this->sort & 2)
 		{

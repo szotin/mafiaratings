@@ -33,7 +33,7 @@ class Page extends AddressPageBase
 		}
 		else
 		{
-			$this->min_games = round($this->games_count / 100) * 10;
+			$this->min_games = (int)round($this->games_count / 100) * 10;
 			$this->min_games -= $this->min_games % 10;
 		}
 	}
@@ -96,19 +96,20 @@ class Page extends AddressPageBase
 			$sort = $_REQUEST['sort'];
 		}
 		
-		if (isset($_REQUEST['min']))
-		{
-			$min_games = $_REQUEST['min'];
-		}
-		else
-		{
-			$min_games = round($this->games_count / 100) * 10;
-			$min_games -= $min_games % 10;
-		}
 	
-		// The toolbar of the v3 design: the nomination first, it is what the list is; the filters
-		// after it, the switches on a line of their own.
+		// The toolbar of a list (see new_look.css): the place, the dates and how many games a player
+		// needs on the first line; on the second the kinds of games, and at its right end what is
+		// counted - the nomination and the role.
 		echo '<div class="toolbar">';
+		echo '<div class="tb-dates">';
+		show_date_filter();
+		echo '</div>';
+		echo '<select id="min" class="tb-end" onchange="filterChanged()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
+		echo card_min_games_options($this->min_games, $this->games_count);
+		echo '</select>';
+		echo '<div class="tb-line tb-start">';
+		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
+		echo '<div class="tb-pair">';
 		echo '<select id="nom" onchange="filterChanged()" title="' . get_label('Nomination to view.') . '">';
 		for ($i = 0; $i < count($noms); ++$i)
 		{
@@ -116,22 +117,7 @@ class Page extends AddressPageBase
 		}
 		echo '</select>';
 		show_roles_select($roles, 'filterChanged()', get_label('Use only the stats of a specific role.'));
-		echo '<select id="min" onchange="filterChanged()" title="' . get_label('Show only players who played not less than a specific number of games.') . '">';
-		$max_option = round($this->games_count / 20) * 10;
-		for ($i = 0; $i <= $max_option; $i += 10)
-		{
-			if ($i == 0)
-			{
-				show_option($i, $this->min_games, get_label('All players'));
-			}
-			else
-			{
-				show_option($i, $this->min_games, get_label('[0] or more games', $i));
-			}
-		}
-		echo '</select>';
-		show_date_filter();
-		show_checkbox_filter(array(get_label('tournament games'), get_label('rating games')), $filter, 'filterChanged');
+		echo '</div></div>';
 		echo '</div>';
 		
 		$condition = get_roles_condition($roles);
@@ -172,7 +158,7 @@ class Page extends AddressPageBase
 				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
 				' WHERE e.address_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0',
 			$this->id, $condition);
-		$query->add(' GROUP BY p.user_id HAVING cnt > ?', $min_games);
+		$query->add(' GROUP BY p.user_id HAVING cnt >= ?', $this->min_games);
 		
 		if ($sort & 2)
 		{
