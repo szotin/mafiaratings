@@ -260,15 +260,15 @@ class Page extends UserPageBase
 		usort($numbers, "compare_numbers");
 			
 		echo '<table class="bordered light" width="100%">';
-		echo '<tr class="th-long darker"><td>' . sorting_link(SORT_TYPE_BY_NUMBERS, get_label('Number')) . '</td>';
-		echo '<td width="80" align="center">' . sorting_link(SORT_TYPE_BY_GAMES, get_label('Games played')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_WIN, get_label('Wins (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_RATING, get_label('Rating (per game)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_WARNINGS, get_label('Warnings (per game)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_SHERIFF_CHECK, get_label('Checked by sheriff (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_DON_CHECK, get_label('Checked by don (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_KILLED_NIGHT, get_label('Killed at night (%)')) . '</td>';
-		echo '<td width="100" align="center">' . sorting_link(SORT_TYPE_BY_KILLED_FIRST_NIGHT, get_label('Killed first night (%)')) . '</td>';
+		echo '<tr class="th-long darker"><td width="4%">' . sorting_link(SORT_TYPE_BY_NUMBERS, get_label('Number')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_GAMES, get_label('Games played')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_WIN, get_label('Wins (%)')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_RATING, get_label('Rating (per game)')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_WARNINGS, get_label('Warnings (per game)')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_SHERIFF_CHECK, get_label('Checked by sheriff (%)')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_DON_CHECK, get_label('Checked by don (%)')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_KILLED_NIGHT, get_label('Killed at night (%)')) . '</td>';
+		echo '<td width="12%" align="center">' . sorting_link(SORT_TYPE_BY_KILLED_FIRST_NIGHT, get_label('Killed first night (%)')) . '</td>';
 		echo '</tr>';
 		
 		$sum_games = $sum_won = $sum_rating = $sum_warnings = $sum_sheriff_check = $sum_don_check = $sum_killed_first = $sum_killed_night = 0;
@@ -286,14 +286,14 @@ class Page extends UserPageBase
 			
 			echo '<tr>';
 			echo '<td>' . $number . '</td>';
-			echo '<td>' . $games . '</td>';
-			echo '<td>' . $won . ' (' . format_rating($won*100/$games) . '%)</td>';
-			echo '<td>' . format_rating($rating) . ' (' . format_rating($rating/$games) . ')</td>';
-			echo '<td>' . $warnings . ' (' . format_rating($warnings/$games) . ')</td>';
-			echo '<td>' . $sheriff_check . ' (' . format_rating($sheriff_check*100/$games) . '%)</td>';
-			echo '<td>' . $don_check . ' (' . format_rating($don_check*100/$games) . '%)</td>';
-			echo '<td>' . $killed_night . ' (' . format_rating($killed_night*100/$games) . '%)</td>';
-			echo '<td>' . $killed_first . ' (' . format_rating($killed_first*100/$games) . '%)</td>';
+			echo '<td align="center">' . $games . '</td>';
+			echo '<td align="center">' . $won . ' (' . format_rating($won*100/$games) . '%)</td>';
+			echo '<td align="center">' . format_rating($rating) . ' (' . format_rating($rating/$games) . ')</td>';
+			echo '<td align="center">' . $warnings . ' (' . format_rating($warnings/$games) . ')</td>';
+			echo '<td align="center">' . $sheriff_check . ' (' . format_rating($sheriff_check*100/$games) . '%)</td>';
+			echo '<td align="center">' . $don_check . ' (' . format_rating($don_check*100/$games) . '%)</td>';
+			echo '<td align="center">' . $killed_night . ' (' . format_rating($killed_night*100/$games) . '%)</td>';
+			echo '<td align="center">' . $killed_first . ' (' . format_rating($killed_first*100/$games) . '%)</td>';
 			echo '</tr>';
 		}
 		
@@ -301,14 +301,14 @@ class Page extends UserPageBase
 		{
 			echo '<tr class="darker">';
 			echo '<td>' . get_label('Total') . '</td>';
-			echo '<td>' . $sum_games . '</td>';
-			echo '<td>' . $sum_won . ' (' . format_rating($sum_won*100/$sum_games) . '%)</td>';
-			echo '<td>' . format_rating($sum_rating) . ' (' . format_rating($sum_rating/$sum_games) . ')</td>';
-			echo '<td>' . $sum_warnings . ' (' . format_rating($sum_warnings/$sum_games) . ')</td>';
-			echo '<td>' . $sum_sheriff_check . ' (' . format_rating($sum_sheriff_check*100/$sum_games) . '%)</td>';
-			echo '<td>' . $sum_don_check . ' (' . format_rating($sum_don_check*100/$sum_games) . '%)</td>';
-			echo '<td>' . $sum_killed_night . ' (' . format_rating($sum_killed_night*100/$sum_games) . '%)</td>';
-			echo '<td>' . $sum_killed_first . ' (' . format_rating($sum_killed_first*100/$sum_games) . '%)</td>';
+			echo '<td align="center">' . $sum_games . '</td>';
+			echo '<td align="center">' . $sum_won . ' (' . format_rating($sum_won*100/$sum_games) . '%)</td>';
+			echo '<td align="center">' . format_rating($sum_rating) . ' (' . format_rating($sum_rating/$sum_games) . ')</td>';
+			echo '<td align="center">' . $sum_warnings . ' (' . format_rating($sum_warnings/$sum_games) . ')</td>';
+			echo '<td align="center">' . $sum_sheriff_check . ' (' . format_rating($sum_sheriff_check*100/$sum_games) . '%)</td>';
+			echo '<td align="center">' . $sum_don_check . ' (' . format_rating($sum_don_check*100/$sum_games) . '%)</td>';
+			echo '<td align="center">' . $sum_killed_night . ' (' . format_rating($sum_killed_night*100/$sum_games) . '%)</td>';
+			echo '<td align="center">' . $sum_killed_first . ' (' . format_rating($sum_killed_first*100/$sum_games) . '%)</td>';
 			echo '</tr>';
 		}
 		echo '</table>';
