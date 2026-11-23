@@ -1214,6 +1214,122 @@ function _uiOnKey(e)
 //-----------------------------------------------------------
 // Timer
 //-----------------------------------------------------------
+// The two sounds of the timer - 'prompt-snd' and 'end-snd', the audio elements uiStart() makes.
+//
+// A sound always starts from its beginning. pause() leaves an audio where it was, and play()
+// goes on from there - so a sound that was cut by the next move used to come back as its own
+// tail the next time: the silence at the end of the end sound, or the bell long faded away. That
+// is why the sounds were heard at one time and not at another.
+var _sndUnlocking = {}; // the sounds that are being played silently by _sndUnlock() right now
+var _sndUnlocked = {}; // the sounds that have been played from a gesture of the user
+
+function _sndStop(id)
+{
+	let snd = document.getElementById(id);
+	if (snd)
+	{
+		snd.pause();
+		snd.currentTime = 0;
+	}
+}
+
+function _sndPlay(id, secondTry)
+{
+	let snd = document.getElementById(id);
+	if (!snd)
+	{
+		return;
+	}
+
+	// If _sndUnlock() is playing it silently, this takes the sound over.
+	_sndUnlocking[id] = false;
+	snd.muted = false;
+	snd.currentTime = 0;
+	let p = snd.play();
+	if (p && p.catch)
+	{
+		p.catch(function(error)
+		{
+			console.error('Sound ' + id + ' failed:', error);
+			// AbortError is the sound stopped before it started - the next move came. NotAllowedError
+			// is the browser wanting a gesture of the user first - see _sndUnlock(). Anything else is
+			// the sound that is not there: it was not loaded when the game was opened, or what was
+			// loaded is gone. It is loaded again, once, and not left dead until the page is reloaded.
+			if (!secondTry && error && error.name != 'AbortError' && error.name != 'NotAllowedError')
+			{
+				snd.load();
+				_sndPlay(id, true);
+			}
+		});
+	}
+}
+
+// Safari plays a sound that nobody has asked for by touching the screen only if the same audio has
+// once been played from a touch. The timer is not a touch, so on an iPad the sounds never came.
+// Here every sound is played silently from the first thing the user does on the page, and after
+// that the timer can play it.
+function _sndUnlock()
+{
+	let left = 0;
+	['prompt-snd', 'end-snd'].forEach(function(id)
+	{
+		if (_sndUnlocked[id])
+		{
+			return;
+		}
+
+		++left;
+		let snd = document.getElementById(id);
+		// A sound that is playing is left alone, and so is a sound that could not be loaded - it
+		// is _sndPlay() that loads it again, and the next gesture after that unlocks it.
+		if (!snd || _sndUnlocking[id] || !snd.paused || snd.error)
+		{
+			return;
+		}
+
+		let done = function(unlocked)
+		{
+			if (_sndUnlocking[id]) // otherwise _sndPlay() has it, and it must be heard
+			{
+				_sndUnlocking[id] = false;
+				snd.pause();
+				snd.currentTime = 0;
+				snd.muted = false;
+			}
+			if (unlocked)
+			{
+				_sndUnlocked[id] = true;
+			}
+		};
+
+		_sndUnlocking[id] = true;
+		snd.muted = true;
+		let p = snd.play();
+		if (p && p.then)
+		{
+			p.then(function() { done(true); }).catch(function() { done(false); });
+		}
+		else
+		{
+			done(true);
+		}
+	});
+
+	if (left <= 0)
+	{
+		document.removeEventListener('touchend', _sndUnlock, true);
+		document.removeEventListener('click', _sndUnlock, true);
+		document.removeEventListener('keydown', _sndUnlock, true);
+	}
+}
+
+function _sndWaitForGesture()
+{
+	document.addEventListener('touchend', _sndUnlock, true);
+	document.addEventListener('click', _sndUnlock, true);
+	document.addEventListener('keydown', _sndUnlock, true);
+}
+
 var timer = new function()
 {
 	var _start = 0;
@@ -1304,8 +1420,8 @@ var timer = new function()
 	
 	this.reset = function(total)
 	{
-		document.getElementById('prompt-snd').pause();
-		document.getElementById('end-snd').pause();
+		_sndStop('prompt-snd');
+		_sndStop('end-snd');
 		if (_start > 0)
 		{
 			$('#timerImg').attr('src', "images/resume_big.png");
@@ -1352,8 +1468,8 @@ var timer = new function()
 		}
 		if (!continueSound)
 		{
-			document.getElementById('prompt-snd').pause();
-			document.getElementById('end-snd').pause();
+			_sndStop('prompt-snd');
+			_sndStop('end-snd');
 		}
 	}
 	
@@ -1413,10 +1529,8 @@ var timer = new function()
 			let t = _max - Math.round(((new Date()).getTime() - _start) / 1000);
 			if (t <= 0)
 			{
-				document.getElementById('prompt-snd').pause();
-				document.getElementById('end-snd').play().then(() => {}).catch(error => {
-					console.error('End sound failed due to a user gesture restriction:', error);
-				});
+				_sndStop('prompt-snd');
+				_sndPlay('end-snd');
 				if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
 				{
 					_blinkCount = 12;
@@ -1430,9 +1544,7 @@ var timer = new function()
 			{
 				if (_get() > _prompt && t <= _prompt)
 				{
-					document.getElementById('prompt-snd').play().then(() => {}).catch(error => {
-						console.error('Prompt sound failed due to a user gesture restriction:', error);
-					});
+					_sndPlay('prompt-snd');
 					if ((_settingsFlags & 8/*GAME_SETTINGS_NO_BLINKING*/) == 0)
 					{
 						_blinkCount = 2;
@@ -1490,6 +1602,7 @@ function uiStart(eventId, tableNum, roundNum)
 		document.getElementById('prompt-snd').load();
 		document.getElementById('end-snd').src = data.end_sound;
 		document.getElementById('end-snd').load();
+		_sndWaitForGesture();
 		_settingsFlags = data.flags;
 	});
 }
