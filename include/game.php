@@ -477,7 +477,7 @@ class Game
 					case DEATH_TYPE_NIGHT:
 						if ($death_round == 0)
 						{
-							if ($this->set_issue($fix, 'Player ' . ($j + 1) . ' was shot in night 0. This is not possible.', ' Death round info for all players is removed.'))
+							if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' was shot in night 0. This is not possible.', ' Death round info for all players is removed.'))
 							{
 								$this->remove_flags(GAME_FEATURE_FLAG_DEATH_ROUND);
 								return false;
@@ -533,7 +533,7 @@ class Game
 								}
 								else if ($p->shooting[$death_round - 1] != $i + 1)
 								{
-									if ($this->set_issue($fix, 'Wrong shooting to player ' . ($i + 1) . ' in round ' . $death_round . ' for player ' . ($j + 1) . '. Because player ' . ($i + 1) . 'was shot in night ' . $death_round . '.', ' Shooting is set to the right value.'))
+									if ($this->set_issue($fix, 'Wrong shooting to player ' . ($i + 1) . ' in round ' . $death_round . ' for player ' . ($j + 1) . '. Because player ' . ($i + 1) . ' was shot in night ' . $death_round . '.', ' Shooting is set to the right value.'))
 									{
 										$p->shooting[$death_round - 1] = $i + 1;
 										return false;
@@ -682,7 +682,7 @@ class Game
 			
 			if (!isset($player->role) || ($player->role != 'maf' && $player->role != 'don'))
 			{
-				if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is not mafia but they were shooting .', ' Shots are removed.'))
+				if ($this->set_issue($fix, 'Player ' . ($i + 1) . ' is not mafia but they were shooting.', ' Shots are removed.'))
 				{
 					unset($player->shooting);
 					return false;
