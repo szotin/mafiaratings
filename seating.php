@@ -81,7 +81,7 @@ class Page extends GeneralPageBase
 				}
 			}
 
-			echo '<p><center><h2>' . get_label('Game [0]', $j + 1) . '</h2></center></p>';
+			echo '<p><center><h2>' . get_label('Game [0]~seating', $j + 1) . '</h2></center></p>';
 			echo '<table class="bordered light" width="100%">';
 			echo '<tr class="dark"><td width="8%"></td>';
 			for ($k = 0; $k < 10; $k++)
@@ -162,7 +162,7 @@ class Page extends GeneralPageBase
 				{
 					continue;
 				}
-				echo '<tr><td align="center" class="dark"><b>' . get_label('Game [0]', $j + 1) . '</b></td>';
+				echo '<tr><td align="center" class="dark"><b>' . get_label('Game [0]~seating', $j + 1) . '</b></td>';
 				$game = $this->tables[$i][$j];
 				for ($k = 0; $k < 10; $k++)
 				{
@@ -623,7 +623,7 @@ class Page extends GeneralPageBase
 		$hlt_param = $hlt >= 0 ? ', hlt:' . $hlt : '';
 
 		echo '<div class="tab">';
-		echo '<button' . ($view == VIEW_BY_GAME       ? ' class="active"' : '') . ' onclick="goTo({view:' . VIEW_BY_GAME       . $hlt_param . '})">' . get_label('By game')          . '</button>';
+		echo '<button' . ($view == VIEW_BY_GAME       ? ' class="active"' : '') . ' onclick="goTo({view:' . VIEW_BY_GAME       . $hlt_param . '})">' . get_label('By game~seating')          . '</button>';
 		echo '<button' . ($view == VIEW_BY_TABLE      ? ' class="active"' : '') . ' onclick="goTo({view:' . VIEW_BY_TABLE      . $hlt_param . '})">' . get_label('By table')         . '</button>';
 		echo '<button' . ($view == VIEW_TABLE_STATS   ? ' class="active"' : '') . ' onclick="goTo({view:' . VIEW_TABLE_STATS   . $hlt_param . '})">' . get_label('By table stats')   . '</button>';
 		echo '<button' . ($view == VIEW_PVP_STATS     ? ' class="active"' : '') . ' onclick="goTo({view:' . VIEW_PVP_STATS     . $hlt_param . '})">' . get_label('PvP stats')        . '</button>';

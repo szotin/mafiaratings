@@ -29,7 +29,7 @@ class Page extends ClubPageBase
 		echo '<div class="toolbar">' . card_search_field($search, get_label('Game day, tournament or club'));
 		if ($can_create)
 		{
-			echo '<a class="btn" href="#" onclick="mr.createEvent(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('event')) . '</span></a>';
+			echo '<a class="btn" href="create.php?bck=1&type=event&owner=c' . $this->id . '">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('event')) . '</span></a>';
 		}
 		echo '</div>';
 		

@@ -23,6 +23,15 @@ try
 	Names::show_control(new Names(0, get_label('club name')));
 	echo '</td></tr>';
 
+	// The logo, as in form/tournament_create.php: there is no club to give it to yet, so it is only
+	// chosen here - and shown - and is uploaded by commit() once the club is made. The picture is the
+	// button that chooses it.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
+	echo '<input type="file" id="form-logo" accept="image/*" style="display:none" onchange="logoChosen()">';
+	echo '<button type="button" class="upload" onclick="$(\'#form-logo\').trigger(\'click\');">';
+	echo '<img id="form-logo-img" src="images/' . ICONS_DIR . 'club.png" width="56" height="56"></button>';
+	echo '</td></tr>';
+
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', COUNTRY_DETECT, 'form-city');
 	echo '</td></tr>';
@@ -39,7 +48,7 @@ try
 
 	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
 	echo '<select id="form-parent">';
-	show_option(0, $profile->user_club_id, '');
+	show_option(0, 0, '');
 	$query = new DbQuery(
 		'SELECT c.id, nc.name'.
 		' FROM clubs c'.
@@ -49,7 +58,7 @@ try
 	while ($row = $query->next())
 	{
 		list($c_id, $c_name) = $row;
-		show_option((int)$c_id, $profile->user_club_id, $c_name);
+		show_option((int)$c_id, 0, $c_name);
 	}
 	echo '</select>';
 	echo '</td></tr>';
@@ -87,7 +96,38 @@ try
 			, system_league_id: $("#form-system").val()
 		};
 		nameControl.fillRequest(request);
-		json.post("api/ops/club.php", request, onSuccess);
+		json.post("api/ops/club.php", request, function(obj)
+		{
+			// The club is made whatever happens to its logo: a logo that fails to upload is said, and
+			// can be changed on the first tab of its management.
+			var logo = document.getElementById('form-logo').files[0];
+			if (!logo)
+			{
+				onSuccess(obj);
+				return;
+			}
+			json.upload('api/ops/club.php',
+			{
+				op: "change"
+				, club_id: obj.club_id
+				, logo: logo
+			},
+			<?php echo UPLOAD_LOGO_MAX_SIZE; ?>,
+			function() { onSuccess(obj); },
+			function(message) { dlg.error(message, null, null, function() { onSuccess(obj); }); return true; });
+		});
+	}
+
+	function logoChosen()
+	{
+		var file = document.getElementById('form-logo').files[0];
+		if (file && window.URL)
+		{
+			var url = URL.createObjectURL(file);
+			$('#form-logo-img').attr('src', url);
+			// The summary beside the form shows it too, where there is one - see create.php.
+			$('#wz-sum-logo-img').attr('src', url);
+		}
 	}
 	</script>
 <?php

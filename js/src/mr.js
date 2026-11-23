@@ -472,7 +472,7 @@ var mr = new function()
 			dlg.form(url, function(obj)
 			{
 				if (!now && isSet(obj.mailing))
-					dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 500, refr);
+					dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 640, refr);
 				else
 					refr();
 			});
@@ -490,7 +490,7 @@ var mr = new function()
 	{
 		json.post("api/ops/event.php", { op: "restore", event_id: id }, function(obj)
 		{
-			dlg.form("form/event_mailing_create.php?events=" + id + '&type=4', refr, 500, refr);
+			dlg.form("form/event_mailing_create.php?events=" + id + '&type=4', refr, 640, refr);
 		});
 	}
 
@@ -505,7 +505,7 @@ var mr = new function()
 		{
 			if (isSet(obj.mailing))
 			{
-				dlg.form("form/event_mailing_create.php?events=" + id + '&type=' + obj.mailing, refr, 500, refr);
+				dlg.form("form/event_mailing_create.php?events=" + id + '&type=' + obj.mailing, refr, 640, refr);
 			}
 			else
 			{
@@ -519,14 +519,14 @@ var mr = new function()
 		var url = "form/event_mailing_create.php?events=" + events;
 		if (isNumber(mailingType))
 		{
-			url += mailingType;
+			url += '&type=' + mailingType;
 		}
-		dlg.form(url, refr, 500, refr);
+		dlg.form(url, refr, 640, refr);
 	}
 	
 	this.editEventMailing = function(mailingId)
 	{
-		dlg.form('form/event_mailing_edit.php?mailing_id=' + mailingId, refr, 500);
+		dlg.form('form/event_mailing_edit.php?mailing_id=' + mailingId, refr, 640);
 	}
 	
 	this.deleteEventMailing = function(mailingId)

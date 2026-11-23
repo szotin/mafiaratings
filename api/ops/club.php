@@ -159,6 +159,10 @@ class ApiPage extends OpsApiPageBase
 				$_profile->user_club_id = $club_id;
 			}
 		}
+		notify_admins('create_club', array(
+			'club_name' => new Tag($names->names[0]->name),
+			'club_id' => new Tag($club_id),
+			'city_name' => new Tag($city_name)));
 		$_profile->update_clubs();
 		Db::commit();
 		
@@ -167,7 +171,7 @@ class ApiPage extends OpsApiPageBase
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_USER, 'Create club. If user is admin, club is just created. If not, club request is created and email is sent to admin. Admin has to accept it.');
+		$help = new ApiHelp(PERMISSION_USER, 'Create club. Anyone can: the club is created at once, the user who creates it becomes its manager, and the administrators are notified by email.');
 		$help->request_param('parent_id', 'Id of the parent club. 0 or negative for creating top level club.', 'top level club is created');
 		$help->request_param('system_league_id', 'The system of the club: the league whose defaults the club starts from - its rules (the default rules of the site, or of the parent club, put through the rules filter of the league) and copies of its default scoring system, normalizer and gaining system. The club keeps it as its system.', 'a sub-club starts from the defaults of its parent club, any other club from the defaults of the site.');
 		$help->request_param('rules_code', 'Default rules of the club.', 'the default rules of the site are used. Ignored for a sub-club, which starts from the rules of its parent.');

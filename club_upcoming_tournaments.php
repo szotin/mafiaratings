@@ -27,7 +27,7 @@ class Page extends ClubPageBase
 		if ($is_manager)
 		{
 			echo '<div class="toolbar"><div class="tb-line tb-start">';
-			echo '<a class="btn tb-create" href="#" onclick="mr.createTournament(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('tournament')) . '</span></a>';
+			echo '<a class="btn tb-create" href="create.php?bck=1&type=tournament&owner=c' . $this->id . '">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('tournament')) . '</span></a>';
 			echo '</div></div>';
 		}
 		show_pages_navigation($page_size, $count);

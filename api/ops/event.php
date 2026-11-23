@@ -3302,6 +3302,8 @@ class ApiPage extends OpsApiPageBase
 		// 1-based, the way the dialog and the seating pages number the tables.
 		$table1 = (int)get_required_param('table1');
 		$table2 = (int)get_required_param('table2');
+		// 0 - in every game; otherwise the one game, numbered from 1, the tables are swapped in.
+		$game = (int)get_optional_param('game', 0);
 
 		Db::begin();
 		list($club_id, $tournament_id, $misc_str) = Db::record(get_label('event'),
@@ -3322,17 +3324,35 @@ class ApiPage extends OpsApiPageBase
 			throw new Exc(get_label('Tables must be different.'));
 		}
 
-		// Both tables have to be there in every game. A few seatings do not run the same number
-		// of tables throughout, and swapping a table into games that do not have it would leave
-		// the seating a different shape than its hash says.
+		// A few seatings do not run the same number of tables throughout - the last game of two
+		// tables played on one, say. The tables are swapped in the games that have both of them;
+		// a game that has only one keeps it where it is, since a table cannot be moved into a
+		// game without leaving a hole in front of it. Each table has to be in some game, though.
+		$max_count = 0;
 		foreach ($misc->seating->rounds as $round)
 		{
+			$max_count = max($max_count, is_array($round) ? count($round) : 0);
+		}
+		foreach (array($table1, $table2) as $t)
+		{
+			if ($t < 1 || $t > $max_count)
+			{
+				throw new Exc(get_label('Unknown [0]', get_label('Table [0]', $t)));
+			}
+		}
+		if ($game != 0)
+		{
+			if ($game < 1 || $game > count($misc->seating->rounds))
+			{
+				throw new Exc(get_label('Game [0] is not in this seating.', $game));
+			}
+			$round = $misc->seating->rounds[$game - 1];
 			$count = is_array($round) ? count($round) : 0;
 			foreach (array($table1, $table2) as $t)
 			{
-				if ($t < 1 || $t > $count)
+				if ($t > $count)
 				{
-					throw new Exc(get_label('Table [0] is not in every game of this seating.', $t));
+					throw new Exc(get_label('There is no table [0] in game [1].', $t, $game));
 				}
 			}
 		}
@@ -3341,8 +3361,14 @@ class ApiPage extends OpsApiPageBase
 		// each on the same seat number, so who meets whom and how often is untouched. Even the
 		// tables score is the same, since it measures how evenly a player is spread over the
 		// tables and that is symmetric in them. What changes is which table a group is called to.
+		// Done in one game, who meets whom and the seat numbers are still untouched; only how
+		// evenly the players are spread over the tables may change.
 		foreach ($misc->seating->rounds as $i => $round)
 		{
+			if (($game != 0 && $i != $game - 1) || !is_array($round) || count($round) < max($table1, $table2))
+			{
+				continue;
+			}
 			$tmp = $misc->seating->rounds[$i][$table1 - 1];
 			$misc->seating->rounds[$i][$table1 - 1] = $misc->seating->rounds[$i][$table2 - 1];
 			$misc->seating->rounds[$i][$table2 - 1] = $tmp;
@@ -3360,10 +3386,11 @@ class ApiPage extends OpsApiPageBase
 	function swap_seating_tables_op_help()
 	{
 		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER,
-			'Swap two tables of a round\'s seating, in every game. Who sits with whom and on which seat is unaffected; only the table a group is called to changes.');
+			'Swap two tables of a round\'s seating, in every game that has both of them. Who sits with whom and on which seat is unaffected; only the table a group is called to changes.');
 		$help->request_param('event_id', 'The event (round) id.');
 		$help->request_param('table1', 'First table, numbered from 1.');
 		$help->request_param('table2', 'Second table, numbered from 1.');
+		$help->request_param('game', 'Swap them in this game only, numbered from 1. 0 or missing swaps them in every game that has both of them.', 'every game.');
 		return $help;
 	}
 

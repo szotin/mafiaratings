@@ -1,6 +1,7 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/currency.php';
 require_once '../include/club.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
@@ -38,18 +39,16 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140" valign="top">' . get_label('Club name') . ':</td><td>';
 	Names::show_control(new Names($name_id, get_label('club name')));
-	echo '</td>';
-	
-	echo '<td align="center" valign="top" rowspan="10">';
+	echo '</td></tr>';
+
+	// The logo is a row like the rest: the picture is the button that changes it.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
 	start_upload_logo_button($id);
-	echo get_label('Change logo') . '<br>';
 	$club_pic = new Picture(CLUB_PICTURE);
 	$club_pic->set($id, $club->name, $flags);
 	$club_pic->show(ICONS_DIR, false);
 	end_upload_logo_button(CLUB_PIC_CODE, $id);
-	echo '</td>';
-	
-	echo '</tr>';
+	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', $club->country, 'form-city');
@@ -92,17 +91,7 @@ try
 	echo '<tr><td>'.get_label('Contact email').':</td><td><input class="longest" id="form-email" value="' . htmlspecialchars($email, ENT_QUOTES) . '"></td></tr>';
 	echo '<tr><td>'.get_label('Contact phone(s)').':</td><td><input class="longest" id="form-phone" value="' . htmlspecialchars($phone, ENT_QUOTES) . '"></td></tr>';
 
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
-	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"' . (is_null($fee)?' checked':'') .'> '.get_label('unknown');
-	echo ' <select id="form-currency" onChange="currencyChanged()">';
-	show_option(0, $currency_id, '');
-	while ($row = $query->next())
-	{
-		list($cid, $cname) = $row;
-		show_option((int)$cid, $currency_id, $cname);
-	}
-	echo '</select></td></tr>';
+	show_fee_row(get_label('Admission rate'), $fee, $currency_id);
 
 	echo '</table>';
 	

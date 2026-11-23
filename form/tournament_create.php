@@ -1,6 +1,7 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/currency.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/tournament.php';
@@ -27,6 +28,14 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160" valign="top">' . get_label('Tournament name') . ':</td><td>';
 	Names::show_control(new Names(0, get_label('tournament name'), NULL, 0, NULL, 'name', false));
+	echo '</td></tr>';
+
+	// The logo: there is no tournament to give it to yet, so it is only chosen here - and shown - and
+	// is uploaded by commit() once the tournament is made. The picture is the button that chooses it.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
+	echo '<input type="file" id="form-logo" accept="image/*" style="display:none" onchange="logoChosen()">';
+	echo '<button type="button" class="upload" onclick="$(\'#form-logo\').trigger(\'click\');">';
+	echo '<img id="form-logo-img" src="images/' . ICONS_DIR . 'tournament.png" width="56" height="56"></button>';
 	echo '</td></tr>';
 	
 
@@ -92,17 +101,7 @@ try
 	echo '</td></tr>';
 	
 
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="" onchange="feeChanged()">';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
-	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()" checked> '.get_label('unknown');
-	echo ' <select id="form-currency" onChange="currencyChanged()">';
-	show_option(0, $club->currency_id, '');
-	while ($row = $query->next())
-	{
-		list($cid, $cname) = $row;
-		show_option((int)$cid, $club->currency_id, $cname);
-	}
-	echo '</select></td></tr>';
+	show_fee_row(get_label('Admission rate'), NULL, $club->currency_id);
 	
 	// The rules, the scoring and the awards are set on the Rules tab of the preparation page,
 	// and the number of players on its Scheme. A new tournament starts with the club's rules
@@ -129,7 +128,6 @@ try
 	// more than EVENT_MAX_DURATION - see defaultLongTerm() below - and why it is the first thing
 	// here: everything else about the tournament follows from it.
 	echo '<input type="checkbox" id="form-long_term" onclick="longTermClick()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
-	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	if (is_permitted(PERMISSION_ADMIN))
 	{
 		echo '<input type="checkbox" id="form-pin"> ' . get_label('pin to the main page.') . '<br>';
@@ -161,7 +159,7 @@ try
 		},
 		function(series)
 		{
-			var html = '<table class="dialog_form" width="100%"><tr>';
+			var html = '<table class="dialog_form" width="100%">';
 			var sl = new Object();
 			for (i = 0; i < series.series.length; ++i)
 			{
@@ -358,6 +356,18 @@ try
 		}
 	}
 	
+	function logoChosen()
+	{
+		var file = document.getElementById('form-logo').files[0];
+		if (file && window.URL)
+		{
+			var url = URL.createObjectURL(file);
+			$('#form-logo-img').attr('src', url);
+			// The summary beside the form shows it too, where there is one - see create.php.
+			$('#wz-sum-logo-img').attr('src', url);
+		}
+	}
+
 	function commit(onSuccess)
 	{
 		var _langs = mr.getLangs('form-');
@@ -367,7 +377,6 @@ try
 		// black, its games streamed, the roles shown in the stream, and anybody may register.
 		var _flags = <?php echo TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK | TOURNAMENT_FLAG_STREAMING; ?>;
 		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
-		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		
@@ -418,7 +427,26 @@ try
 		}
 	
 		nameControl.fillRequest(params);
-		json.post("api/ops/tournament.php", params, onSuccess);
+		json.post("api/ops/tournament.php", params, function(obj)
+		{
+			// The tournament is made whatever happens to its logo: a logo that fails to upload is
+			// said, and can be changed on the first tab of its preparation.
+			var logo = document.getElementById('form-logo').files[0];
+			if (!logo)
+			{
+				onSuccess(obj);
+				return;
+			}
+			json.upload('api/ops/tournament.php',
+			{
+				op: "change"
+				, tournament_id: obj.tournament_id
+				, logo: logo
+			},
+			<?php echo UPLOAD_LOGO_MAX_SIZE; ?>,
+			function() { onSuccess(obj); },
+			function(message) { dlg.error(message, null, null, function() { onSuccess(obj); }); return true; });
+		});
 	}
 	
 	</script>

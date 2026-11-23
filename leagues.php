@@ -68,7 +68,7 @@ class Page extends GeneralPageBase
 		{
 			return '';
 		}
-		return '<a class="btn" href="#" onclick="mr.createLeague(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create league') . '</span></a>';
+		return '<a class="btn" href="create.php?bck=1&type=league">' . PageBase::icon('plus') . '<span>' . get_label('Create league') . '</span></a>';
 	}
 
 	protected function show_body()

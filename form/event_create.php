@@ -1,6 +1,7 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/currency.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/event.php';
@@ -35,6 +36,14 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="160" valign="top">'.get_label('Event name').':</td><td>';
 	Names::show_control(new Names(0, get_label('event name'), NULL, 0, NULL, 'name', false));
+	echo '</td></tr>';
+
+	// The logo, as in form/tournament_create.php: only chosen here, and uploaded by commit() once
+	// the event is made - to each of them, when it is weekly.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
+	echo '<input type="file" id="form-logo" accept="image/*" style="display:none" onchange="logoChosen()">';
+	echo '<button type="button" class="upload" onclick="$(\'#form-logo\').trigger(\'click\');">';
+	echo '<img id="form-logo-img" src="images/' . ICONS_DIR . 'event.png" width="56" height="56"></button>';
 	echo '</td></tr>';
 	
 	$tournaments = array();
@@ -108,17 +117,7 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</span></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($club->fee)?'':$club->fee).'" onchange="feeChanged()">';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
-	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"'.(is_null($club->fee)?' checked':'').'> '.get_label('unknown');
-	echo ' <select id="form-currency" onChange="currencyChanged()">';
-	show_option(0, $club->currency_id, '');
-	while ($row = $query->next())
-	{
-		list($cid, $cname) = $row;
-		show_option((int)$cid, $club->currency_id, $cname);
-	}
-	echo '</select></td></tr>';
+	show_fee_row(get_label('Admission rate'), $club->fee, $club->currency_id);
 	
 	// The rules, the scoring and the special awards are set on the Rules tab of the preparation
 	// page. A new event starts with the club's rules and scoring, and with MVP, best red and best
@@ -427,7 +426,43 @@ try
 		{
 			params['start'] = $('#form-date').val() + 'T' + $('#form-time').val();;
 		}
-		json.post("api/ops/event.php", params, onSuccess);
+		json.post("api/ops/event.php", params, function(obj)
+		{
+			// The event is made whatever happens to its logo: a logo that fails to upload is said,
+			// and can be changed on the first tab of its preparation.
+			var logo = document.getElementById('form-logo').files[0];
+			var events = logo ? obj.events.slice() : [];
+			var uploadNext = function()
+			{
+				if (events.length == 0)
+				{
+					onSuccess(obj);
+					return;
+				}
+				json.upload('api/ops/event.php',
+				{
+					op: "change"
+					, event_id: events.shift()
+					, logo: logo
+				},
+				<?php echo UPLOAD_LOGO_MAX_SIZE; ?>,
+				uploadNext,
+				function(message) { dlg.error(message, null, null, function() { onSuccess(obj); }); return true; });
+			};
+			uploadNext();
+		});
+	}
+
+	function logoChosen()
+	{
+		var file = document.getElementById('form-logo').files[0];
+		if (file && window.URL)
+		{
+			var url = URL.createObjectURL(file);
+			$('#form-logo-img').attr('src', url);
+			// The summary beside the form shows it too, where there is one - see create.php.
+			$('#wz-sum-logo-img').attr('src', url);
+		}
 	}
 	
 	function checkDuration()

@@ -1095,6 +1095,10 @@ class SeriesPageBase extends PageBase
 
 		$h = new EntityHeader($this->name, get_label('Series'), 'series.php');
 		$h->off = ($this->flags & SERIES_FLAG_CANCELED) != 0;
+		if ($is_manager && !$this->owner->is_closed())
+		{
+			$h->prep = new MenuItem('series_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Getting [0] ready.', $this->name));
+		}
 
 		$series_pic = new Picture(SERIES_PICTURE);
 		$series_pic->set($this->id, $this->name, $this->flags);

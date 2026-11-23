@@ -201,4 +201,31 @@ function send_notification($email, $body, $text_body, $subject, $user_id, $user_
 	Db::add_commiter(new EmailCommiter($email, $body, $text_body, $subject, $unsubs_url, $user_lang));
 }
 
+// Tells the administrators who want to be told (USER_FLAG_ADMIN_NOTIFY) that something was made - a
+// club, a league. Nothing waits for them: it is made already, and the email is only news. Whoever made
+// it is not told about it, administrator or not. $template is the name of a file in
+// include/languages/<lang>/email/ returning array(subject, html, text); $tags are put into it along
+// with root, user_id and user_name of the administrator, and sender - whoever made it.
+function notify_admins($template, $tags)
+{
+	global $_profile;
+
+	$query = new DbQuery(
+		'SELECT u.id, nu.name, u.email, u.def_lang'.
+		' FROM users u'.
+		' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
+		' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 AND u.email <> \'\' AND (u.flags & ' . USER_FLAG_ADMIN_NOTIFY . ') <> 0 AND u.id <> ?', $_profile->user_id);
+	while ($row = $query->next())
+	{
+		list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
+		list($subj, $body, $text_body) = include __DIR__ . '/languages/' . get_lang_code($admin_def_lang) . '/email/' . $template . '.php';
+		$all = $tags;
+		$all['root'] = new Tag(get_server_url());
+		$all['user_id'] = new Tag($admin_id);
+		$all['user_name'] = new Tag($admin_name);
+		$all['sender'] = new Tag($_profile->user_name);
+		send_email($admin_email, parse_tags($body, $all), parse_tags($text_body, $all), $subj, admin_unsubscribe_url($admin_id), $admin_def_lang);
+	}
+}
+
 ?>

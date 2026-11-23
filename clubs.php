@@ -27,7 +27,7 @@ class Page extends GeneralPageBase
 		{
 			return '';
 		}
-		return '<a class="btn" href="#" onclick="mr.createClub(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('club')) . '</span></a>';
+		return '<a class="btn" href="create.php?bck=1&type=club">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('club')) . '</span></a>';
 	}
 	
 	protected function show_body()

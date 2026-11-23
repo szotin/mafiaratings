@@ -222,7 +222,6 @@ class TournamentPageBase extends PageBase
 		{
 			$manager_menu = array
 			(
-				new MenuItem('tournament_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Tournament preparation.')),
 				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
 				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
 				new MenuItem(null, null, null),
@@ -241,6 +240,11 @@ class TournamentPageBase extends PageBase
 
 		$h = new EntityHeader($this->name, get_label('Tournaments'), 'tournaments.php');
 		$h->off = ($this->flags & TOURNAMENT_FLAG_CANCELED) != 0;
+		if ($this->is_manager)
+		{
+			// First in its menu "≡" rather than one of the pages under it.
+			$h->prep = new MenuItem('tournament_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Tournament preparation.'));
+		}
 
 		// The picture of a tournament as on the cards of the main page: its logo whole, over a blurred
 		// copy of itself; or its initials with the logo of the club.

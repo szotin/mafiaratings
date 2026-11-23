@@ -27,7 +27,7 @@ class Page extends LeaguePageBase
 		// The button that makes a new series stands in the toolbar, as in the other lists of the look.
 		if ($is_manager)
 		{
-			echo '<div class="toolbar"><a class="btn tb-create" href="#" onclick="mr.createSeries(' . $this->id . '); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('sеriеs')) . '</span></a></div>';
+			echo '<div class="toolbar"><a class="btn tb-create" href="create.php?bck=1&type=series&owner=l' . $this->id . '">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('sеriеs')) . '</span></a></div>';
 		}
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*) FROM series s WHERE ', $condition);

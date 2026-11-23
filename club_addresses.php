@@ -27,7 +27,7 @@ class Page extends ClubPageBase
 			++$addr_count;
 			echo '<tr><td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
 			echo '<table class="transp" width="100%">';
-			echo '<tr><td align="center"><a href="#" onclick="mr.createAddr(' . $this->id . ')">' . get_label('Create [0]', get_label('address'));
+			echo '<tr><td align="center"><a href="create.php?bck=1&type=address&owner=c' . $this->id . '">' . get_label('Create [0]', get_label('address'));
 			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" height="' . ICON_HEIGHT . '">';
 			echo '</td></tr></table>';
 			echo '</td>';

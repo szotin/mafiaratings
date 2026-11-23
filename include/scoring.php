@@ -758,7 +758,7 @@ function show_scoring_select($club_id, $scoring_id, $scoring_version, $normalize
 			{
 				$options_weight = $options->weight;
 			}
-			echo $options_separator . get_label('Points weight') . ': <input type="number" style="width: 40px;" step="0.1" min="0.1" id="' . $name . '-weight" value="' . $options_weight . '" onchange="optionChanged()">';
+			echo $options_separator . get_label('Points weight') . ': <input type="number" style="width: 90px;" step="0.1" min="0.1" id="' . $name . '-weight" value="' . $options_weight . '" onchange="optionChanged()">';
 		}
 		if (($flags & SCORING_SELECT_FLAG_NO_FLAGS_OPTION) == 0)
 		{

@@ -191,6 +191,10 @@ class ClubPageBase extends PageBase
 
 		$h = new EntityHeader($this->name, get_label('Clubs'), 'clubs.php');
 		$h->off = ($this->flags & CLUB_FLAG_CLOSED) != 0;
+		if ($this->is_manager && !$h->off)
+		{
+			$h->prep = new MenuItem('club_management.php?id=' . $this->id, get_label('Management'), get_label('Manage [0].', $this->name));
+		}
 
 		$this->club_pic->set($this->id, $this->name, $this->flags);
 		$h->art = PageBase::capture(function() { $this->club_pic->show(TNAILS_DIR, false); });

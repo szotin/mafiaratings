@@ -163,12 +163,15 @@ a:hover { color: var(--red); }
   box-shadow: 0 8px 18px -8px var(--red-glow); white-space: nowrap; }
 .btn-create:hover { background: var(--red-hi); color: #fff; }
 .btn-create .ic { width: 16px; height: 16px; fill: currentColor; stroke: none; }
-@media (max-width: 1279px) { .btn-create span { display: none; } .btn-create { width: 38px; padding: 0; } }
 @media (max-width: 359px) { .hd .btn-create { display: none; } }
 
 .lang { display: inline-flex; padding: 3px; gap: 2px; background: var(--night); border: 1px solid var(--night); border-radius: 999px; }
 .hd .lang { display: none; }
 @media (min-width: 760px) { .hd .lang { display: inline-flex; } }
+/* the languages in the menu of the avatar - a user's header has no room for them in its row */
+.hd .menu-lang { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--rule); margin-bottom: 6px; }
+.hd .menu-lang > span { font-size: 13.5px; color: var(--slate); }
+.hd .menu-lang .lang { display: inline-flex; }
 .lang button { min-width: 34px; height: 30px; padding: 0 8px; border: 0; border-radius: 999px; background: none; cursor: pointer;
   font: 600 13px var(--font); color: var(--night-dim); }
 .lang button:hover { color: #fff; }
@@ -243,16 +246,10 @@ a:hover { color: var(--red); }
 .search-btn span { display: none; }
 .search-btn kbd { display: none; margin-left: auto; padding: 2px 6px; border: 1px solid var(--rule-strong); border-radius: 5px; background: var(--paper); font: 600 11px/1 var(--font); color: var(--slate); }
 @media (min-width: 760px) { .search-btn { padding: 0 12px 0 12px; } .search-btn span { display: inline; } }
-@media (min-width: 1280px) { .search-btn { min-width: 190px; } .search-btn kbd { display: inline; } }
-
-/* the header has to fit its row at any width: once the menu is in it, the search and the Play
-   button lose their words until there is room for them, and the menu items close up */
-@media (min-width: 1080px) and (max-width: 1439px) {
-  .search-btn { min-width: 0; width: 38px; padding: 0; justify-content: center; }
-  .search-btn span, .search-btn kbd { display: none; }
-  .btn-create span { display: none; }
-  .btn-create { width: 38px; padding: 0; }
-}
+/* with the menu in the row the search is a field, as in the design - its word, its key - and the buttons
+   keep their words; they lose them only when the row really does not hold them (is-snug, see fitHeader()
+   in new_look.js), and the menu items close up first */
+@media (min-width: 1080px) { .search-btn { min-width: 190px; } .search-btn kbd { display: inline; } }
 @media (min-width: 1080px) and (max-width: 1279px) {
   .hd .wrap { gap: 12px; }
   .nav > a, .nav > .nav-more > button { padding: 0 8px; font-size: 14px; letter-spacing: .04em; }
@@ -1185,6 +1182,13 @@ td[data-pick] { cursor: pointer; }
 button.upload { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; min-width: 110px; padding: 10px 12px; vertical-align: top;
   border: 1px solid var(--rule-strong); border-radius: 12px; background: var(--paper); color: var(--ink); font: 500 13px/1.25 var(--font); cursor: pointer; }
 button.upload:hover { background: var(--frost); border-color: var(--mist); }
+/* a picture with no words on it - the logo row of a form - is as wide as the picture */
+button.upload:not(:has(br)) { min-width: 0; padding: 8px; }
+/* the buttons over a seating (include/preparation.php): what is done to it as a whole on the left,
+   rearranging it on the right, in one line - a size smaller, so that four of them fit the card */
+.nl .seat-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 4px; }
+.nl .seat-bar > div { display: flex; flex-wrap: wrap; gap: 8px; margin-right: auto; }
+.nl .seat-bar button:not([class]) { min-height: 32px; padding: 0 10px; font-size: 13px; }
 button.upload img { width: 56px !important; height: 56px !important; border-radius: 8px; object-fit: cover; }
 .ui-dialog table.dialog_form td:has(> button.upload) { padding-left: 12px; }
 
@@ -1390,6 +1394,10 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 .ui-dialog .ui-tabs .ui-tabs-nav li { margin-right: 0; }
 
 .ui-menu { padding: 6px; border-radius: 12px; border: 1px solid var(--rule); box-shadow: 0 18px 40px -18px rgba(19, 35, 58, 0.35); }
+/* every menu of jQuery UI, not only the hints under a field - the menu of the languages of a name
+   (NameControl, js/src/mr.js), say: the paper of the page rather than the gray of the old theme */
+.ui-menu.ui-widget-content { background: var(--paper); background-image: none; color: var(--ink); font: 500 14px var(--font); }
+.ui-menu.ui-widget-content a, .ui-menu.ui-widget-content a:link, .ui-menu.ui-widget-content a:visited { color: var(--ink); text-decoration: none; }
 .ui-menu .ui-menu-item { border-radius: 8px; }
 /* the names of something in several languages (NameControl, js/src/mr.js): a row for each, with
    room between them, the language beside its field */
@@ -1603,3 +1611,155 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 /* the line under the heading of a list - how many there are */
 .mast .page-hd h1 + p { margin: 8px 0 0; max-width: 62ch; font-size: 15px; line-height: 1.6; }
 .mast .page-hd h1 + p b { color: #fff; }
+
+/* "Create" in the header, beside "Play": the same pill, quieter - the light blue of the search */
+.btn-new { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 14px 0 11px; border-radius: 999px;
+  background: var(--sky); border: 1px solid transparent; color: var(--ink); font-family: var(--font-display); text-transform: uppercase;
+  letter-spacing: .05em; font-weight: 500; font-size: 14.5px; white-space: nowrap; }
+.btn-new:hover { border-color: var(--rule-strong); color: var(--red); }
+.btn-new .ic { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.hd.is-snug .btn-new span { display: none; }
+.hd.is-snug .btn-new { width: 38px; padding: 0; }
+@media (max-width: 479px) { .hd .btn-new { display: none; } }
+.drawer-create.ghost .ic { fill: none; stroke: currentColor; stroke-width: 2.4; }
+
+/* create.php: what can be made, a tile each - its icon, its name, a line of what it is */
+.create-types { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.create-type { display: flex; align-items: flex-start; gap: 14px; padding: 18px; border-radius: 16px; background: var(--paper); color: var(--ink);
+  border: 1px solid rgba(11,20,34,.06); box-shadow: var(--shadow-card); transition: transform .18s, box-shadow .18s; }
+.create-type:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); color: var(--ink); }
+.create-type .ct-ic { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--red-soft); color: var(--red); }
+.create-type .ct-ic .ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.create-type .ct-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.create-type .ct-text b { font-size: 17px; }
+.create-type:hover .ct-text b { color: var(--red); }
+.create-type .ct-text span { color: var(--slate); font-size: 14px; line-height: 1.45; }
+
+/* the pages that create, prepare or manage a thing, as one step-by-step card (include/details_tab.php):
+   the steps as numbered pills over a bar of how far along, the step, Back and Next on a bar at the
+   foot; the summary beside it, kept in view */
+.wz { display: grid; gap: 24px; }
+@media (min-width: 1080px) { .wz { grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; } }
+.wz-main { min-width: 0; background: var(--paper); border-radius: 20px; border: 1px solid rgba(11,20,34,.06); box-shadow: var(--shadow-card); }
+.wz-form { padding: 6px 18px 24px; }
+@media (min-width: 640px) { .wz-form { padding: 8px 32px 30px; } }
+.wz-stepper { padding: 16px 18px 0; }
+@media (min-width: 640px) { .wz-stepper { padding: 20px 32px 0; } }
+.wz-stepper ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.wz-stepper li > * { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px 6px 6px; border: 0; border-radius: 999px; background: none;
+  font: 600 13.5px var(--font); color: var(--slate); white-space: nowrap; }
+.wz-stepper li > button { cursor: pointer; }
+.wz-stepper li > button:disabled { cursor: default; opacity: 1; }
+.wz-stepper li:not(.cur) > button:hover { background: var(--frost); color: var(--ink); }
+.wz-stepper li > [aria-disabled] { opacity: .55; }
+.wz-stepper .n { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--frost); box-shadow: inset 0 0 0 1px var(--rule); font-size: 12px; }
+.wz-stepper li.cur > * { background: var(--night); color: #fff; }
+.wz-stepper li.cur .n { background: var(--red); color: #fff; box-shadow: none; }
+.wz-stepper li.done .n { background: var(--up-soft); color: var(--up); box-shadow: none; }
+@media (max-width: 639px) { .wz-stepper ol { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .wz-stepper li:not(.cur) .t { display: none; } }
+.wz-progress { height: 4px; margin-top: 14px; border-radius: 999px; background: var(--frost); overflow: hidden; }
+.wz-progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--red), var(--red-hi)); border-radius: inherit; }
+.nl .wz-count { margin: 8px 0 0; font-size: 12.5px; color: var(--slate); }
+.wz-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--rule); background: #FBFCFE; border-radius: 0 0 20px 20px; }
+@media (min-width: 640px) { .wz-nav { padding: 16px 32px; } }
+/* Back and Next - on the bar, and in the rows some tabs keep them in among their other buttons */
+.nl button.wz-back, .nl button.wz-next { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 12px; cursor: pointer;
+  font: 500 15px var(--font-display); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.nl button.wz-back { background: var(--paper); color: var(--ink); border: 1px solid var(--rule-strong); box-shadow: none; padding-left: 12px; }
+.nl button.wz-back:hover { background: var(--frost); }
+.nl button.wz-next { background: var(--red); color: #fff; border: 0; box-shadow: 0 8px 20px -10px rgba(200,35,44,.8); padding-right: 12px; }
+.nl button.wz-next:hover { background: var(--red-hi); }
+.nl button.wz-next:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.wz-back .ic, .wz-next .ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.wz-side { display: grid; gap: 14px; }
+@media (min-width: 1080px) { .wz-side { position: sticky; top: calc(var(--hd-h) + 20px); } }
+.wz-sum { padding: 18px 20px; border-radius: 18px; background: var(--paper); border: 1px solid rgba(11,20,34,.06); box-shadow: var(--shadow-card); }
+.wz-sum-hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.wz-sum-logo { flex: 1 1 auto; min-width: 0; }
+/* the title and the kind keep their width: the picture beside them gives way */
+.wz-sum-hd > div:first-child { flex: none; }
+.nl .wz-sum-hd .wz-sum-type { white-space: nowrap; }
+.wz-sum-logo img { display: block; width: auto !important; max-width: 100%; height: 96px !important; margin-left: auto; padding: 6px; box-sizing: content-box; border-radius: 14px; background: var(--frost); object-fit: contain; }
+.wz-sum-logo > span { display: block; }
+.wz-sum-logo img + img { display: none; }
+.nl .wz-sum h2 { margin: 0 0 8px; font-family: var(--font-display); text-transform: uppercase; font-weight: 600; font-size: 18px; }
+.nl .wz-sum h3 { margin: 14px 0 2px; font-size: 12.5px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .04em; }
+.nl .wz-sum-type { display: inline-flex; margin: 0; padding: 4px 12px; border-radius: 999px; background: var(--night); color: #fff; font-weight: 650; font-size: 13px; }
+.wz-sum dl { margin: 0; }
+.wz-sum dl div { display: grid; grid-template-columns: minmax(0, 40%) minmax(0, 1fr); gap: 12px; padding: 7px 0; border-top: 1px solid #EDF1F6; font-size: 14px; }
+.wz-sum dl div:first-child { border-top: 0; }
+.wz-sum dt { color: var(--slate); }
+.wz-sum dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.wz-sum .dim { margin: 12px 0 0; font-size: 14px; color: var(--slate); }
+.wz-sum dl div.wide { grid-template-columns: minmax(0, 1fr); }
+.wz-ent { display: inline-flex; align-items: flex-start; gap: 8px; min-width: 0; max-width: 100%; }
+.wz-ent-t { min-width: 0; padding-top: 1px; }
+.wz-ent > span:first-child { display: contents; }
+.wz-ent img { width: 22px !important; height: 22px !important; border-radius: 6px !important; object-fit: contain; flex: none; }
+.wz-ent img + img { display: none; }
+.wz-ent .stars { color: var(--gold, #E0A526); font-size: 13px; letter-spacing: 1px; white-space: nowrap; }
+.wz-ent .dim { color: var(--slate); font-weight: 500; }
+.wz-sum dd .wz-ent { margin: 2px 0; }
+/* whose the thing is to be, over its fields on create.php */
+.wz-owner { display: grid; gap: 7px; max-width: 420px; margin-top: 18px; }
+.wz-owner label { font-size: 14px; font-weight: 650; color: var(--ink); }
+.wz-owner select { width: 100%; height: 46px; }
+
+/* the first step: the form of the dialog that edited the thing, laid out as it was in the dialog */
+.details-form { margin-top: 18px; }
+.details-form:empty { min-height: 120px; }
+.details-form table.dialog_form > tbody > tr > td, .details-form table.dialog_form > tbody > tr > th { padding: 8px 8px; vertical-align: middle; }
+.details-form table.dialog_form > tbody > tr > td:first-child { padding-left: 0; color: var(--slate); font-size: 13.5px; font-weight: 500; }
+.details-form table.dialog_form > tbody > tr > td:last-child { padding-right: 0; }
+/* a line between the rows shown: a part of the form shown alone (detailsRows()) has none over its first */
+.details-form table.dialog_form > tbody > tr.wz-off { display: none; }
+.details-form table.dialog_form > tbody > tr:not(.wz-off) ~ tr > td, .details-form table.dialog_form > tbody > tr:not(.wz-off) ~ tr > th { border-top: 1px solid var(--rule-soft) !important; }
+.details-form table.dialog_form table.dialog_form > tbody > tr > td { border-top: 0 !important; padding: 3px 6px 3px 0; }
+.details-form table.dialog_form .dark, .details-form table.dialog_form .darker, .details-form table.dialog_form .light, .details-form table.dialog_form .lighter { background: transparent !important; }
+.details-form textarea[cols] { width: 100%; min-width: 240px; }
+.details-form td.wz-lab-off { display: none; }
+/* The tables of a step - the rounds of a tournament, its registrations - have a quiet header, not
+   the dark bar of the sheets: the step is what is looked at, not its columns. */
+.nl .wz-form table.bordered > tbody > :is(tr.darker:first-child, tr.th, tr.th-short, tr.th-long) > :is(td, th),
+.nl .wz-form table.bordered > thead > tr > :is(td, th) {
+  background: var(--frost); color: var(--slate); border-bottom: 1px solid var(--rule);
+}
+.nl .wz-form table.bordered > tbody > :is(tr.darker:first-child, tr.th, tr.th-short, tr.th-long) a:is(:link, :visited) { color: var(--ink); }
+.nl .wz-form table.bordered > tbody > :is(tr.darker:first-child, tr.th) img.icon { filter: none; }
+.nl .wz-form :is(table.bordered > tbody > tr.darker:first-child, table.bordered > tbody > tr.th, table.bordered > tbody > tr.th-short, table.bordered > tbody > tr.th-long, table.bordered > thead > tr)
+  :is(img[src$="images/civ.png"], img[src$="images/maf.png"], img[src$="images/don.png"], img[src$="images/sheriff.png"]) { filter: none; }
+.nl .wz-form :is(table.bordered > tbody > tr.darker:first-child, table.bordered > tbody > tr.th, table.bordered > tbody > tr.th-short, table.bordered > tbody > tr.th-long, table.bordered > thead > tr)
+  :is(button.icon, button.small_icon, button.big_icon) { background: rgba(19,35,58,.08); }
+.nl .wz-form :is(table.bordered > tbody > tr.darker:first-child, table.bordered > tbody > tr.th, table.bordered > tbody > tr.th-short, table.bordered > tbody > tr.th-long, table.bordered > thead > tr)
+  :is(button.icon, button.small_icon, button.big_icon):hover { background: rgba(19,35,58,.16); }
+/* the seating of a round: ten seats and the game across, as wide as the card and no wider - the
+   columns share it equally, and a name too long for its seat is cut */
+.nl table.seat-grid { table-layout: fixed; width: 100%; }
+.nl table.seat-grid > tbody > tr > td { padding: 6px 2px; overflow: hidden; }
+.nl table.seat-grid table.transp { table-layout: fixed; width: 100%; }
+.nl table.seat-grid table.transp td { padding: 0; font-size: 12px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nl table.seat-grid img { width: 40px !important; height: 40px !important; max-width: 100%; object-fit: cover; }
+.nl .wz-form .tbl th { background: var(--frost); color: var(--slate); border-bottom: 1px solid var(--rule); }
+.nl .wz-form .tbl th[aria-sort], .nl .wz-form .tbl th .th-sort:hover, .nl .wz-form .tbl a.th-sort:hover { color: var(--ink); }
+.nl .wz-form .tbl th.th-pic img { filter: none; }
+.nl .wz-form table.bordered a.sort-off:is(:link, :visited) { color: var(--slate) !important; }
+.nl .wz-form table.bordered a.sort-off:hover { color: var(--ink) !important; }
+/* The series a tournament can be in: a table of its own, with lines and every other row tinted. */
+.details-form #form-series > table { border: 1px solid var(--rule) !important; border-radius: 12px; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+.details-form #form-series > table > tbody > tr > td { padding: 10px 14px !important; border-top: 1px solid var(--rule-soft) !important; vertical-align: middle; }
+.details-form #form-series > table > tbody > tr:first-child > td { border-top: 0 !important; }
+.details-form #form-series > table > tbody > tr:nth-child(even) > td { background: var(--frost); }
+.details-form #form-series > table > tbody > tr > td:first-child { width: 110px; text-align: center; font-size: 13px; }
+.details-form #form-series > table > tbody > tr > td:last-child { width: 1%; padding-right: 18px !important; }
+/* The stars are the rater's (js/rater.min.js): it measures them without letter-spacing, so they have none. */
+.details-form #form-series .stars { font-size: 26px; letter-spacing: 0; line-height: 1; white-space: nowrap; display: inline-block; }
+/* The name - of a tournament, a club... - and its translations: room for a long one. */
+.details-form #form-name-div input { width: 320px; max-width: 100%; box-sizing: border-box; }
+/* The figures of a broadcast that say whether the links into it can be trusted, under its address (include/broadcast_table.php). */
+.nl details.bc-more { margin-top: 4px; font-size: 12px; color: var(--slate); }
+.nl details.bc-more > summary { cursor: pointer; width: max-content; }
+.nl details.bc-more > div { display: flex; flex-wrap: wrap; gap: 2px 16px; margin-top: 4px; }
+/* two buttons on the right of the bar of the steps - Later and Create address of a club (club_management.php) */
+.wz-btns { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+/* the street of an address: room for a long one */
+.details-form #form-address { width: 320px; max-width: 100%; box-sizing: border-box; }

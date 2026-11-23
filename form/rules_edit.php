@@ -512,7 +512,7 @@ try
 			});
 		}
 		
-		var html = '<table class="bordered" width="100%"><tr class="bordered"><td class="bordered" width="300" valign="top">';
+		var html = '<table class="bordered" width="100%"><tr class="bordered"><td class="bordered" width="300" valign="top" style="vertical-align: top">';
 		var prev = -1;
 		var next = -1;
 		for (i = 0; i < rulesOptions.length; ++i)
@@ -550,7 +550,7 @@ try
 			var op = rulesOptions[ruleNum];
 			var ops = op[3];
 			
-			html += '</td><td valign="top"><table height="100%" width="100%"><tr><td align="left" width="32">';
+			html += '</td><td valign="top" style="vertical-align: top"><table width="100%"><tr><td align="left" width="32">';
 			if (prev >= 0)
 			{
 				html += '<button class="icon" onclick="showRule(' + prev + ')"><img src="images/prev.png" border="0"></button>';

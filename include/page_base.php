@@ -319,13 +319,19 @@ class PageBase
 		echo '<button type="button" class="search-btn" data-open-search aria-label="' . get_label('Search') . '" title="' . get_label('Search') . ' (Ctrl+K)">' . PageBase::icon('search') . '<span>' . get_label('Search') . '</span><kbd>/</kbd></button>';
 		if ($_profile != NULL)
 		{
+			// What can be made on the site - a game day, a tournament, a club - chosen on
+			// create.php, which then makes it step by step. Like the logo and Play, it starts the history
+			// of the pages visited anew (bck=0): what is made is not a step back from where one was.
+			echo '<a class="btn-new" href="create.php?bck=0" title="' . get_label('Create') . '">' . PageBase::icon('plus') . '<span>' . get_label('Create') . '</span></a>';
 			echo '<a class="btn-create" href="game.php?bck=0" title="' . get_label('The game') . '">' . PageBase::icon('play') . '<span>' . get_label('Play') . '</span></a>';
 		}
 
-		PageBase::show_lang_switch();
-
 		if ($_session_state == SESSION_NO_USER || $_session_state == SESSION_LOGIN_FAILED || $_profile == NULL)
 		{
+			// A visitor has neither Create nor Play, so the languages fit the row. For a user they
+			// are in the menu of the avatar: the row keeps the words of its buttons and the field
+			// of the search instead.
+			PageBase::show_lang_switch();
 			echo '<div class="nav-more hd-login">';
 			echo '<button type="button" class="btn-login" aria-expanded="false">' . PageBase::icon('user') . '<span>' . get_label('Login') . '</span></button>';
 			echo '<div class="menu menu-right login-panel" hidden>';
@@ -349,6 +355,9 @@ class PageBase
 			echo '</button>';
 			echo '<div class="menu menu-right" hidden>';
 			echo '<div class="menu-who">' . $_profile->user_name . '</div>';
+			echo '<div class="menu-lang"><span>' . get_label('Language') . '</span>';
+			PageBase::show_lang_switch();
+			echo '</div>';
 			echo '<a href="user_info.php?id=' . $_profile->user_id . '">' . get_label('My statistics') . '</a>';
 			echo '<a href="javascript:mr.editUser(' . $_profile->user_id . ')">' . get_label('My account') . '</a>';
 			echo '<a href="javascript:mr.changePassword()">' . get_label('Change password') . '</a>';
@@ -391,6 +400,7 @@ class PageBase
 		if ($_profile != NULL)
 		{
 			echo '<a class="btn drawer-create" href="game.php?bck=0">' . PageBase::icon('play') . '<span>' . get_label('Play') . '</span></a>';
+			echo '<a class="btn ghost drawer-create" href="create.php?bck=0">' . PageBase::icon('plus') . '<span>' . get_label('Create') . '</span></a>';
 		}
 		PageBase::show_drawer_items($menu);
 		echo '</nav>';
@@ -480,9 +490,11 @@ class PageBase
 			new MenuItem('series.php', get_label('Series'), get_label('Series history')),
 			new MenuItem('leagues.php' . $ccc, get_label('Leagues'), get_label('Leagues list')),
 			new MenuItem('clubs.php' . $ccc, get_label('Clubs'), get_label('Clubs list')),
-			new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
+			// The games are under More: the row of the header keeps room for the words of its
+			// buttons and for the field of the search.
 			new MenuItem('#more', get_label('More'), NULL, array
 			(
+				new MenuItem('games.php' . $ccc, get_label('Games'), get_label('List of all played games')),
 				new MenuItem('events.php' . $ccc, get_label('Events'), get_label('Events history')),
 				new MenuItem('broadcasts.php', get_label('Broadcasts'), get_label('Broadcasts from various events.')),
 				new MenuItem('seatings.php', get_label('Seatings'), get_label('Seating arrangements')),
@@ -734,6 +746,9 @@ class PageBase
 		case 'chevron':
 			$path = '<path d="M6 9l6 6 6-6"/>';
 			break;
+		case 'chev-l':
+			$path = '<path d="M15 6l-6 6 6 6"/>';
+			break;
 		case 'chev-r':
 			$path = '<path d="M9 6l6 6-6 6"/>';
 			break;
@@ -841,10 +856,21 @@ class PageBase
 	// functions print: <button onclick="..." title="..."><img src="images/..."></button> each, and
 	// a transparent picture holding the place when there is none. Anything else in it - not a
 	// button of that shape - is returned as it is, before the menu. '' when there is nothing at all.
-	static function manage_menu($buttons, $items)
+	static function manage_menu($buttons, $items, $lead = NULL)
 	{
 		$rest = trim(preg_replace('#<img src="images/transp.png"[^>]*>#', '', $buttons));
 		$list = '';
+		$sep_before_buttons = false;
+		// The page the entity is prepared or managed on comes first. Its first tab is the fields of
+		// the entity, so the button that edited them in a dialog goes.
+		if (!is_null($lead))
+		{
+			ob_start();
+			PageBase::show_dropdown_items(array($lead));
+			$list .= ob_get_clean();
+			$sep_before_buttons = true;
+			$rest = preg_replace('#<button\b[^>]*\bonclick="mr\.edit[A-Za-z]*\([^>]*>\s*<img\b[^>]*\bsrc="images/edit\.png"[^>]*>\s*</button>#', '', $rest);
+		}
 		if (preg_match_all('#<button\b([^>]*)>\s*<img\b[^>]*\bsrc="images/([^"]+)"[^>]*>\s*</button>#', $rest, $matches, PREG_SET_ORDER))
 		{
 			foreach ($matches as $m)
@@ -854,13 +880,18 @@ class PageBase
 					continue;
 				}
 				$title = preg_match('#\btitle="([^"]*)"#', $m[1], $t) ? $t[1] : '';
+				if ($sep_before_buttons)
+				{
+					$list .= '<div class="menu-sep" role="separator"></div>';
+					$sep_before_buttons = false;
+				}
 				$list .= '<button type="button" role="menuitem" onclick="this.closest(\'details\').open = false; ' . $onclick[1] . '"><img src="images/' . $m[2] . '" alt="">' . $title . '</button>';
 				$rest = str_replace($m[0], '', $rest);
 			}
 		}
 		$rest = trim($rest);
 
-		$current = false;
+		$current = !is_null($lead) && PageBase::is_current_page($lead->page);
 		if (count($items) > 0)
 		{
 			if ($list != '')
@@ -971,7 +1002,7 @@ class PageBase
 			}
 		}
 		$menu = $tabs;
-		$actions = PageBase::manage_menu($h->actions, $manage);
+		$actions = PageBase::manage_menu($h->actions, $manage, $h->prep);
 		if (!empty($h->side) || !empty($actions))
 		{
 			echo '<div class="eh-side">' . $h->side;
@@ -1244,6 +1275,7 @@ class EntityHeader
 	public $facts = array();  // array(icon, html) each, see fact()
 	public $side = '';        // to the right of the name: a rating, a button to apply
 	public $actions = '';     // the icon buttons of the managers
+	public $prep = NULL;      // a MenuItem: the page it is prepared or managed on, first in its menu "≡"
 	public $off = false;      // closed or canceled
 
 	function __construct($name, $section, $section_url)

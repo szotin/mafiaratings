@@ -1,6 +1,7 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/currency.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/tournament.php';
@@ -65,11 +66,11 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="240" valign="top">' . get_label('Tournament name') . ':</td><td>';
 	Names::show_control(new Names($name_id, get_label('tournament name')));
-	echo '</td>';
-	
-	echo '<td align="center" valign="top" rowspan="8" width="120">';
+	echo '</td></tr>';
+
+	// The logo is a row like the rest: the picture is the button that changes it.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
 	start_upload_logo_button($tournament_id);
-	echo get_label('Change logo') . '<br>';
 	$tournament_pic = new Picture(TOURNAMENT_PICTURE);
 	$tournament_pic->set($tournament_id, $name, $flags);
 	$tournament_pic->show(ICONS_DIR, false);
@@ -102,17 +103,7 @@ try
 	echo '</select></td></tr>';
 
 
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
-	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"' . (is_null($fee)?' checked':'') .'> '.get_label('unknown');
-	echo ' <select id="form-currency" onChange="currencyChanged()">';
-	show_option(0, $currency_id, '');
-	while ($row = $query->next())
-	{
-		list($cid, $cname) = $row;
-		show_option((int)$cid, $currency_id, $cname);
-	}
-	echo '</select></td></tr>';
+	show_fee_row(get_label('Admission rate'), $fee, $currency_id);
 	
 
 	if (is_valid_lang($club->langs))
@@ -131,16 +122,10 @@ try
 		
 	// The rules, the scoring, the awards, the number of players, whether the tournament is a
 	// long-term one, the hiding of the table and who may register are set on the preparation
-	// page now, each on its own tab; the stream on the stream settings page. The ids on the other
-	// sites are set by the imports.
+	// page now, each on its own tab; the stream on the stream settings page; whether the scoring is
+	// entered by hand, by entering it (tournament_standings_edit.php). The ids on the other sites are
+	// set by the imports.
 	echo '<tr><td colspan="2">';
-	echo '<input type="checkbox" id="form-manual_scoring"';
-	if ($flags & TOURNAMENT_FLAG_MANUAL_SCORE)
-	{
-		echo ' checked';
-	}
-	echo  '> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
-	
 	if (is_permitted(PERMISSION_ADMIN))
 	{
 		echo '<input type="checkbox" id="form-pin"';
@@ -207,7 +192,7 @@ try
 
 	function showSeries(series)
 	{
-		var html = '<table class="dialog_form" width="100%"><tr>';
+		var html = '<table class="dialog_form" width="100%">';
 		var sl = new Object();
 		for (i = 0; i < series.series.length; ++i)
 		{
@@ -351,12 +336,11 @@ try
 	{
 		var _langs = mr.getLangs('form-');
 		var _flags = 0;
-		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		// Only the flags this form shows. The rest are set elsewhere - see the note above the
 		// checkboxes - and are left as they are.
-		var _flagsMask = <?php echo TOURNAMENT_FLAG_MANUAL_SCORE | TOURNAMENT_FLAG_PINNED | TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
+		var _flagsMask = <?php echo TOURNAMENT_FLAG_PINNED | TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;
 		
 		var series = [];
 		for (const i in seriesList) 

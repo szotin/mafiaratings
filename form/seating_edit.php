@@ -45,14 +45,14 @@ try
 		throw new Exc(get_label('There is no seating for this round yet.'));
 	}
 
-	// How much there is to move around. Tables are counted as the least any game has: a few
-	// stored seatings do not run the same number throughout - a final round on fewer tables,
-	// say - and a table that half the games do not have cannot be swapped.
+	// How much there is to move around. Tables are counted as the most any game has: a few
+	// seatings do not run the same number throughout - the last game of two tables played on one,
+	// say - and their tables are swapped in the games that have both (swap_seating_tables).
 	$games_count = count($misc->seating->rounds);
-	$tables_count = PHP_INT_MAX;
+	$tables_count = 0;
 	foreach ($misc->seating->rounds as $round)
 	{
-		$tables_count = min($tables_count, is_array($round) ? count($round) : 0);
+		$tables_count = max($tables_count, is_array($round) ? count($round) : 0);
 	}
 
 	// Everybody who could stand in this round: the players of the tournament, and whoever the
@@ -157,12 +157,12 @@ try
 
 	// Swapping in every game exchanges the two players outright, which is what this dialog has
 	// always done. Swapping in one game exchanges only their seats there.
-	echo '<tr><td>' . get_label('Game') . ':</td><td>';
+	echo '<tr><td>' . get_label('Game~seating') . ':</td><td>';
 	echo '<select id="form-game" style="width:100%">';
-	echo '<option value="0" selected>' . get_label('All games') . '</option>';
+	echo '<option value="0" selected>' . get_label('All games~seating') . '</option>';
 	for ($i = 1; $i <= $games_count; ++$i)
 	{
-		echo '<option value="' . $i . '">' . get_label('Game [0]', $i) . '</option>';
+		echo '<option value="' . $i . '">' . get_label('Game [0]~seating', $i) . '</option>';
 	}
 	echo '</select></td></tr>';
 
@@ -178,12 +178,12 @@ try
 		echo '<table class="dialog_form" width="100%">';
 		for ($n = 1; $n <= 2; ++$n)
 		{
-			echo '<tr><td width="120">' . get_label('Game [0]', $n) . ':</td><td>';
+			echo '<tr><td width="120">' . get_label('Game [0]~seating', $n) . ':</td><td>';
 			echo '<select id="form-game' . $n . '" style="width:100%">';
 			echo '<option value="0">' . get_label('Select a game.') . '</option>';
 			for ($i = 1; $i <= $games_count; ++$i)
 			{
-				echo '<option value="' . $i . '">' . get_label('Game [0]', $i) . '</option>';
+				echo '<option value="' . $i . '">' . get_label('Game [0]~seating', $i) . '</option>';
 			}
 			echo '</select></td></tr>';
 		}
@@ -196,7 +196,7 @@ try
 	if ($tables_count > 1)
 	{
 		echo '<div id="seating-edit-tables">';
-		echo '<p style="color:gray">' . get_label('Exchange two tables: in every game, whoever sits at one of them moves to the other.') . '</p>';
+		echo '<p style="color:gray">' . get_label('Exchange two tables: in every game or in one of them, whoever sits at one of them moves to the other.') . '</p>';
 		echo '<table class="dialog_form" width="100%">';
 		for ($n = 1; $n <= 2; ++$n)
 		{
@@ -209,6 +209,15 @@ try
 			}
 			echo '</select></td></tr>';
 		}
+		// The same choice as for the players: in every game, or in one of them only.
+		echo '<tr><td>' . get_label('Game~seating') . ':</td><td>';
+		echo '<select id="form-table-game" style="width:100%">';
+		echo '<option value="0" selected>' . get_label('All games~seating') . '</option>';
+		for ($i = 1; $i <= $games_count; ++$i)
+		{
+			echo '<option value="' . $i . '">' . get_label('Game [0]~seating', $i) . '</option>';
+		}
+		echo '</select></td></tr>';
 		echo '</table></div>';
 	}
 
@@ -270,7 +279,7 @@ try
 		var parts = [];
 		for (var i = 0; i < plan.length; ++i)
 		{
-			parts.push(<?php echo json_encode(get_label('Game [0]', '%N%')); ?>.replace('%N%', plan[i].game) +
+			parts.push(<?php echo json_encode(get_label('Game [0]~seating', '%N%')); ?>.replace('%N%', plan[i].game) +
 				': ' + plan[i].user1 + ' &harr; ' + plan[i].user2);
 		}
 		return parts.join('; ');
@@ -422,6 +431,7 @@ try
 	{
 		var table1 = parseInt($("#form-table1").val()) || 0;
 		var table2 = parseInt($("#form-table2").val()) || 0;
+		var game = parseInt($("#form-table-game").val()) || 0;
 		if (table1 <= 0)
 		{
 			dlg.error(<?php echo json_encode(get_label('Please select table [0].', 1)); ?>);
@@ -443,6 +453,7 @@ try
 			event_id: <?php echo $event_id; ?>,
 			table1: table1,
 			table2: table2,
+			game: game,
 		},
 		onSuccess);
 	}

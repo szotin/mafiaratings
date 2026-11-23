@@ -3,6 +3,10 @@
 require_once __DIR__ . '/tournament.php';   // get_round_name()
 require_once __DIR__ . '/seating.php';
 require_once __DIR__ . '/broadcast.php';
+require_once __DIR__ . '/details_tab.php';
+
+// PREP_TAB_DETAILS and PREP_TAB_SERIES, the tabs of the fields of the thing itself, are defined in
+// include/details_tab.php: create.php opens them too.
 
 // The parts of getting ready that a tournament and a single event do in exactly the same way.
 //
@@ -170,34 +174,132 @@ trait PreparationTabs
 		return false;
 	}
 
-	// The way through the tabs: Next at the right of the row the tab puts it in, and Back at the
-	// far left of the same row - backCell() is the first cell of it. Back is never held back:
-	// what was done there is done.
-	private function backCell()
+	// Back, to the tab before. It is never held back: what was done there is done.
+	private function backButton()
 	{
-		$html = '<td width="1" nowrap>';
-		if ($this->tab > 0)
-		{
-			$html .= '<button id="prep-back-btn" onclick="goToTab(' . ($this->tab - 1) . ')"><img src="images/prev.png" border="0" style="vertical-align:middle">&nbsp; ' . get_label('Back') . '</button>&nbsp; ';
-		}
-		return $html . '</td>';
+		$prev = $this->prevTab();
+		return is_null($prev) ? '' : wizard_back_button('goToTab(' . $prev . ')');
 	}
 
-	// A row with nothing but the two of them.
+	// The steps of the card (see include/details_tab.php): $tabs is an array of tab number =>
+	// array(name, whether it can be opened), in their order.
+	private function wizardBegin($tabs)
+	{
+		$steps = array();
+		$cur = 0;
+		foreach ($tabs as $idx => $tab)
+		{
+			list($name, $open) = $tab;
+			if ($idx == $this->tab)
+			{
+				$cur = count($steps);
+			}
+			$steps[] = array($name, $open ? 'goToTab(' . $idx . ')' : NULL);
+		}
+		wizard_begin($steps, $cur);
+	}
+
+	// The end of the card: Back and Next on the bar at its foot, if the tab asked for them with
+	// navBar(), and the summary beside it.
+	private function wizardEnd($summary)
+	{
+		if ($this->wz_nav)
+		{
+			wizard_end($this->backButton(), $this->nextButtonHtml(), $summary);
+		}
+		else
+		{
+			wizard_end('', '', $summary);
+		}
+	}
+
+	// The tab "Basics" - the fields of the thing itself, those of the dialog that edits it (see
+	// include/details_tab.php) - stands before all the others; see PREP_TAB_DETAILS.
+	protected function canEditDetails()
+	{
+		return false;
+	}
+
+	// The first of the other tabs this user may open.
+	protected function firstTab()
+	{
+		return 0;
+	}
+
+	// The last of the tabs of the fields of the thing: "Basics", or a tab of its own after it.
+	protected function lastDetailsTab()
+	{
+		return PREP_TAB_DETAILS;
+	}
+
+	// Whether this user has tab $tab. A page where a tab in the middle is somebody's alone - the
+	// mailing of an event is its managers' - says so, and Back and Next step over it.
+	protected function hasTab($tab)
+	{
+		return true;
+	}
+
+	// Where Next goes from here.
+	protected function nextTab()
+	{
+		$next = $this->tab + 1;
+		while ($next < $this->tab_count - 1 && !$this->hasTab($next))
+		{
+			++$next;
+		}
+		return $next;
+	}
+
+	// Where Back goes from here, NULL when nowhere.
+	private function prevTab()
+	{
+		if ($this->tab > $this->firstTab())
+		{
+			$prev = $this->tab - 1;
+			while ($prev > $this->firstTab() && !$this->hasTab($prev))
+			{
+				--$prev;
+			}
+			return $prev;
+		}
+		if ($this->canEditDetails())
+		{
+			if ($this->tab == $this->firstTab())
+			{
+				return $this->lastDetailsTab();
+			}
+			if ($this->tab > PREP_TAB_DETAILS && $this->tab <= $this->lastDetailsTab())
+			{
+				return $this->tab - 1;
+			}
+		}
+		return NULL;
+	}
+
+	// A tab of the fields of the thing: the form, and Next under it, which saves it and goes on.
+	// $form_url is the dialog that edits the thing; $only and $without pick the rows of it the tab
+	// shows - see show_details_form().
+	private function showDetailsTab($form_url, $only = NULL, $without = NULL)
+	{
+		show_details_form($form_url, $only, $without);
+		$this->navBar();
+	}
+
+	// Back and Next, on the bar at the foot of the card - see wizardEnd(). Every tab that has them
+	// has them there, whatever else it has.
+	private $wz_nav = false;
 	private function navBar()
 	{
-		echo '<p><table width="100%"><tr>' . $this->backCell() . '<td align="right">';
-		$this->nextButton();
-		echo '</td></tr></table></p>';
+		$this->wz_nav = true;
 	}
 
-	private function nextButton()
+	private function nextButtonHtml()
 	{
 		if ($this->tab < $this->tab_count - 1)
 		{
-			$disabled = $this->nextDisabled() ? ' disabled' : '';
-			echo '<button id="prep-next-btn" onclick="nextStep()"' . $disabled . '>' . get_label('Next') . ' &nbsp;<img src="images/next.png" border="0" style="vertical-align:middle"></button>';
+			return wizard_next_button(get_label('Next'), 'nextStep()', 'prep-next-btn', $this->nextDisabled());
 		}
+		return '';
 	}
 
 	private function showSeatingTab($round_index)
@@ -250,7 +352,7 @@ trait PreparationTabs
 		// none of them said what the dialog behind it would ask; they are tabs of one dialog now,
 		// see form/seating_edit.php.
 		$this->navBar();
-		echo '<p><table width="100%"><tr><td>';
+		echo '<div class="seat-bar"><div>';
 
 		$buttons = array();
 		if (!$has_seating)
@@ -264,10 +366,10 @@ trait PreparationTabs
 		// Uploading stands whether there is a seating or not. A file can be uploaded over one that
 		// is already there - that is how a sheet comes back after being moved about in a
 		// spreadsheet - and doUploadSeating asks before the old one is thrown away.
-		$buttons[] = '<button onclick="uploadSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Upload a seating: either a file from [0] or one exported from here.', $url)) . '"><img src="images/upload_file.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Upload seating file') . '</button>';
+		$buttons[] = '<button onclick="uploadSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Upload a seating: either a file from [0] or one exported from here.', $url)) . '"><img src="images/upload_file.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Upload file') . '</button>';
 		if ($has_seating)
 		{
-			$buttons[] = '<button onclick="exportSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Save the seating as a file: a sheet of nicknames to read and to hand back, or a schedule for [0].', 'DimTom')) . '"><img src="images/download.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Download seating file') . '</button>';
+			$buttons[] = '<button onclick="exportSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Save the seating as a file: a sheet of nicknames to read and to hand back, or a schedule for [0].', 'DimTom')) . '"><img src="images/download.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Download file') . '</button>';
 		}
 		// Last, and only when there is one to take: a better version of this very arrangement has
 		// turned up in the seatings table since it was taken from there.
@@ -276,14 +378,14 @@ trait PreparationTabs
 			$title = htmlspecialchars(get_label('An improved seating version [0] is available.', $current_version));
 			$buttons[] = '<button onclick="makeSeating(' . $event_id . ')" title="' . $title . '"><img src="images/refresh.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Update seating') . '</button>';
 		}
-		echo implode(' ', $buttons);
+		echo implode('', $buttons);
 
-		echo '</td><td align="right">';
+		echo '</div>';
 		if ($has_seating)
 		{
 			echo '<button onclick="editSeating(' . $event_id . ')" title="' . htmlspecialchars(get_label('Rearrange the seating: exchange two players, two games or two tables.')) . '"><img src="images/edit.png" border="0" style="vertical-align:middle"> &nbsp;' . get_label('Edit seating') . '</button>';
 		}
-		echo '</td></tr></table></p><p>';
+		echo '</div><p>';
 
 		if (!empty($misc->seating) && !is_null($stored_hash))
 		{
@@ -362,7 +464,8 @@ trait PreparationTabs
 		for ($t_idx = 0; $t_idx < $num_tables; ++$t_idx)
 		{
 			echo '<p><center><h2>' . get_label('Table [0]', $t_idx + 1) . '</h2></center></p>';
-			echo '<table class="bordered light" width="100%">';
+			// Ten seats across must fit the card: see .seat-grid in new_look.css.
+			echo '<table class="bordered light seat-grid" width="100%">';
 			echo '<tr class="dark"><td width="8%"></td>';
 			for ($k = 0; $k < 10; ++$k)
 				echo '<td width="9.2%" align="center"><b>' . ($k + 1) . '</b></td>';
@@ -371,7 +474,7 @@ trait PreparationTabs
 			{
 				$game = isset($tables_data[$g_idx][$t_idx]) ? $tables_data[$g_idx][$t_idx] : null;
 				if (is_null($game) || count((array)$game) < 10) continue;
-				echo '<tr><td align="center" class="dark"><b>' . get_label('Game [0]', $g_idx + 1) . '</b></td>';
+				echo '<tr><td align="center" class="dark"><b>' . get_label('Game [0]~seating', $g_idx + 1) . '</b></td>';
 				for ($k = 0; $k < 10; ++$k)
 				{
 					$raw = (int)$game[$k];

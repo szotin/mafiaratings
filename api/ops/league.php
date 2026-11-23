@@ -80,97 +80,63 @@ class ApiPage extends OpsApiPageBase
 		}
 		$flags = (int)get_optional_param('flags', NEW_LEAGUE_FLAGS);
 		$flags = ($flags & LEAGUE_EDITABLE_MASK) + (NEW_LEAGUE_FLAGS & ~LEAGUE_EDITABLE_MASK);
-		
+		// Only an administrator makes a league global: its systems are offered to every club.
+		if (!$_profile->is_admin())
+		{
+			$flags &= ~LEAGUE_FLAG_GLOBAL;
+		}
+
 		$email = trim(get_optional_param('email', $_profile->user_email));
 		if (!empty($email) && !is_email($email))
 		{
 			throw new Exc(get_label('[0] is not a valid email address.', $email));
 		}
-		
+
 		Db::begin();
 		$names = $this->get_names();
 		if (count($names->names) == 0)
 		{
 			throw new Exc(get_label('Please enter [0].', get_label('league name')));
 		}
-		// The name for all languages. A request keeps only this one - see accept_op.
+		// Made at once, by anyone: whoever makes it manages it, and the administrators are told.
 		$name = $names->names[0]->name;
-		if ($_profile->is_admin())
-		{
-			// Admin does not have to send a confirmation request. The league is confirmed instantly.
-			$name_id = $names->get_id();
-			Db::exec(
-				get_label('league'),
-				'INSERT INTO leagues (name_id, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
-				$name_id, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
-			list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
-			self::own_systems($league_id);
+		$name_id = $names->get_id();
+		Db::exec(
+			get_label('league'),
+			'INSERT INTO leagues (name_id, langs, flags, web_site, email, phone, rules, scoring_id, normalizer_id, gaining_id) VALUES (?, ?, ?, ?, ?, ?, \'{}\', ?, ?, ?)',
+			$name_id, $langs, $flags, $url, $email, $phone, get_site_scoring_id(), NULL, get_site_gaining_id());
+		list ($league_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
+		self::own_systems($league_id);
 
-			$log_details = new stdClass();
-			$log_details->name = $names->to_string();
-			$log_details->name_id = $name_id;
-			$log_details->langs = $langs;
-			$log_details->flags = NEW_LEAGUE_FLAGS;
-			$log_details->url = $url;
-			$log_details->email = $email;
-			$log_details->phone = $phone;
-			db_log(LOG_OBJECT_LEAGUE, 'created', $log_details, $league_id, NULL, $league_id);
-			$this->response['league_id'] = $league_id;
-		}
-		else
+		$log_details = new stdClass();
+		$log_details->name = $names->to_string();
+		$log_details->name_id = $name_id;
+		$log_details->langs = $langs;
+		$log_details->flags = NEW_LEAGUE_FLAGS;
+		$log_details->url = $url;
+		$log_details->email = $email;
+		$log_details->phone = $phone;
+		db_log(LOG_OBJECT_LEAGUE, 'created', $log_details, $league_id, NULL, $league_id);
+
+		if (!$_profile->is_admin())
 		{
-			Db::exec(
-				get_label('league'), 
-				'INSERT INTO league_requests (user_id, name, langs, web_site, email, phone) VALUES (?, ?, ?, ?, ?, ?)',
-				$_profile->user_id, $name, $langs, $url, $email, $phone);
-				
-			list ($request_id) = Db::record(get_label('league'), 'SELECT LAST_INSERT_ID()');
-			$log_details = new stdClass();
-			$log_details->name = $name;
-			$log_details->langs = $langs;
-			$log_details->url = $url;
-			$log_details->email = $email;
-			$log_details->phone = $phone;
-			db_log(LOG_OBJECT_LEAGUE_REQUEST, 'created', $log_details, $request_id);
-			
-			// send request to admin
-			$query = new DbQuery(
-				'SELECT u.id, nu.name, u.email, u.def_lang'.
-				' FROM users u'.
-				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & u.def_lang) <> 0'.
-				' WHERE (u.flags & ' . USER_PERM_ADMIN . ') <> 0 and u.email <> \'\' AND (u.flags & '.USER_FLAG_ADMIN_NOTIFY.') <> 0');
-			while ($row = $query->next())
-			{
-				list($admin_id, $admin_name, $admin_email, $admin_def_lang) = $row;
-				$lang = get_lang_code($admin_def_lang);
-				list($subj, $body, $text_body) = include '../../include/languages/' . $lang . '/email/create_league.php';
-				
-				$tags = array(
-					'root' => new Tag(get_server_url()),
-					'user_id' => new Tag($admin_id),
-					'user_name' => new Tag($admin_name),
-					'league_name' => new Tag($name),
-					'sender' => new Tag($_profile->user_name));
-				$body = parse_tags($body, $tags);
-				$text_body = parse_tags($text_body, $tags);
-				send_email($admin_email, $body, $text_body, $subj, admin_unsubscribe_url($admin_id), $admin_def_lang);
-			}
-			
-			echo  
-				'<p>' .
-				get_label('Your request for creating the league "[0]" has been sent to the administration. [1] administrators will review your league information.', $name, PRODUCT_NAME) .
-				'</p><p>' .
-				get_label('Please wait for the confirmation email. It takes from a few hours to three days depending on administrators load.') .
-				'</p>';
+			Db::exec(get_label('user'),
+				'INSERT INTO league_managers (league_id, user_id, flags) VALUES (?, ?, ?)' .
+				' ON DUPLICATE KEY UPDATE flags = flags | VALUES(flags)',
+				$league_id, $_profile->user_id, USER_PERM_MANAGER);
+			db_log(LOG_OBJECT_USER, 'becomes league manager', NULL, $_profile->user_id, NULL, $league_id);
 		}
+		notify_admins('create_league', array(
+			'league_name' => new Tag($name),
+			'league_id' => new Tag($league_id)));
+		$this->response['league_id'] = $league_id;
 		Db::commit();
 	}
 	
 	function create_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_USER, 'Create league. If user is admin, league is just created. If not, league request is created and email is sent to admin. Admin has to accept it.');
+		$help = new ApiHelp(PERMISSION_USER, 'Create league. Anyone can: the league is created at once, the user who creates it becomes its manager, and the administrators are notified by email.');
 		Names::help($help, 'League', false);
-		$help->request_param('name_xx', 'A request of a user who is not an admin keeps only <q>name</q>; the names for other languages are set when the league is accepted or edited.', '-');
 		$help->request_param('url', 'League web site URL.');
 		$help->request_param('langs', 'Languages used in the league. A bit combination of language ids.' . valid_langs_help());
 		$help->request_param('email', 'League email.', 'user email is used.');

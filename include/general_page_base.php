@@ -17,9 +17,16 @@ class GeneralPageBase extends PageBase
 		echo '<div class="page-hd"><div>' . $this->standard_title() . '</div><div class="page-hd-side">';
 		// What the page offers and the menu "≡" at the bottom of the band, side by side; the way back
 		// above them (see .page-hd-acts in new_look.css).
-		echo '<div class="page-hd-acts">' . $this->title_actions() . PageBase::manage_menu('', PageBase::get_admin_menu()) . '</div>';
+		echo '<div class="page-hd-acts">' . $this->title_actions() . ($this->has_admin_menu() ? PageBase::manage_menu('', PageBase::get_admin_menu()) : '') . '</div>';
 		show_back_button();
 		echo '</div></div>';
+	}
+
+	// Whether the band has the menu "≡" of the administrator. A page busy with one thing - making
+	// something (create.php) - does without it.
+	protected function has_admin_menu()
+	{
+		return true;
 	}
 
 	// What a page offers to do beside its title on the band - "New club" on the list of clubs.

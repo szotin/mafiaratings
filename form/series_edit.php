@@ -1,6 +1,7 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/currency.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/series.php';
@@ -131,17 +132,7 @@ try
 	// the dates rather than above them so that what stays put does not move when it does.
 	echo '<tr id="form-series-row"><td>' . get_label('Series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate per player-tournament').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
-	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"' . (is_null($fee)?' checked':'') .'> '.get_label('unknown');
-	echo ' <select id="form-currency" onChange="currencyChanged()">';
-	show_option(0, $currency_id, '');
-	while ($row = $query->next())
-	{
-		list($cid, $cname) = $row;
-		show_option((int)$cid, $currency_id, $cname);
-	}
-	echo '</select></td></tr>';
+	show_fee_row(get_label('Admission rate per player-tournament'), $fee, $currency_id);
 	
 	if (is_valid_lang($owner_langs))
 	{

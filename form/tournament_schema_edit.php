@@ -111,7 +111,7 @@ try
 
 	echo '<tr><td colspan="2">';
 	echo '<input type="checkbox" class="toggle" id="form-long-term"' . ($schema->long_term ? ' checked' : '') . ' onchange="longTermChanged()"> ' . get_label('long term tournament. Like a seasonal club championship.');
-	echo '<span id="form-single-game-span">&emsp;&emsp;<input type="checkbox" class="toggle" id="form-single-game"' . ($schema->single_games ? ' checked' : '') . '> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '</span>';
+	echo '<div id="form-single-game-span" style="margin: 6px 0 0 28px;"><input type="checkbox" class="toggle" id="form-single-game"' . ($schema->single_games ? ' checked' : '') . '> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '</div>';
 	echo '</td></tr>';
 
 	echo '<tr id="form-rounds-row"><td valign="top">' . get_label('Rounds') . ':</td><td>';

@@ -141,10 +141,30 @@ class Page extends TournamentPageBase
 		{
 			$this->tab = (int)$preparation_stage;
 		}
-		if ($this->tab < PREP_TAB_SCHEME || $this->tab >= $this->tab_count)
+		if (($this->tab == PREP_TAB_DETAILS || $this->tab == PREP_TAB_SERIES) && $this->canEditDetails())
+		{
+			// The fields of the tournament itself, and its series - see include/details_tab.php.
+			// Never stored as the tab it was left on: coming back, a manager goes on with the
+			// preparation.
+		}
+		else if ($this->tab < PREP_TAB_SCHEME || $this->tab >= $this->tab_count)
 		{
 			$this->tab = PREP_TAB_SCHEME;
 		}
+	}
+
+	// The fields of the tournament are its managers', not its referees' - the ones who could edit
+	// it in the dialog.
+	protected function canEditDetails()
+	{
+		return is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $this->club_id, $this->id);
+	}
+
+	// The series the tournament plays in are a tab of their own after "Basics": the same form, the
+	// other part of it.
+	protected function lastDetailsTab()
+	{
+		return PREP_TAB_SERIES;
 	}
 
 	private function showRegistrationsTab()
@@ -341,16 +361,17 @@ class Page extends TournamentPageBase
 			if ($i < $reg_count)
 			{
 				list($user_id, $name, $email, $user_flags, $tr_flags, $club_reg_flags, $city, $club_id, $club_name, $club_flags) = $regs[$i];
-				echo '<td class="tb-btns">';
-				echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
+				// The actions of the row under "≡" - see card_row_menu().
 				$new_flags = ($tr_flags & USER_PERM_MASK) & ~$default_flags;
-				echo '<button class="icon" onclick="removeTournamentRegFlag(' . $user_id . ', ' . $new_flags . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.tournamentUserPhoto(' . $user_id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
+				$items = array(
+					array('mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')', 'edit.png', get_label('Change registration')),
+					array('mr.tournamentUserPhoto(' . $user_id . ', ' . $this->id . ')', 'photo.png', get_label('Separate photo')));
 				if ($with_rollback)
 				{
-					echo '<button class="icon" onclick="rollbackTournamentReg(' . $user_id . ')" title="' . get_label('Rollback [0] to not confirmed state.', $name) . '"><img src="images/undo.png" border="0"></button>';
+					$items[] = array('rollbackTournamentReg(' . $user_id . ')', 'undo.png', get_label('Back to not confirmed'));
 				}
-				echo '</td>';
+				$items[] = array('removeTournamentRegFlag(' . $user_id . ', ' . $new_flags . ', ' . json_encode(get_label('Are you sure you want to unregister [0]?', $name)) . ')', 'delete.png', get_label('Unregister'));
+				echo '<td class="tb-btns">' . card_row_menu($items, $name) . '</td>';
 				echo $this->numberCell($i + 1);
 				echo '<td>' . $this->personCell($pic, $user_id, $name, $user_flags, $tr_flags, $club_reg_flags, $city) . '</td>';
 				echo '<td class="p3">' . $this->clubCell((int)$club_id, (string)$club_name, (int)$club_flags) . '</td>';
@@ -426,13 +447,14 @@ class Page extends TournamentPageBase
 				$overflow = ($scheme_count > 0 && $row_num >= $scheme_count);
 				echo '<tr' . ($overflow ? ' class="darker"' : '') . '>';
 
-				echo '<td class="tb-btns">';
-				echo '<button class="icon" onclick="mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')" title="' . get_label('Change [0] registration.', $name) . '"><img src="images/edit.png" border="0"></button>';
+				// The actions of the row under "≡" - see card_row_menu().
 				$new_flags = ($tr_flags & USER_PERM_MASK) & ~$default_flags;
-				echo '<button class="icon" onclick="removeTournamentRegFlag(' . $user_id . ', ' . $new_flags . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.tournamentUserPhoto(' . $user_id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
-				echo '<button class="icon" onclick="rollbackTournamentReg(' . $user_id . ')" title="' . get_label('Rollback [0] to not confirmed state.', $name) . '"><img src="images/undo.png" border="0"></button>';
-				echo '</td>';
+				echo '<td class="tb-btns">' . card_row_menu(array(
+					array('mr.editTournamentReg(' . $this->id . ', ' . $user_id . ')', 'edit.png', get_label('Change registration')),
+					array('mr.tournamentUserPhoto(' . $user_id . ', ' . $this->id . ')', 'photo.png', get_label('Separate photo')),
+					array('rollbackTournamentReg(' . $user_id . ')', 'undo.png', get_label('Back to not confirmed')),
+					array('removeTournamentRegFlag(' . $user_id . ', ' . $new_flags . ', ' . json_encode(get_label('Are you sure you want to unregister [0]?', $name)) . ')', 'delete.png', get_label('Unregister'))),
+					$name) . '</td>';
 
 				echo $this->numberCell(++$row_num);
 
@@ -514,27 +536,24 @@ class Page extends TournamentPageBase
 		$leagues = $this->schemaLeagues();
 
 		// No league is picked to start with; the list of schemas is there once one is.
-		echo '<p><table width="100%"><tr>' . $this->backCell() . '<td>';
+		$this->navBar();
 		if (count($leagues) > 0)
 		{
-			echo get_label('Tournament schema') . ': <select id="schema-league" onchange="schemaLeagueChanged()">';
+			echo '<p>' . get_label('Tournament schema') . ': <select id="schema-league" onchange="schemaLeagueChanged()">';
 			show_option(0, 0, '');
 			foreach ($leagues as $l)
 			{
 				show_option($l->id, 0, $l->name);
 			}
-			echo '</select> <select id="schema-sel" onchange="schemaChanged()" style="display:none"></select>';
+			echo '</select> <select id="schema-sel" onchange="schemaChanged()" style="display:none"></select></p>';
 		}
-		echo '</td><td align="right">';
-		$this->nextButton();
-		echo '</td></tr></table></p>';
 
 		echo '<p><table class="bordered light" width="100%"><tr><td>';
 		echo '<input type="checkbox" class="toggle" id="prep-long-term"' . ($this->long_term ? ' checked' : '') . ' onchange="longTermChanged(this.checked)"> ' . get_label('long term tournament. Like a seasonal club championship.');
 		if ($this->long_term)
 		{
-			echo '&emsp;&emsp;<input type="checkbox" class="toggle" id="prep-single-game"' . (($this->flags & TOURNAMENT_FLAG_SINGLE_GAME) ? ' checked' : '') .
-				' onchange="setTournamentFlag(' . TOURNAMENT_FLAG_SINGLE_GAME . ', this.checked)"> ' . get_label('single games from non-tournament events can be assigned to the tournament.');
+			echo '<div style="margin: 6px 0 0 28px;"><input type="checkbox" class="toggle" id="prep-single-game"' . (($this->flags & TOURNAMENT_FLAG_SINGLE_GAME) ? ' checked' : '') .
+				' onchange="setTournamentFlag(' . TOURNAMENT_FLAG_SINGLE_GAME . ', this.checked)"> ' . get_label('single games from non-tournament events can be assigned to the tournament.') . '</div>';
 		}
 		echo '</td></tr></table></p>';
 
@@ -720,9 +739,7 @@ class Page extends TournamentPageBase
 			TOURNAMENT_HIDE_FROM_SEMI_FINALS => get_label('Hide bonus points starting from the semi-finals'),
 			TOURNAMENT_HIDE_FROM_FINALS => get_label('Hide bonus points in the finals'));
 
-		echo '<p><table width="100%"><tr>' . $this->backCell() . '<td align="right">';
-		$this->nextButton();
-		echo '</td></tr></table></p>';
+		$this->navBar();
 
 		echo '<p><table class="bordered light" width="100%">';
 		echo '<tr><td width="160">' . get_label('Scoring table') . ':</td><td>';
@@ -802,31 +819,41 @@ class Page extends TournamentPageBase
 		// pages do. Without them the dialogs fall back to the English built into mr.js.
 		show_seating_optimizer_labels();
 
-		echo '<div class="tab">';
-		echo '<button' . ($this->tab == PREP_TAB_SCHEME ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_SCHEME . ')">' . get_label('Scheme') . '</button>';
-		echo '<button' . ($this->tab == PREP_TAB_RULES ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_RULES . ')">' . get_label('Rules') . '</button>';
-		echo '<button' . ($this->tab == PREP_TAB_TABLE ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_TABLE . ')">' . get_label('Hiding the table') . '</button>';
-		echo '<button id="prep-tab-registrations"' . ($this->tab == PREP_TAB_REGISTRATIONS ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_REGISTRATIONS . ')">' . get_label('Registrations') . '</button>';
-		$locked = (!$this->scheme_valid || !$this->regs_complete) ? ' disabled' : '';
+		$tabs = array();
+		if ($this->canEditDetails())
+		{
+			$tabs[PREP_TAB_DETAILS] = array(details_tab_name(), true);
+			$tabs[PREP_TAB_SERIES] = array(get_label('Series'), true);
+		}
+		$tabs[PREP_TAB_SCHEME] = array(get_label('Scheme'), true);
+		$tabs[PREP_TAB_RULES] = array(get_label('Rules'), true);
+		$tabs[PREP_TAB_TABLE] = array(get_label('Hiding the table'), true);
+		$tabs[PREP_TAB_REGISTRATIONS] = array(get_label('Registrations'), true);
 		// Not held back with the rest of them. Where the streams are has nothing to do with who
 		// has registered, and this is the one tab a tournament played years ago still has a use
 		// for: its games can be tied to its recordings from here.
-		echo '<button' . ($this->tab == PREP_TAB_STREAMS ? ' class="active"' : '') . ' onclick="goToTab(' . PREP_TAB_STREAMS . ')">' . get_label('Streams') . '</button>';
-		// A long-term tournament is not seated, so it has neither the pairs nor the seatings.
+		$tabs[PREP_TAB_STREAMS] = array(get_label('Streams'), true);
+		// A long-term tournament is not seated, so it has neither the pairs nor the seatings; the
+		// others are held back until the scheme holds and everybody it needs has registered.
 		if (!$this->long_term)
 		{
-			echo '<button class="prep-post-reg-tab' . ($this->tab == PREP_TAB_PAIRS ? ' active' : '') . '"' . $locked . ' onclick="goToTab(' . PREP_TAB_PAIRS . ')">' . get_label('Pairs') . '</button>';
+			$open = $this->scheme_valid && $this->regs_complete;
+			$tabs[PREP_TAB_PAIRS] = array(get_label('Pairs'), $open);
 			foreach ($this->rounds as $i => $round_row)
 			{
-				$tab_idx = PREP_TAB_SEATING + $i;
-				$round_name = get_round_name($round_row[1]);
-				echo '<button class="prep-post-reg-tab' . ($this->tab == $tab_idx ? ' active' : '') . '"' . $locked . ' onclick="goToTab(' . $tab_idx . ')">' . get_label('Seating for [0]', $round_name) . '</button>';
+				$tabs[PREP_TAB_SEATING + $i] = array(get_label('Seating for [0]', get_round_name($round_row[1])), $open);
 			}
 		}
-		echo '</div>';
+		$this->wizardBegin($tabs);
 
 		switch ($this->tab)
 		{
+			case PREP_TAB_DETAILS:
+				$this->showDetailsTab('form/tournament_edit.php?id=' . $this->id, NULL, '#form-series');
+				break;
+			case PREP_TAB_SERIES:
+				$this->showDetailsTab('form/tournament_edit.php?id=' . $this->id, '#form-series');
+				break;
 			case PREP_TAB_SCHEME:
 				$this->showSchemeTab();
 				break;
@@ -855,6 +882,59 @@ class Page extends TournamentPageBase
 				}
 				break;
 		}
+		$this->wizardEnd($this->tab < 0 ? wizard_summary_live(get_label('Tournament'), $this->summaryLogo()) : $this->summary());
+	}
+
+	// The logo of the tournament at the top of the summary. A logo uploaded on the first tab is
+	// changed here too: it is found by its code, like the one in the form.
+	private function summaryLogo()
+	{
+		$pic = new Picture(TOURNAMENT_PICTURE);
+		$pic->set($this->id, $this->name, $this->flags);
+		return PageBase::capture(function() use ($pic) { $pic->show(TNAILS_DIR, false); });
+	}
+
+	// Beside the card: what the tournament is - its name, when and where, its series, its rounds and
+	// the rules it is played by. Who has registered is on the tab of the registrations.
+	private function summary()
+	{
+		global $_lang;
+
+		$series = array();
+		$series_pic = new SeriesPicture();
+		foreach ($this->series as $s)
+		{
+			$series[] = array('', wizard_entity($series_pic->set($s->series_id, $s->series_name, $s->series_flags, $s->owner), $s->series_name,
+				$s->stars > 0 ? tournament_stars_str($s->stars, false) : ''));
+		}
+
+		// The rules are named by the scoring system, which is what tells tournaments apart; the
+		// rules of the game and the special awards are left to their tabs.
+		list($scoring_name) = Db::record(get_label('tournament'),
+			'SELECT ns.name FROM tournaments t' .
+			' LEFT OUTER JOIN scorings s ON s.id = t.scoring_id LEFT OUTER JOIN names ns ON ns.id = s.name_id AND (ns.langs & ' . $_lang . ') <> 0' .
+			' WHERE t.id = ?', $this->id);
+
+		// Of the scheme, just how many play: the most any round has, which is the main round.
+		$players_count = NULL;
+		foreach ($this->rounds as $row)
+		{
+			$players = $row[3];
+			if (!is_null($players) && $players > 0 && (is_null($players_count) || $players > $players_count))
+			{
+				$players_count = (int)$players;
+			}
+		}
+		return wizard_summary(get_label('Tournament'), array(
+			details_tab_name() => array(
+				array(get_label('Tournament name'), $this->name),
+				array(wizard_period_label($this->start_time, $this->duration, $this->timezone), wizard_period($this->start_time, $this->duration, $this->timezone)),
+				array(get_label('Club'), $this->club_name),
+				array(get_label('Address'), $this->address_name),
+				array(get_label('Admission rate'), (!is_null($this->currency_pattern) && !is_null($this->fee)) ? format_currency($this->fee, $this->currency_pattern) : NULL),
+				array(get_label('Players'), $players_count),
+				array(get_label('Rules'), $scoring_name)),
+			get_label('Series') => $series), $this->summaryLogo());
 	}
 
 	protected function js()
@@ -1060,6 +1140,11 @@ class Page extends TournamentPageBase
 
 		function goToTab(tabIdx)
 		{
+			if (tabIdx < 0)
+			{
+				goTo({tab: tabIdx});
+				return;
+			}
 			json.post('api/ops/tournament.php',
 			{
 				op: 'change',
@@ -1112,7 +1197,6 @@ class Page extends TournamentPageBase
 			});
 			$('#prep-next-btn').prop('disabled', !valid);
 
-			$('.prep-post-reg-tab').prop('disabled', !valid || !regsComplete);
 			return valid;
 		}
 
@@ -1128,7 +1212,9 @@ class Page extends TournamentPageBase
 
 		function nextStep()
 		{
-<?php if ($this->tab == PREP_TAB_SCHEME): ?>
+<?php if ($this->tab < 0): ?>
+			detailsCommit(function() { goToTab(<?php echo $this->tab + 1; ?>); });
+<?php elseif ($this->tab == PREP_TAB_SCHEME): ?>
 			applyScheme(advancePreparationStage);
 <?php else: ?>
 			advancePreparationStage();
@@ -1175,10 +1261,30 @@ class Page extends TournamentPageBase
 			{
 				return;
 			}
-			dlg.yesNo('<?php echo addslashes(get_label('Are you sure you want to set the tournament up by [0]? Its rounds, rules, scoring, special awards and the hiding of the table will be replaced.', '#')); ?>'.replace('#', $('<div>').text(name).html()), null, null, function()
+			var apply = function()
 			{
 				json.post('api/ops/tournament.php', { op: 'apply_schema', tournament_id: <?php echo $this->id; ?>, schema_id: schemaId }, refr);
-			});
+			};
+<?php
+		// Nothing is asked when there is nothing to lose: no rounds but the empty main round every
+		// new tournament has.
+		$has_rounds = count($this->rounds) > 1;
+		foreach ($this->rounds as $round_row)
+		{
+			if ((int)$round_row[3] > 0 || (int)$round_row[4] > 0 || (int)$round_row[5] > 0)
+			{
+				$has_rounds = true;
+			}
+		}
+		if (!$has_rounds)
+		{
+?>
+			apply();
+			return;
+<?php
+		}
+?>
+			dlg.yesNo('<?php echo addslashes(get_label('Are you sure you want to set the tournament up by [0]? Its rounds, rules, scoring, special awards and the hiding of the table will be replaced.', '#')); ?>'.replace('#', $('<div>').text(name).html()), null, null, apply);
 		}
 <?php endif; ?>
 <?php

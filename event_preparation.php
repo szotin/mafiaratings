@@ -11,9 +11,9 @@ require_once 'include/cards.php';
 
 // An event has one round, so it has one seating, where a tournament has one per round and its
 // pairs in between - the two pages do not line up and each numbers its own tabs.
-define('EPREP_TAB_MAILING', 0);
-define('EPREP_TAB_SCHEME', 1);
-define('EPREP_TAB_RULES', 2);
+define('EPREP_TAB_RULES', 0);
+define('EPREP_TAB_MAILING', 1);
+define('EPREP_TAB_SCHEME', 2);
 define('EPREP_TAB_REGISTRATIONS', 3);
 define('EPREP_TAB_STREAMS', 4);
 define('EPREP_TAB_SEATING', 5);
@@ -92,16 +92,36 @@ class Page extends EventPageBase
 		// set up in whatever order suits.
 		$this->regs_complete = true;
 
-		// The mailing is the manager's alone, and it is the first tab, so a referee opening
-		// the page lands on the one after it rather than on nothing.
+		// The mailing is the manager's alone: a referee does not have that tab, and Back and Next
+		// step over it (see hasTab()).
 		$this->can_mail = $this->is_manager;
-		$first = $this->can_mail ? EPREP_TAB_MAILING : EPREP_TAB_SCHEME;
+		$first = EPREP_TAB_RULES;
 
 		$this->tab = isset($_REQUEST['tab']) ? (int)$_REQUEST['tab'] : $first;
-		if ($this->tab < $first || $this->tab >= $this->tab_count)
+		if ($this->tab == PREP_TAB_DETAILS && $this->canEditDetails())
+		{
+			// The fields of the event itself - see include/details_tab.php.
+		}
+		else if ($this->tab < $first || $this->tab >= $this->tab_count || !$this->hasTab($this->tab))
 		{
 			$this->tab = $first;
 		}
+	}
+
+	protected function hasTab($tab)
+	{
+		return $tab != EPREP_TAB_MAILING || $this->can_mail;
+	}
+
+	// The fields of the event are its managers' - the ones who could edit it in the dialog.
+	protected function canEditDetails()
+	{
+		return $this->is_manager;
+	}
+
+	protected function firstTab()
+	{
+		return EPREP_TAB_RULES;
 	}
 
 	// How many sit down at this event, at how many tables, and how many games each of them
@@ -142,8 +162,8 @@ class Page extends EventPageBase
 		}
 		echo '</tr></table></p>';
 
-		echo '<p align="right"><button id="prep-apply-btn" onclick="applyScheme()"' .
-			(!$this->scheme_valid ? ' disabled' : '') . '>' . get_label('Apply') . '</button></p>';
+		// Saved by Next, which goes on without saving anything when the fields are left empty.
+		echo '<p style="color:gray">' . get_label('Press Next if the game day has no fixed scheme.') . '</p>';
 	}
 
 	// The rules the games are played by, the scoring, and the special awards. Each is saved the
@@ -281,11 +301,12 @@ class Page extends EventPageBase
 			echo '<tr>';
 			if ($this->can_edit)
 			{
-				echo '<td class="tb-btns">';
-				echo '<button class="icon" onclick="mr.removeEventReg(' . $id . ', ' . $this->id . ', \'' . get_label('Are you sure you want to unregister [0]?', $name) . '\')" title="' . get_label('Unregister [0].', $name) . '"><img src="images/delete.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.editEventAccess(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] permissions.', $name) . '"><img src="images/edit.png" border="0"></button>';
-				echo '<button class="icon" onclick="mr.eventUserPhoto(' . $id . ', ' . $this->id . ')" title="' . get_label('Set [0] photo for [1].', $name, $this->name) . '"><img src="images/photo.png" border="0"></button>';
-				echo '</td>';
+				// The actions of the row under "≡" - see card_row_menu().
+				echo '<td class="tb-btns">' . card_row_menu(array(
+					array('mr.editEventAccess(' . $id . ', ' . $this->id . ')', 'edit.png', get_label('Change permissions')),
+					array('mr.eventUserPhoto(' . $id . ', ' . $this->id . ')', 'photo.png', get_label('Separate photo')),
+					array('mr.removeEventReg(' . $id . ', ' . $this->id . ', ' . json_encode(get_label('Are you sure you want to unregister [0]?', $name)) . ')', 'delete.png', get_label('Unregister'))),
+					$name) . '</td>';
 			}
 
 			echo '<td class="rk"><span class="medal">' . sprintf('%02d', $count) . '</span></td>';
@@ -337,6 +358,8 @@ class Page extends EventPageBase
 	{
 		$this->navBar();
 
+		// Over the table on the right, in words - the way the seating has its buttons over it.
+		echo '<div class="seat-bar"><div></div><button onclick="mr.createEventMailing(' . $this->id . ')">' . get_label('Create mailing') . '</button></div>';
 		echo '<table class="bordered light" width="100%">';
 		if (isset($_REQUEST['msg']) && $_REQUEST['msg'] == 0)
 		{
@@ -344,8 +367,7 @@ class Page extends EventPageBase
 		}
 
 		echo '<tr height="36" class="th darker">';
-		echo '<td width="60"><button class="icon" onclick="mr.createEventMailing(' . $this->id . ')" title="' . get_label('New mailing') . '">';
-		echo '<img src="images/create.png" border="0"></button></td>';
+		echo '<td width="60"></td>';
 		echo '<td width="150">' . get_label('Date') . '</td><td>' . get_label('Recipients') . '</td><td width="80">' . get_label('Type') . '</td><td width="80">' . get_label('Status') . '</td><td width="80">' . get_label('Emails sent') . '</td></tr>';
 
 		$query = new DbQuery('SELECT id, send_time, send_count, status, langs, flags, type FROM event_mailings WHERE event_id = ? ORDER BY send_time', $this->id);
@@ -414,30 +436,30 @@ class Page extends EventPageBase
 		// and from the hash shown next to it, so it needs the texts the dialogs are written in.
 		show_seating_optimizer_labels();
 
-		echo '<div class="tab">';
-		$tabs = array(
-			EPREP_TAB_SCHEME => get_label('Scheme'),
-			EPREP_TAB_RULES => get_label('Rules'),
-			EPREP_TAB_REGISTRATIONS => get_label('Registrations'),
-			EPREP_TAB_STREAMS => get_label('Streams'),
-			EPREP_TAB_SEATING => get_label('Seating'));
+		// Nothing can be seated until the scheme says how many play, at how many tables and how many
+		// games each - the generator has nothing to work from. The tab is barred rather than left to
+		// fail, and comes back the moment the scheme is applied.
+		$tabs = array();
+		if ($this->canEditDetails())
+		{
+			$tabs[PREP_TAB_DETAILS] = array(details_tab_name(), true);
+		}
+		$tabs[EPREP_TAB_RULES] = array(get_label('Rules'), true);
 		if ($this->can_mail)
 		{
-			$tabs = array(EPREP_TAB_MAILING => get_label('Mailing')) + $tabs;
-			ksort($tabs);
+			$tabs[EPREP_TAB_MAILING] = array(get_label('Mailing'), true);
 		}
-		foreach ($tabs as $idx => $name)
-		{
-			// Nothing can be seated until the scheme says how many play, at how many tables and
-			// how many games each - the generator has nothing to work from. The tab is barred
-			// rather than left to fail, and comes back the moment the scheme is applied.
-			$disabled = ($idx == EPREP_TAB_SEATING && !$this->scheme_valid) ? ' disabled' : '';
-			echo '<button' . ($this->tab == $idx ? ' class="active"' : '') . $disabled . ' onclick="goToTab(' . $idx . ')">' . $name . '</button>';
-		}
-		echo '</div>';
+		$tabs[EPREP_TAB_SCHEME] = array(get_label('Scheme'), true);
+		$tabs[EPREP_TAB_REGISTRATIONS] = array(get_label('Registrations'), true);
+		$tabs[EPREP_TAB_STREAMS] = array(get_label('Streams'), true);
+		$tabs[EPREP_TAB_SEATING] = array(get_label('Seating'), $this->scheme_valid);
+		$this->wizardBegin($tabs);
 
 		switch ($this->tab)
 		{
+			case PREP_TAB_DETAILS:
+				$this->showDetailsTab('form/event_edit.php?event_id=' . $this->id);
+				break;
 			case EPREP_TAB_MAILING:
 				$this->showMailingTab();
 				break;
@@ -464,6 +486,38 @@ class Page extends EventPageBase
 				$this->showSchemeTab();
 				break;
 		}
+		$this->wizardEnd($this->tab == PREP_TAB_DETAILS ? wizard_summary_live(get_label('Event'), $this->summaryLogo()) : $this->summary());
+	}
+
+	// The picture of the event at the top of the summary - the one of its header, where an event
+	// with no logo of its own shows the map of its address.
+	private function summaryLogo()
+	{
+		$pic = new Picture(EVENT_PICTURE, new Picture(ADDRESS_PICTURE));
+		$pic->set($this->id, $this->name, $this->flags)->set($this->address_id, $this->address, $this->address_flags);
+		return PageBase::capture(function() use ($pic) { $pic->show(TNAILS_DIR, false); });
+	}
+
+	// Beside the card: where the event stands - when and where, how many play, how many are coming.
+	private function summary()
+	{
+		list ($event_id, $round_num, $misc, $players, $tables, $games) = $this->rounds[0];
+		list ($regs) = Db::record(get_label('registration'), 'SELECT COUNT(*) FROM event_regs WHERE event_id = ?', $this->id);
+		$scheme = NULL;
+		if ($this->scheme_valid)
+		{
+			$scheme = get_label('[0] players, [1] tables, [2] games each', $players, $tables, $games);
+		}
+		return wizard_summary(get_label('Event'), array(
+			details_tab_name() => array(
+				array(get_label('Date'), wizard_period($this->start_time, 1, $this->timezone)),
+				array(get_label('Club'), $this->club_name),
+				array(get_label('Tournament'), $this->tournament_name),
+				array(get_label('Address'), $this->address)),
+			get_label('Scheme') => array(
+				array(get_label('Scheme'), $scheme)),
+			get_label('Registrations') => array(
+				array(get_label('Players'), $regs > 0 ? $regs : NULL))), $this->summaryLogo());
 	}
 
 	protected function js()
@@ -483,7 +537,43 @@ class Page extends EventPageBase
 
 		function nextStep()
 		{
-			goToTab(<?php echo $this->tab + 1; ?>);
+<?php if ($this->tab == PREP_TAB_DETAILS): ?>
+			// Saved the way the dialog saved it, and asked the way it asked whether to tell the
+			// players what has changed.
+			detailsCommit(function(obj)
+			{
+				var next = function() { goToTab(<?php echo $this->firstTab(); ?>); };
+				if (isSet(obj.mailing))
+				{
+					dlg.form('form/event_mailing_create.php?events=<?php echo $this->id; ?>&type=' + obj.mailing, next, 640, next);
+				}
+				else
+				{
+					next();
+				}
+			});
+<?php elseif ($this->tab == EPREP_TAB_SCHEME): ?>
+			// Nothing filled in, or nothing changed: there is nothing to save.
+			var next = function() { goToTab(<?php echo $this->nextTab(); ?>); };
+			var vals = ['#scheme-players', '#scheme-tables', '#scheme-games'].map(function(id) { return $.trim($(id).val()); });
+			// A round of a tournament has the size of its teams as well.
+			var teamSize = $('#scheme-team-size').length > 0 ? $.trim($('#scheme-team-size').val()) : '<?php echo $this->team_size; ?>';
+			if ((vals[0] == '' && vals[1] == '' && vals[2] == '') ||
+				(vals.join(',') == <?php echo json_encode(implode(',', array($this->rounds[0][3], $this->rounds[0][4], $this->rounds[0][5]))); ?> && teamSize == '<?php echo $this->team_size; ?>'))
+			{
+				next();
+			}
+			else if (schemeValid())
+			{
+				applyScheme(next);
+			}
+			else
+			{
+				dlg.error(<?php echo json_encode(get_label('Players, tables and games per player do not fit together. Correct them, or clear all three if the game day has no fixed scheme.')); ?>);
+			}
+<?php else: ?>
+			goToTab(<?php echo $this->nextTab(); ?>);
+<?php endif; ?>
 		}
 
 		// One flag of the event on or off, the others left as they are.
@@ -551,7 +641,7 @@ class Page extends EventPageBase
 		// for it; a round of one is saved through that very operation, with the round named,
 		// so that what this page writes and what the tournament's page writes are one thing.
 		// An event standing on its own has nobody to share with and saves itself.
-		function applyScheme()
+		function applyScheme(onSuccess)
 		{
 			var players = parseInt($('#scheme-players').val()) || 0;
 			var tables = parseInt($('#scheme-tables').val()) || 0;
@@ -564,7 +654,7 @@ class Page extends EventPageBase
 				rounds: JSON.stringify([{ event_id: <?php echo $this->id; ?>, is_main: true,
 					players: players, tables: tables, games: games }]),
 				team_size: Math.max(1, parseInt($('#scheme-team-size').val()) || 1),
-			}, refr);
+			}, onSuccess);
 <?php else: ?>
 			json.post('api/ops/event.php',
 			{
@@ -573,7 +663,7 @@ class Page extends EventPageBase
 				players: players,
 				tables: tables,
 				games: games,
-			}, refr);
+			}, onSuccess);
 <?php endif; ?>
 		}
 
@@ -594,8 +684,14 @@ class Page extends EventPageBase
 					tables = maxTables;
 				}
 			}
-			$('#prep-apply-btn').prop('disabled',
-				!(players >= 10 && tables >= 1 && games >= 1 && tables <= maxTables));
+		}
+
+		function schemeValid()
+		{
+			var players = parseInt($('#scheme-players').val()) || 0;
+			var tables = parseInt($('#scheme-tables').val()) || 0;
+			var games = parseInt($('#scheme-games').val()) || 0;
+			return players >= 10 && tables >= 1 && games >= 1 && tables <= Math.floor(players / 10);
 		}
 <?php
 	}

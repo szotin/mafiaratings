@@ -1,6 +1,7 @@
 <?php
 
 require_once '../include/session.php';
+require_once '../include/currency.php';
 require_once '../include/city.php';
 require_once '../include/country.php';
 require_once '../include/event.php';
@@ -60,18 +61,16 @@ try
 	$names = new Names($name_id, get_label('event name'));
 	echo '<tr><td width="160" valign="top">'.get_label('Event name').':</td><td>';
 	Names::show_control($names);
-	echo '</td>';
-	
-	echo '<td align="center" valign="top" rowspan="13">';
+	echo '</td></tr>';
+
+	// The logo is a row like the rest: the picture is the button that changes it.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
 	start_upload_logo_button($event_id);
-	echo get_label('Change logo') . '<br>';
 	$event_pic = new Picture(EVENT_PICTURE);
 	$event_pic->set($event_id, $name, $flags);
-	$event_pic->show(ICONS_DIR, false, 50);
+	$event_pic->show(ICONS_DIR, false);
 	end_upload_logo_button(EVENT_PIC_CODE, $event_id);
-	echo '</td>';
-	
-	echo '</tr>';
+	echo '</td></tr>';
 	
 	$query = new DbQuery('SELECT t.id, n.name FROM tournaments t JOIN names n ON n.id = t.name_id AND (n.langs & '.$_lang.') <> 0 WHERE t.club_id = ? AND t.start_time <= ? AND t.start_time + t.duration >= ? ORDER BY n.name', $club_id, $start_time, $start_time);
 	echo '<tr><td>' . get_label('Tournament') . ':</td><td><select id="form-tournament" onchange="tournamentChange()">';
@@ -121,17 +120,7 @@ try
 	show_city_input('form-city', $club->city, 'form-country');
 	echo '</span></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="'.(is_null($fee)?'':$fee).'" onchange="feeChanged()">';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
-	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()"'.(is_null($fee)?' checked':'').'> '.get_label('unknown');
-	echo ' <select id="form-currency" onChange="currencyChanged()">';
-	show_option(0, $currency_id, '');
-	while ($row = $query->next())
-	{
-		list($cid, $cname) = $row;
-		show_option((int)$cid, $currency_id, $cname);
-	}
-	echo '</select></td></tr>';
+	show_fee_row(get_label('Admission rate'), $fee, $currency_id);
 		
 	// The rules, the scoring and the special awards are set on the Rules tab of the preparation
 	// page, each saved the moment it is changed. They are not here any more - see

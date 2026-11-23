@@ -33,18 +33,16 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="140" valign="top">' . get_label('League name') . ':</td><td>';
 	Names::show_control(new Names($name_id, get_label('league name')));
-	echo '</td>';
-	
-	echo '<td align="center" valign="top" rowspan="8">';
+	echo '</td></tr>';
+
+	// The logo is a row like the rest: the picture is the button that changes it.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
 	start_upload_logo_button($id);
-	echo get_label('Change logo') . '<br>';
 	$league_pic = new Picture(LEAGUE_PICTURE);
 	$league_pic->set($id, $name, $flags);
 	$league_pic->show(ICONS_DIR, false);
 	end_upload_logo_button(LEAGUE_PIC_CODE, $id);
-	echo '</td>';
-	
-	echo '</tr>';
+	echo '</td></tr>';
 
 	echo '<tr><td>'.get_label('Web site').':</td><td><input id="form-url" class="longest" value="' . htmlspecialchars($url, ENT_QUOTES) . '"></td></tr>';
 	

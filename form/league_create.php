@@ -17,18 +17,18 @@ try
 	$email = $_profile->user_email;
 
 	echo '<table class="dialog_form" width="100%">';
-	// An admin creates the league at once and gives it its names in every language. Anyone else sends
-	// a request, which keeps one name; the others are set when it is accepted or edited.
+	// Anyone creates a league at once; only an administrator can make it global.
 	$is_admin = is_permitted(PERMISSION_ADMIN);
 	echo '<tr><td width="140" valign="top">'.get_label('League name').':</td><td>';
-	if ($is_admin)
-	{
-		Names::show_control(new Names(0, get_label('league name')));
-	}
-	else
-	{
-		echo '<input class="longest" id="form-name">';
-	}
+	Names::show_control(new Names(0, get_label('league name')));
+	echo '</td></tr>';
+
+	// The logo, as in form/tournament_create.php: only chosen here - and shown - and uploaded by
+	// commit() once the league is made.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
+	echo '<input type="file" id="form-logo" accept="image/*" style="display:none" onchange="logoChosen()">';
+	echo '<button type="button" class="upload" onclick="$(\'#form-logo\').trigger(\'click\');">';
+	echo '<img id="form-logo-img" src="images/' . ICONS_DIR . 'league.png" width="56" height="56"></button>';
 	echo '</td></tr>';
 	echo '<tr><td>'.get_label('Web site').':</td><td><input class="longest" id="form-url"> </td></tr>';
 				
@@ -71,17 +71,39 @@ try
 			, langs: languages
 			, flags: flags
 		};
-<?php
-	if ($is_admin)
-	{
-		echo "\t\tnameControl.fillRequest(request);\n";
+		nameControl.fillRequest(request);
+		json.post("api/ops/league.php", request, function(obj)
+		{
+			// The league is made whatever happens to its logo: a logo that fails to upload is said,
+			// and can be changed on the first tab of its management.
+			var logo = document.getElementById('form-logo').files[0];
+			if (!logo)
+			{
+				onSuccess(obj);
+				return;
+			}
+			json.upload('api/ops/league.php',
+			{
+				op: "change"
+				, league_id: obj.league_id
+				, logo: logo
+			},
+			<?php echo UPLOAD_LOGO_MAX_SIZE; ?>,
+			function() { onSuccess(obj); },
+			function(message) { dlg.error(message, null, null, function() { onSuccess(obj); }); return true; });
+		});
 	}
-	else
+
+	function logoChosen()
 	{
-		echo "\t\trequest.name = $(\"#form-name\").val();\n";
-	}
-?>
-		json.post("api/ops/league.php", request, onSuccess);
+		var file = document.getElementById('form-logo').files[0];
+		if (file && window.URL)
+		{
+			var url = URL.createObjectURL(file);
+			$('#form-logo-img').attr('src', url);
+			// The summary beside the form shows it too, where there is one - see create.php.
+			$('#wz-sum-logo-img').attr('src', url);
+		}
 	}
 	</script>
 <?php

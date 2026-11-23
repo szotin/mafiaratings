@@ -597,7 +597,6 @@ class EventPageBase extends PageBase
 		{
 			$manager_menu = array();
 			
-			$manager_menu[] = new MenuItem('event_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Getting [0] ready: how many play, who is coming, where it is streamed from and who sits where.', $this->name));
 			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name));
 			// A round of a tournament is set up through its tournament, where one set of
 			// settings covers the table for every round of it - so the question asked here is
@@ -644,6 +643,11 @@ class EventPageBase extends PageBase
 			$h = new EntityHeader($this->name, $this->tournament_name, 'tournament_info.php?bck=1&id=' . $this->tournament_id);
 		}
 		$h->off = ($this->flags & EVENT_FLAG_CANCELED) != 0;
+		if ($this->is_manager || $this->is_referee)
+		{
+			// First in its menu "≡" rather than one of the pages under it.
+			$h->prep = new MenuItem('event_preparation.php?id=' . $this->id, get_label('Preparation'), get_label('Getting [0] ready: how many play, who is coming, where it is streamed from and who sits where.', $this->name));
+		}
 		if ($h->off)
 		{
 			$h->sub = '<span class="chip off">' . get_label('Canceled') . '</span>';

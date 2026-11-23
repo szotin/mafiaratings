@@ -117,6 +117,10 @@ class LeaguePageBase extends PageBase
 
 		$h = new EntityHeader($this->name, get_label('Leagues'), 'leagues.php');
 		$h->off = ($this->flags & LEAGUE_FLAG_CLOSED) != 0;
+		if ($this->is_manager && !$h->off)
+		{
+			$h->prep = new MenuItem('league_management.php?id=' . $this->id, get_label('Management'), get_label('Manage [0].', $this->name));
+		}
 		if ($h->off)
 		{
 			$h->sub = '<span class="chip off">' . get_label('closed') . '</span>';

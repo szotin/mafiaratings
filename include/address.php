@@ -28,24 +28,39 @@ function load_map_info($addr_id, $picture_dir = NULL)
 		$addr_id);
 	$address = str_replace(' ', '+', $address . ',' . $city_name . ',' . $country_name);
 	//echo $address . '<br>';
-	
-	try
+
+	// Without a key - a testing server, whose include/api_keys.php has none - nothing is sent to
+	// Google at all: it would refuse both the place and the picture. The address stays where its city
+	// is, keeps the picture it has, and whoever made it is told why.
+	$warning = NULL;
+	$no_key = (GOOGLE_API_KEY == '');
+	$coord = new stdClass();
+	$coord->lat = $city_lat;
+	$coord->lng = $city_lon;
+	if ($no_key)
 	{
-		$coord = get_address_coordinates($address);
+		$warning = get_label('The address is saved, but it is not tied to the map: the key of Google Maps is not set on this server.');
 	}
-	catch (Throwable $ex)
+	else
 	{
-		$coord = new stdClass();
-		$coord->lat = $city_lat;
-		$coord->lng = $city_lon;
+		try
+		{
+			$coord = get_address_coordinates($address);
+		}
+		catch (Throwable $ex)
+		{
+			// Not found: it stays where its city is.
+		}
 	}
 	$map_url = get_address_url($address, $coord);
 	
 	$flags = $old_flags;
-	if (!is_null($picture_dir))
+	// A picture asked for and refused is told in words of our own rather than as a warning of PHP in
+	// the middle of the response.
+	if (!is_null($picture_dir) && !$no_key)
 	{
 		$image_url = get_address_image_url($address, TNAIL_WIDTH, TNAIL_HEIGHT, $coord);
-		$image = file_get_contents($image_url);
+		$image = @file_get_contents($image_url);
 		if ($image === false)
 		{
 			return get_label('Failed to get map image from google maps');
@@ -91,7 +106,7 @@ function load_map_info($addr_id, $picture_dir = NULL)
 		}
 		db_log(LOG_OBJECT_ADDRESS, 'generated', $log_details, $addr_id, $club_id);
 	}
-	return NULL;
+	return $warning;
 }
 
 function show_address_buttons($id, $name, $flags, $club_id)
@@ -219,6 +234,10 @@ class AddressPageBase extends PageBase
 		// An address is a club's: it is found through the club.
 		$h = new EntityHeader($this->name, $this->club_name, 'club_main.php?bck=1&id=' . $this->club_id);
 		$h->off = ($this->flags & ADDRESS_FLAG_NOT_USED) != 0;
+		if ($this->is_manager)
+		{
+			$h->prep = new MenuItem('address_management.php?id=' . $this->id, get_label('Management'), get_label('Manage [0].', $this->name));
+		}
 
 		$address_pic = new Picture(ADDRESS_PICTURE);
 		$address_pic->set($this->id, $this->name, $this->flags);

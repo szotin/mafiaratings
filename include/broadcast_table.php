@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/broadcast.php';
+require_once __DIR__ . '/cards.php';
 
 // The broadcasts of one round, drawn as a table that can be added to, changed and taken from.
 //
@@ -30,21 +31,22 @@ function show_broadcast_table($owner, $event_id, $named, $only_table = 0)
 {
 	$add = 'mr.eventCreateBroadcast(' . $event_id . ($only_table > 0 ? ', ' . $only_table : '') . ')';
 
+	// The button that adds one over the table on the right, the way this design puts the button
+	// that creates something; the actions of a row under its "≡".
+	echo '<div class="toolbar"><a class="btn tb-create" href="#" onclick="' . $add . '; return false;" title="' .
+		htmlspecialchars(get_label('Create broadcast for [0]', $named)) . '">' . PageBase::icon('plus') . '<span>' . get_label('Create broadcast') . '</span></a></div>';
 	echo '<table class="bordered light" width="100%">';
-	echo '<tr class="th darker"><td width="58"><button class="icon" onclick="' . $add . '" title="' .
-		htmlspecialchars(get_label('Create broadcast for [0]', $named)) . '"><img src="images/create.png"></button></td>';
+	echo '<tr class="th darker"><td width="44"></td>';
 	echo '<td width="46" align="center">' . get_label('Day') . '</td>';
 	echo '<td width="52" align="center">' . get_label('Table') . '</td>';
 	echo '<td width="46" align="center">' . get_label('Part') . '</td>';
-	// The address takes whatever the others leave, and the four columns of figures are given
-	// only what their figures need. They are read now and then; the address is read, copied
-	// and compared every time somebody opens this, and it is the one thing here long enough
-	// to be cut off.
+	// The address takes whatever the others leave. It is read, copied and compared every time
+	// somebody opens this, and it is the one thing here long enough to be cut off. The figures
+	// that say whether the links into the recording can be trusted - the interruptions, how far
+	// they are out, the correction - are for whoever is looking into that, so they wait under
+	// "Details" beneath the address.
 	echo '<td>' . get_label('URL') . '</td>';
-	echo '<td width="115">' . get_label('On the air') . '</td>';
-	echo '<td width="70">' . get_label('Interruptions') . '</td>';
-	echo '<td width="80">' . get_label('Out by') . '</td>';
-	echo '<td width="70">' . get_label('Correction') . '</td></tr>';
+	echo '<td width="130">' . get_label('On the air') . '</td></tr>';
 
 	// Which tables to walk. One of them where this is the page of one table; otherwise every
 	// table that has a broadcast written down against it, because a table with none has nothing
@@ -74,8 +76,10 @@ function show_broadcast_table($owner, $event_id, $named, $only_table = 0)
 		foreach (broadcast_list($event_id, $table_num) as $b)
 		{
 			++$rows;
-			echo '<tr><td><button class="icon" onclick="mr.eventDeleteBroadcast(' . $event_id . ',' . $b->day_num . ',' . ($b->table_num - 1) . ',' . $b->part_num . ', \'' . get_label('Are you sure you want to remove the broadcast?') . '\')"><img src="images/delete.png"></button>';
-			echo '<button class="icon" onclick="mr.eventEditBroadcast(' . $event_id . ',' . $b->day_num . ',' . ($b->table_num - 1) . ',' . $b->part_num . ')"><img src="images/edit.png"></button></td>';
+			$key = $event_id . ',' . $b->day_num . ',' . ($b->table_num - 1) . ',' . $b->part_num;
+			echo '<tr><td class="tb-btns">' . card_row_menu(array(
+				array('mr.eventEditBroadcast(' . $key . ')', 'edit.png', get_label('Edit broadcast')),
+				array('mr.eventDeleteBroadcast(' . $key . ', ' . json_encode(get_label('Are you sure you want to remove the broadcast?')) . ')', 'delete.png', get_label('Delete broadcast')))) . '</td>';
 			echo '<td align="center">' . $b->day_num . '</td>';
 			echo '<td align="center">' . $b->table_num . '</td>';
 			echo '<td align="center">' . $b->part_num . '</td>';
@@ -88,46 +92,40 @@ function show_broadcast_table($owner, $event_id, $named, $only_table = 0)
 			echo '<td><span class="broadcast-url"><a href="' . htmlspecialchars($b->url) . '" target="_blank">' .
 				htmlspecialchars($b->url) . '</a>';
 			echo '<button class="copy-url" title="' . get_label('Copy') . '" onclick="mr.copyText(' .
-				htmlspecialchars(json_encode($b->url), ENT_QUOTES) . ')"><img src="images/copy.png"></button></span></td>';
+				htmlspecialchars(json_encode($b->url), ENT_QUOTES) . ')"><img src="images/copy.png"></button></span>';
 
 			if (is_null($b->start))
 			{
-				echo '<td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>';
+				echo '</td><td>&mdash;</td></tr>';
 				continue;
 			}
-			// In the time zone of whoever is reading, not of the hall the tournament was
-			// played in. The other times on the site are of an event and belong where it was
-			// played; this one is of a recording, and what it is for is to be held against
-			// the clock of the person looking at it - did this broadcast start when we think
-			// it did, is the one that is running now the one these games are going onto.
-			date_default_timezone_set(get_timezone());
-			echo '<td class="bc-when">' . date('Y-m-d H:i', $b->start) . '</td>';
 
 			// How long this table was reported to be off the air. Only what OBS said is in here
-			// - see include/broadcast.php - so it is a floor rather than a total, and the column
-			// beside it says how far short it falls.
+			// - see include/broadcast.php - so it is a floor rather than a total, and the figure
+			// after it says how far short it falls.
 			$until = is_null($b->end) ? time() : $b->end;
 			$measured = broadcast_lost_seconds($owner, $b->table_num, $b->start, $until);
-			echo '<td>' . format_lost_time($measured) . '</td>';
 
 			// And what the recording says about the same thing. It is shorter than the wall
 			// clock by exactly the time cut out of it, so the two should come to the same;
-			// where they do not, that is how far the links into this recording may be out.
+			// where they do not, that is how far the links into this recording may be out. Too
+			// far out, and "Details" is red, so that it is opened.
 			$out_by = get_label('How far the length of the recording and the breaks we measured disagree. The links into this recording may be out by that much.');
 			$difference = broadcast_difference($owner, $b);
+			$too_far = false;
 			if (is_null($difference))
 			{
-				echo '<td title="' . $out_by . '">&mdash;</td>';
+				$difference_text = '&mdash;';
 			}
 			else
 			{
-				$text = ($difference > 0 ? '+' : ($difference < 0 ? '&minus;' : '')) .
+				$difference_text = ($difference > 0 ? '+' : ($difference < 0 ? '&minus;' : '')) .
 					format_lost_time(abs($difference));
 				if (abs($difference) > BROADCAST_TOLERANCE_SECONDS)
 				{
-					$text = '<b class="stream-out-by">' . $text . '</b>';
+					$too_far = true;
+					$difference_text = '<b class="stream-out-by">' . $difference_text . '</b>';
 				}
-				echo '<td title="' . $out_by . '">' . $text . '</td>';
 			}
 
 			// What somebody taught this recording by moving a game of it to where it really
@@ -135,13 +133,26 @@ function show_broadcast_table($owner, $event_id, $named, $only_table = 0)
 			// worth seeing that it is there.
 			$shift = isset($b->shift) ? (int)$b->shift : 0;
 			$shift_title = get_label('Every link into this recording is moved by this much: it is how long the stream was delayed, since the time YouTube stamps on a broadcast is the moment the viewers saw the picture rather than the moment it was made. It is measured off the finished recording, some hours after the broadcast ends; until then the recording borrows what this table was delayed by last time. Moving a game to where it really begins overrules both.');
-			echo '<td title="' . $shift_title . '">' . ($shift == 0 ? '&mdash;' :
-				(($shift > 0 ? '+' : '&minus;') . format_lost_time(abs($shift)))) . '</td></tr>';
+			$shift_text = ($shift == 0) ? '&mdash;' : (($shift > 0 ? '+' : '&minus;') . format_lost_time(abs($shift)));
+
+			echo '<details class="bc-more"><summary' . ($too_far ? ' class="stream-out-by"' : '') . '>' . get_label('Details') . '</summary><div>';
+			echo '<span>' . get_label('Interruptions') . ': ' . format_lost_time($measured) . '</span>';
+			echo '<span title="' . $out_by . '">' . get_label('Out by') . ': ' . $difference_text . '</span>';
+			echo '<span title="' . $shift_title . '">' . get_label('Correction') . ': ' . $shift_text . '</span>';
+			echo '</div></details></td>';
+
+			// In the time zone of whoever is reading, not of the hall the tournament was
+			// played in. The other times on the site are of an event and belong where it was
+			// played; this one is of a recording, and what it is for is to be held against
+			// the clock of the person looking at it - did this broadcast start when we think
+			// it did, is the one that is running now the one these games are going onto.
+			date_default_timezone_set(get_timezone());
+			echo '<td class="bc-when">' . date('Y-m-d H:i', $b->start) . '</td></tr>';
 		}
 	}
 	if ($rows == 0)
 	{
-		echo '<tr><td colspan="9">' . get_label('No broadcasts yet.') . '</td></tr>';
+		echo '<tr><td colspan="6">' . get_label('No broadcasts yet.') . '</td></tr>';
 	}
 	echo '</table>';
 	return $rows;

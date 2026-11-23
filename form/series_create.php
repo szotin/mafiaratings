@@ -104,17 +104,7 @@ try
 	// the dates rather than above them so that what stays put does not move when it does.
 	echo '<tr id="form-series-row"><td>' . get_label('Belongs to series') . ':</td><td><div id="form-series"></div></td></tr>';
 	
-	echo '<tr><td>'.get_label('Admission rate per player-tournament').':</td><td><input type="number" min="0" style="width: 45px;" id="form-fee" value="" onchange="feeChanged()">';
-	$query = new DbQuery('SELECT c.id, n.name FROM currencies c JOIN names n ON n.id = c.name_id AND (n.langs & '.$_lang.') <> 0 ORDER BY n.name');
-	echo ' <input id="form-fee-unknown" type="checkbox" onclick="feeUnknownClicked()" checked> '.get_label('unknown');
-	echo ' <select id="form-currency" onChange="currencyChanged()">';
-	show_option(0, DEFAULT_CURRENCY, '');
-	while ($row = $query->next())
-	{
-		list($cid, $cname) = $row;
-		show_option((int)$cid, DEFAULT_CURRENCY, $cname);
-	}
-	echo '</select></td></tr>';
+	show_fee_row(get_label('Admission rate per player-tournament'), NULL, DEFAULT_CURRENCY);
 	
 	if (is_valid_lang($owner_langs))
 	{

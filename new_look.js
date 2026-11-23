@@ -555,4 +555,56 @@
 			closeAll(null);
 		}
 	});
+
+	// An open menu is placed against the window rather than inside its row. The sheets and the
+	// tables a row stands in clip what sticks out of them (their corners are rounded), so a menu
+	// of the first column, or of the last row, was cut off and could not be seen. It goes under
+	// its button, its right edge at the button's, unless that leaves the window: then from the
+	// button's left edge, and above the button where there is no room below.
+	function place(menu)
+	{
+		var list = menu.querySelector('.rm-list');
+		if (!list)
+		{
+			return;
+		}
+		var r = menu.querySelector('summary').getBoundingClientRect();
+		list.style.position = 'fixed';
+		list.style.right = 'auto';
+		list.style.left = '0px';
+		list.style.top = '0px';
+		var w = list.offsetWidth, h = list.offsetHeight;
+		var left = r.right - w;
+		if (left < 8)
+		{
+			left = Math.min(r.left, window.innerWidth - w - 8);
+		}
+		var top = r.bottom + 6;
+		if (top + h > window.innerHeight - 8 && r.top - 6 - h > 8)
+		{
+			top = r.top - 6 - h;
+		}
+		list.style.left = Math.max(8, left) + 'px';
+		list.style.top = top + 'px';
+	}
+	document.addEventListener('toggle', function(e)
+	{
+		var menu = e.target;
+		if (menu.matches && menu.matches('details.row-menu') && !menu.classList.contains('eh-menu') && menu.open)
+		{
+			place(menu);
+		}
+	}, true);
+	// Fixed to the window, an open menu would stay where it is while the page moves under it.
+	// The menu "≡" of the band is not moved, and keeps its own place.
+	function closePlaced()
+	{
+		var open = document.querySelectorAll('details.row-menu[open]:not(.eh-menu)');
+		for (var i = 0; i < open.length; ++i)
+		{
+			open[i].open = false;
+		}
+	}
+	window.addEventListener('scroll', closePlaced, true);
+	window.addEventListener('resize', closePlaced);
 })();
