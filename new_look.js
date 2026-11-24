@@ -602,8 +602,12 @@
 			}
 			top = r.top - 6 - h;
 		}
-		list.style.left = Math.max(8, left) + 'px';
+		left = Math.max(8, left);
+		list.style.left = left + 'px';
 		list.style.top = top + 'px';
+		// Where it stands against its button: it keeps that place as the page scrolls.
+		list.dataset.dx = left - r.left;
+		list.dataset.dy = top - r.top;
 	}
 	document.addEventListener('toggle', function(e)
 	{
@@ -613,30 +617,34 @@
 			place(menu);
 		}
 	}, true);
-	// Fixed to the window, an open menu would stay where it is while the page moves under it: it
-	// goes with its button, and closes only once the button has left the window. Scrolling the
-	// menu itself - a long one scrolls inside - does nothing to it. The menu "≡" of the band is not
-	// moved, and keeps its own place.
-	function followPlaced(e)
+	// An open menu goes with the page as it scrolls, where it was put beside its button, and stays
+	// open - also when the button leaves the window: a long menu is read by scrolling. Scrolling the
+	// menu itself does nothing to it. A window that changes its size places it again. The menu "≡"
+	// of the band is not placed, and keeps its own place.
+	window.addEventListener('scroll', function(e)
 	{
-		if (e && e.target && e.target.closest && e.target.closest('.rm-list'))
+		if (e.target && e.target.closest && e.target.closest('.rm-list'))
 		{
 			return;
 		}
 		var open = document.querySelectorAll('details.row-menu[open]:not(.eh-menu)');
 		for (var i = 0; i < open.length; ++i)
 		{
-			var r = open[i].querySelector('summary').getBoundingClientRect();
-			if (r.bottom < 0 || r.top > window.innerHeight)
+			var list = open[i].querySelector('.rm-list');
+			if (list && list.dataset.dy)
 			{
-				open[i].open = false;
-			}
-			else
-			{
-				place(open[i]);
+				var r = open[i].querySelector('summary').getBoundingClientRect();
+				list.style.left = (r.left + parseFloat(list.dataset.dx)) + 'px';
+				list.style.top = (r.top + parseFloat(list.dataset.dy)) + 'px';
 			}
 		}
-	}
-	window.addEventListener('scroll', followPlaced, true);
-	window.addEventListener('resize', followPlaced);
+	}, true);
+	window.addEventListener('resize', function()
+	{
+		var open = document.querySelectorAll('details.row-menu[open]:not(.eh-menu)');
+		for (var i = 0; i < open.length; ++i)
+		{
+			place(open[i]);
+		}
+	});
 })();
