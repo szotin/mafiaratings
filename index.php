@@ -7,7 +7,8 @@ require_once 'include/address.php';
 require_once 'include/user_location.php';
 require_once 'include/club.php';
 require_once 'include/event.php';
-require_once 'include/snapshot.php';
+require_once 'include/stream.php';
+require_once 'include/broadcast.php';
 require_once 'include/scoring.php';
 require_once 'include/picture.php';
 require_once 'include/tournament.php';
@@ -16,12 +17,12 @@ require_once 'include/cards.php';
 
 define('HOME_NEXT_COUNT', 4);      // "Next up" on the band
 define('HOME_SEASON_COUNT', 6);    // long-term tournaments running now, on the band
-define('HOME_RECENT_COUNT', 6);    // finished tournaments
+define('HOME_NOW_COUNT', 12);      // on, within a day or just finished
+define('HOME_LATER_COUNT', 3);     // the next ones after that
+define('HOME_AIR_COUNT', 8);       // tables on air
 define('HOME_SERIES_COUNT', 3);    // series in progress
 define('HOME_SERIES_TOP', 3);      // players shown of each series
 define('HOME_BEST_COUNT', 10);     // best players
-define('HOME_CHANGES_COUNT', 8);   // latest changes in the rating
-define('HOME_EVENTS_COUNT', 5);    // latest game nights
 define('HOME_ADVERTS_COUNT', 3);
 
 // The main page of the site, as in the v3 design: what is on now and next on the band; the recent
@@ -324,44 +325,6 @@ class Page extends GeneralPageBase
 		echo '</ul></section>';
 	}
 
-	private function show_recent_tournaments()
-	{
-		$tournaments = $this->select_tournaments(
-			' AND (t.start_time + t.duration <= ' . $this->now . ' OR (t.flags & ' . TOURNAMENT_FLAG_FINISHED . ') <> 0)',
-			't.start_time + t.duration DESC, t.id DESC', HOME_RECENT_COUNT);
-		if (count($tournaments) == 0)
-		{
-			return;
-		}
-		$this->add_results($tournaments);
-
-		echo '<section class="home-results" aria-labelledby="h-recent"><div class="sec-hd"><h2 id="h-recent">' . get_label('Recent tournaments') . '</h2>';
-		echo '<a class="more" href="tournaments.php?bck=1">' . get_label('All tournaments') . '</a></div>';
-		echo '<div class="posters">';
-		foreach ($tournaments as $t)
-		{
-			echo '<article class="pcard"><div class="pc-cover">' . $this->cover($t);
-			echo '<span class="pc-date">' . card_short_period($t->start_time, $t->duration, $t->timezone) . '</span>';
-			if ($t->stars > 0)
-			{
-				echo '<span class="pc-stars"><span class="stars">' . tournament_stars_str($t->stars, false) . '</span></span>';
-			}
-			echo '</div><div class="pc-body"><h3><a href="tournament.php?bck=1&id=' . $t->id . '">' . $t->name . '</a></h3>';
-			echo '<div class="pc-meta"><span>' . PageBase::icon('pin') . $t->city . '</span><span>' . PageBase::icon('users') . $t->club_name . '</span></div>';
-			echo '<div class="pc-foot">';
-			if (!is_null($t->winner))
-			{
-				echo '<span class="pc-win" title="' . get_label('Winner') . ': ' . $t->winner . '">' . PageBase::icon('trophy') . '<b>' . $t->winner . '</b></span>';
-			}
-			else if ($t->num_players > 0)
-			{
-				echo '<span class="dim" title="' . get_label('Players') . '">' . PageBase::icon('users') . '<b>' . $t->num_players . '</b></span>';
-			}
-			echo '</div></div></article>';
-		}
-		echo '</div></section>';
-	}
-
 	private function show_series()
 	{
 		global $_profile, $_lang;
@@ -484,7 +447,8 @@ class Page extends GeneralPageBase
 		{
 			return;
 		}
-		echo '<section class="rail-box home-best" aria-labelledby="h-best"><div class="sec-hd"><h2 id="h-best">' . get_label('Best players') . '</h2>';
+		echo '<section class="rail-box home-best" aria-labelledby="h-best"><div class="sec-hd"><div><h2 id="h-best">' . get_label('Best players') . '</h2>' .
+			($this->ccc_filter->get_id() == CCCF_ALL ? '<p class="sub">' . get_label('Overall rating, all clubs') . '</p>' : '') . '</div>';
 		echo '<a class="more" href="ratings.php?bck=1">' . get_label('All ratings') . '</a></div><ol class="rank-list">';
 		$number = 0;
 		do
@@ -498,119 +462,258 @@ class Page extends GeneralPageBase
 		echo '</ol></section>';
 	}
 
-	// Who moved in the top 100 since the last snapshot that differs from now.
-	private function show_changes()
-	{
-		$snapshot = new Snapshot(time());
-		$snapshot->shot();
-		$query = new DbQuery('SELECT time, snapshot FROM snapshots ORDER BY time DESC LIMIT 10');
-		while ($row = $query->next())
-		{
-			list ($prev_time, $json) = $row;
-			$prev_snapshot = new Snapshot($prev_time, $json);
-			$prev_snapshot->load_user_details();
-			$diff = $snapshot->compare($prev_snapshot);
-			if (count($diff) > 0)
-			{
-				break;
-			}
-		}
-		if (!isset($diff) || count($diff) == 0)
-		{
-			return;
-		}
+	// ------------------------------------------------------------------ happening now
 
-		echo '<section class="rail-box home-changes" aria-labelledby="h-changes"><div class="sec-hd"><div><h2 id="h-changes">' . get_label('Rating changes') . '</h2>';
-		echo '<p class="sub">' . get_label('since [0]', format_date($prev_time, get_timezone())) . '</p></div></div><ol class="rank-list">';
-		$count = 0;
-		foreach ($diff as $player)
-		{
-			if ($count++ >= HOME_CHANGES_COUNT)
-			{
-				break;
-			}
-			// A label ending in ~fem is the female form, for the languages where it matters (see get_label()).
-			$male = ($player->user_flags & USER_FLAG_MALE) != 0;
-			$name = $player->user_name;
-			if (!isset($player->src))
-			{
-				$mark = '<span class="mv new">' . get_label('new') . '</span>';
-				$title = $male ?
-					get_label('[0] entered top 100 and gained [1] place.', $name, $player->dst) :
-					get_label('[0] entered top 100 and gained [1] place.~fem', $name, $player->dst);
-			}
-			else if (!isset($player->dst))
-			{
-				$mark = '<span class="mv dn">&#9660;</span>';
-				$title = $male ?
-					get_label('[0] left top 100.', $name, $player->src) :
-					get_label('[0] left top 100.~fem', $name, $player->src);
-			}
-			else if ($player->src > $player->dst)
-			{
-				$mark = '<span class="mv up">&#9650;' . ($player->src - $player->dst) . '</span>';
-				$title = $male ?
-					get_label('[0] moved up from [1] to [2] place.', $name, $player->src, $player->dst) :
-					get_label('[0] moved up from [1] to [2] place.~fem', $name, $player->src, $player->dst);
-			}
-			else
-			{
-				$mark = '<span class="mv dn">&#9660;' . ($player->dst - $player->src) . '</span>';
-				$title = $male ?
-					get_label('[0] moved down from [1] to [2] place.', $name, $player->src, $player->dst) :
-					get_label('[0] moved down from [1] to [2] place.~fem', $name, $player->src, $player->dst);
-			}
-			echo '<li title="' . htmlspecialchars(strip_tags($title), ENT_QUOTES, 'UTF-8') . '"><span class="n">' . (isset($player->dst) ? $player->dst : '&mdash;') . '</span>';
-			echo '<a class="who" href="user_info.php?bck=1&id=' . $player->id . '">' . card_avatar($this->user_pic, $player->id, $player->user_name, $player->user_flags);
-			echo '<span class="who-txt"><span class="who-name">' . $player->user_name . '</span><span class="who-sub">' . $player->club_name . '</span></span></a>';
-			echo '<span class="v">' . $mark . '</span></li>';
-		}
-		echo '</ol></section>';
-	}
-
-	private function show_events()
+	// The tournaments and the game days to show in "Happening now", read with $where: the ones that
+	// are on, start within a day or have just finished, or - with $later - the next ones after
+	// that. A tournament played all season is not one of them (the band has those, "Running all
+	// season"), its evenings are; the rounds of a short tournament are the tournament itself.
+	private function select_now($where, $order, $limit)
 	{
 		global $_lang;
 
+		$items = array();
 		$query = new DbQuery(
-			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, t.id, nt.name, c.id, nc.name,' .
-			' (SELECT COUNT(*) FROM games g WHERE g.event_id = e.id AND (g.flags & ' . GAME_FLAG_CANCELED . ') = 0),' .
-			' (SELECT COUNT(DISTINCT p.user_id) FROM players p JOIN games g ON g.id = p.game_id WHERE g.event_id = e.id AND (g.flags & ' . GAME_FLAG_CANCELED . ') = 0)' .
-			' FROM events e' .
-			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
-			' JOIN addresses a ON a.id = e.address_id' .
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, nct.name FROM tournaments t' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
+			' JOIN clubs c ON c.id = t.club_id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
+			' JOIN addresses a ON a.id = t.address_id' .
 			' JOIN cities ct ON ct.id = a.city_id' .
-			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
-			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+			' WHERE (t.flags & ' . (TOURNAMENT_FLAG_CANCELED | TOURNAMENT_FLAG_LONG_TERM) . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0' .
+			str_replace('{s}', 't.start_time', str_replace('{e}', 't.start_time + t.duration', $where)), $this->condition);
+		$query->add(' ORDER BY ' . str_replace('{s}', 't.start_time', $order) . ' LIMIT ' . $limit);
+		while ($row = $query->next())
+		{
+			$i = new stdClass();
+			list ($i->id, $i->name, $flags, $i->start, $i->duration, $i->timezone, $i->club_id, $i->club, $i->city) = $row;
+			$i->is_tournament = true;
+			$i->finished = ($flags & TOURNAMENT_FLAG_FINISHED) != 0;
+			$i->of = NULL;
+			$items[] = $i;
+		}
+
+		$query = new DbQuery(
+			'SELECT e.id, ne.name, e.flags, e.start_time, e.duration, ct.timezone, c.id, nc.name, nct.name, nt.name FROM events e' .
+			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON c.id = e.club_id' .
 			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
-			' WHERE e.start_time <= UNIX_TIMESTAMP() AND (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_AFTER) . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0' .
-			' AND EXISTS (SELECT g.id FROM games g WHERE g.event_id = e.id AND (g.flags & ' . GAME_FLAG_CANCELED . ') = 0)', $this->condition);
-		$query->add(' ORDER BY e.start_time DESC, e.id DESC LIMIT ' . HOME_EVENTS_COUNT);
-
-		$row = $query->next();
-		if (!$row)
+			' JOIN addresses a ON a.id = e.address_id' .
+			' JOIN cities ct ON ct.id = a.city_id' .
+			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
+			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
+			' WHERE (e.flags & ' . (EVENT_FLAG_CANCELED | EVENT_FLAG_HIDDEN_BEFORE) . ') = 0 AND (c.flags & ' . CLUB_FLAG_CLOSED . ') = 0' .
+			' AND (e.tournament_id IS NULL OR (t.flags & ' . TOURNAMENT_FLAG_LONG_TERM . ') <> 0)' .
+			str_replace('{s}', 'e.start_time', str_replace('{e}', 'e.start_time + e.duration', $where)), $this->condition);
+		$query->add(' ORDER BY ' . str_replace('{s}', 'e.start_time', $order) . ' LIMIT ' . $limit);
+		while ($row = $query->next())
 		{
-			return;
+			$i = new stdClass();
+			list ($i->id, $i->name, $flags, $i->start, $i->duration, $i->timezone, $i->club_id, $i->club, $i->city, $i->of) = $row;
+			$i->is_tournament = false;
+			$i->finished = ($flags & EVENT_FLAG_FINISHED) != 0;
+			$items[] = $i;
 		}
-		echo '<section class="home-events" aria-labelledby="h-events"><div class="sec-hd"><h2 id="h-events">' . get_label('Latest game nights') . '</h2>';
-		echo '<a class="more" href="events.php?bck=1">' . get_label('All events') . '</a></div><ul class="elist">';
-		do
+
+		usort($items, function($a, $b) { return $a->start - $b->start; });
+		return array_slice($items, 0, $limit);
+	}
+
+	// When a row starts, on the stamp beside it: the time, and over it today, tomorrow or the date.
+	private function now_stamp($i)
+	{
+		date_default_timezone_set($i->timezone);
+		$days = (int)round((strtotime(date('Y-m-d', $i->start)) - strtotime(date('Y-m-d', $this->now))) / 86400);
+		if ($days == 0)
 		{
-			list ($id, $name, $flags, $start_time, $duration, $timezone, $tournament_id, $tournament_name, $club_id, $club_name, $games, $players) = $row;
-			echo '<li>' . card_dstamp($start_time, $timezone) . '<div class="t"><a href="event.php?bck=1&id=' . $id . '">' . $name . '</a>';
-			if ($start_time + $duration > $this->now)
+			$day = get_label('Today');
+		}
+		else if ($days == 1)
+		{
+			$day = get_label('Tomorrow');
+		}
+		else
+		{
+			$day = card_short_period($i->start, 1, $i->timezone);
+		}
+		return '<span class="nstamp" aria-hidden="true"><b>' . date('H:i', $i->start) . '</b><small>' . $day . '</small></span>';
+	}
+
+	// One row of "Happening now". $state: 'live', 'soon', 'done' or 'later'.
+	private function now_row($i, $state)
+	{
+		if ($i->is_tournament)
+		{
+			$url = 'tournament.php?bck=1&id=' . $i->id;
+			$kind = PageBase::icon('trophy') . get_label('Tournament');
+		}
+		else
+		{
+			$url = 'event.php?bck=1&id=' . $i->id;
+			$kind = PageBase::icon('cal') . get_label('Game day');
+		}
+		echo '<li class="nrow is-' . $state . '">' . $this->now_stamp($i) . '<div class="t"><div class="nrow-hd"><span class="nkind">' . $kind . '</span>';
+		switch ($state)
+		{
+		case 'live':
+			echo '<span class="nst live">' . get_label('playing now') . '</span>';
+			break;
+		case 'soon':
+		case 'later':
+			$minutes = (int)ceil(($i->start - $this->now) / 60);
+			if ($minutes < 60)
 			{
-				echo ' <span class="chip live">' . get_label('playing now') . '</span>';
+				echo '<span class="nst soon">' . get_label('in [0] min', $minutes) . '</span>';
 			}
-			echo '<div class="meta"><span>' . PageBase::icon('status') . format_date($start_time, $timezone, true) . '</span><span>' . PageBase::icon('users') . $club_name . '</span>';
-			if (!is_null($tournament_id))
+			else if ($minutes < 48 * 60)
 			{
-				echo '<span>' . PageBase::icon('trophy') . $tournament_name . '</span>';
+				echo '<span class="nst soon">' . get_label('in [0] h', (int)round($minutes / 60)) . '</span>';
 			}
-			echo '</div></div><div class="end"><span title="' . get_label('Players') . '">' . PageBase::icon('users') . '<b>' . $players . '</b></span><span title="' . get_label('Games') . '">' . PageBase::icon('play') . $games . '</span></div></li>';
-		} while ($row = $query->next());
-		echo '</ul></section>';
+			break;
+		case 'done':
+			echo '<span class="nst done">' . get_label('ended') . '</span>';
+			break;
+		}
+		echo '</div><a class="nrow-name" href="' . $url . '">' . $i->name . '</a>';
+		echo '<div class="meta"><span>' . PageBase::icon('users') . $i->club . '</span><span>' . PageBase::icon('pin') . $i->city . '</span>';
+		if (!is_null($i->of))
+		{
+			echo '<span>' . PageBase::icon('trophy') . $i->of . '</span>';
+		}
+		echo '</div>';
+		// What there is to look at while it is on and once it is over: the standings, the games, and
+		// while it is on the text broadcast of its tables.
+		if ($state == 'live' || $state == 'done')
+		{
+			$what = $i->is_tournament ? 'tournament' : 'event';
+			echo '<div class="nrow-links">';
+			echo '<a class="ql" href="' . $what . '_standings.php?bck=1&id=' . $i->id . '">' . get_label('Standings') . '</a>';
+			echo '<a class="ql" href="' . $what . '_games.php?bck=1&id=' . $i->id . '">' . get_label('Games') . '</a>';
+			if ($state == 'live')
+			{
+				echo '<a class="ql bc" href="text_broadcast.php?' . $what . '_id=' . $i->id . '" target="_blank">' . PageBase::icon('video') . get_label('Watch in text') . '</a>';
+			}
+			echo '</div>';
+		}
+		echo '</div></li>';
+	}
+
+	// "Happening now": what is on, what starts within a day and what has just finished, then the
+	// next few after that - in place of the tournaments of the past the page used to show.
+	private function show_now()
+	{
+		$day = 24 * 60 * 60;
+		$items = $this->select_now(
+			' AND {s} <= ' . ($this->now + $day) . ' AND {e} >= ' . ($this->now - $day), '{s}', HOME_NOW_COUNT);
+		$groups = array('live' => array(), 'soon' => array(), 'done' => array());
+		foreach ($items as $i)
+		{
+			if ($i->start > $this->now)
+			{
+				$groups['soon'][] = $i;
+			}
+			else if ($i->finished || $i->start + $i->duration <= $this->now)
+			{
+				$groups['done'][] = $i;
+			}
+			else
+			{
+				$groups['live'][] = $i;
+			}
+		}
+		$later = $this->select_now(' AND {s} > ' . ($this->now + $day), '{s}', HOME_LATER_COUNT);
+
+		echo '<section class="home-now" aria-labelledby="h-now"><div class="sec-hd"><div><h2 id="h-now">' . get_label('Happening now') . '</h2>';
+		echo '<p class="sub">' . get_label('Tournaments and game days that are on, start within a day or have just finished') . '</p></div>';
+		echo '<a class="more" href="events.php?bck=1&future=1">' . get_label('All events') . '</a></div>';
+
+		$titles = array(
+			'live' => get_label('Going on now'),
+			'soon' => get_label('Starting within a day'),
+			'done' => get_label('Just finished'));
+		$any = false;
+		foreach ($groups as $state => $list)
+		{
+			if (count($list) == 0)
+			{
+				continue;
+			}
+			$any = true;
+			echo '<h3 class="ngroup g-' . $state . '">' . $titles[$state] . '</h3><ul class="nlist">';
+			foreach ($list as $i)
+			{
+				$this->now_row($i, $state);
+			}
+			echo '</ul>';
+		}
+		if (!$any)
+		{
+			echo '<p class="nquiet">' . PageBase::icon('status') . get_label('Quiet now: nothing is on, nothing starts within a day and nothing has just finished.') . '</p>';
+		}
+		if (count($later) > 0)
+		{
+			echo '<h3 class="ngroup g-later">' . get_label('After that') . '</h3><ul class="nlist">';
+			foreach ($later as $i)
+			{
+				$this->now_row($i, 'later');
+			}
+			echo '</ul>';
+		}
+		echo '</section>';
+	}
+
+	// ------------------------------------------------------------------ on air
+
+	// The tables that can be read in words right now, the whole site over, each with its light: a
+	// game is on, the table is between games, or nothing has been played there yet - the same
+	// three the page of the broadcasts says (see include/broadcast.php).
+	private function show_on_air()
+	{
+		$scope = broadcast_site_scope();
+		$live_keys = stream_live_keys($scope->condition);
+		$played_keys = stream_played_keys($scope->condition, $this->now);
+		$rows = array();
+		foreach (broadcast_live_competitions($scope) as $competition)
+		{
+			foreach (stream_text_tables($competition->owner) as $table_num)
+			{
+				$key = stream_live_key($competition->tournament_id, $competition->event_id, $table_num);
+				$r = new stdClass();
+				$r->state = isset($live_keys[$key]) ? 0 : (isset($played_keys[$key]) ? 1 : 2);
+				$r->url = 'text_broadcast.php?' . $competition->param . '&table_num=' . $table_num;
+				$r->name = $competition->name;
+				$r->club = $competition->club_name;
+				$r->table = $table_num;
+				$rows[] = $r;
+			}
+		}
+		usort($rows, function($a, $b) { return $a->state - $b->state; });
+		$rows = array_slice($rows, 0, HOME_AIR_COUNT);
+
+		echo '<section class="rail-box home-live" aria-labelledby="h-live"><div class="sec-hd"><div><h2 id="h-live">' . get_label('On air') . '</h2>';
+		echo '<p class="sub">' . get_label('Text broadcasts from the tables') . '</p></div>';
+		echo '<a class="more" href="broadcasts.php?bck=1">' . get_label('Broadcasts') . '</a></div>';
+		if (count($rows) == 0 || $rows[0]->state != 0)
+		{
+			echo '<p class="bcnone">' . get_label('No table is playing right now - a broadcast comes alive as soon as a game starts.') . '</p>';
+		}
+		if (count($rows) > 0)
+		{
+			$lights = array('on', 'idle', 'off');
+			$words = array(get_label('Game on'), get_label('Between games'), get_label('No games yet'));
+			echo '<ul class="bclist">';
+			foreach ($rows as $r)
+			{
+				$where = ($r->club != '' ? $r->club . ' · ' : '') . get_label('Table [0]', $r->table) . ' · ' . $words[$r->state];
+				echo '<li class="bcrow"><span class="bcl ' . $lights[$r->state] . '" aria-hidden="true"></span>';
+				echo '<div class="bct"><a href="' . $r->url . '" target="_blank">' . $r->name . '</a><span class="dim">' . $where . '</span></div>';
+				echo '<a class="bcgo" href="' . $r->url . '" target="_blank" title="' . get_label('Watch in text') . '" aria-label="' . htmlspecialchars(strip_tags($r->name), ENT_QUOTES, 'UTF-8') . '">' . PageBase::icon('chev-r') . '</a></li>';
+			}
+			echo '</ul>';
+		}
+		echo '</section>';
 	}
 
 	protected function show_body()
@@ -623,12 +726,11 @@ class Page extends GeneralPageBase
 		}
 		echo '<div class="cols wide-rail home"><div class="stack">';
 		$this->show_adverts();
-		$this->show_recent_tournaments();
+		$this->show_now();
 		$this->show_series();
 		echo '</div><aside class="rail">';
+		$this->show_on_air();
 		$this->show_best_players();
-		$this->show_changes();
-		$this->show_events();
 		echo '</aside></div>';
 	}
 }

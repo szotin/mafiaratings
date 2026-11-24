@@ -2341,6 +2341,23 @@ $labelMenu = array (
 'Finish' => 'Завершить', // include/preparation.php
 'Sign up' => 'Зарегистрироваться', // include/event.php
 'Name, nickname or email' => 'Имя, ник или email', // form/event_register_player.php
+'Happening now' => 'Прямо сейчас', // index.php
+'Tournaments and game days that are on, start within a day or have just finished' => 'Турниры и игровые дни, которые идут, начнутся в ближайшие сутки или только что закончились', // index.php
+'Going on now' => 'Идут сейчас', // index.php
+'Starting within a day' => 'Начнутся в ближайшие сутки', // index.php
+'Just finished' => 'Только что закончились', // index.php
+'After that' => 'Дальше', // index.php
+'Quiet now: nothing is on, nothing starts within a day and nothing has just finished.' => 'Сейчас тихо: ничего не идёт, не начнётся в ближайшие сутки и не закончилось за последние.', // index.php
+'On air' => 'В эфире', // index.php
+'Text broadcasts from the tables' => 'Текстовые трансляции со столов', // index.php
+'No table is playing right now - a broadcast comes alive as soon as a game starts.' => 'Сейчас ни за одним столом не играют — трансляция оживёт, как только начнётся игра.', // index.php
+'Game on' => 'Идёт игра', // index.php
+'No games yet' => 'Игр ещё не было', // index.php
+'Watch in text' => 'Смотреть текстом', // index.php
+'Overall rating, all clubs' => 'Общий рейтинг, все клубы', // index.php
+'in [0] h' => 'через [0] ч', // index.php
+'in [0] min' => 'через [0] мин', // index.php
+'ended' => 'закончился', // index.php
 );
 
 return $labelMenu;

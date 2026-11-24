@@ -2342,6 +2342,23 @@ $labelMenu = array (
 'Finish' => 'Завершити', // include/preparation.php
 'Sign up' => 'Зареєструватися', // include/event.php
 'Name, nickname or email' => 'Ім\'я, нік або email', // form/event_register_player.php
+'Happening now' => 'Просто зараз', // index.php
+'Tournaments and game days that are on, start within a day or have just finished' => 'Турніри та ігрові дні, що тривають, почнуться найближчої доби або щойно завершилися', // index.php
+'Going on now' => 'Тривають зараз', // index.php
+'Starting within a day' => 'Почнуться найближчої доби', // index.php
+'Just finished' => 'Щойно завершилися', // index.php
+'After that' => 'Далі', // index.php
+'Quiet now: nothing is on, nothing starts within a day and nothing has just finished.' => 'Зараз тихо: нічого не триває, не почнеться найближчої доби й не завершилося за останню.', // index.php
+'On air' => 'В ефірі', // index.php
+'Text broadcasts from the tables' => 'Текстові трансляції зі столів', // index.php
+'No table is playing right now - a broadcast comes alive as soon as a game starts.' => 'Зараз за жодним столом не грають — трансляція оживе, щойно почнеться гра.', // index.php
+'Game on' => 'Йде гра', // index.php
+'No games yet' => 'Ігор ще не було', // index.php
+'Watch in text' => 'Дивитися текстом', // index.php
+'Overall rating, all clubs' => 'Загальний рейтинг, усі клуби', // index.php
+'in [0] h' => 'за [0] год', // index.php
+'in [0] min' => 'за [0] хв', // index.php
+'ended' => 'завершився', // index.php
 );
 
 return $labelMenu;
