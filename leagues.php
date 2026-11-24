@@ -148,7 +148,16 @@ class Page extends GeneralPageBase
 				echo '<div class="tiles wide">';
 			}
 			$league_pic->set($id, $name, $flags);
-			echo '<div class="tile' . ($closed ? ' is-off' : '') . '">' . card_logo($league_pic, $name);
+			// The menu "≡" of a league for whoever manages it, as on its own page - see card_menu().
+			$menu = '';
+			if ($_profile != NULL && $_profile->is_league_manager($id))
+			{
+				$menu = card_menu(
+					PageBase::capture(function() use ($id, $name, $flags) { show_league_buttons($id, $name, $flags); }),
+					$closed ? NULL : new MenuItem('league_management.php?id=' . $id, get_label('Management'), get_label('Manage [0].', $name)),
+					$closed ? array() : league_manage_items($id, $name));
+			}
+			echo '<div class="tile' . ($closed ? ' is-off' : '') . '">' . $menu . card_logo($league_pic, $name);
 			echo '<div class="who-txt"><a class="who-name" href="league_main.php?bck=1&id=' . $id . '">' . $name . '</a>';
 			if (!empty($url))
 			{
@@ -157,15 +166,6 @@ class Page extends GeneralPageBase
 			if ($closed)
 			{
 				echo '<span class="tile-meta"><span class="chip off">' . get_label('closed~fem') . '</span></span>';
-			}
-			// The buttons of a manager under the name: beside it they left the name no room.
-			if ($_profile != NULL)
-			{
-				$buttons = PageBase::capture(function() use ($id, $name, $flags) { show_league_buttons($id, $name, $flags); });
-				if (trim(strip_tags($buttons, '<button>')) != '')
-				{
-					echo '<div class="tile-actions under">' . $buttons . '</div>';
-				}
 			}
 			echo '</div>';
 			echo '<div class="tile-side tile-nums">';

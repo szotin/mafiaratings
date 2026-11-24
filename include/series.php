@@ -967,6 +967,24 @@ function get_subseries_csv($series_id)
 	}
 }
 
+// What is under "Management" in the menu "≡" of a series: on its own page and on its card in the lists
+// (see card_menu() in include/cards.php). For whoever manages it.
+function series_manage_items($id, $name)
+{
+	return array
+	(
+		// Also a button on the clubs page, where the owner is in front of you. Here is where a
+		// manager looks for it.
+		new MenuItem('javascript:mr.transferSeries(' . $id . ')', get_label('Transfer the series'), get_label('Give the series to another club or league.')),
+		new MenuItem('series_clubs.php?id=' . $id, get_label('Clubs'), get_label('Clubs allowed to enter their tournaments into [0]', $name)),
+		new MenuItem('series_regs.php?id=' . $id, get_label('Users'), get_label('Managers and referees of [0]', $name)),
+		new MenuItem(null, null, null),
+		new MenuItem('series_finance.php?id=' . $id, get_label('Financial report'), get_label('Financial report of the [0]', $name)),
+		new MenuItem(null, null, null),
+		new MenuItem('series_extra_points.php?id=' . $id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $name)),
+	);
+}
+
 class SeriesPageBase extends PageBase
 {
 	protected $id;
@@ -1078,19 +1096,7 @@ class SeriesPageBase extends PageBase
 		);
 		if ($is_manager)
 		{
-			$manager_menu = array
-			(
-				// Also a button on the clubs page, where the owner is in front of you. Here is
-				// where a manager looks for it.
-				new MenuItem('javascript:mr.transferSeries(' . $this->id . ')', get_label('Transfer the series'), get_label('Give the series to another club or league.')),
-				new MenuItem('series_clubs.php?id=' . $this->id, get_label('Clubs'), get_label('Clubs allowed to enter their tournaments into [0]', $this->name)),
-				new MenuItem('series_regs.php?id=' . $this->id, get_label('Users'), get_label('Managers and referees of [0]', $this->name)),
-				new MenuItem(null, null, null),
-				new MenuItem('series_finance.php?id=' . $this->id, get_label('Financial report'), get_label('Financial report of the [0]', $this->name)),
-				new MenuItem(null, null, null),
-				new MenuItem('series_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
-			);
-			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
+			$menu[] = new MenuItem('#management', get_label('Management'), NULL, series_manage_items($this->id, $this->name));
 		}
 
 		$h = new EntityHeader($this->name, get_label('Series'), 'series.php');

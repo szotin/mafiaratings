@@ -176,6 +176,23 @@ function card_row_menu($items, $label = NULL)
 	return $html . '</div></details>';
 }
 
+// The menu "≡" of a card or a tile in a list: what can be done with the thing, as its heading has it
+// on its own page - the page it is prepared or managed on first, then its buttons (see
+// PageBase::manage_menu()). $buttons are icon buttons, the thing's own and whatever the list adds of
+// its own (removing a club from a league); $prep a MenuItem or NULL; $items what is under
+// "Management" on its page (the *_manage_items() functions). Empty when there is nothing.
+function card_menu($buttons, $prep = NULL, $items = array())
+{
+	if (is_null($prep) && count($items) == 0 && strpos($buttons, '<button') === false)
+	{
+		return '';
+	}
+	// Not the menu of a heading (eh-menu): one of a card is placed against the window when it opens,
+	// as the menus of rows are, or the cover it stands on would cut it off - see new_look.js.
+	$menu = str_replace('row-menu eh-menu', 'row-menu', trim(PageBase::manage_menu($buttons, $items, $prep)));
+	return $menu == '' ? '' : '<div class="card-menu">' . $menu . '</div>';
+}
+
 // The filter by name of a list, asked of the database (a list is a page out of many): the words
 // searched for, from ?search=, and the condition on a name_id column - "t.name_id", "s.name_id" -
 // added to $condition. The names of a thing are rows of the table names, one for each language,

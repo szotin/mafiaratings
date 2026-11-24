@@ -46,10 +46,6 @@ class Page extends ClubPageBase
 			$series = new stdClass();
 			list ($series->id, $series->name, $series->start_time, $series->duration, $series->flags, $series->max_stars, $series->tournaments) = $row;
 			$series->owner = $owner;
-			if ($_profile != NULL)
-			{
-				$series->buttons = PageBase::capture(function() use ($series, $owner) { show_series_buttons($series->id, $series->start_time, $series->duration, $series->flags, $owner); });
-			}
 			$list[] = $series;
 		}
 		series_tiles_show($list, get_label('No series found.'));

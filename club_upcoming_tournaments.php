@@ -55,19 +55,6 @@ class Page extends ClubPageBase
 			$tournament->club_flags = $this->flags;
 			$tournament->games_count = 0;
 			$tournament->videos_count = 0;
-			if ($_profile != NULL)
-			{
-				$id = $tournament->id;
-				$start_time = $tournament->time;
-				$duration = $tournament->duration;
-				$flags = $tournament->flags;
-				$club_id = $this->id;
-				$club_flags = $this->flags;
-				$tournament->buttons = PageBase::capture(function() use ($id, $start_time, $duration, $flags, $club_id, $club_flags)
-				{
-					show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, $club_flags);
-				});
-			}
 			$tournaments[] = $tournament;
 		}
 		

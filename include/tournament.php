@@ -64,6 +64,26 @@ function show_tournament_buttons($id, $start_time, $duration, $flags, $club_id, 
 	echo '<button class="icon" onclick="window.open(\'tournament_screen.php?id=' . $id . '\' ,\'_blank\')" title="' . get_label('Open interactive standings page') . '"><img src="images/details.png" border="0"></button>';
 }
 
+// What is under "Management" in the menu "≡" of a tournament: on its own page and on its card in the lists
+// (see card_menu() in include/cards.php). For whoever manages it.
+function tournament_manage_items($id, $name)
+{
+	return array
+	(
+		new MenuItem('tournament_extra_points.php?id=' . $id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $name)),
+		new MenuItem('tournament_standings_edit.php?id=' . $id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
+		new MenuItem(null, null, null),
+		new MenuItem('tournament_mwt.php?id=' . $id, get_label('[0] integration', 'MWT'), get_label('Synchronize tournament with [0] site. Receive seating, send games, etc..', 'MWT')),
+		new MenuItem('tournament_imafia.php?id=' . $id, get_label('[0] integration', 'iMafia'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'iMafia')),
+		new MenuItem('tournament_emo.php?id=' . $id, get_label('[0] integration', 'Emotion.games'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'emotion.games')),
+		new MenuItem(null, null, null),
+		// Called by what it is about rather than by what the page is called: the menu is a list of
+		// things, and 'Stream settings' as an entry in it says the word Management twice over - it
+		// already stands under Management. The page keeps its own title.
+		new MenuItem('streams.php?tournament_id=' . $id, get_label('Broadcasts'), get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.')),
+	);
+}
+
 class TournamentPageBase extends PageBase
 {
 	protected $id;
@@ -220,22 +240,7 @@ class TournamentPageBase extends PageBase
 		}
 		if ($this->is_manager)
 		{
-			$manager_menu = array
-			(
-				new MenuItem('tournament_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name)),
-				new MenuItem('tournament_standings_edit.php?id=' . $this->id, get_label('Edit standings'), get_label('You can edit tournament standings manually. These stanings will count for series even if there is no information about the specific games.')),
-				new MenuItem(null, null, null),
-				new MenuItem('tournament_mwt.php?id=' . $this->id, get_label('[0] integration', 'MWT'), get_label('Synchronize tournament with [0] site. Receive seating, send games, etc..', 'MWT')),
-				new MenuItem('tournament_imafia.php?id=' . $this->id, get_label('[0] integration', 'iMafia'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'iMafia')),
-				new MenuItem('tournament_emo.php?id=' . $this->id, get_label('[0] integration', 'Emotion.games'), get_label('Synchronize tournament with [0] site. Receive games, etc..', 'emotion.games')),
-				new MenuItem(null, null, null),
-				// Called by what it is about rather than by what the page is called: the menu is
-				// a list of things, and 'Stream settings' as an entry in it says the word
-				// Management twice over - it already stands under Management. The page keeps
-				// its own title.
-				new MenuItem('streams.php?tournament_id=' . $this->id, get_label('Broadcasts'), get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.')),
-			);
-			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
+			$menu[] = new MenuItem('#management', get_label('Management'), NULL, tournament_manage_items($this->id, $this->name));
 		}
 
 		$h = new EntityHeader($this->name, get_label('Tournaments'), 'tournaments.php');

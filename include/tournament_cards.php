@@ -139,6 +139,28 @@ function tournament_cards_headings($tournaments, $future)
 
 // The cards, grouped by month or by year (see tournament_cards_headings()). $empty is the words when
 // there is none.
+// The menu "≡" of a tournament for whoever manages or referees it, as on its own page; and what the
+// list adds of its own (buttons).
+function tournament_card_menu($tournament)
+{
+	$buttons = isset($tournament->buttons) ? $tournament->buttons : '';
+	$prep = NULL;
+	$items = array();
+	if (is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $tournament->club_id, $tournament->id))
+	{
+		$buttons = PageBase::capture(function() use ($tournament)
+		{
+			show_tournament_buttons($tournament->id, $tournament->time, $tournament->duration, $tournament->flags, $tournament->club_id, $tournament->club_flags);
+		}) . $buttons;
+		if (($tournament->club_flags & CLUB_FLAG_CLOSED) == 0 && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $tournament->club_id, $tournament->id))
+		{
+			$prep = new MenuItem('tournament_preparation.php?id=' . $tournament->id, get_label('Preparation'), get_label('Tournament preparation.'));
+			$items = tournament_manage_items($tournament->id, $tournament->name);
+		}
+	}
+	return card_menu($buttons, $prep, $items);
+}
+
 function tournament_cards_show($tournaments, $future, $empty)
 {
 	if (count($tournaments) == 0)
@@ -183,10 +205,7 @@ function tournament_cards_show($tournaments, $future, $empty)
 		{
 			echo '<span class="pc-stars" title="' . htmlspecialchars(implode("\n", $series_names), ENT_QUOTES, 'UTF-8') . '"><span class="stars">' . tournament_stars_str($stars, false) . '</span></span>';
 		}
-		if (isset($tournament->buttons) && trim($tournament->buttons) != '')
-		{
-			echo '<span class="pc-actions">' . $tournament->buttons . '</span>';
-		}
+		echo tournament_card_menu($tournament);
 		echo '</div><div class="pc-body"><h3><a href="' . $url . '">' . $tournament->name . '</a></h3>';
 		echo '<div class="pc-meta"><span>' . PageBase::icon('pin') . $tournament->city . '</span><span>' . PageBase::icon('users') . $tournament->club_name . '</span></div>';
 		// What the list adds of its own: the result of the player of user_tournaments.php, the stage

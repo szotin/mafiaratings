@@ -1253,6 +1253,8 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 		Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('comment'), 'DELETE FROM game_comments WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
+		Db::exec(get_label('game'), 'DELETE FROM mwt_games WHERE game_id IN (SELECT id FROM games WHERE tournament_id = ?)', $tournament_id);
 		Db::exec(get_label('game'), 'DELETE FROM games WHERE tournament_id = ?', $tournament_id);
 		if (Db::affected_rows() > 0)
 		{
@@ -1296,6 +1298,11 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('place'), 'DELETE FROM event_places WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('album'), 'DELETE FROM photo_albums WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('video'), 'DELETE FROM videos WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		// The broadcasts of the rounds, how their tables are streamed, and what was reported from their
+		// games: each holds a round by a foreign key, and a round that had any could not be deleted.
+		Db::exec(get_label('broadcast'), 'DELETE FROM event_broadcasts WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('broadcast'), 'DELETE FROM event_streams WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
+		Db::exec(get_label('game'), 'DELETE FROM bug_reports WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)'.$del_condition1, $tournament_id);
 		Db::exec(get_label('round'), 'DELETE FROM events WHERE tournament_id = ?'.$del_condition2, $tournament_id);
 		if (Db::affected_rows() > 0)
 		{

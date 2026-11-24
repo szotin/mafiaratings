@@ -1223,6 +1223,15 @@ class ApiPage extends OpsApiPageBase
 		{
 			$log_details->current_games = Db::affected_rows();
 		}
+		// Its broadcasts, how its tables are streamed, and what was reported from its games: each holds
+		// the game day by a foreign key, and a game day that had any could not be deleted.
+		Db::exec(get_label('broadcast'), 'DELETE FROM event_broadcasts WHERE event_id = ?', $event_id);
+		if (Db::affected_rows() > 0)
+		{
+			$log_details->broadcasts = Db::affected_rows();
+		}
+		Db::exec(get_label('broadcast'), 'DELETE FROM event_streams WHERE event_id = ?', $event_id);
+		Db::exec(get_label('game'), 'DELETE FROM bug_reports WHERE event_id = ?', $event_id);
 		
 		Db::exec(get_label('game'), 'UPDATE rebuild_ratings SET game_id = ? WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $prev_game_id, $event_id); // it also triggers rebuilding mr_bonus_stats
 		Db::exec(get_label('player'), 'DELETE FROM dons WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
@@ -1232,13 +1241,17 @@ class ApiPage extends OpsApiPageBase
 		Db::exec(get_label('game'), 'DELETE FROM objections WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
 		Db::exec(get_label('game'), 'DELETE FROM game_issues WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
 		Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
-		Db::exec(get_label('game'), 'DELETE FROM mr_bonus_stats WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
-		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
-		Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
+		Db::exec(get_label('comment'), 'DELETE FROM game_comments WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		Db::exec(get_label('game'), 'DELETE FROM mwt_games WHERE game_id IN (SELECT id FROM games WHERE event_id = ?)', $event_id);
+		// The games themselves. This line had become a second copy of the one about mr_bonus_stats
+		// above it, and a game day with games could not be deleted either.
+		Db::exec(get_label('game'), 'DELETE FROM games WHERE event_id = ?', $event_id);
 		if (Db::affected_rows() > 0)
 		{
 			$log_details->games = Db::affected_rows();
 		}
+		Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id = ?', $event_id);
+		Db::exec(get_label('score'), 'DELETE FROM  tournament_scores_cache WHERE tournament_id = ?', $tournament_id);
 		
 		Db::exec(get_label('event'), 'DELETE FROM events WHERE id = ?', $event_id);
 		if (Db::affected_rows() > 0)

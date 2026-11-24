@@ -54,6 +54,31 @@ function event_card_cover($event, $event_pic, $tournament_pic, $club_pic)
 }
 
 // The cards. $empty is the words when there is none.
+// The menu "≡" of a game day for whoever manages or referees it, as on its own page; and what the
+// list adds of its own (buttons). Coming or not is not a thing of a manager: it is left out.
+function event_card_menu($event)
+{
+	$buttons = isset($event->buttons) ? $event->buttons : '';
+	$prep = NULL;
+	$items = array();
+	$is_manager = is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_TOURNAMENT_MANAGER, $event->club_id, $event->id, $event->tournament_id);
+	$is_referee = is_permitted(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $event->club_id, $event->id, $event->tournament_id);
+	if ($is_manager || $is_referee)
+	{
+		$own = PageBase::capture(function() use ($event, $is_manager, $is_referee)
+		{
+			show_event_buttons($event->id, $event->tournament_id, $event->time, $event->duration, $event->flags, $event->club_id, $event->club_flags, false, $is_manager, $is_referee);
+		});
+		$buttons = preg_replace('#<button\b[^>]*mr\.attendEvent\([^>]*>.*?</button>#s', '', $own) . $buttons;
+		if (($event->club_flags & CLUB_FLAG_CLOSED) == 0)
+		{
+			$prep = new MenuItem('event_preparation.php?id=' . $event->id, get_label('Preparation'), get_label('Getting [0] ready: how many play, who is coming, where it is streamed from and who sits where.', $event->name));
+		}
+		$items = event_manage_items($event->id, $event->name, $event->club_id, $event->tournament_id, $is_manager);
+	}
+	return card_menu($buttons, $prep, $items);
+}
+
 function event_cards_show($events, $future, $empty)
 {
 	if (count($events) == 0)
@@ -79,10 +104,7 @@ function event_cards_show($events, $future, $empty)
 		$canceled = ($event->flags & EVENT_FLAG_CANCELED) != 0;
 		echo '<article class="pcard' . ($canceled ? ' is-off' : '') . '"><div class="pc-cover">' . event_card_cover($event, $event_pic, $tournament_pic, $club_pic);
 		echo '<span class="pc-date">' . card_short_period($event->time, $event->duration, $event->timezone) . '</span>';
-		if (isset($event->buttons) && trim($event->buttons) != '')
-		{
-			echo '<span class="pc-actions">' . $event->buttons . '</span>';
-		}
+		echo event_card_menu($event);
 		echo '</div><div class="pc-body"><h3><a href="event.php?bck=1&id=' . $event->id . '">' . $event->name . '</a></h3>';
 		echo '<div class="pc-meta">';
 		// The tournament a round belongs to is a link of its own, above the link of the card.

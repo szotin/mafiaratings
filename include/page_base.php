@@ -849,26 +849,26 @@ class PageBase
 		return '<a class="ent" href="' . $url . '">' . PageBase::capture(function() use ($pic) { $pic->show(ICONS_DIR, false, 22, 22); }) . '<span>' . $name . '</span></a>';
 	}
 
-	// The menu "≡" on the band: the buttons of an entity - edit, delete, play the game... - as its
-	// first items, each with the picture it had and its title for the words, and after them the
-	// pages it is managed on ($items, MenuItems as in a dropdown: a NULL page is a separator, with
-	// the name of the group after it if it has text). $buttons is what the show_*_buttons()
-	// functions print: <button onclick="..." title="..."><img src="images/..."></button> each, and
-	// a transparent picture holding the place when there is none. Anything else in it - not a
-	// button of that shape - is returned as it is, before the menu. '' when there is nothing at all.
+	// The menu "≡" on the band and on the cards of the lists: the buttons of an entity - edit,
+	// delete, play the game... - as its first items, each with the picture it had and its title for
+	// the words; after them the page it is prepared or managed on ($lead, a MenuItem or NULL); and
+	// after that the pages it is managed on ($items, MenuItems as in a dropdown: a NULL page is a
+	// separator, with the name of the group after it if it has text). Each group apart from the
+	// next by a line. $buttons is what the show_*_buttons() functions print: <button onclick="..."
+	// title="..."><img src="images/..."></button> each, and a transparent picture holding the place
+	// when there is none. Anything else in it - not a button of that shape - is returned as it is,
+	// before the menu. '' when there is nothing at all.
+	//
+	// The menu is opened from the lists as well as from the page of the entity, so every page it
+	// leads to leads back (bck=1).
 	static function manage_menu($buttons, $items, $lead = NULL)
 	{
 		$rest = trim(preg_replace('#<img src="images/transp.png"[^>]*>#', '', $buttons));
 		$list = '';
-		$sep_before_buttons = false;
-		// The page the entity is prepared or managed on comes first. Its first tab is the fields of
-		// the entity, so the button that edited them in a dialog goes.
+		// The page the entity is prepared or managed on has the fields of the entity as its first
+		// tab, so the button that edited them in a dialog goes.
 		if (!is_null($lead))
 		{
-			ob_start();
-			PageBase::show_dropdown_items(array($lead));
-			$list .= ob_get_clean();
-			$sep_before_buttons = true;
 			$rest = preg_replace('#<button\b[^>]*\bonclick="mr\.edit[A-Za-z]*\([^>]*>\s*<img\b[^>]*\bsrc="images/edit\.png"[^>]*>\s*</button>#', '', $rest);
 		}
 		if (preg_match_all('#<button\b([^>]*)>\s*<img\b[^>]*\bsrc="images/([^"]+)"[^>]*>\s*</button>#', $rest, $matches, PREG_SET_ORDER))
@@ -880,31 +880,39 @@ class PageBase
 					continue;
 				}
 				$title = preg_match('#\btitle="([^"]*)"#', $m[1], $t) ? $t[1] : '';
-				if ($sep_before_buttons)
-				{
-					$list .= '<div class="menu-sep" role="separator"></div>';
-					$sep_before_buttons = false;
-				}
 				$list .= '<button type="button" role="menuitem" onclick="this.closest(\'details\').open = false; ' . $onclick[1] . '"><img src="images/' . $m[2] . '" alt="">' . $title . '</button>';
 				$rest = str_replace($m[0], '', $rest);
 			}
 		}
 		$rest = trim($rest);
 
-		$current = !is_null($lead) && PageBase::is_current_page($lead->page);
-		if (count($items) > 0)
+		$current = false;
+		if (!is_null($lead))
 		{
 			if ($list != '')
 			{
 				$list .= '<div class="menu-sep" role="separator"></div>';
 			}
 			ob_start();
-			PageBase::show_dropdown_items($items);
+			PageBase::show_dropdown_items(array(PageBase::menu_item_back($lead)));
 			$list .= ob_get_clean();
+			$current = PageBase::is_current_page($lead->page);
+		}
+		if (count($items) > 0)
+		{
+			if ($list != '')
+			{
+				$list .= '<div class="menu-sep" role="separator"></div>';
+			}
+			$back_items = array();
 			foreach ($items as $item)
 			{
+				$back_items[] = PageBase::menu_item_back($item);
 				$current = $current || PageBase::is_current_page($item->page);
 			}
+			ob_start();
+			PageBase::show_dropdown_items($back_items);
+			$list .= ob_get_clean();
 		}
 		if ($list == '')
 		{
@@ -914,6 +922,19 @@ class PageBase
 		return $rest . '<details class="row-menu eh-menu' . ($current ? ' is-active' : '') . '"><summary title="' . $label . '" aria-label="' . $label . '">' . PageBase::icon('menu') . '</summary><div class="rm-list" role="menu">' . $list . '</div></details>';
 	}
 
+	// A copy of a link of a menu that leads back to where it was followed from (bck=1) - unless it
+	// says where it goes back to itself, or is no page (a separator, an anchor, a script).
+	private static function menu_item_back($item)
+	{
+		$page = $item->page;
+		if (is_null($page) || $page == '' || $page[0] == '#' || stripos($page, 'javascript:') === 0 || preg_match('#[?&]bck=#', $page))
+		{
+			return $item;
+		}
+		$copy = clone $item;
+		$copy->page = $page . (strpos($page, '?') === false ? '?' : '&') . 'bck=1';
+		return $copy;
+	}
 	// Whose a thing of each kind can be for the user looking: for an event, a tournament, a series and
 	// an address the clubs - and for a series the leagues - where they may make one, as array('c12' =>
 	// name, 'l3' => name); NULL for a club and a league, which are nobody's. A kind with an empty list

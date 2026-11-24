@@ -34,6 +34,22 @@ function show_league_buttons($id, $name, $flags)
 	}
 }
 
+// What is under "Management" in the menu "≡" of a league: on its own page and on its card in the lists
+// (see card_menu() in include/cards.php). For whoever manages it.
+function league_manage_items($id, $name)
+{
+	return array
+	(
+		new MenuItem('league_upcoming_series.php?id=' . $id, get_label('Series'), get_label('[0] series', $name)),
+		new MenuItem(null, null, null),
+		new MenuItem('league_managers.php?id=' . $id, get_label('Users'), get_label('Managers and referees of [0]', $name)),
+		new MenuItem('league_pairs.php?id=' . $id, get_label('Pairs'), get_label('[0] pairs', $name)),
+		new MenuItem(null, null, null),
+		new MenuItem('league_scorings.php?id=' . $id, get_label('Rules'), get_label('Game rules and scoring systems of [0]', $name)),
+		new MenuItem('league_tournament_schemas.php?id=' . $id, get_label('Tournament schemas'), get_label('Ready-made ways to set up a tournament in [0]', $name)),
+	);
+}
+
 class LeaguePageBase extends PageBase
 {
 	protected $id;
@@ -100,19 +116,7 @@ class LeaguePageBase extends PageBase
 			
 		if ($this->is_manager)
 		{
-			$menu[] = new MenuItem('#other', get_label('Management'), NULL, array
-			(
-				new MenuItem('league_upcoming_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series', $this->name)),
-				// new MenuItem('league_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name)),
-				new MenuItem(null, null, null),
-				new MenuItem('league_managers.php?id=' . $this->id, get_label('Users'), get_label('Managers and referees of [0]', $this->name)),
-				new MenuItem('league_pairs.php?id=' . $this->id, get_label('Pairs'), get_label('[0] pairs', $this->name)),
-				new MenuItem(null, null, null),
-				new MenuItem('league_scorings.php?id=' . $this->id, get_label('Rules'), get_label('Game rules and scoring systems of [0]', $this->name)),
-				new MenuItem('league_tournament_schemas.php?id=' . $this->id, get_label('Tournament schemas'), get_label('Ready-made ways to set up a tournament in [0]', $this->name)),
-				// new MenuItem(null, null, null),
-				// new MenuItem('league_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name)),
-			));
+			$menu[] = new MenuItem('#other', get_label('Management'), NULL, league_manage_items($this->id, $this->name));
 		}
 
 		$h = new EntityHeader($this->name, get_label('Leagues'), 'leagues.php');

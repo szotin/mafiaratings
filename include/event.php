@@ -475,6 +475,43 @@ function register_event_user_in_tournament($tournament_id, $user_id, $club_id, $
 	return true;
 }
 
+// What is under "Management" in the menu "≡" of a game day: on its own page and on its card in the lists
+// (see card_menu() in include/cards.php). For whoever manages it.
+// For a manager or a referee of it; $is_manager tells the two apart.
+function event_manage_items($id, $name, $club_id, $tournament_id, $is_manager)
+{
+	$items = array();
+	$items[] = new MenuItem('event_extra_points.php?id=' . $id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $name));
+	// A round of a tournament is set up through its tournament, where one set of settings covers the
+	// table for every round of it - so the question asked here is the one that page will ask, and a
+	// referee of this round alone is not offered a page that would turn them away.
+	if (is_null($tournament_id)
+		? is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $club_id, $id)
+		: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $tournament_id))
+	{
+		$items[] = new MenuItem(null, null, null);
+		// Called by what it is about rather than by what the page is called - see the same entry in
+		// include/tournament.php. The page keeps its own title.
+		//
+		// Opened on this round and not on the tournament it belongs to, even though the settings
+		// themselves belong to the tournament: that page works the owner out for itself, and what it
+		// lists at the foot of a tab - the recordings a table is streamed to - is then this round's
+		// rather than every round the tournament has ever played.
+		$items[] = new MenuItem(
+			'streams.php?event_id=' . $id,
+			get_label('Broadcasts'),
+			get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.'));
+	}
+	if ($is_manager && is_null($tournament_id))
+	{
+		// Turning an event into a tournament is not one of the things above it: those set this event
+		// up, and this one makes it something else. A line says so.
+		$items[] = new MenuItem(null, null, null);
+		$items[] = new MenuItem('javascript:mr.convertEventToTournament(' . $id . ')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $name));
+	}
+	return $items;
+}
+
 class EventPageBase extends PageBase
 {
 	protected $event;
@@ -595,41 +632,7 @@ class EventPageBase extends PageBase
 		}
 		if ($this->is_manager || $this->is_referee)
 		{
-			$manager_menu = array();
-			
-			$manager_menu[] = new MenuItem('event_extra_points.php?id=' . $this->id, get_label('Extra points'), get_label('Add/remove extra points for players of [0]', $this->name));
-			// A round of a tournament is set up through its tournament, where one set of
-			// settings covers the table for every round of it - so the question asked here is
-			// the one that page will ask, and a referee of this round alone is not offered a
-			// page that would turn them away.
-			if (is_null($this->tournament_id)
-				? is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_EVENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE, $this->club_id, $this->id)
-				: is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $this->club_id, $this->tournament_id))
-			{
-				$manager_menu[] = new MenuItem(null, null, null);
-				// Called by what it is about rather than by what the page is called - see the
-				// same entry in include/tournament.php. The page keeps its own title.
-				//
-				// Opened on this round and not on the tournament it belongs to, even though the
-				// settings themselves belong to the tournament: that page works the owner out
-				// for itself, and what it lists at the foot of a tab - the recordings a table is
-				// streamed to - is then this round's rather than every round the tournament has
-				// ever played. Coming from a round and being shown all of them is being shown
-				// somebody else's page.
-				$manager_menu[] = new MenuItem(
-					'streams.php?event_id=' . $this->id,
-					get_label('Broadcasts'),
-					get_label('Set up everything a stream needs at each table: the addresses to point OBS Studio at, which scene goes with which phase of the game, and what is shown between games.'));
-			}
-			
-			if ($this->is_manager && is_null($this->tournament_id))
-			{
-				// Turning an event into a tournament is not one of the things above it: those
-				// set this event up, and this one makes it something else. A line says so.
-				$manager_menu[] = new MenuItem(null, null, null);
-				$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->id . ')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->name));
-			}
-			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
+			$menu[] = new MenuItem('#management', get_label('Management'), NULL, event_manage_items($this->id, $this->name, $this->club_id, $this->tournament_id, $this->is_manager));
 		}
 
 		// A round of a tournament is found through its tournament, an event on its own through the

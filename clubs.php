@@ -115,13 +115,6 @@ class Page extends GeneralPageBase
 			$club = new stdClass();
 			list ($club->id, $club->name, $club->flags, $url, $club->city, $memb_flags, $club->games) = $row;
 			$club->mine = !is_null($memb_flags);
-			if ($_profile != NULL)
-			{
-				$id = $club->id;
-				$name = $club->name;
-				$flags = $club->flags;
-				$club->buttons = PageBase::capture(function() use ($id, $name, $flags, $memb_flags) { show_club_buttons($id, $name, $flags, $memb_flags); });
-			}
 			$clubs[] = $club;
 		}
 		// The tiles: see include/club_cards.php, shared by every list of clubs.

@@ -1575,12 +1575,12 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
   .page-hd-acts { margin-top: 0; justify-content: flex-start; }
 }
 .mast:has(.eh-menu) .tabs { padding-right: 56px; }
-.eh-menu .rm-list { min-width: 260px; max-height: min(70vh, 560px); overflow-y: auto; text-align: left; }
-.eh-menu .rm-list a { display: block; padding: 8px 10px; border-radius: 8px; font: 500 14px var(--font); color: var(--ink); white-space: nowrap; }
-.eh-menu .rm-list a:hover { background: var(--frost); color: var(--ink); }
-.eh-menu .rm-list a[aria-current] { color: var(--red); }
-.eh-menu .rm-list .menu-sep { height: 1px; background: var(--rule); margin: 6px 8px; }
-.eh-menu .rm-list .menu-label { padding: 6px 10px 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--slate); }
+.eh-menu .rm-list, .card-menu .rm-list { min-width: 260px; max-height: min(70vh, 560px); overflow-y: auto; text-align: left; }
+.eh-menu .rm-list a, .card-menu .rm-list a { display: block; padding: 8px 10px; border-radius: 8px; font: 500 14px var(--font); color: var(--ink); white-space: nowrap; }
+.eh-menu .rm-list a:hover, .card-menu .rm-list a:hover { background: var(--frost); color: var(--ink); }
+.eh-menu .rm-list a[aria-current], .card-menu .rm-list a[aria-current] { color: var(--red); }
+.eh-menu .rm-list .menu-sep, .card-menu .rm-list .menu-sep { height: 1px; background: var(--rule); margin: 6px 8px; }
+.eh-menu .rm-list .menu-label, .card-menu .rm-list .menu-label { padding: 6px 10px 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--slate); }
 /* the buttons of a row (edit, delete...): as narrow as they are, on one line */
 .tbl td.tb-btns { width: 1%; white-space: nowrap; }
 .tbl td.tb-btns button.icon + button.icon { margin-left: 4px; }
@@ -1958,3 +1958,18 @@ a.pick:hover .pick-title, a.pick:hover .pick-num { color: var(--red); }
 .mast .game-hd h1 a:hover { color: #FFC2C2; }
 .game-facts { margin-top: 18px; }
 @media (max-width: 639px) { .game-hd { gap: 12px; } .game-hd .eh-art { width: 52px; height: 52px; border-radius: 12px; } }
+
+/* the menu "≡" of a card or a tile in a list, for whoever may manage the thing: in its top right
+   corner, over the cover of a card - see card_menu() */
+.pcard .pc-cover > .card-menu, .tile > .card-menu { position: absolute; top: 10px; right: 10px; z-index: 3; }
+.tile { position: relative; }
+.pc-cover > .card-menu summary, .tile > .card-menu summary { width: 34px; height: 34px; }
+.pc-cover > .card-menu summary { background: rgba(255,255,255,.92); box-shadow: 0 4px 12px -4px rgba(11,20,34,.35); }
+/* on a tile it keeps clear of the numbers on its right: they go under it */
+.tile:has(> .card-menu) > .tile-side { padding-top: 34px; }
+.pc-cover:has(> .card-menu) .pc-stars { right: 52px; }
+.card-menu .row-menu > summary:hover, .card-menu .row-menu[open] > summary { background: var(--ink-soft); color: #fff; }
+/* A card that rises under the mouse (transform) is what an open menu in it, fixed to the window, is
+   placed against instead of the window: the menu flew off somewhere the moment it opened. A card
+   with an open menu stays where it is. */
+.pcard:has(.card-menu details[open]), .tile:has(> .card-menu details[open]) { transform: none !important; transition: none !important; }

@@ -52,6 +52,21 @@ function series_type_class($type)
 	return 'series';
 }
 
+// The menu "≡" of a series for whoever manages it, as on its own page; and what the list adds of its
+// own (buttons).
+function series_card_menu($series)
+{
+	$buttons = isset($series->buttons) ? $series->buttons : '';
+	$prep = NULL;
+	if (!$series->owner->is_closed() && is_series_manager($series->owner, $series->id))
+	{
+		$buttons = PageBase::capture(function() use ($series) { show_series_buttons($series->id, $series->start_time, $series->duration, $series->flags, $series->owner); }) . $buttons;
+		$prep = new MenuItem('series_preparation.php?id=' . $series->id, get_label('Preparation'), get_label('Getting [0] ready.', $series->name));
+		return card_menu($buttons, $prep, series_manage_items($series->id, $series->name));
+	}
+	return card_menu($buttons, $prep);
+}
+
 // One tile.
 function series_tile_show($series, $timezone = NULL)
 {
@@ -74,7 +89,7 @@ function series_tile_show($series, $timezone = NULL)
 	$canceled = ($series->flags & SERIES_FLAG_CANCELED) != 0;
 	$type = series_type($series->start_time, $series->max_stars);
 
-	echo '<div class="tile st-' . series_type_class($type) . ($canceled ? ' is-off' : '') . '">' . card_logo($series_pic->set($series->id, $series->name, $series->flags, $series->owner), $series->name);
+	echo '<div class="tile st-' . series_type_class($type) . ($canceled ? ' is-off' : '') . '">' . series_card_menu($series) . card_logo($series_pic->set($series->id, $series->name, $series->flags, $series->owner), $series->name);
 	echo '<div class="who-txt"><a class="who-name" href="series_standings.php?bck=1&id=' . $series->id . '">' . $series->name . '</a>';
 	echo '<span class="who-sub">' . PageBase::icon($series->owner->is_league() ? 'trophy' : 'users') . $series->owner->name . '</span>';
 	echo '<span class="tile-meta">';
@@ -100,10 +115,6 @@ function series_tile_show($series, $timezone = NULL)
 	// The type stands in one place on every tile: over the number of its tournaments.
 	echo '<div class="tile-side"><span class="chip st-chip">' . $types[$type] . '</span>';
 	echo '<a class="tile-num" href="series_tournaments.php?bck=1&id=' . $series->id . '" title="' . get_label('Tournaments') . '"><b>' . $series->tournaments . '</b><span>' . get_label('Tournaments') . '</span></a></div>';
-	if (isset($series->buttons) && trim($series->buttons) != '')
-	{
-		echo '<div class="tile-actions">' . $series->buttons . '</div>';
-	}
 	echo '</div>';
 }
 

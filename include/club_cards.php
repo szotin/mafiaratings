@@ -17,6 +17,31 @@ require_once __DIR__ . '/cards.php';
 //             club.
 // Then it calls club_tiles_show() to print them.
 
+// The menu "≡" of a club for whoever manages or referees it, as on its own page; and what the list
+// adds of its own (buttons: taking it out of a league or a series).
+function club_card_menu($club)
+{
+	global $_profile;
+
+	$buttons = isset($club->buttons) ? $club->buttons : '';
+	$prep = NULL;
+	$items = array();
+	if ($_profile != NULL && is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE, $club->id))
+	{
+		$memb_flags = isset($_profile->clubs[$club->id]) ? $_profile->clubs[$club->id]->flags : 0;
+		$buttons = PageBase::capture(function() use ($club, $memb_flags) { show_club_buttons($club->id, $club->name, $club->flags, $memb_flags); }) . $buttons;
+		if (($club->flags & CLUB_FLAG_CLOSED) == 0 && is_permitted(PERMISSION_CLUB_MANAGER, $club->id))
+		{
+			$prep = new MenuItem('club_management.php?id=' . $club->id, get_label('Management'), get_label('Manage [0].', $club->name));
+		}
+		if (($club->flags & CLUB_FLAG_CLOSED) == 0)
+		{
+			$items = club_manage_items($club->id, $club->name, is_permitted(PERMISSION_CLUB_MANAGER, $club->id));
+		}
+	}
+	return card_menu($buttons, $prep, $items);
+}
+
 // One tile.
 function club_tile_show($club)
 {
@@ -29,7 +54,7 @@ function club_tile_show($club)
 	$closed = ($club->flags & CLUB_FLAG_CLOSED) != 0;
 	$mine = isset($club->mine) && $club->mine;
 	$club_pic->set($club->id, $club->name, $club->flags);
-	echo '<div class="tile' . ($closed ? ' is-off' : '') . '">' . card_logo($club_pic, $club->name);
+	echo '<div class="tile' . ($closed ? ' is-off' : '') . '">' . club_card_menu($club) . card_logo($club_pic, $club->name);
 	echo '<div class="who-txt"><a class="who-name" href="club_main.php?bck=1&id=' . $club->id . '">' . $club->name . '</a>';
 	echo '<span class="who-sub">' . PageBase::icon('pin') . $club->city . '</span>';
 	// The clubs of the viewer say so in words: a coloured edge alone said nothing anybody could read.
@@ -49,11 +74,6 @@ function club_tile_show($club)
 	if (isset($club->extra))
 	{
 		echo $club->extra;
-	}
-	// The buttons of a manager under the name: beside it they left the name and the city no room.
-	if (isset($club->buttons) && trim(strip_tags($club->buttons, '<button>')) != '')
-	{
-		echo '<div class="tile-actions under">' . $club->buttons . '</div>';
 	}
 	echo '</div>';
 	if (isset($club->num))

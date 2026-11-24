@@ -68,18 +68,6 @@ class Page extends ClubPageBase
 			$event->club_id = $this->id;
 			$event->club_name = $this->name;
 			$event->club_flags = $this->flags;
-			if ($_profile != NULL)
-			{
-				$id = $event->id;
-				$tournament_id = $event->tournament_id;
-				$time = $event->time;
-				$duration = $event->duration;
-				$flags = $event->flags;
-				$club_id = $this->id;
-				$club_flags = $this->flags;
-				$attending = ($come_odds != NULL && $come_odds > 0);
-				$event->buttons = PageBase::capture(function() use ($id, $tournament_id, $time, $duration, $flags, $club_id, $club_flags, $attending) { show_event_buttons($id, $tournament_id, $time, $duration, $flags, $club_id, $club_flags, $attending); });
-			}
 			// Whether the viewer is coming.
 			if ($come_odds != NULL)
 			{

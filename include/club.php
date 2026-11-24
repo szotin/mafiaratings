@@ -61,6 +61,38 @@ function show_club_buttons($id, $name, $flags, $memb_flags)
 	}
 }
 
+// What is under "Management" in the menu "≡" of a club: on its own page and on its card in the lists
+// (see card_menu() in include/cards.php). For whoever manages it.
+// For a manager or a referee of it; $is_manager tells the two apart.
+function club_manage_items($id, $name, $is_manager)
+{
+	$items = array();
+	$items[] = new MenuItem('club_upcoming_events.php?id=' . $id, get_label('Events'), get_label('[0] upcoming events', $name));
+	if ($is_manager)
+	{
+		$items[] = new MenuItem('club_upcoming_tournaments.php?id=' . $id, get_label('Tournaments'), get_label('[0] upcoming tournaments', $name));
+		$items[] = new MenuItem('club_upcoming_series.php?id=' . $id, get_label('Series'), get_label('[0] series', $name));
+		$items[] = new MenuItem(null, null, null);
+	}
+	$items[] = new MenuItem('club_addresses.php?id=' . $id, get_label('Addresses'), get_label('[0] addresses', $name));
+	if ($is_manager)
+	{
+		$items[] = new MenuItem('club_adverts.php?id=' . $id, get_label('Adverts'), get_label('[0] adverts', $name));
+	}
+	$items[] = new MenuItem(null, null, null);
+	$items[] = new MenuItem('club_regs.php?id=' . $id, get_label('Members'), get_label('[0] members', $name));
+	$items[] = new MenuItem('club_pairs.php?id=' . $id, get_label('Pairs'), get_label('[0] pairs', $name));
+	if ($is_manager)
+	{
+		$items[] = new MenuItem(null, null, null);
+		$items[] = new MenuItem('club_scorings.php?id=' . $id, get_label('Rules'), get_label('Game rules and scoring systems of [0]', $name));
+		$items[] = new MenuItem('club_sounds.php?id=' . $id, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.'));
+		$items[] = new MenuItem(null, null, null);
+		$items[] = new MenuItem('club_log.php?id=' . $id, get_label('Log'), get_label('[0] log', $name));
+	}
+	return $items;
+}
+
 class ClubPageBase extends PageBase
 {
 	protected $id;
@@ -163,30 +195,7 @@ class ClubPageBase extends PageBase
 			
 		if ($this->is_manager || $this->is_referee)
 		{
-			$managment_menu[] = new MenuItem('club_upcoming_events.php?id=' . $this->id, get_label('Events'), get_label('[0] upcoming events', $this->name));
-			if ($this->is_manager)
-			{
-				$managment_menu[] = new MenuItem('club_upcoming_tournaments.php?id=' . $this->id, get_label('Tournaments'), get_label('[0] upcoming tournaments', $this->name));
-				$managment_menu[] = new MenuItem('club_upcoming_series.php?id=' . $this->id, get_label('Series'), get_label('[0] series', $this->name));
-				$managment_menu[] = new MenuItem(null, null, null);
-			}
-			$managment_menu[] = new MenuItem('club_addresses.php?id=' . $this->id, get_label('Addresses'), get_label('[0] addresses', $this->name));
-			if ($this->is_manager)
-			{
-				$managment_menu[] = new MenuItem('club_adverts.php?id=' . $this->id, get_label('Adverts'), get_label('[0] adverts', $this->name));
-			}
-			$managment_menu[] = new MenuItem(null, null, null);
-			$managment_menu[] = new MenuItem('club_regs.php?id=' . $this->id, get_label('Members'), get_label('[0] members', $this->name));
-			$managment_menu[] = new MenuItem('club_pairs.php?id=' . $this->id, get_label('Pairs'), get_label('[0] pairs', $this->name));
-			if ($this->is_manager)
-			{
-				$managment_menu[] = new MenuItem(null, null, null);
-				$managment_menu[] = new MenuItem('club_scorings.php?id=' . $this->id, get_label('Rules'), get_label('Game rules and scoring systems of [0]', $this->name));
-				$managment_menu[] = new MenuItem('club_sounds.php?id=' . $this->id, get_label('Game sounds'), get_label('Sounds in the game for prompting players on speech end.'));
-				$managment_menu[] = new MenuItem(null, null, null);
-				$managment_menu[] = new MenuItem('club_log.php?id=' . $this->id, get_label('Log'), get_label('[0] log', $this->name));
-			}
-			$menu[] = new MenuItem('#other', get_label('Management'), NULL, $managment_menu);
+			$menu[] = new MenuItem('#other', get_label('Management'), NULL, club_manage_items($this->id, $this->name, $this->is_manager));
 		}
 
 		$h = new EntityHeader($this->name, get_label('Clubs'), 'clubs.php');
