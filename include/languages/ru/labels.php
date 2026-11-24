@@ -2326,6 +2326,7 @@ $labelMenu = array (
 'Choose the rules the clubs of your league may play by. For every rule, tick the options that are allowed: a rule with one option left is the same in every club, a rule with several is for each club to choose. A club that joins the league can keep only what is allowed here.' => 'Выберите правила, по которым могут играть клубы вашей лиги. Для каждого правила отметьте допустимые варианты: правило с одним вариантом одинаково во всех клубах, правило с несколькими каждый клуб выбирает сам. Клуб, вступивший в лигу, может оставить у себя только то, что разрешено здесь.',
 'Add the clubs that play in your league. A club is invited: it joins once its managers accept. The series of the league are played by its clubs, and their game days and tournaments are played by its rules.' => 'Добавьте клубы, которые играют в вашей лиге. Клуб получает приглашение и вступает, когда его менеджеры его примут. Серии лиги играются её клубами, а их игровые дни и турниры — по её правилам.',
 'No clubs yet.' => 'Клубов пока нет.',
+'All clubs' => 'Все клубы', // league_main.php
 );
 
 return $labelMenu;
