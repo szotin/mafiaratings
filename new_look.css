@@ -1820,6 +1820,8 @@ button.pair-del:hover { background: var(--ink-soft); color: #fff; }
 .kv dt { display: flex; align-items: flex-start; gap: 8px; padding-right: 14px; color: var(--slate); }
 .kv dt .ui-menu, .kv dt .row-menu { flex: none; }
 .kv dd { overflow-wrap: anywhere; }
+/* in the narrow column on the right the words take less room */
+.rail .kv { grid-template-columns: minmax(70px, 100px) minmax(0, 1fr); }
 @media (max-width: 459px) {
   .kv { grid-template-columns: minmax(0, 1fr); }
   .kv dt { padding-bottom: 0; }
@@ -1836,3 +1838,67 @@ button.pair-del:hover { background: var(--ink-soft); color: #fff; }
 .av.logo img { object-fit: contain; }
 /* a canceled tournament among the others: there, but grey */
 .pcard.is-off .pc-cover { filter: grayscale(1); opacity: .6; }
+
+/* =================================================================== the page of a game (view_game.php) */
+
+/* how it ended, on the band: the town red, the mafia black */
+.eh-sub .chip.win-town { background: var(--red); color: #fff; }
+.eh-sub .chip.win-maf { background: #05080F; color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
+/* the chances of the town before the game: a red and black bar after the number */
+.odds { display: inline-flex; align-items: center; gap: 8px; }
+.odds-bar { display: inline-block; width: 48px; height: 6px; border-radius: 3px; background: #05080F; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); overflow: hidden; }
+.odds-bar > span { display: block; height: 100%; background: var(--red); }
+/* the games before and after it */
+.game-steps { display: flex; gap: 8px; }
+.mast .game-steps .btn { height: 38px; padding: 0 14px; border-radius: 999px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: #fff; }
+.mast .game-steps .btn:hover { background: rgba(255,255,255,.2); color: #fff; }
+.mast .game-steps .btn .ic { width: 16px; height: 16px; }
+@media (max-width: 639px) { .mast .game-steps .btn span { display: none; } .mast .game-steps .btn { width: 38px; padding: 0; justify-content: center; } }
+/* hidden until the tournament ends */
+.game-note { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 18px; padding: 14px 18px; border-radius: var(--r-sheet); background: var(--paper); border: 1px dashed var(--rule-strong); color: var(--ink-soft); }
+.game-note > .ic { color: var(--red); }
+.game-note > span { flex: 1 1 240px; }
+.game-comment { margin-bottom: 18px; padding: 14px 18px; border-radius: var(--r-sheet); background: var(--paper); border-left: 3px solid var(--red); box-shadow: var(--shadow-card); line-height: 1.55; }
+/* the ten players: the rows of the mafia dark, the sheriff marked, the ones out of the game dim */
+.tbl.game-players td { vertical-align: middle; }
+.tbl.game-players .who { gap: 12px; }
+.tbl.game-players tr.role-maf td, .tbl.game-players tr.role-don td { background: #EEF0F4; }
+.tbl.game-players tr.role-maf td:first-child, .tbl.game-players tr.role-don td:first-child { box-shadow: inset 3px 0 0 #05080F; }
+.tbl.game-players tr.role-sheriff td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+.tbl.game-players tr.is-out .av { filter: grayscale(.7); opacity: .8; }
+.role { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 8px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.role img { width: 16px; height: 16px; }
+.role.civ { padding-left: 10px; background: #FBE4E5; color: var(--red); }
+.role.sheriff { background: var(--red); color: #fff; }
+.role.sheriff img { filter: brightness(0) invert(1); }
+.role.maf { background: #2A3142; color: #fff; }
+.role.don { background: #05080F; color: #fff; }
+.role.maf img, .role.don img { filter: brightness(0) invert(1); }
+.tbl.game-players .fouls { font-size: 15px; letter-spacing: 2px; color: var(--ink-soft); white-space: nowrap; }
+.tbl.game-players .bonuses { white-space: nowrap; }
+.tbl.game-players .bonuses img { width: 22px; height: 22px; vertical-align: middle; margin-left: 4px; }
+.bonus { display: inline-block; min-width: 34px; padding: 2px 8px; border-radius: 999px; background: #E3F4EA; color: #1C7A45; font-weight: 700; text-align: center; }
+.bonus.minus { background: #FBE4E5; color: var(--red); }
+
+/* =================================================================== the main page of a game day (event_info.php) */
+
+/* whether one comes: the two buttons over the page */
+.attend-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 22px; }
+.attend-bar .btn { height: 40px; padding: 0 20px; border-radius: 999px; }
+.attend-bar .btn.ghost { background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule-strong); }
+.attend-bar .btn.ghost:hover { background: var(--frost); color: var(--ink); }
+/* who may come - not surely - is a little faded; who does not come, more */
+.nl a.person.maybe { opacity: .8; }
+.people-sec.off a.person { opacity: .6; }
+.people-sec.off a.person .person-pic { filter: grayscale(1); }
+
+/* the start of a game in its video, and the button that moves it to where the player is */
+.video-start { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 4px; }
+.video-start .btn { height: 36px; padding: 0 16px; border-radius: 999px; }
+.video-start .btn:disabled { opacity: .5; cursor: default; }
+/* the players under the video: their ten pictures in a row, the number under each */
+.video-players { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px; }
+.video-players li, .video-players li > a { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.video-players .av.lg { width: 100%; max-width: 64px; height: auto; aspect-ratio: 1; }
+.video-players li > a:hover .av { box-shadow: 0 0 0 2px var(--red); }
+.video-players .n { font: 600 15px var(--font-display); color: var(--ink); }

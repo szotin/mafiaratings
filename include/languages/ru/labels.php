@@ -2327,6 +2327,12 @@ $labelMenu = array (
 'Add the clubs that play in your league. A club is invited: it joins once its managers accept. The series of the league are played by its clubs, and their game days and tournaments are played by its rules.' => 'Добавьте клубы, которые играют в вашей лиге. Клуб получает приглашение и вступает, когда его менеджеры его примут. Серии лиги играются её клубами, а их игровые дни и турниры — по её правилам.',
 'No clubs yet.' => 'Клубов пока нет.',
 'All clubs' => 'Все клубы', // league_main.php
+'Town wins~result' => 'Победа города', // view_game.php
+'Mafia wins~result' => 'Победа мафии', // view_game.php
+'The start of the game was found automatically: [0]. If the game starts elsewhere, rewind the video to where it really starts and press the button.' => 'Начало игры определено автоматически: [0]. Если игра начинается в другом месте, перемотайте видео на её настоящее начало и нажмите кнопку.', // form/game_video.php
+'The game starts at this moment' => 'Исправить: игра начинается в этот момент', // form/game_video.php
+'The game starts at [0].' => 'Начало игры установлено: [0].', // form/game_video.php
+'Other games of this recording moved with it: [0].' => 'Вместе с ней сдвинуто других игр этой записи: [0].', // form/game_video.php
 );
 
 return $labelMenu;

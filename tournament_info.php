@@ -5,6 +5,8 @@ require_once 'include/club.php';
 require_once 'include/pages.php';
 require_once 'include/event.php';
 require_once 'include/utilities.php';
+require_once 'include/scoring.php';
+require_once 'include/cards.php';
 
 define('USER_COLUMN_COUNT', 6);
 define('USER_COLUMN_WIDTH', (100 / USER_COLUMN_COUNT));
@@ -98,19 +100,104 @@ class Page extends TournamentPageBase
 		$this->show_people(get_label('Applicants'), $applications, $games_count > 0, true);
 		$this->show_people(get_label('Referees'), $referees, $games_count > 0, false);
 		
-		// The figures of the field, once there is a field to speak of.
-		if ($this->num_regs > 0)
-		{
-			echo '<p><table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="2"><b>' . get_label('Properties') . '</b></td></tr>';
-			echo '<tr><td width="200">'.get_label('Average rating').':</td><td>' . format_rating(1000 + $this->rating_sum / $this->num_regs) . '</td></tr>';
-			echo '<tr><td width="200">'.get_label('Average rating of top 20 players').':</td><td>' . format_rating(1000 + $this->rating_sum_20 / ($this->num_regs > 20 ? 20 : $this->num_regs)) . '</td></tr>';
-			echo '<tr><td>'.get_label('Total traveling distance').':</td><td>' . get_label('[0] km', format_rating(convert_distance($this->traveling_distance, GEO_MILES, GEO_KILOMETERS))) . '</td></tr>';
-			echo '<tr><td>'.get_label('Guest coefficient').':</td><td>' . format_rating($this->guest_coeff, 0) . '</td></tr>';
-			echo '</table></p>';
-		}
 	}
-	
+
+	// The top of the standings, as the best players of the main page of the site. Whatever the
+	// tournament keeps hidden until it ends, the scores keep hidden here as on its standings - and a
+	// tournament hiding its tables whole has none to show.
+	private function show_standings()
+	{
+		global $_lang;
+
+		$table_hiding = table_hiding($this->id, $this->flags);
+		if (!is_null($table_hiding) && $table_hiding->mode == TOURNAMENT_HIDE_ALL)
+		{
+			return;
+		}
+
+		$rows = array();
+		if ($this->flags & TOURNAMENT_FLAG_MANUAL_SCORE)
+		{
+			$query = new DbQuery(
+				'SELECT u.id, nu.name, u.flags, nc.name, p.main_points + IFNULL(p.bonus_points, 0) + IFNULL(p.shot_points, 0), tu.flags, cu.flags FROM tournament_places p' .
+				' JOIN users u ON u.id = p.user_id' .
+				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
+				' LEFT OUTER JOIN clubs c ON c.id = u.club_id' .
+				' LEFT OUTER JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
+				' LEFT OUTER JOIN tournament_regs tu ON tu.tournament_id = p.tournament_id AND tu.user_id = p.user_id' .
+				' LEFT OUTER JOIN club_regs cu ON cu.club_id = ? AND cu.user_id = p.user_id' .
+				' WHERE p.tournament_id = ? ORDER BY p.place LIMIT 10', $this->club_id, $this->id);
+			while ($row = $query->next())
+			{
+				$rows[] = $row;
+			}
+		}
+		else
+		{
+			list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
+			$scoring = json_decode($scoring);
+			$scoring->id = (int)$this->scoring_id; // it is needed for caching
+			$scoring->version = (int)$this->scoring_version;
+			$normalizer = '{}';
+			if (!is_null($this->normalizer_id) && $this->normalizer_id > 0)
+			{
+				list($normalizer) = Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
+			}
+			$normalizer = json_decode($normalizer);
+			$normalizer->id = (int)$this->normalizer_id;
+			$normalizer->version = (int)$this->normalizer_version;
+			$players = tournament_scores($this->id, $this->flags, null, 0, $scoring, $normalizer, json_decode($this->scoring_options));
+			$count = min(count($players), 10);
+			for ($i = 0; $i < $count; ++$i)
+			{
+				$p = $players[$i];
+				$rows[] = array($p->id, $p->name, $p->flags, $p->club_name, $p->points, $p->tournament_reg_flags, $p->club_reg_flags);
+			}
+		}
+		if (count($rows) == 0)
+		{
+			return;
+		}
+
+		$pic = new Picture(USER_TOURNAMENT_PICTURE, new Picture(USER_CLUB_PICTURE, $this->user_pic));
+		echo '<section class="rail-box" aria-labelledby="h-standings"><div class="sec-hd"><h2 id="h-standings">' . get_label('Standings') . '</h2>';
+		echo '<a class="more" href="tournament_standings.php?bck=1&id=' . $this->id . '">' . get_label('Full standings') . '</a></div><ol class="rank-list">';
+		$place = 0;
+		foreach ($rows as $row)
+		{
+			list($user_id, $user_name, $user_flags, $club_name, $points, $tournament_reg_flags, $club_reg_flags) = $row;
+			++$place;
+			$pic->
+				set($user_id, $user_name, $tournament_reg_flags, 't' . $this->id)->
+				set($user_id, $user_name, $club_reg_flags, 'c' . $this->club_id)->
+				set($user_id, $user_name, $user_flags);
+			echo '<li><span class="n">' . sprintf('%02d', $place) . '</span><a class="who" href="tournament_player.php?bck=1&user_id=' . $user_id . '&id=' . $this->id . '">' . card_avatar_of($pic, $user_id, $user_name);
+			echo '<span class="who-txt"><span class="who-name">' . $user_name . '</span><span class="who-sub">' . $club_name . '</span></span></a>';
+			echo '<span class="v">' . format_score($points) . '</span></li>';
+		}
+		echo '</ol></section>';
+	}
+
+	// The figures of the field, once there is a field to speak of.
+	private function show_properties()
+	{
+		if ($this->num_regs <= 0)
+		{
+			return;
+		}
+		$figures = array(
+			array(number_format($this->num_regs), get_label('Players')),
+			array(format_rating(1000 + $this->rating_sum / $this->num_regs), get_label('Average rating')),
+			array(format_rating(1000 + $this->rating_sum_20 / ($this->num_regs > 20 ? 20 : $this->num_regs)), get_label('Average rating of top 20 players')),
+			array(get_label('[0] km', format_rating(convert_distance($this->traveling_distance, GEO_MILES, GEO_KILOMETERS))), get_label('Total traveling distance')),
+			array(format_rating($this->guest_coeff, 0), get_label('Guest coefficient')));
+		echo '<section class="rail-box" aria-labelledby="h-properties"><div class="sec-hd"><h2 id="h-properties">' . get_label('Properties') . '</h2></div><dl class="figs two">';
+		foreach ($figures as $figure)
+		{
+			echo '<div><dt>' . $figure[1] . '</dt><dd>' . $figure[0] . '</dd></div>';
+		}
+		echo '</dl></section>';
+	}
 	// A grid of people of the tournament - its participants, applicants or referees - each in a card
 	// of its own: the picture, the name with the club, and for the players where they come from and
 	// their rating. Once games are played the picture leads to the player's page of the tournament.
@@ -159,7 +246,12 @@ class Page extends TournamentPageBase
 
 	protected function show_body()
 	{
+		echo '<div class="cols wide-rail tournament-home"><div class="stack">';
 		$this->show_details();
+		echo '</div><aside class="rail">';
+		$this->show_standings();
+		$this->show_properties();
+		echo '</aside></div>';
 		echo '<section class="comments-sec"><div id="comments"></div></section>';
 	}
 	

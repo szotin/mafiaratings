@@ -5,6 +5,7 @@ require_once 'include/game.php';
 require_once 'include/game_log.php';
 require_once 'include/series.php';
 require_once 'include/table_hiding.php';
+require_once 'include/cards.php';
 
 define('VIEW_GENERAL', 0);
 define('VIEW_LOG', 1);
@@ -581,112 +582,158 @@ class Page extends PageBase
 		echo '</tr></table>';
 	}
 	
-	protected function show_body()
+	// The heading of the game on the band, as the heading of a tournament: where it was played, its
+	// table and number, how it ended; its facts in a line under it; the games before and after it
+	// beside it with the menu "≡" of what can be done with it; its views as the tabs.
+	protected function show_title()
 	{
-		global $_profile;
-		
-		echo '<table class="head" width="100%"><tr>';
-		
-		// Prev game button
-		if ($this->prev_game_id > 0)
+		if (is_null($this->tournament_id))
 		{
-			echo '<td width="24"><button class="icon" onclick="goTo({id:' . $this->prev_game_id . '})" title="' . get_label('Previous game #[0]', $this->prev_game_id) . '"><img src="images/prev.png"></button></td>';
-		}
-		echo '<td>'; 
-		
-		// Game info icons
-		echo '<table class="transp" width="100%"><tr>';
-		echo '<td rowspan="2"><table class="bordered">';
-		echo '<tr align="center" class="th dark" padding="5px"><td width="90">' . get_label('Club') . '</td><td width="90">' . ($this->tournament_id == NULL ? get_label('Event') : get_label('Tournament')) . '</td><td width="90">' . get_label('Address') . '</td><td width="90">' . get_label('Referee') . '</td><td width="90">'.get_label('Time').'</td><td width="90">'.get_label('Duration').'</td><td width="90">'.get_label('Language').'</td>';
-		if ($this->civ_odds >= 0 && $this->civ_odds <= 1)
-		{
-			echo '<td width="90">'.get_label('Civs odds').'</td>';
-		}
-		if ($this->video_id != NULL)
-		{
-			echo '<td width="90">'.get_label('Video').'</td>';
-		}
-		echo '</tr><tr align="center" class="dark"><td>';
-		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
-		$this->club_pic->show(ICONS_DIR, true, 48);
-		echo '</td><td>';
-		
-		if ($this->tournament_id == NULL)
-		{
+			$h = new EntityHeader($this->short_title(), $this->event_name, 'event.php?bck=1&id=' . $this->event_id);
 			$this->event_pic->set($this->event_id, $this->event_name, $this->event_flags);
 		}
 		else
 		{
+			$h = new EntityHeader($this->short_title(), $this->tournament_name . ': ' . $this->event_name, 'tournament.php?bck=1&id=' . $this->tournament_id);
 			$this->event_pic->set($this->tournament_id, $this->tournament_name, $this->tournament_flags);
 		}
-		$this->event_pic->show(ICONS_DIR, true, 48);
-		
-		echo '</td><td>';
-		$this->address_pic->set($this->address_id, $this->address, $this->address_flags);
-		$this->address_pic->show(ICONS_DIR, true, 48);
-		echo '</td><td>';
+		$event_pic = $this->event_pic;
+		$h->art = PageBase::capture(function() use ($event_pic) { $event_pic->show(TNAILS_DIR, false); });
+
+		$sub = '';
+		switch ($this->result)
+		{
+			case GAME_RESULT_TOWN:
+				$sub .= '<span class="chip win-town">' . get_label('Town wins~result') . '</span>';
+				break;
+			case GAME_RESULT_MAFIA:
+				$sub .= '<span class="chip win-maf">' . get_label('Mafia wins~result') . '</span>';
+				break;
+			case GAME_RESULT_TIE:
+				$sub .= '<span class="chip">' . get_label('Tie') . '</span>';
+				break;
+		}
+		if (!$this->is_rating)
+		{
+			$sub .= '<span class="chip">' . get_label('non-rating') . '</span>';
+		}
+		if ($this->flags & GAME_FLAG_CANCELED)
+		{
+			$sub .= '<span class="chip off">' . get_label('Game canceled') . '</span>';
+			$h->off = true;
+		}
+		$h->sub = $sub;
+
+		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
+		$h->fact('users', '<a href="club_main.php?bck=1&id=' . $this->club_id . '">' . $this->club_name . '</a>');
+		if (!is_null($this->tournament_id))
+		{
+			$h->fact('trophy', '<a href="tournament.php?bck=1&id=' . $this->tournament_id . '">' . $this->tournament_name . '</a>');
+		}
+		$h->fact('cal', '<a href="event.php?bck=1&id=' . $this->event_id . '">' . $this->event_name . '</a>');
+		$h->fact('pin', '<a href="address_info.php?bck=1&id=' . $this->address_id . '">' . $this->address . '</a>');
 		if (isset($this->moder_id))
 		{
-			$this->player_pic->
-				set($this->moder_id, $this->event_moder_nickname, $this->event_moder_flags, 'e' . $this->event_id)->
-				set($this->moder_id, $this->moder_name, $this->tournament_moder_flags, 't' . $this->tournament_id)->
-				set($this->moder_id, $this->moder_name, $this->club_moder_flags, 'c' . $this->club_id)->
-				set($this->moder_id, $this->moder_name, $this->moder_flags);
-			$this->player_pic->show(ICONS_DIR, true, 48);
+			$h->fact('user', get_label('Referee') . ': <a href="user_info.php?bck=1&id=' . $this->moder_id . '">' . $this->moder_name . '</a>');
 		}
-		echo '</td><td>' . $this->start_time . '</td><td>' . $this->duration . '</td><td>';
-		echo '<span class="lang">' . get_short_lang_str($this->lang) . '</span>';
+		$when = $this->start_time;
+		if (!empty($this->duration))
+		{
+			$when .= ' · ' . $this->duration;
+		}
+		$h->fact('status', $when);
+		$h->fact('lang', get_short_lang_str($this->lang));
 		if ($this->civ_odds >= 0 && $this->civ_odds <= 1)
 		{
-			$odds_text = number_format($this->civ_odds * 100, 1) . '%';
-			$text = get_label('The chances to win for the town estimated by [0] before the game were [1].', PRODUCT_NAME, $odds_text);
-			$red_width = round(48 * $this->civ_odds);
-			echo '</td><td>' . $odds_text . '<br><img src="images/red_dot.png" width="' . $red_width . '" height="12" title="' . $text . '"><img src="images/black_dot.png" width="' . (48 - $red_width) . '" height="12" title="' . $text . '">';
+			$odds = number_format($this->civ_odds * 100, 1) . '%';
+			$text = get_label('The chances to win for the town estimated by [0] before the game were [1].', PRODUCT_NAME, $odds);
+			$h->fact('coin', '<span class="odds" title="' . $text . '">' . get_label('Civs odds') . ': ' . $odds .
+				'<span class="odds-bar"><span style="width:' . round($this->civ_odds * 100) . '%"></span></span></span>');
 		}
 		if ($this->video_id != NULL)
 		{
-			echo '<td><a href="javascript:mr.watchGameVideo(' . $this->id . ')">';
-			echo '<img src="images/video.png" width="48" height="48" title="' . get_label('Watch game [0] video', $this->id) . '">';
-			echo '</td>';
+			$h->fact('video', '<a href="javascript:mr.watchGameVideo(' . $this->id . ')">' . get_label('Video') . '</a>');
 		}
-		echo '</td></tr></table></td>';
-		
-		// Buttons to manage the game
-		echo '<td align="right" valign="top">';
-		if ($this->id > 0)
+
+		// The games before and after it, in the list it was opened from.
+		$side = '';
+		if ($this->prev_game_id > 0)
 		{
-			if (is_permitted(PERMISSION_USER))
-			{
-				echo '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '">';
-				echo '<img src="images/objection.png" border="0"></button>';
-				if ($this->is_editor)
-				{
-					echo '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
-					echo '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
-					if ($this->video_id == NULL)
-					{
-						echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Add game [0] video', $this->id) . '"><img src="images/film-add.png" border="0"></button>';
-					}
-					else
-					{
-						echo '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Change game [0] video', $this->id) . '"><img src="images/film.png" border="0"></button>';
-						echo '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
-					}
-				}
-			}
-			//echo '<button class="icon" onclick="mr.fiimGameForm(' . $this->id . ')" title="' . get_label('FIIM game [0] form', $this->id) . '"><img src="images/fiim.png" border="0"></button>';
+			$side .= '<a class="btn game-step" href="javascript:goTo({id:' . $this->prev_game_id . '})" title="' . get_label('Previous game') . '">' . PageBase::icon('chev-l') . '<span>' . get_label('Previous game') . '</span></a>';
 		}
-		echo '</td></tr><tr><td align="right" valign="bottom"></td></tr></table>';
-		
-		// Next game button
-		echo '</td><td align="right" valign="top">';
 		if ($this->next_game_id > 0)
 		{
-			echo '<td width="24"><button class="icon" onclick="goTo({id:' . $this->next_game_id . '})" title="' . get_label('Next game #[0]', $this->next_game_id) . '"><img src="images/next.png"></button></td>';
+			$side .= '<a class="btn game-step" href="javascript:goTo({id:' . $this->next_game_id . '})" title="' . get_label('Next game') . '"><span>' . get_label('Next game') . '</span>' . PageBase::icon('chev-r') . '</a>';
 		}
-		echo '</tr></table>';
-		
-		$hidden = false;
+		if ($side != '')
+		{
+			$h->side = '<div class="game-steps">' . $side . '</div>';
+		}
+
+		// What can be done with the game: under "≡", see manage_menu().
+		$actions = '';
+		if ($this->id > 0 && is_permitted(PERMISSION_USER))
+		{
+			$actions .= '<button class="icon" onclick="mr.gotoObjections(' . $this->id . ')" title="' . get_label('File an objection to the game [0] results.', $this->id) . '"><img src="images/objection.png" border="0"></button>';
+			if ($this->is_editor)
+			{
+				$actions .= '<button class="icon" onclick="mr.editGame(' . $this->id . ')" title="' . get_label('Edit game [0]', $this->id) . '"><img src="images/edit.png" border="0"></button>';
+				if ($this->video_id == NULL)
+				{
+					$actions .= '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Add game [0] video', $this->id) . '"><img src="images/film-add.png" border="0"></button>';
+				}
+				else
+				{
+					$actions .= '<button class="icon" onclick="mr.setGameVideo(' . $this->id . ')" title="' . get_label('Change game [0] video', $this->id) . '"><img src="images/film.png" border="0"></button>';
+					$actions .= '<button class="icon" onclick="mr.deleteVideo(' . $this->video_id . ', \'' . get_label('Are you sure you want to remove video from the game [0]?', $this->id) . '\')" title="' . get_label('Remove game [0] video', $this->id) . '"><img src="images/film-delete.png" border="0"></button>';
+				}
+				$actions .= '<button class="icon" onclick="deleteGame(' . $this->id . ')" title="' . get_label('Delete game [0]', $this->id) . '"><img src="images/delete.png" border="0"></button>';
+			}
+		}
+		$h->actions = $actions;
+
+		$this->show_entity_header($h, array());
+
+		// The views of the game, as the tabs of an entity.
+		$views = array(
+			VIEW_GENERAL => get_label('General info'),
+			VIEW_LOG => get_label('Log'),
+			VIEW_ROUND => get_label('Per round'),
+			VIEW_PLAYER => get_label('Per player'));
+		echo '<nav class="tabs"><div class="tabs-inner">';
+		foreach ($views as $view => $text)
+		{
+			echo '<a href="javascript:goTo({view:' . $view . '})"' . ($this->view == $view ? ' aria-current="page"' : '') . '><span>' . $text . '</span></a>';
+		}
+		echo '</div></nav>';
+	}
+
+	// The name of the game on its own: its table and number.
+	private function short_title()
+	{
+		$game_num = is_null($this->game_num) ? ('#' . $this->id) : $this->game_num;
+		if (is_null($this->table_num))
+		{
+			return get_label('Game [0]', $game_num);
+		}
+		return get_label('Table [0]', $this->table_num) . ', ' . mb_strtolower(get_label('Game [0]', $game_num), 'UTF-8');
+	}
+
+	// A notice over the game: it or its bonus points are hidden until the tournament ends.
+	private function show_hidden_notice($text)
+	{
+		echo '<div class="game-note">' . PageBase::icon('status') . '<span>' . $text . '</span>';
+		if ($this->is_editor)
+		{
+			echo '<button type="button" class="btn" onclick="goTo({show_all: null})">' . get_label('Show all about this game.') . '</button>';
+		}
+		echo '</div>';
+	}
+
+	protected function show_body()
+	{
+		global $_profile;
+
 		if (($this->tournament_flags & TOURNAMENT_FLAG_FINISHED) == 0)
 		{
 			$hidden = is_game_hidden(table_hiding($this->tournament_id, $this->tournament_flags), $this->round_num, $this->game_num);
@@ -694,46 +741,17 @@ class Page extends PageBase
 			{
 				if ($this->my_user_id <= 0)
 				{
-					echo '<p><table class="transp" width="100%"><tr><td width="32">';
-					if ($this->is_editor)
-					{
-						echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/attention.png"></button>';
-					}
-					else
-					{
-						echo '<img src="images/attention.png">';
-					}
-					echo '</td><td><h3>' . get_label('This game is hidden until the tournament ends.') . '</h3></td></tr></table></p>';
+					$this->show_hidden_notice(get_label('This game is hidden until the tournament ends.'));
 					return;
 				}
 				$this->hide_bonus = true;
 			}
-			
 			if ($this->hide_bonus)
 			{
-				echo '<p><table class="transp" width="100%"><tr><td width="32">';
-				if ($this->is_editor)
-				{
-					echo '<button onclick="goTo({show_all: null})" title="' . get_label('Show all about this game.') . '"><img src="images/attention.png"></button>';
-				}
-				else
-				{
-					echo '<img src="images/attention.png">';
-				}
-				echo '</td><td><h3>' . get_label('Bonus points are hidden for this game until the tournament ends.') . '</h3></td></tr></table></p>';
+				$this->show_hidden_notice(get_label('Bonus points are hidden for this game until the tournament ends.'));
 			}
 		}
-		
-		echo '<div class="tab">';
-		echo '<button ' . ($this->view == VIEW_GENERAL ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_GENERAL . '})">' . get_label('General info') . '</button>';
-		echo '<button ' . ($this->view == VIEW_LOG ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_LOG . '})">' . get_label('Log') . '</button>';
-		echo '<button ' . ($this->view == VIEW_ROUND ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_ROUND . '})">' . get_label('Per round') . '</button>';
-		echo '<button ' . ($this->view == VIEW_PLAYER ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_PLAYER . '})">' . get_label('Per player') . '</button>';
-		// mr points removed
-		// echo '<button ' . ($this->view == VIEW_MR_POINTS ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS . '})">' . get_label('MR points') . '</button>';
-		// echo '<button ' . ($this->view == VIEW_MR_POINTS_LOG ? 'class="active" ' : '') . 'onclick="goTo({view:' . VIEW_MR_POINTS_LOG . '})">' . get_label('MR points log') . '</button>';
-		echo '</div><p>';
-		
+
 		switch ($this->view)
 		{
 		case VIEW_GENERAL:
@@ -755,12 +773,87 @@ class Page extends PageBase
 			$this->show_mr_points_log();
 			break;
 		}
-		echo '</p><div id="comments"></div>';
+		echo '<section class="comments-sec"><div id="comments"></div></section>';
 	}
-	
+
+	// The bonus of a player as it is shown in the table: points with their sign, or the mark of the
+	// best player, the best move, a removed auto-bonus.
+	private function bonus_html($bonus, $comment)
+	{
+		if (is_numeric($bonus))
+		{
+			if ($bonus == 0)
+			{
+				return '';
+			}
+			return '<span class="bonus' . ($bonus < 0 ? ' minus' : '') . '" title="' . $comment . '">' . ($bonus > 0 ? '+' : '') . $bonus . '</span>';
+		}
+		switch ($bonus)
+		{
+			case 'bestPlayer':
+				return '<img src="images/best_player.png" title="' . get_label('Best player') . ($comment != '' ? ': ' . $comment : '') . '" alt="">';
+			case 'bestMove':
+				return '<img src="images/best_move.png" title="' . get_label('Best move') . ($comment != '' ? ': ' . $comment : '') . '" alt="">';
+			case 'worstMove':
+				return '<img src="images/worst_move.png" title="' . get_label('Auto-bonus removed') . ': ' . $comment . '" alt="">';
+		}
+		return '';
+	}
+
+	// How the player left the game, in words: "in night 2", "four warnings in round 3".
+	private function death_text($player)
+	{
+		if (!isset($player->death))
+		{
+			return '';
+		}
+		$death_round = -1;
+		$death_type = '';
+		if (is_numeric($player->death))
+		{
+			$death_round = $player->death;
+		}
+		else if (is_string($player->death))
+		{
+			$death_type = $player->death;
+		}
+		else if (isset($player->death->round))
+		{
+			$death_round = $player->death->round;
+		}
+		if (isset($player->death->type))
+		{
+			$death_type = $player->death->type;
+		}
+
+		switch ($death_type)
+		{
+		case DEATH_TYPE_GIVE_UP:
+			return get_label('gave up [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+		case DEATH_TYPE_WARNINGS:
+			return get_label('four warnings [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+		case DEATH_TYPE_TECH_FOULS:
+			return get_label('two technical fouls [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+		case DEATH_TYPE_KICK_OUT:
+			return get_label('kicked out [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+		case DEATH_TYPE_TEAM_KICK_OUT:
+			return get_label('team defeat [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+		case DEATH_TYPE_NIGHT:
+			return get_label('in night [0]', $death_round >= 0 ? $death_round : '' );
+		case DEATH_TYPE_DAY:
+			return get_label('in day [0]', $death_round >= 0 ? $death_round : '' );
+		}
+		if ($death_round > 0)
+		{
+			return get_label('[0] round', $death_round);
+		}
+		return get_label('Killed');
+	}
+
+	// The ten players as a table of the new look: the number, the player, the role, the fouls, how
+	// they left the game and their bonus. The rows of the mafia are dark, as the side they play.
 	function show_general()
 	{
-		echo '<table class="bordered" width="100%">';
 		$comment = '';
 		if (!$this->hide_bonus)
 		{
@@ -796,99 +889,86 @@ class Page extends PageBase
 		}
 		if (!empty($comment))
 		{
-			echo '<tr><td colspan="2"><table class="bordered light" width="100%"><tr><td>' . $comment . '</td></tr></table></td></tr>';
+			echo '<div class="game-comment">' . $comment . '</div>';
 		}
-			
-		echo '<tr height="1"><td width="600" valign="top">';
-		// Players
-		echo '<table class="bordered light" width="100%">';
+
+		echo '<div class="sheet"><table class="tbl game-players"><thead><tr>';
+		echo '<th class="num">#</th><th>' . get_label('Player') . '</th><th>' . get_label('Role') . '</th>';
+		echo '<th class="p3" title="' . get_label('Warnings') . '"></th><th class="p2">' . get_label('Killed') . '</th><th class="num">' . get_label('Bonus') . '</th>';
+		if ($this->is_editor)
+		{
+			echo '<th></th>';
+		}
+		echo '</tr></thead><tbody>';
 		for ($i = 1; $i <= 10; ++$i)
 		{
 			$player = $this->game->data->players[$i-1];
-			echo '<td width="20" class="darker" align="center">' . $i . '</td>';
-			echo '<td>';
-			$this->show_player_html($i);
-			// The fouls stand where the round view puts them: before how the player died. Narrow:
-			// three marks is as many as a player who stays in the game can have.
-			echo '</td><td width="50" align="center"><big>' . $this->fouls_html($player) . '</big></td><td width="100">';
-			if (isset($player->death))
+			$role = isset($player->role) ? $player->role : 'civ';
+			echo '<tr class="role-' . $role . (isset($player->death) ? ' is-out' : '') . '"><td class="num"><b>' . $i . '</b></td><td>';
+
+			// The player: the picture of the event, the tournament, the club or their own.
+			if (isset($player->id) && isset($this->players[$player->id]))
 			{
-				echo '<table class="transp"><tr><td width="30"><img src="images/dead.png" width="24" height="24"></td><td>';
-				$death_round = -1;
-				$death_type = '';
-				if (is_numeric($player->death))
+				list($player_id, $player_name, $player_flags, $event_player_nickname, $event_player_flags, $tournament_player_flags, $club_player_flags) = $this->players[$player->id];
+				if ($player_name != $player->name)
 				{
-					$death_round = $player->death;
+					$player_name = $player->name . ' (' . $player_name . ')';
 				}
-				else if (is_string($player->death))
-				{
-					$death_type = $player->death;
-				}
-				else if (isset($player->death->round))
-				{
-					$death_round = $player->death->round;
-				}
-				if (isset($player->death->type))
-				{
-					$death_type = $player->death->type;
-				}
-				
-				switch ($death_type)
-				{
-				case DEATH_TYPE_GIVE_UP:
-					echo get_label('gave up [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+				$this->player_pic->
+					set($player_id, $event_player_nickname, $event_player_flags, 'e' . $this->event_id)->
+					set($player_id, $player_name, $tournament_player_flags, 't' . $this->tournament_id)->
+					set($player_id, $player_name, $club_player_flags, 'c' . $this->club_id)->
+					set($player_id, $player_name, $player_flags);
+				$avatar = card_avatar_of($this->player_pic, $player_id, $player_name, '');
+			}
+			else
+			{
+				$player_name = isset($player->name) ? $player->name : '';
+				$avatar = '<span class="av t5" aria-hidden="true">' . $i . '</span>';
+			}
+			echo '<a class="who" href="javascript:viewPlayer(' . $i . ')">' . $avatar . '<span class="who-txt"><span class="who-name">' . $player_name . '</span></span></a></td>';
+
+			switch ($role)
+			{
+				case 'sheriff':
+					echo '<td><span class="role sheriff"><img src="images/sheriff.png" alt="">' . get_label('sheriff') . '</span></td>';
 					break;
-				case DEATH_TYPE_WARNINGS:
-					echo get_label('four warnings [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
+				case 'don':
+					echo '<td><span class="role don"><img src="images/don.png" alt="">' . get_label('don') . '</span></td>';
 					break;
-				case DEATH_TYPE_TECH_FOULS:
-					echo get_label('two technical fouls [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
-					break;
-				case DEATH_TYPE_KICK_OUT:
-					echo get_label('kicked out [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
-					break;
-				case DEATH_TYPE_TEAM_KICK_OUT:
-					echo get_label('team defeat [0]', $death_round >= 0 ? get_label('in round [0]', $death_round) : '' );
-					break;
-				case DEATH_TYPE_NIGHT:
-					echo get_label('in night [0]', $death_round >= 0 ? $death_round : '' );
-					break;
-				case DEATH_TYPE_DAY:
-					echo get_label('in day [0]', $death_round >= 0 ? $death_round : '' );
+				case 'maf':
+					echo '<td><span class="role maf"><img src="images/maf.png" alt="">' . get_label('mafia') . '</span></td>';
 					break;
 				default:
-					if ($death_round > 0)
-					{
-						echo get_label('[0] round', $death_round);
-					}
+					echo '<td><span class="role civ">' . get_label('civilian') . '</span></td>';
 					break;
-				}
-				echo '</td></tr></table>';
 			}
-			echo '</td><td align="center" width="36">';
-			if (isset($player->role))
+			echo '<td class="p3 fouls">' . $this->fouls_html($player) . '</td>';
+			echo '<td class="p2 dim">' . $this->death_text($player) . '</td>';
+
+			echo '<td class="num bonuses">';
+			$player_comment = isset($player->comment) ? str_replace('"', '&quot;', $player->comment) : '';
+			if (isset($player->bonus) && (!$this->hide_bonus || $this->my_user_id == $player->id))
 			{
-				switch ($player->role)
+				$bonuses = is_array($player->bonus) ? $player->bonus : array($player->bonus);
+				foreach ($bonuses as $bonus)
 				{
-					case 'sheriff':
-						echo '<img src="images/sheriff.png" title="' . get_label('sheriff') . '" style="opacity: 0.5;">';
-						break;
-					case 'don':
-						echo '<img src="images/don.png" title="' . get_label('don') . '" style="opacity: 0.5;">';
-						break;
-					case 'maf':
-						echo '<img src="images/maf.png" title="' . get_label('mafia') . '" style="opacity: 0.5;">';
-						break;
+					echo $this->bonus_html($bonus, $player_comment);
 				}
 			}
 			echo '</td>';
+			if ($this->is_editor)
+			{
+				$onclick = $this->id > 0 ?
+					'mr.gameBonus(' . $this->id . ', ' . $i . ')' :
+					'mr.currentGameBonus(' . $this->event_id . ', ' . $this->table_num . ', ' . $this->game_num . ', ' . $i . ')';
+				echo '<td class="tb-btns">' . card_row_menu(array(array($onclick, 'award.png', get_label('Set bonus for [0]', $player_name)))) . '</td>';
+			}
 			echo '</tr>';
 		}
-		echo '</table>';
-		
-		echo '</td></tr></table>';
+		echo '</tbody></table></div>';
 	}
-	
+
 	// What happened in the game, in the words include/game_log.php puts it in - the same words
 	// a text broadcast shows while it is still being played. Only the table around the lines is
 	// this page's own, with the heading of each day and night leading to it.

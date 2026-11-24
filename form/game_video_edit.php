@@ -29,7 +29,7 @@ try
 	dialog_title(get_label('Set game [0] video', $id));
 
 	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td width="80">'.get_label('Video URL').':</td><td><input id="form-video" size="65" value="' . htmlspecialchars($url) . '" title="' . get_label('Paste the youtube video URL here.') . '"></td></tr>';
+	echo '<tr><td width="80" style="white-space:nowrap">'.get_label('Video URL').':</td><td><input id="form-video" style="width:100%; box-sizing:border-box" value="' . htmlspecialchars($url) . '" title="' . get_label('Paste the youtube video URL here.') . '"></td></tr>';
 	echo '</table>';
 	if (!is_null($video))
 	{

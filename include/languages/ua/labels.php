@@ -2328,6 +2328,12 @@ $labelMenu = array (
 'Add the clubs that play in your league. A club is invited: it joins once its managers accept. The series of the league are played by its clubs, and their game days and tournaments are played by its rules.' => 'Додайте клуби, що грають у вашій лізі. Клуб отримує запрошення і вступає, коли його менеджери його приймуть. Серії ліги граються її клубами, а їхні ігрові дні й турніри — за її правилами.',
 'No clubs yet.' => 'Клубів поки немає.',
 'All clubs' => 'Усі клуби', // league_main.php
+'Town wins~result' => 'Перемога міста', // view_game.php
+'Mafia wins~result' => 'Перемога мафії', // view_game.php
+'The start of the game was found automatically: [0]. If the game starts elsewhere, rewind the video to where it really starts and press the button.' => 'Початок гри визначено автоматично: [0]. Якщо гра починається в іншому місці, перемотайте відео на її справжній початок і натисніть кнопку.', // form/game_video.php
+'The game starts at this moment' => 'Виправити: гра починається в цей момент', // form/game_video.php
+'The game starts at [0].' => 'Початок гри встановлено: [0].', // form/game_video.php
+'Other games of this recording moved with it: [0].' => 'Разом з нею зсунуто інших ігор цього запису: [0].', // form/game_video.php
 );
 
 return $labelMenu;

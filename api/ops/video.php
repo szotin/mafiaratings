@@ -375,6 +375,54 @@ class ApiPage extends OpsApiPageBase
 	}
 	
 	//-------------------------------------------------------------------------------------------------------
+	// game_video_start
+	//-------------------------------------------------------------------------------------------------------
+	// Where in its recording the game really starts, said by a manager or a referee watching it - see
+	// form/game_video.php. Only the time changes; the games of the recording the site placed itself
+	// move with it, as with a correction made by game_video. The time is a person's from then on.
+	function game_video_start_op()
+	{
+		$game_id = (int)get_required_param('game_id');
+		$seconds = (int)get_required_param('vtime');
+		if ($seconds < 0)
+		{
+			$seconds = 0;
+		}
+
+		Db::begin();
+		list($club_id, $event_id, $tournament_id, $video_id, $video, $old_vtime, $old_flags) = Db::record(get_label('game'),
+			'SELECT g.club_id, g.event_id, g.tournament_id, v.id, v.video, v.vtime, v.flags FROM games g JOIN videos v ON v.id = g.video_id WHERE g.id = ?', $game_id);
+		check_permissions(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
+
+		$moved = 0;
+		if (((int)$old_flags & VIDEO_FLAG_AUTO_TIME) != 0)
+		{
+			$moved = broadcast_shift_following($video_id, $seconds - broadcast_vtime_seconds($old_vtime));
+		}
+		Db::exec(get_label('video'), 'UPDATE videos SET vtime = ?, flags = flags & ~? WHERE id = ?', $seconds, VIDEO_FLAG_AUTO_TIME, $video_id);
+
+		$log_details = new stdClass();
+		$log_details->video = $video;
+		$log_details->game_id = $game_id;
+		$log_details->vtime = $seconds;
+		$log_details->old_vtime = $old_vtime;
+		$log_details->moved_with_it = $moved;
+		db_log(LOG_OBJECT_VIDEO, 'changed', $log_details, $video_id, $club_id);
+		Db::commit();
+
+		$this->response['moved_with_it'] = $moved;
+	}
+
+	function game_video_start_op_help()
+	{
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER | PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_MANAGER | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, 'Set where in its video a game starts, and mark that moment as set by a person.');
+		$help->request_param('game_id', 'Game id. The game must have a video.');
+		$help->request_param('vtime', 'Where the game starts, in seconds from the beginning of the video.');
+		$help->response_param('moved_with_it', 'How many other games of the same recording were moved by the same amount. Only games the site placed itself are moved.');
+		return $help;
+	}
+
+	//-------------------------------------------------------------------------------------------------------
 	// tag
 	//-------------------------------------------------------------------------------------------------------
 	function tag_op()

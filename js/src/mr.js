@@ -1211,7 +1211,7 @@ var mr = new function()
 	
 	this.watchGameVideo = function(gameId)
 	{
-		dlg.page("form/game_video.php?game=" + gameId);
+		dlg.infoForm("form/game_video.php?game=" + gameId);
 	}
 	
 	this.fiimGameForm = function(gameId)
