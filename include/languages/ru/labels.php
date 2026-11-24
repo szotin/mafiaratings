@@ -2232,7 +2232,7 @@ $labelMenu = array (
 'The search failed. Please try again.' => 'Поиск не удался. Попробуйте ещё раз.', // include/page_base.php
 'Find a player, club or tournament' => 'Найти игрока, клуб или турнир', // include/page_base.php, include/page_base.php
 '[0] to choose, Enter to open, Esc to close' => '[0] — выбрать, Enter — открыть, Esc — закрыть', // include/page_base.php
-'All upcoming tournaments' => 'Все будущие турниры', // index.php
+'All upcoming tournaments' => 'Все запланированные турниры', // index.php
 '<b>[0]</b> rated players, ranked by overall rating. Red and black ratings track results as town and as mafia.' => 'Игроков в рейтинге: <b>[0]</b>, по общему рейтингу. Красный и чёрный рейтинги отражают игру за мирных и за мафию.', // ratings.php
 '[0] players' => 'Игроков: [0]', // club_ratings.php, event_standings.php, ratings.php, series_standings.php
 'Win %' => 'Побед %', // ratings.php
@@ -2333,6 +2333,11 @@ $labelMenu = array (
 'The game starts at this moment' => 'Исправить: игра начинается в этот момент', // form/game_video.php
 'The game starts at [0].' => 'Начало игры установлено: [0].', // form/game_video.php
 'Other games of this recording moved with it: [0].' => 'Вместе с ней сдвинуто других игр этой записи: [0].', // form/game_video.php
+'Choose a game day' => 'Выберите игровой день', // game.php
+'Choose a table' => 'Выберите стол', // game.php
+'Choose a game' => 'Выберите игру', // game.php
+'New game' => 'Новая игра', // game.php
+'No unfinished games.' => 'Незаконченных игр нет.', // game.php
 );
 
 return $labelMenu;

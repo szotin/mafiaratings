@@ -3,9 +3,7 @@
 require_once 'include/page_base.php';
 require_once 'include/game.php';
 require_once 'include/event.php';
-
-define('COLUMN_COUNT', DEFAULT_COLUMN_COUNT);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
+require_once 'include/cards.php';
 
 class Page extends PageBase
 {
@@ -15,21 +13,128 @@ class Page extends PageBase
 		// Through versioned_asset like everything page_base.php loads: these are built files that
 		// change under the same name, and without the modification time in the address a browser
 		// keeps handing back the copy it already has.
-		echo '<link rel="stylesheet" href="' . versioned_asset('game.css') . '" type="text/css" media="screen" />';
+		// Only for the game itself. game.css imports common.css once more, after new_look.css, and
+		// the old rules come back over the band of the screens before the game - the way back
+		// turned into an empty pill with its word under it.
+		if ($this->is_game_screen())
+		{
+			echo '<link rel="stylesheet" href="' . versioned_asset('game.css') . '" type="text/css" media="screen" />';
+		}
 		echo '<script src="' . versioned_asset('js/game.js') . '"></script>';
 		echo '<script src="' . versioned_asset('js/game-ui.js') . '"></script>';
 		echo '<script src="' . versioned_asset('js/game_' . get_lang_code($_lang) . '.js') . '"></script>';
 	}
 	
-	// no title to save space for the game
-	protected function show_title()
+	// The game itself is drawn by js/game-ui.js and has a look of its own (game.css). The screens
+	// before it - the game day, the table, the game, the unfinished games - are pages of the site.
+	private function is_game_screen()
 	{
+		return !$this->unfinished && ($this->demo || ($this->event_id > 0 && $this->table_num > 0 && $this->game_num > 0));
 	}
 
-	// The game has a look of its own (game.css).
+	// The band of the screens before the game: what is being chosen, and where.
+	protected function show_title()
+	{
+		global $_lang, $_profile;
+
+		if ($this->is_game_screen())
+		{
+			return; // no title to save space for the game
+		}
+
+		$sub = '';
+		$actions = '';
+		$art = '';
+		$facts = array();
+		if ($this->unfinished)
+		{
+			$title = get_label('Unfinished games');
+		}
+		else if ($this->event_id <= 0)
+		{
+			$title = get_label('The game');
+			$sub = get_label('Choose a game day');
+			if ($this->tournament_id > 0)
+			{
+				$create = 'mr.createRound(' . $this->tournament_id . ', true)';
+				$create_title = get_label('Create [0]', get_label('tournament round'));
+			}
+			else
+			{
+				$create = 'mr.createEvent(' . ($this->club_id > 0 ? $this->club_id : 'undefined') . ', true)';
+				$create_title = get_label('Create [0]', get_label('event'));
+			}
+			$actions =
+				'<a class="btn ghost" href="game.php?demo=1">' . PageBase::icon('play') . '<span>' . get_label('Demo game') . '</span></a>' .
+				'<a class="btn" href="#" onclick="' . $create . '; return false;">' . PageBase::icon('plus') . '<span>' . $create_title . '</span></a>';
+		}
+		else
+		{
+			// The game day and its tournament said in full, every one of them a link: whoever is
+			// about to referee wants to look at them now and then.
+			list ($event_name, $event_flags, $start_time, $duration, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $address_id, $address_name, $timezone) = Db::record(get_label('event'),
+				'SELECT ne.name, e.flags, e.start_time, e.duration, t.id, nt.name, t.flags, c.id, nc.name, c.flags, a.id, na.name, ct.timezone FROM events e' .
+				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
+				' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id' .
+				' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
+				' JOIN clubs c ON c.id = e.club_id' .
+				' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
+				' JOIN addresses a ON a.id = e.address_id' .
+				' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
+				' JOIN cities ct ON ct.id = a.city_id' .
+				' WHERE e.id = ?', $this->event_id);
+			$event_url = 'event.php?bck=1&id=' . $this->event_id;
+			$where = is_null($tournament_name) ? $event_name : $tournament_name . ': ' . $event_name;
+			if ($this->table_num <= 0)
+			{
+				$title = '<a href="' . $event_url . '">' . $where . '</a>';
+				$sub = get_label('Choose a table');
+			}
+			else
+			{
+				$title = get_label('Table [0]', $this->table_num);
+				$sub = get_label('Choose a game');
+			}
+
+			$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
+			$pic->
+				set($this->event_id, $event_name, $event_flags)->
+				set($tournament_id, $tournament_name, $tournament_flags)->
+				set($club_id, $club_name, $club_flags);
+			$art = '<a class="eh-art" href="' . $event_url . '">' . PageBase::capture(function() use ($pic) { $pic->show(ICONS_DIR, false); }) . '</a>';
+
+			if (!is_null($tournament_id))
+			{
+				$facts[] = array('trophy', '<a href="tournament.php?bck=1&id=' . $tournament_id . '">' . $tournament_name . '</a>');
+			}
+			$facts[] = array('cal', '<a href="' . $event_url . '">' . $event_name . '</a>');
+			$facts[] = array('status', format_date_period($start_time, $duration, $timezone, true));
+			$facts[] = array('users', '<a href="club_main.php?bck=1&id=' . $club_id . '">' . $club_name . '</a>');
+			$facts[] = array('pin', '<a href="address_info.php?bck=1&id=' . $address_id . '">' . $address_name . '</a>');
+		}
+
+		echo '<div class="page-hd"><div class="game-hd">' . $art . '<div><h1>' . $title . '</h1>';
+		if ($sub != '')
+		{
+			echo '<p class="page-hd-sub">' . $sub . '</p>';
+		}
+		echo '</div></div><div class="page-hd-side"><div class="page-hd-acts">' . $actions . '</div>';
+		show_back_button();
+		echo '</div></div>';
+		if (count($facts) > 0)
+		{
+			echo '<dl class="eh-facts game-facts">';
+			foreach ($facts as $fact)
+			{
+				echo '<div><dt>' . PageBase::icon($fact[0]) . '</dt><dd>' . $fact[1] . '</dd></div>';
+			}
+			echo '</dl>';
+		}
+	}
+
 	protected function content_class()
 	{
-		return 'game-page';
+		return $this->is_game_screen() ? 'game-page' : 'nl';
 	}
 
 	protected function prepare()
@@ -106,13 +211,12 @@ class Page extends PageBase
 		}
 	}
 	
+	// The game days going on now where the referee may referee, as cards; the unfinished games of the
+	// referee said over them.
 	private function select_event()
 	{
 		global $_lang, $_profile;
-		
-		$event_count = 2;
-		$column_count = 2;
-		
+
 		$condition = new SQL('UNIX_TIMESTAMP() >= e.start_time AND UNIX_TIMESTAMP() < e.start_time + e.duration + ' . EVENT_ALIVE_TIME);
 		if ($this->club_id > 0)
 		{
@@ -132,56 +236,16 @@ class Page extends PageBase
 				' OR e.tournament_id IN (SELECT tournament_id FROM tournament_regs WHERE (flags & ' . USER_PERM_REFEREE . ') <> 0 AND user_id = ?))', $_profile->user_id, $_profile->user_id, $_profile->user_id);
 		}
 
-		echo '<p><table class="transp" width="100%"><tr><td>';
-		show_back_button();
-		echo '</td><tr></table></p>';
-
-		echo '<table class="bordered light" width="100%"><tr>';
-		
-		echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
-		echo '<p><a href="game.php?demo=1">' . get_label('Demo game');
-		echo '</p><p><img src="images/thegame.png" border="0" width="60"></p>';
-		echo '</td>';
-		
-		if ($this->tournament_id > 0)
-		{
-			$create_event_func = 'mr.createRound(' . $this->tournament_id . ', true)';
-			$create_event_title = get_label('Create [0]', get_label('tournament round'));
-		}
-		else 
-		{
-			$create_event_title = get_label('Create [0]', get_label('event'));
-			if ($this->club_id > 0)
-			{
-				$create_event_func = 'mr.createEvent(' . $this->club_id . ', true)';
-			}
-			else
-			{
-				$create_event_func = 'mr.createEvent(undefined, true)';
-			}
-		}
-		
-		echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
-		echo '<p><a href="#" onclick="' . $create_event_func . '">' . $create_event_title;
-		echo '</p><p><img src="images/create_big.png" border="0" width="60"></p>';
-		echo '</td>';
-		
 		list ($unfinished_count) = Db::record(get_label('game'), 'SELECT COUNT(*) FROM current_games WHERE user_id = ?', $_profile->user_id);
 		if ($unfinished_count > 0)
 		{
-			++$event_count;
-			++$column_count;
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
-			echo '<p><a href="game.php?bck=1&unfinished=1">' . get_label('Unfinished games');
-			echo '</p><p><img src="images/clubs_big.png" border="0" width="60"></p>';
-			echo '</td>';
-			$this->setUserPrompt(get_label('You have unfinished games. Please finish or cancel them.'), PROMPT_TYPE_WARNING);
+			echo '<div class="game-note">' . PageBase::icon('status') . '<span>' . get_label('You have unfinished games. Please finish or cancel them.') . '</span>';
+			echo '<a class="btn" href="game.php?bck=1&unfinished=1">' . get_label('Unfinished games') . ' (' . $unfinished_count . ')</a></div>';
 		}
 
-		$club_pic = new Picture(CLUB_PICTURE);
-		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE));
+		$event_pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
 		$query = new DbQuery(
-			'SELECT c.id, nc.name, c.flags, e.id, ne.name, e.start_time, e.duration, e.flags, nct.name, ncr.name, ct.timezone, t.id, nt.name, t.flags, a.id, a.flags, a.address, a.map_url, na.name' .
+			'SELECT c.id, nc.name, c.flags, e.id, ne.name, e.start_time, e.flags, ct.timezone, t.id, nt.name, t.flags, na.name' .
 			' FROM events e' .
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0' .
 			' JOIN clubs c ON e.club_id = c.id' .
@@ -190,93 +254,48 @@ class Page extends PageBase
 			' JOIN names na ON na.id = a.name_id AND (na.langs & '.$_lang.') <> 0' .
 			' LEFT OUTER JOIN tournaments t ON e.tournament_id = t.id' .
 			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
-			' JOIN cities ct ON a.city_id = ct.id' .
-			' JOIN countries cr ON ct.country_id = cr.id' .
-			' JOIN names nct ON nct.id = ct.name_id AND (nct.langs & '.$_lang.') <> 0' .
-			' JOIN names ncr ON ncr.id = cr.name_id AND (ncr.langs & '.$_lang.') <> 0 WHERE ',
+			' JOIN cities ct ON a.city_id = ct.id WHERE ',
 			$condition);
 		$query->add(' ORDER BY e.start_time, e.id');
+		$count = 0;
 		while ($row = $query->next())
 		{
-			list ($club_id, $club_name, $club_flags, $event_id, $event_name, $start_time, $duration, $event_flags, $city_name, $country_name, $event_timezone, $tour_id, $tour_name, $tour_flags, $addr_id, $addr_flags, $addr, $addr_url, $addr_name) = $row;
-			if (!is_null($tour_name))
+			list ($club_id, $club_name, $club_flags, $event_id, $event_name, $start_time, $event_flags, $timezone, $tour_id, $tour_name, $tour_flags, $addr_name) = $row;
+			if ($count++ == 0)
 			{
-				$event_name = $tour_name . ': ' . $event_name;
+				echo '<div class="pick-grid">';
 			}
-			
-			if ($column_count == 0)
-			{
-				if ($event_count == 0)
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
-			
-			echo '<tr class="darker"><td align="center" width="32">';
-			$club_pic->set($club_id, $club_name, $club_flags);
-			$club_pic->show(ICONS_DIR, false, 32);
-			echo '</td><td align="center"><b>' . $event_name . '</b></td></tr><tr><td align="center" colspan="2"><p><a href="game.php?bck=1&event_id=' . $event_id . '">';
 			$event_pic->
 				set($event_id, $event_name, $event_flags)->
-				set($tour_id, $tour_name, $tour_flags);
-			$event_pic->show(ICONS_DIR, false);
-			echo '</a></p></td></tr></table>';
-			
-			echo '</td>';
-			
-			++$event_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
+				set($tour_id, $tour_name, $tour_flags)->
+				set($club_id, $club_name, $club_flags);
+			echo '<a class="pick" href="game.php?bck=1&event_id=' . $event_id . '">' . card_logo($event_pic, is_null($tour_name) ? $event_name : $tour_name);
+			if (!is_null($tour_name))
 			{
-				$column_count = 0;
+				echo '<span class="pick-sub">' . $tour_name . '</span>';
 			}
+			echo '<span class="pick-title">' . $event_name . '</span>';
+			echo '<span class="pick-sub">' . PageBase::icon('users') . $club_name . '</span>';
+			echo '<span class="pick-sub">' . PageBase::icon('status') . format_date($start_time, $timezone, true) . '</span></a>';
 		}
-		if ($event_count > 0)
+		if ($count > 0)
 		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
+			echo '</div>';
+		}
+		else
+		{
+			echo '<p class="empty">' . get_label('No events found.') . '</p>';
 		}
 	}
-	
+
+	// The tables of the game day: as many as its seating has, or one more than have been played at.
 	private function select_table()
 	{
 		global $_lang;
-		
-		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
-			Db::record(get_label('event'), 
-			'SELECT e.misc, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags'.
-			' FROM events e'.
-			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
-			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
-			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
-			' JOIN clubs c ON c.id = e.club_id'.
-			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
-			' WHERE e.id = ?', $this->event_id);
-		if (!is_null($tournament_name))
-		{
-			$event_name = $tournament_name . ': ' . $event_name;
-		}
-		
+
+		list ($misc, $event_id, $tournament_id, $club_id) = Db::record(get_label('event'), 'SELECT misc, id, tournament_id, club_id FROM events WHERE id = ?', $this->event_id);
 		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
-		
-		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
-		$pic->
-			set($event_id, $event_name, $event_flags)->
-			set($tournament_id, $tournament_name, $tournament_flags)->
-			set($club_id, $club_name, $club_flags);
-		
+
 		$num_tables = -1;
 		if (!is_null($misc))
 		{
@@ -292,7 +311,6 @@ class Page extends PageBase
 				$num_tables = (count($t) > 0 && is_array($t[0])) ? count($t[0]) : 0;
 			}
 		}
-		
 		if ($num_tables < 0)
 		{
 			list ($max_table_num1) = Db::record(get_label('game'), 'SELECT MAX(table_num) FROM games WHERE event_id = ?', $this->event_id);
@@ -301,116 +319,63 @@ class Page extends PageBase
 			$max_table_num2 = is_null($max_table_num2) ? 0 : (int)$max_table_num2;
 			$num_tables = max($max_table_num1, $max_table_num2) + 1;
 		}
-		
-		$column_count = 0;
-		
-		echo '<p><table class="transp" width="100%"><tr><td width="60"><a href="';
-		if (is_null($tournament_id))
-		{
-			echo 'event.php?bck=1&id=' . $event_id;
-		}
-		else
-		{
-			echo 'tournament.php?bck=1&id=' . $tournament_id;
-		}
-		echo '">';
-		$pic->show(ICONS_DIR, false, 60);
-		echo '</a></td><td><h2>' . $event_name . '</h2></td><td>';
-		show_back_button();
-		echo '</td><tr></table></p>';
 
+		// How far every table has got: the games finished and the games going on.
+		$played = array();
+		$query = new DbQuery('SELECT table_num, COUNT(*) FROM games WHERE event_id = ? AND (flags & ' . GAME_FLAG_CANCELED . ') = 0 GROUP BY table_num', $this->event_id);
+		while ($row = $query->next())
+		{
+			$played[(int)$row[0]] = (int)$row[1];
+		}
+		$playing = array();
+		$query = new DbQuery('SELECT table_num, COUNT(*) FROM current_games WHERE event_id = ? GROUP BY table_num', $this->event_id);
+		while ($row = $query->next())
+		{
+			$playing[(int)$row[0]] = (int)$row[1];
+		}
+
+		echo '<div class="pick-grid tables">';
 		for ($i = 1; $i <= $num_tables; ++$i)
 		{
-			if ($column_count == 0)
+			echo '<a class="pick" href="game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $i . '">';
+			echo '<span class="pick-label">' . get_label('Table') . '</span><span class="pick-num">' . $i . '</span>';
+			if (isset($playing[$i]))
 			{
-				if ($i == 1)
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
+				echo '<span class="chip live">' . get_label('playing now') . '</span>';
 			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
-			
-			echo '<tr class="darker"><td align="center"><p><b>' . get_label('Table [0]', $i) . '</b></p></td></tr>';
-			echo '<tr><td align="center" colspan="2"><p><a href="game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $i . '">';
-			echo '<img src="images/game_table.png" width="70">';
-			echo '</a></p></td></tr></table>';
-			
-			echo '</td>';
-			
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
+			if (isset($played[$i]))
 			{
-				$column_count = 0;
+				echo '<span class="pick-sub">' . get_label('Games played') . ': ' . $played[$i] . '</span>';
 			}
+			echo '</a>';
 		}
-		if ($i > 1)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
+		echo '</div>';
 	}
-	
+
+	// The games of the table: the finished ones lead to their pages, the one going on to the game,
+	// one taken by another referee asks whether to take it over, and the next one starts a new game.
 	private function select_game()
 	{
 		global $_lang, $_profile;
-		
-		list ($misc, $event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags) = 
-			Db::record(get_label('event'), 
-			'SELECT e.misc, e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags'.
-			' FROM events e'.
-			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
-			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
-			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
-			' JOIN clubs c ON c.id = e.club_id'.
-			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0'.
-			' WHERE e.id = ?', $this->event_id);
-		if (!is_null($tournament_name))
-		{
-			$event_name = $tournament_name . ': ' . $event_name;
-		}
-		
+
+		list ($misc, $event_id, $tournament_id, $club_id) = Db::record(get_label('event'), 'SELECT misc, id, tournament_id, club_id FROM events WHERE id = ?', $this->event_id);
 		check_permissions(PERMISSION_CLUB_REFEREE | PERMISSION_EVENT_REFEREE | PERMISSION_TOURNAMENT_REFEREE, $club_id, $event_id, $tournament_id);
-		
-		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
-		$pic->
-			set($event_id, $event_name, $event_flags)->
-			set($tournament_id, $tournament_name, $tournament_flags)->
-			set($club_id, $club_name, $club_flags);
-		
+
 		$num_games = -1;
 		if (!is_null($misc))
 		{
 			$misc = json_decode($misc);
-			if (isset($misc->seating))
+			if (isset($misc->seating->rounds) && is_array($misc->seating->rounds))
 			{
 				$rounds = $misc->seating->rounds;
-				if (count($rounds) > 0 && $this->table_num <= count($rounds[0]))
+				if (count($rounds) > 0 && is_array($rounds[0]) && $this->table_num <= count($rounds[0]))
 				{
 					$num_games = count($rounds);
 				}
 			}
 		}
-		
-		if ($num_games > 0)
-		{
-			$games = array_fill(0, $num_games, NULL);
-		}
-		else
-		{
-			$games = array();
-		}
-		
+		$games = $num_games > 0 ? array_fill(0, $num_games, NULL) : array();
+
 		$query = new DbQuery(
 			'SELECT g.game_num, g.user_id, n.name'.
 			' FROM current_games g'.
@@ -429,7 +394,7 @@ class Page extends PageBase
 			$games[$index]->user_id = (int)$user_id;
 			$games[$index]->user_name = $user_name;
 		}
-		
+
 		$query = new DbQuery('SELECT id, game_num, flags, result FROM games WHERE event_id = ? AND table_num = ?', $this->event_id, $this->table_num);
 		while ($row = $query->next())
 		{
@@ -442,121 +407,68 @@ class Page extends PageBase
 			}
 			$games[$index] = $r;
 		}
-		
 		if ($num_games <= 0)
 		{
 			$games[] = NULL;
 		}
-		
-		echo '<p><table class="transp" width="100%"><tr><td width="60"><a href="';
-		if (is_null($tournament_id))
-		{
-			echo 'event.php?bck=1&id=' . $event_id;
-		}
-		else
-		{
-			echo 'tournament.php?bck=1&id=' . $tournament_id;
-		}
-		echo '">';
-		$pic->show(ICONS_DIR, false, 56);
-		echo '</a></td><td><h2>' . $event_name . '</h2></td><td>';
-		show_back_button();
-		echo '</td><tr></table></p>';
-		
-		$column_count = 0;
+
+		echo '<div class="pick-grid tables">';
 		for ($i = 0; $i < count($games); ++$i)
 		{
-			if ($column_count == 0)
-			{
-				if ($i == 0)
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
-			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
-			
 			$r = $games[$i];
+			$game_url = 'game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $this->table_num . '&game_num=' . ($i + 1);
+			$class = 'pick';
+			$onclick = '';
 			if (is_null($r))
 			{
-				$darker_class = ' class="darker"';
-				$normal_class = '';
-				$text = '';
-				$url = 'game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $this->table_num . '&game_num=' . ($i + 1);
-				$onclick = '';
+				$class .= ' is-new';
+				$url = $game_url;
+				$state = '<span class="pick-sub">' . get_label('New game') . '</span>';
 			}
 			else if (isset($r->game_id))
 			{
-				$darker_class = ' class="darkest"';
-				$normal_class = ' class="darker"';
-				$url = 'view_game.php?bck=1&event_id=' . $event_id . '&id=' . $games[$i]->game_id;
+				$class .= ' is-done';
+				$url = 'view_game.php?bck=1&event_id=' . $event_id . '&id=' . $r->game_id;
 				if ($r->result <= 0)
 				{
-					$text = get_label('Playing using different method');
+					$state = '<span class="pick-sub">' . get_label('Playing using different method') . '</span>';
 					$url = NULL;
 				}
 				else if ($r->flags & GAME_FLAG_CANCELED)
 				{
-					$text = get_label('Canceled');
+					$state = '<span class="chip off">' . get_label('Canceled') . '</span>';
 				}
 				else
 				{
-					$text = get_label('Complete');
+					$state = '<span class="chip">' . get_label('Complete') . '</span>';
 				}
-				$onclick = '';
+			}
+			else if ($r->user_id == $_profile->user_id)
+			{
+				$url = $game_url;
+				$state = '<span class="chip live">' . get_label('Playing now') . '</span>';
 			}
 			else
 			{
-				$darker_class = ' class="darker"';
-				$normal_class = ' class="dark"';
-				if ($games[$i]->user_id == $_profile->user_id)
-				{
-					$text = get_label('Playing now', $games[$i]->user_name);
-					$url = 'game.php?bck=1&event_id=' . $this->event_id . '&table_num=' . $this->table_num . '&game_num=' . ($i + 1);
-					$onclick = '';
-				}
-				else
-				{
-					$text = get_label('Moderated by [0] now', $games[$i]->user_name);
-					$url = '#';
-					$onclick = ' onclick="mr.ownGame('.$this->event_id.','.$this->table_num.','.($i+1).','.$games[$i]->user_id.',\''.get_label('[0] is already moderating this game. Do you want to take is over from them?', $games[$i]->user_name).'\')"';
-				}
+				$class .= ' is-busy';
+				$url = '#';
+				$onclick = ' onclick="mr.ownGame(' . $this->event_id . ',' . $this->table_num . ',' . ($i + 1) . ',' . $r->user_id . ',\'' . get_label('[0] is already moderating this game. Do you want to take is over from them?', $r->user_name) . '\'); return false;"';
+				$state = '<span class="pick-sub">' . get_label('Moderated by [0] now', $r->user_name) . '</span>';
 			}
-			
-			echo '<tr' . $darker_class . '><td align="center"><p><b>' . get_label('Game [0]', $i + 1) . '</b></p></td></tr>';
-			echo '<tr' . $normal_class . '><td align="center" colspan="2"><p>';
-			if (!is_null($url))
+
+			$inner = '<span class="pick-label">' . get_label('Game') . '</span><span class="pick-num">' . ($i + 1) . '</span>' . $state;
+			if (is_null($url))
 			{
-				echo '<a href="' . $url .'"' . $onclick . '>';
+				echo '<div class="' . $class . '">' . $inner . '</div>';
 			}
-			echo '<img src="images/thegame.png"><br>' . $text;
-			echo '</a></p></td></tr></table>';
-			
-			echo '</td>';
-			
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
+			else
 			{
-				$column_count = 0;
+				echo '<a class="' . $class . '" href="' . $url . '"' . $onclick . '>' . $inner . '</a>';
 			}
 		}
-		if ($i > 0)
-		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
-		}
+		echo '</div>';
 	}
-	
+
 	private function game()
 	{
 		global $_lang, $_profile;
@@ -704,12 +616,13 @@ class Page extends PageBase
 		echo '<span id="sound"></span>';
 	}
 	
+	// The games the referee began and did not finish, as cards: back into one, or delete it.
 	private function select_unfinished()
 	{
 		global $_lang, $_profile;
-		
+
 		check_permissions(PERMISSION_USER);
-		
+
 ?>
 		<script>
 		function deleteGame(eventId, tableNum, gameNum)
@@ -720,18 +633,13 @@ class Page extends PageBase
 			});
 		}
 		</script>
-<?php		
-		echo '<p><table class="transp" width="100%"><tr><td><h3>'.get_label('Unfinished games').'</h3></td><td align="right">';
-		show_back_button();
-		echo '</td><tr></table></p>';
-		
+<?php
 		$pic = new Picture(EVENT_PICTURE, new Picture(TOURNAMENT_PICTURE, new Picture(CLUB_PICTURE)));
-		$game_count = 0;
-		$column_count = 0;
+		$count = 0;
 		$query = new DbQuery(
 			'SELECT e.id, ne.name, e.flags, t.id, nt.name, t.flags, c.id, nc.name, c.flags, g.table_num, g.game_num'.
 			' FROM current_games g'.
-			' JOIN events e ON e.id = g.event_id'. 
+			' JOIN events e ON e.id = g.event_id'.
 			' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 			' LEFT OUTER JOIN tournaments t ON t.id = e.tournament_id'.
 			' LEFT OUTER JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0'.
@@ -743,62 +651,31 @@ class Page extends PageBase
 		while ($row = $query->next())
 		{
 			list ($event_id, $event_name, $event_flags, $tournament_id, $tournament_name, $tournament_flags, $club_id, $club_name, $club_flags, $table_num, $game_num) = $row;
-			if ($column_count == 0)
+			if ($count++ == 0)
 			{
-				if ($game_count == 0)
-				{
-					echo '<table class="bordered light" width="100%">';
-				}
-				else
-				{
-					echo '</tr>';
-				}
-				echo '<tr>';
+				echo '<div class="pick-grid">';
 			}
-			
-			echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-			
-			echo '<table class="transp" width="100%">';
-			echo '<tr class="darker"><td width="32" align="center"><button class="icon" onclick="deleteGame('.$event_id.', '.$table_num.', '.$game_num.')"><img src="images/delete.png" title="'.get_label('Delete the game').'"></button></td>';
-			echo '<td align="center"><p><b>';
-			if (!is_null($tournament_name))
-			{
-				echo $tournament_name;
-			}
-			else
-			{
-				echo $club_name;
-			}
-			echo '<br>' . $event_name . '<br>' . get_label('Table [0], Game [1]', $table_num, $game_num) . '</b></p></td></tr>';
-			echo '<tr><td align="center" colspan="2"><p>';
-			echo '<a href="game.php?bck=1&event_id=' . $event_id . '&table_num=' . $table_num . '&game_num=' . $game_num .'">';
 			$pic->
 				set($event_id, $event_name, $event_flags)->
 				set($tournament_id, $tournament_name, $tournament_flags)->
 				set($club_id, $club_name, $club_flags);
-			$pic->show(ICONS_DIR, false, 60);
-			echo '</a></p></td></tr></table>';
-			
-			echo '</td>';
-			
-			++$game_count;
-			++$column_count;
-			if ($column_count >= COLUMN_COUNT)
-			{
-				$column_count = 0;
-			}
+			echo '<div class="pick-wrap"><a class="pick" href="game.php?bck=1&event_id=' . $event_id . '&table_num=' . $table_num . '&game_num=' . $game_num . '">';
+			echo card_logo($pic, is_null($tournament_name) ? $event_name : $tournament_name);
+			echo '<span class="pick-sub">' . (is_null($tournament_name) ? $club_name : $tournament_name) . '</span>';
+			echo '<span class="pick-title">' . $event_name . '</span>';
+			echo '<span class="chip">' . get_label('Table [0], Game [1]', $table_num, $game_num) . '</span></a>';
+			echo '<button type="button" class="pick-del" onclick="deleteGame(' . $event_id . ', ' . $table_num . ', ' . $game_num . ')" title="' . get_label('Delete the game') . '" aria-label="' . get_label('Delete the game') . '">' . PageBase::icon('close') . '</button></div>';
 		}
-		
-		if ($game_count > 0)
+		if ($count > 0)
 		{
-			if ($column_count > 0)
-			{
-				echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-			}
-			echo '</tr></table>';
+			echo '</div>';
+		}
+		else
+		{
+			echo '<p class="empty">' . get_label('No unfinished games.') . '</p>';
 		}
 	}
-	
+
 	protected function show_body()
 	{
 		if ($this->unfinished)

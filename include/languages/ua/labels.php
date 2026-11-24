@@ -2334,6 +2334,11 @@ $labelMenu = array (
 'The game starts at this moment' => 'Виправити: гра починається в цей момент', // form/game_video.php
 'The game starts at [0].' => 'Початок гри встановлено: [0].', // form/game_video.php
 'Other games of this recording moved with it: [0].' => 'Разом з нею зсунуто інших ігор цього запису: [0].', // form/game_video.php
+'Choose a game day' => 'Виберіть ігровий день', // game.php
+'Choose a table' => 'Виберіть стіл', // game.php
+'Choose a game' => 'Виберіть гру', // game.php
+'New game' => 'Нова гра', // game.php
+'No unfinished games.' => 'Незакінчених ігор немає.', // game.php
 );
 
 return $labelMenu;
