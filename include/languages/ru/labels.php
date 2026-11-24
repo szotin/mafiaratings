@@ -2340,6 +2340,7 @@ $labelMenu = array (
 'No unfinished games.' => 'Незаконченных игр нет.', // game.php
 'Finish' => 'Завершить', // include/preparation.php
 'Sign up' => 'Зарегистрироваться', // include/event.php
+'Name, nickname or email' => 'Имя, ник или email', // form/event_register_player.php
 );
 
 return $labelMenu;

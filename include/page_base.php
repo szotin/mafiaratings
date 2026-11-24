@@ -223,6 +223,13 @@ class PageBase
 		}
 	}
 
+	// The class of <body>, for a page that is not drawn the way the others are: the game takes the
+	// whole window, without the header and the footer of the site (game-full in game_look.css).
+	protected function body_class()
+	{
+		return '';
+	}
+
 	// The class of the sheet the page's content is on. 'nl' restyles the markup every page shares -
 	// the bordered tables, buttons, inputs - in the look of the site. A page with a look of its own,
 	// as the game is, returns something else.
@@ -299,7 +306,8 @@ class PageBase
 			set_back_tab_page($this->_title, $uri);
 		}
 
-		echo '<body>';
+		$body_class = $this->body_class();
+		echo $body_class == '' ? '<body>' : '<body class="' . $body_class . '">';
 		echo '<a class="skip" href="#main">' . get_label('Skip to content') . '</a>';
 
 		$menu = PageBase::get_main_menu();

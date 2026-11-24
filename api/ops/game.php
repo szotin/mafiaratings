@@ -877,8 +877,10 @@ class ApiPage extends OpsApiPageBase
 		}
 		$this->response['regs'] = $regs;
 		$this->response['langs'] = $langs;
-		$this->response['prompt_sound'] = 'sounds/' . $prompt_sound . '.mp3';
-		$this->response['end_sound'] = 'sounds/' . $end_sound . '.mp3';
+		// Where the sounds are kept for the page of the game: the main site's, on a branch that lives in
+		// a directory of its own (see SOUNDS_DIR).
+		$this->response['prompt_sound'] = SOUNDS_DIR . $prompt_sound . '.mp3';
+		$this->response['end_sound'] = SOUNDS_DIR . $end_sound . '.mp3';
 		$this->response['flags'] = $settings_flags;
 	}
 	

@@ -153,6 +153,7 @@ function _uiRender(resetTimer)
 		switch (game.time.time)
 		{
 		case 'start':
+			info = 'Night0'; // the roles are given out at night 0, which is how the rows are drawn too (gameIsNight())
 			status = l('AssignRoles');
 			timerNeeded = false;
 			control1Html = '<button class="day-vote" onclick="gameGenerateRoles()">' + l('GenRoles') + '</button>';
@@ -1901,7 +1902,7 @@ function uiBonusPoints(num, bonusObj)
 	html += '</textarea></td></tr>';
 	html += '</table>';
 	
-	dlg.okCancel(html, l('ExtraPointsFor', p.name), 500, function()
+	dlg.okCancel(html, l('ExtraPointsFor', p.name), 620, function()
 	{
 		bonusObj.points = parseFloat($("#dlg-points").val());
 		bonusObj.comment = $('#dlg-comment').val();

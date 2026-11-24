@@ -1,0 +1,214 @@
+/* game-ui.js takes every class off a row when it draws it (removeClass()) and gives it day-alive,
+   night-mark... only: the rows are told apart by their ids here - r0..r9 the players, r-1 the foot -
+   never by the player-row and footer-row of the markup.
+
+   The game in the look of the site (see new_look.css), drawn over game.css: game.css holds what each
+   class is for, this file only how it looks. The game takes the whole window - no header, no footer -
+   and never scrolls: the table of the players is as tall as the window leaves it, its ten rows
+   sharing the height. js/game-ui.js is untouched: the same cells, the same classes, the same
+   buttons in the same places. */
+
+:root {
+  /* Every size follows the height of the window, between the least that can be used and what a
+     big screen gets: in a low window - a laptop, a page zoomed in - the ten rows still fit. */
+  --g-head: clamp(56px, 10.5vh, 92px);   /* the row of the hint, the referee and the timer */
+  --g-foot: clamp(32px, 5vh, 44px);      /* the row of the version, the saving and the game */
+  --g-panel: clamp(40px, 6.5vh, 56px);   /* Back, the scenes, Next */
+  --g-gap: clamp(6px, 1.1vh, 10px);
+  --g-ctl: clamp(24px, 4vh, 34px);       /* a list, a button, a number in a row */
+  --g-pic: clamp(40px, 7.5vh, 64px);     /* the picture of the referee */
+  --g-day: #FFFFFF;
+  --g-day-dead: #E4E9F0;
+  --g-day-mark: #FDECEC;
+  --g-night: #DCE4EF;
+  --g-night-dead: #C2CCDA;
+  --g-night-mark: #F3C6CA;   /* the don all along his row, a mafioso in the cell of his number */
+  --g-night-line: rgba(11,20,34,.08);
+  --g-night-text: var(--ink);
+}
+
+/* ------------------------------------------------------------------ the whole window */
+
+html:has(body.game-full), body.game-full { height: 100%; overflow: hidden; }
+body.game-full { background: var(--sky, #E9EFF7); }
+body.game-full > .skip, body.game-full .hd, body.game-full .ft, body.game-full .mast, body.game-full .drawer { display: none !important; }
+body.game-full main { height: 100%; }
+body.game-full .page.game-page { max-width: none; height: 100%; margin: 0; padding: var(--g-gap) !important;
+  display: flex; flex-direction: column; gap: var(--g-gap); box-sizing: border-box; font: 500 15px var(--font); color: var(--ink); }
+
+/* ------------------------------------------------------------------ the table of the players */
+
+body.game-full .game-table { flex: 1 1 auto; min-height: 0; overflow: hidden; border-radius: 16px; box-shadow: var(--shadow-card); }
+body.game-full #players { height: 100%; width: 100%; border-collapse: separate; border-spacing: 0; border: 0 !important;
+  border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-card); background: var(--g-day); }
+body.game-full #players > tbody > tr > td { border: 0; border-top: 1px solid var(--rule-soft, #EDF1F6); padding: 0 8px; vertical-align: middle; }
+body.game-full #players > tbody > tr:first-child > td { border-top: 0; }
+body.game-full #players tr.header-row { height: var(--g-head); }
+body.game-full #players tr#r-1 { height: var(--g-foot); }
+/* the ten players share what the box leaves them: the table is as tall as its box, and what is
+   left over the head and the foot is shared out among the rows */
+body.game-full #players tr[id^="r"]:not(#r-1) { height: auto; }
+body.game-full #players tr[id^="r"]:not(#r-1) > td:first-child { width: 44px; padding: 0 !important; text-align: center; font: 700 clamp(16px, 2.6vh, 22px) var(--font-display) !important; color: var(--slate); }
+/* the cell of the choices of a row (the numbers at night, the votes): wide enough for all ten numbers
+   in one row - a row that grew would push the table out of the window */
+body.game-full #players td[id^="control"]:not(#control-1) { width: 360px !important; white-space: nowrap; }
+body.game-full #players .night-alive select option, body.game-full #players .night-mark select option { color: var(--ink); }
+/* the player chosen from the list: wide enough for a name */
+body.game-full #players td[id^="pselect"] select { width: 100%; min-width: 260px; }
+
+/* the day */
+body.game-full .day-alive { background: var(--g-day); color: var(--ink); }
+body.game-full .day-dead { background: var(--g-day-dead); color: var(--slate); }
+body.game-full .day-dead select, body.game-full .day-dead img { opacity: .55; }
+body.game-full .day-mark { background: var(--g-day-mark); color: var(--ink); }
+body.game-full tr.day-mark > td:first-child, body.game-full td.day-mark:first-child { box-shadow: inset 4px 0 0 var(--red); color: var(--red); }
+body.game-full .day-grey { color: var(--slate); }
+body.game-full .day-empty { background: var(--frost); color: var(--ink); }
+
+/* the night: a cool grey-blue against the white of the day - light enough to read across a room */
+body.game-full .night-alive { background: var(--g-night); color: var(--g-night-text); }
+body.game-full .night-dead { background: var(--g-night-dead); color: var(--slate); }
+body.game-full .night-dead select, body.game-full .night-dead img { opacity: .5; }
+body.game-full .night-mark { background: var(--g-night-mark); color: var(--ink); }
+/* the don is marked all along his row, a mafioso in the cell of his number only - the long mark and
+   the short one of the game before its new look */
+body.game-full #players td.night-mark { background: var(--g-night-mark); }
+body.game-full #players tr.night-mark > td:first-child, body.game-full #players td.night-mark:first-child { box-shadow: inset 4px 0 0 var(--red); color: var(--red) !important; }
+body.game-full .night-grey { color: var(--slate); }
+body.game-full .night-empty { background: #C9D4E3; color: var(--ink); }
+body.game-full #players:has(tr.night-alive, tr.night-dead, tr.night-mark) { background: var(--g-night); }
+body.game-full #players:has(.night-alive, .night-dead, .night-mark) > tbody > tr > td { border-top-color: var(--g-night-line); }
+body.game-full #players:has(.night-alive, .night-dead, .night-mark) tr[id^="r"]:not(#r-1) > td:first-child { color: var(--slate); }
+
+/* the head: the referee's picture and menu, the hint, the timer */
+body.game-full #head { padding: 0 12px; }
+body.game-full #status-box { height: auto; }
+body.game-full #status-title { height: auto; padding: 0 0 4px; font: 600 22px/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+body.game-full #status { font-size: 16px; font-weight: 600; line-height: 1.35; }
+body.game-full button.ops { width: var(--g-pic); height: var(--g-pic); margin: 0 6px; border: 0 !important; padding: 0 !important; border-radius: 50%; overflow: hidden; background: none; cursor: pointer; box-shadow: 0 0 0 2px rgba(11,20,34,.08); }
+body.game-full button.ops img { width: var(--g-pic) !important; height: var(--g-pic) !important; object-fit: cover; border-radius: 50%; }
+body.game-full button.ops:hover { box-shadow: 0 0 0 3px var(--red); }
+
+/* the timer */
+body.game-full table.timer { height: calc(var(--g-head) - 18px); margin: 0; border: 0 !important; border-radius: 14px; }
+/* white on the head of the day, which is the colour the timer had - it was not seen */
+body.game-full table.timer-0 { background: #fff; box-shadow: 0 0 0 1px rgba(11,20,34,.1), 0 4px 12px -6px rgba(11,20,34,.25); }
+body.game-full table.timer-1 { background: var(--red); }
+body.game-full table.timer td { padding: 0 4px; }
+/* the timer as wide as what it holds, not the 320 pixels its cell is given in the markup */
+body.game-full #clock { width: 1% !important; white-space: nowrap; }
+body.game-full table.timer { width: auto !important; padding: 0 6px; }
+body.game-full div.timer { min-width: 2.6em; }
+body.game-full div.timer { font: 700 clamp(26px, 5vh, 44px)/1 var(--font-display); color: var(--ink); letter-spacing: .02em; }
+body.game-full table.timer-1 div.timer { color: #fff; }
+body.game-full .night-empty table.timer-0 { background: rgba(255,255,255,.55); }
+body.game-full button.timer { width: clamp(28px, 5vh, 40px); height: clamp(28px, 5vh, 40px); padding: 0 !important; border-radius: 50%; }
+body.game-full img.timer { width: clamp(28px, 5vh, 40px); height: clamp(28px, 5vh, 40px); filter: saturate(0) brightness(1.05); opacity: .8; }
+body.game-full button.timer:hover img.timer { opacity: 1; }
+body.game-full table.timer-1 img.timer { filter: saturate(0) brightness(1.6); }
+
+/* the foot: the version, the saving, the game */
+body.game-full #saving { font-weight: 600; font-size: 13.5px; }
+body.game-full #version { font-weight: 600; }
+body.game-full button.config-btn { width: auto; min-width: 240px; height: var(--g-ctl); padding: 0 16px; border: 0 !important; border-radius: 999px; background: rgba(11,20,34,.06); color: inherit; font: 600 13.5px var(--font); cursor: pointer; }
+body.game-full button.config-btn:hover { background: rgba(11,20,34,.12); }
+body.game-full .night-empty button.config-btn { background: rgba(255,255,255,.6); }
+
+/* ------------------------------------------------------------------ the buttons of the game */
+
+body.game-full #players select { height: var(--g-ctl); max-width: 100%; padding: 0 28px 0 10px; border: 1px solid var(--rule-strong, #C9D5E3); border-radius: 10px; background-color: #fff; font: 600 clamp(13px, 1.9vh, 15px) var(--font); color: var(--ink); }
+body.game-full button.icon { width: var(--g-ctl); height: var(--g-ctl); padding: 0; border: 0; border-radius: 50%; background: rgba(11,20,34,.06); display: inline-grid; place-items: center; cursor: pointer; vertical-align: middle; }
+body.game-full button.icon:hover { background: rgba(11,20,34,.14); }
+body.game-full button.icon img { width: 18px; height: 18px; }
+body.game-full .night-alive button.icon, body.game-full .night-dead button.icon, body.game-full .night-mark button.icon { background: rgba(255,255,255,.7); }
+
+/* the numbers chosen at night and in the voting */
+body.game-full button.day-char, body.game-full button.night-char { width: var(--g-ctl); height: var(--g-ctl); margin: 0 1px; padding: 0 !important; border: 0 !important; border-radius: 50%; font: 700 14px var(--font); cursor: pointer; }
+body.game-full button.day-char { background: var(--frost); color: var(--ink); }
+body.game-full button.night-char { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(11,20,34,.12); }
+body.game-full button.day-char:hover, body.game-full button.night-char:hover { box-shadow: inset 0 0 0 2px var(--red); }
+body.game-full button.day-char[checked], body.game-full button.night-char[checked] { background: var(--red); color: #fff; }
+body.game-full button.day-char[disabled], body.game-full button.night-char[disabled] { opacity: .35; cursor: default; box-shadow: none; }
+
+/* the choices of a row: vote, half a vote, best move, extra points, leave the game */
+body.game-full button.day-vote, body.game-full button.day-half-vote, body.game-full button.night-vote,
+body.game-full button.best, body.game-full button.extra-pts, body.game-full button.noms, body.game-full button.warn3, body.game-full button.leave {
+  height: var(--g-ctl); padding: 0 12px !important; border: 0 !important; border-radius: 999px; font: 600 clamp(12.5px, 1.8vh, 14px) var(--font); cursor: pointer; background: var(--frost); color: var(--ink); }
+body.game-full button.night-vote { background: #fff; color: var(--ink); }
+body.game-full button.day-vote:hover, body.game-full button.day-half-vote:hover, body.game-full button.night-vote:hover,
+body.game-full button.best:hover, body.game-full button.extra-pts:hover, body.game-full button.noms:hover, body.game-full button.warn3:hover, body.game-full button.leave:hover { box-shadow: inset 0 0 0 2px var(--red); }
+body.game-full button.day-vote[checked], body.game-full button.day-half-vote[checked], body.game-full button.night-vote[checked], body.game-full button.best[checked], body.game-full button.warn3[checked] { background: var(--red); color: #fff; }
+body.game-full button.day-vote[disabled], body.game-full button.day-half-vote[disabled], body.game-full button.night-vote[disabled],
+body.game-full button.best[disabled], body.game-full button.extra-pts[disabled], body.game-full button.warn3[disabled] { opacity: .35; cursor: default; box-shadow: none; }
+body.game-full button.leave { height: var(--g-ctl); background: var(--ink); color: #fff; }
+body.game-full img.role-icon { opacity: .7; }
+
+/* ------------------------------------------------------------------ Back, the scenes, Next */
+
+body.game-full .btn-panel { flex: none; height: var(--g-panel); margin: 0; }
+body.game-full .btn-panel > table { height: 100%; }
+body.game-full button.game-btn { width: clamp(96px, 16vh, 130px); height: calc(var(--g-panel) - 6px); padding: 0 !important; border: 0 !important; border-radius: 999px; background: var(--ink); color: #fff; cursor: pointer; box-shadow: 0 10px 24px -12px rgba(11,20,34,.6); }
+body.game-full button.game-btn#game-next { background: var(--red); box-shadow: 0 10px 24px -12px var(--red-glow, rgba(200,35,44,.6)); }
+body.game-full button.game-btn:hover { filter: brightness(1.12); }
+body.game-full button.game-btn img { filter: brightness(0) invert(1); width: clamp(18px, 3vh, 24px); height: clamp(18px, 3vh, 24px); }
+body.game-full button.game-btn[disabled] { opacity: .25; cursor: default; box-shadow: none; filter: none; }
+body.game-full button.scene-btn { height: var(--g-ctl); margin: 0 3px; padding: 0 14px !important; border: 0 !important; border-radius: 999px; background: #fff; color: var(--ink); font: 600 13.5px var(--font); box-shadow: var(--shadow-card); cursor: pointer; }
+body.game-full button.scene-btn.current { background: var(--ink); color: #fff; }
+body.game-full .scene-mode { color: var(--slate); font-size: 12.5px; }
+
+/* the word over the demo */
+body.game-full #demo { top: 30%; font: 700 14em var(--font-display); color: var(--ink); opacity: .08; }
+
+/* the votes a nominee has, in the cell beside the choices: a number to be read across the room */
+body.game-full #players td[id^="panel"] center { font: 700 24px var(--font-display); }
+body.game-full #players td[id^="panel"].day-mark center { color: var(--red); }
+body.game-full button.config-btn b { font-weight: 600; font-family: var(--font); }
+
+/* the icons of a row a little smaller than the button they are on */
+body.game-full button.icon img { width: calc(var(--g-ctl) * .56); height: calc(var(--g-ctl) * .56); }
+body.game-full #players tr[id^="r"]:not(#r-1) > td { padding-top: 2px; padding-bottom: 2px; }
+
+/* the roles given out at night 0: the pictures whole, on white, the chosen one on red (game.css
+   draws them half transparent) */
+body.game-full img.role-icon { opacity: 1; width: calc(var(--g-ctl) * .8); height: calc(var(--g-ctl) * .8); }
+body.game-full button.night-char:not([checked]) img.role-icon { opacity: .45; filter: grayscale(1); }
+/* the role chosen: a pale ring rather than a red button - the roles of all ten are read at once */
+body.game-full button.night-char[checked]:has(img.role-icon) { background: #FCEEEF; box-shadow: inset 0 0 0 1.5px rgba(200,35,44,.55); }
+body.game-full button.night-char[checked] img.role-icon { opacity: .7; filter: saturate(.6); }
+/* the buttons at the end of a row (a warning, a technical foul, "...") in one line: in two they made
+   the row taller, and the last rows went out of the window */
+body.game-full #players td[id^="btns-"] { width: 1% !important; white-space: nowrap; }
+body.game-full #players td[id^="warn"] { white-space: nowrap; }
+body.game-full #players td[id^="controlx"] { width: auto !important; white-space: nowrap; }
+
+/* a round button holds its picture in its middle, whatever the line it stands in */
+body.game-full button.day-char, body.game-full button.night-char { display: inline-grid; place-items: center; vertical-align: middle; line-height: 1; }
+body.game-full button.day-char img, body.game-full button.night-char img { display: block; margin: 0; }
+/* the list of the roles is given 100 pixels in game-ui.js: as wide as "sheriff" and its arrow need */
+body.game-full #players td[id^="panel"] select { width: auto !important; min-width: 120px; padding-right: 32px; }
+/* the warning, the technical foul and "..." read at a glance */
+body.game-full #players td[id^="btns-"] button.icon img { width: calc(var(--g-ctl) * .72); height: calc(var(--g-ctl) * .72); }
+
+/* Nothing in a row of a player wraps to a second line - a row that grew pushed the last rows out of
+   the window: the numbers of the arrangement, the votes, the roles, the buttons. The cells of the
+   buttons are as wide as what they hold (the widths the markup and game-ui.js give them are too
+   small for the buttons of this look); the cell of the name of the player takes what is left. */
+body.game-full #players tr[id^="r"]:not(#r-1) > td, body.game-full #players tr[id^="r"]:not(#r-1) table.invis td { white-space: nowrap; }
+body.game-full #players td[id^="panel"] { width: 1% !important; }
+/* the warnings of a player keep a width of their own, as many as a player can have: a cell that grew
+   with each one pushed the whole table to the left */
+body.game-full #players td[id^="warn"] { width: 7.5em !important; min-width: 7.5em; text-align: center; }
+body.game-full #players td[id^="panel"] > center { display: block; }
+
+/* the dialog of the extra points of a player: room to breathe - a wider number, the best player, the
+   best move and the auto-bonus taken off as round buttons apart from each other, the comment as wide
+   as the dialog */
+.ui-dialog:has(#dlg-points) table.dialog_form td { padding-top: 14px; padding-bottom: 14px; }
+.ui-dialog #dlg-points { width: 110px !important; height: 44px; padding: 0 12px; border: 1px solid #C9D5E3; border-radius: 12px; font: 600 18px var(--font); }
+.ui-dialog:has(#dlg-points) td[align="right"] { white-space: nowrap; }
+.ui-dialog button.best { width: 52px !important; min-width: 52px !important; height: 52px !important; margin: 0 0 0 12px !important; padding: 0 !important; border: 0 !important; border-radius: 50% !important; background: var(--frost, #EEF3F9); box-shadow: inset 0 0 0 1px rgba(11,20,34,.08); cursor: pointer; display: inline-grid; place-items: center; vertical-align: middle; }
+.ui-dialog button.best:hover { box-shadow: inset 0 0 0 2px var(--red); }
+.ui-dialog button.best[checked] { background: var(--red) !important; box-shadow: none; }
+.ui-dialog button.best img { width: 30px !important; height: 30px; }
+.ui-dialog #dlg-comment { width: 100%; box-sizing: border-box; min-height: 150px; padding: 12px 14px; border: 1px solid #C9D5E3; border-radius: 12px; font: 500 15px/1.45 var(--font); resize: vertical; }
+.ui-dialog #dlg-points:focus, .ui-dialog #dlg-comment:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(200,35,44,.14); }

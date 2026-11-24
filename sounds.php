@@ -48,7 +48,7 @@ class Page extends GeneralPageBase
 		{
 			var sound = document.getElementById('snd').cloneNode(true);
 			var time = new Date();
-			sound.src = "sounds/" + id + ".mp3?" + time.getTime();
+			sound.src = "<?php echo SOUNDS_DIR; ?>" + id + ".mp3?" + time.getTime();
 			sound.play();
 		}
 <?php

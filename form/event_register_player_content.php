@@ -2,10 +2,9 @@
 
 require_once '../include/session.php';
 require_once '../include/picture.php';
+require_once '../include/cards.php';
 
-define('COLUMN_COUNT', 6);
-define('MAX_ROW_COUNT', 5);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
+define('PLAYERS_COUNT', 30); // six in a row, five rows: all of them in the dialog at once
 define('GAMES_COUNT_PERIOD', 24 * 60 * 60 * 365); // one year
 
 initiate_session();
@@ -70,49 +69,25 @@ try
 	{
 		$query->add(' AND u.id IN (SELECT DISTINCT user_id FROM club_regs WHERE club_id = ?)', $club_id);
 	}
-	$query->add(' ORDER BY mtch, games_count DESC LIMIT ' . (COLUMN_COUNT * MAX_ROW_COUNT));
+	$query->add(' ORDER BY mtch, games_count DESC LIMIT ' . PLAYERS_COUNT);
 	
 //		echo $query->get_parsed_sql();
+	// Each player a small tile: the picture, the name, the city.
 	$pic = new Picture(USER_PICTURE);
-	$column_count = 0;
 	$user_count = 0;
 	while ($row = $query->next())
 	{
 		list ($p_id, $p_name, $p_flags, $p_club_id, $p_club_name, $p_area_id, $p_area_name, $p_city_id, $p_city_name) = $row;
-		if ($column_count == 0)
+		if ($user_count++ == 0)
 		{
-			if ($user_count == 0)
-			{
-				echo '<table class="dialog_form" width="100%">';
-			}
-			else
-			{
-				echo '</tr>';
-			}
-			echo '<tr>';
+			echo '<div class="reg-grid">';
 		}
-		
-		echo '<td width="' . COLUMN_WIDTH . '%" align="center" valign="top">';
-		echo '<p><a href="#" onclick="userSelected('.$p_id.')">';
-		$pic->set($p_id, $p_name, $p_flags);
-		$pic->show(ICONS_DIR, false);
-		echo '</p><b>' . $p_name . '</b><br>' . $p_city_name;
-		echo '</a></td>';
-		
-		++$user_count;
-		++$column_count;
-		if ($column_count >= COLUMN_COUNT)
-		{
-			$column_count = 0;
-		}
+		echo '<a href="#" class="reg-p" onclick="userSelected(' . $p_id . '); return false;" title="' . htmlspecialchars($p_name, ENT_QUOTES, 'UTF-8') . '">' . card_avatar($pic, $p_id, $p_name, $p_flags, 'lg');
+		echo '<b>' . $p_name . '</b><span>' . $p_city_name . '</span></a>';
 	}
 	if ($user_count > 0)
 	{
-		if ($column_count > 0)
-		{
-			echo '<td colspan="' . (COLUMN_COUNT - $column_count) . '">&nbsp;</td>';
-		}
-		echo '</tr></table>';
+		echo '</div>';
 	}
 	echo '<ok>';
 }

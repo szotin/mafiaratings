@@ -3,10 +3,6 @@
 require_once '../include/session.php';
 require_once '../include/security.php';
 
-define('COLUMN_COUNT', 6);
-define('MAX_ROW_COUNT', 5);
-define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
-
 initiate_session();
 
 try
@@ -61,20 +57,12 @@ try
 	}
 	
 	dialog_title(get_label('Register player'));
-	echo '<table class="dialog_form" width="100%">';
-	echo '<tr><td><input id="form-name" onkeyup="nameChange()"></td></tr>';
-	echo '<tr><td id="form-users"><table class="dialog_form" width="100%">';
-	for ($i = 0; $i < MAX_ROW_COUNT; ++$i)
-	{
-		echo '<tr style="height: 130px;">';
-		for ($j = 0; $j < COLUMN_COUNT; ++$j)
-		{
-			echo '<td width="' . COLUMN_WIDTH . '%"></td>';
-		}
-		echo '</tr>';
-	}
-	echo '</table></td></tr>';
-	echo '</table>';
+	// The name typed first, the players as small tiles under it - as many as there are, all in the
+	// dialog at once: a referee at a table types rather than scrolls. The box keeps its height while
+	// the list is being looked up, so that the dialog does not jump.
+	echo '<div class="field reg-search"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>';
+	echo '<input id="form-name" onkeyup="nameChange()" autocomplete="off" placeholder="' . get_label('Name, nickname or email') . '"></div>';
+	echo '<div id="form-users" class="reg-users"></div>';
 ?>
 	<script>
 	function userSelected(userId)
@@ -116,6 +104,7 @@ try
 	}
 	
 	getContent();
+	setTimeout(function() { $('#form-name').focus(); }, 100);
 	</script>
 <?php
 	echo '<ok>';

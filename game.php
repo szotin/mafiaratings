@@ -19,6 +19,8 @@ class Page extends PageBase
 		if ($this->is_game_screen())
 		{
 			echo '<link rel="stylesheet" href="' . versioned_asset('game.css') . '" type="text/css" media="screen" />';
+			// The look of the site over it, and the whole window for the game - see game_look.css.
+			echo '<link rel="stylesheet" href="' . versioned_asset('game_look.css') . '" type="text/css" media="screen" />';
 		}
 		echo '<script src="' . versioned_asset('js/game.js') . '"></script>';
 		echo '<script src="' . versioned_asset('js/game-ui.js') . '"></script>';
@@ -135,6 +137,12 @@ class Page extends PageBase
 	protected function content_class()
 	{
 		return $this->is_game_screen() ? 'game-page' : 'nl';
+	}
+
+	// The game takes the whole window: no header, no footer, nothing to scroll.
+	protected function body_class()
+	{
+		return $this->is_game_screen() ? 'game-full' : '';
 	}
 
 	protected function prepare()
@@ -544,6 +552,9 @@ class Page extends PageBase
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
 		echo '</ul>';
 		
+		// In a box as tall as the window leaves it, and never taller: the table fills it, and Back and
+		// Next under it stay in the window whatever the rows hold - see game_look.css.
+		echo '<div class="game-table">';
 		echo '<table class="bordered" width="100%" id="players">';
 		echo '<tr class="day-empty header-row" align="center"><td id="head" colspan="6">';
 		
@@ -607,6 +618,7 @@ class Page extends PageBase
 		echo '<td id="noms" colspan="2"></td>';
 		echo '</tr>';
 		echo '</table>';
+		echo '</div>';
 		
 		echo '<div class="btn-panel"><table class="transp" width="100%"><tr>';
 		echo '<td><button class="game-btn" id="game-back" onclick="uiBack()"><img src="images/prev.png" class="text" title="' . get_label('Back') . '"></button></td>';
