@@ -6,6 +6,7 @@ require_once 'include/club.php';
 require_once 'include/scoring.php';
 require_once 'include/chart.php';
 require_once 'include/tournament.php';
+require_once 'include/cards.php';
 
 define('MAX_POINTS_ON_GRAPH', 50);
 define('MIN_PERIOD_ON_GRAPH', 10*24*60*60);
@@ -13,42 +14,11 @@ define('MIN_PERIOD_ON_GRAPH', 10*24*60*60);
 define('RATINGS_BEFORE', 5);
 define('RATINGS_AFTER', 5);
 
-define('ACHIEVEMENT_COLUMNS', 5);
-define('ACHIEVEMENT_ROWS', 2);
-define('ACHIEVEMENT_COLUMN_WIDTH', 100 / ACHIEVEMENT_COLUMNS);
+define('USER_ACHIEVEMENTS_COUNT', 10); // the cards of the best places in tournaments
 
-function show_permissions($user_flags)
-{
-	$sep = '';
-	$title = '';
-	$image = NULL;
-	if (($user_flags & USER_CLUB_PERM_PLAYER) != 0)
-	{
-		$title .= $sep . get_label('player');
-		$sep = '; ';
-		$image = 'player.png';
-	}
-	
-	if (($user_flags & USER_PERM_REFEREE) != 0)
-	{
-		$title .= $sep . get_label('Referee');
-		$sep = '; ';
-		$image = 'referee.png';
-	}
-	
-	if (($user_flags & USER_PERM_MANAGER) != 0)
-	{
-		$title .= $sep . get_label('manager');
-		$sep = '; ';
-		$image = 'manager.png';
-	}
-	
-	if ($image != NULL)
-	{
-		echo '<img src="images/' . $image . '" title="' . $title . '">';
-	}
-}
-
+// The main page of a player, made of the pieces of the main page of the site: their figures, the
+// chart of their rating and their best places in tournaments as cards; where they stand in the
+// rating beside them, as the best players there.
 class Page extends UserPageBase
 {
 	protected function add_headers()
@@ -57,257 +27,185 @@ class Page extends UserPageBase
 		add_chart_headers();
 	}
 	
-	protected function show_body()
+	// The figures of the player: games, wins, games refereed. The rating is on the band.
+	private function show_figures($games, $won, $rating)
 	{
-		global $_profile, $_lang;
-		
-		$rating_pos = -1;
-		$query = new DbQuery('SELECT rating, games, games_won FROM users WHERE id = ?', $this->id);
-		if ($row = $query->next())
+		if ($games <= 0 && $this->games_moderated <= 0)
 		{
-			list ($rating, $games, $won) = $row;
-			list ($rating_pos) = Db::record(get_label('rating'), 
-				'SELECT count(*) FROM users WHERE games > 0 AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?))))))', 
-				$rating, $rating, $games, $games, $won, $won, $this->id);
+			return;
 		}
-		
-		if ($rating_pos >= 0)
+		$figures = array();
+		if ($games > 0)
 		{
-			echo '<table width="100%"><tr><td valign="top" align="center">';
+			$figures[] = array(number_format($games), get_label('Games played'));
+			$figures[] = array(number_format($won * 100.0 / $games, 1) . '%', get_label('Wins'));
 		}
-		show_chart(640, 396); // fibonacci golden ratio 1.618:1
-		$timezone = get_timezone();
-		
-		// Achievements
-		$query = new DbQuery('SELECT t.id, nt.name, t.flags, t.start_time, t.duration, c.id, nc.name, c.flags, tp.place, (SELECT MAX(stars) FROM series_tournaments WHERE tournament_id = t.id) as stars FROM tournament_places tp JOIN tournaments t ON t.id = tp.tournament_id JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0 JOIN clubs c ON c.id = t.club_id JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0 WHERE tp.user_id = ? ORDER BY tp.importance DESC, tp.place', $this->id);
-		if ($row = $query->next())
-		{
-			$tournament_pic = new Picture(TOURNAMENT_PICTURE);
-			$club_pic = new Picture(CLUB_PICTURE);
-			$achievements_count = 0;
-			$columns_count = 0;
-			$rows_count = 0;
-			echo '<p><table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="' . ACHIEVEMENT_COLUMNS . '"><b>' . get_label('Achievements') . '</b></td></tr>';
-			do
-			{
-				list($tournament_id, $tournament_name, $tournament_flags, $tournament_start_time, $tournament_duration, $club_id, $club_name, $club_flags, $place, $stars) = $row;
-				if ($columns_count == 0)
-				{
-					if ($achievements_count > 0)
-					{
-						echo '</tr>';
-					}
-					echo '<tr>';
-				}
-				echo '<td width="' . ACHIEVEMENT_COLUMN_WIDTH . '%" align="center" valign="top">';
-				
-				echo '<table class="transp" width="100%">';
-				
-				echo '<tr class="dark" style="height: 40px;">';
-				echo '<td colspan="3"';
-				echo ' align="center"><b><big>';
-				if ($place < 4)
-				{
-					echo '<table class="transp" width="100%"><tr><td width="32"><img src="images/' . $place . '-place.png" height="32"></td><td align="center">';
-					if ($place == 1)
-					{
-						echo get_label('Winner');
-					}
-					else
-					{
-						echo get_label('[0] place', $place);
-					}
-					echo '</td></tr></table>';
-				}
-				else
-				{
-					echo get_label('[0] place', $place);
-				}
-				echo '</big></b></td></tr>';
-				
-				echo '<tr style="height: 80px;"><td colspan="3" align="center">';
-				$tournament_pic->set($tournament_id, $tournament_name, $tournament_flags);
-				$tournament_pic->show(ICONS_DIR, true, 64);
-				echo '<p><font style="color:#B8860B; font-size:18px;">' . tournament_stars_str($stars) . '</font>';
-				echo '<br>' . format_month($tournament_start_time + $tournament_duration, $timezone) . '</p>';
-				echo '</td></tr>';
-				
-				echo '<tr class="dark" style="height: 40px;"><td colspan="2" align="center"><b>' . $tournament_name . '</b></td><td width="34">';
-				$club_pic->set($club_id, $club_name, $club_flags);
-				$club_pic->show(ICONS_DIR, false, 30);
-				echo '</td></tr>';
-				
-				echo '</table></td>';
-				
-				++$columns_count;
-				++$achievements_count;
-				if ($columns_count >= ACHIEVEMENT_COLUMNS)
-				{
-					$columns_count = 0;
-					++$rows_count;
-					if ($rows_count >= ACHIEVEMENT_ROWS)
-					{
-						break;
-					}
-				}
-				
-			} while ($row = $query->next());
-			
-			if ($columns_count > 0)
-			{
-				echo '<td colspan="' . (ACHIEVEMENT_COLUMNS - $columns_count) . '"></td>';
-			}
-			echo '</tr></table></p>';
-		}
-		
-		// General info
-        echo '<table class="bordered light" width="100%">';
-		echo '<tr><td width="150" class="dark">'.get_label('Languages').':</td><td>' . get_langs_str($this->langs, ', ') . '</td><tr>';
-		echo '<tr><td class="dark">'.get_label('Registered since').':</td><td>' . format_date($this->reg_date, $timezone) . '</td></tr>';
-		
-        if (($this->flags & USER_FLAG_MALE) != 0)
-        {
-            echo '<tr><td class="dark">'.get_label('Gender').':</td><td>'.get_label('male').'</td></tr>';
-        }
-        else
-        {
-            echo '<tr><td class="dark">'.get_label('Gender').':</td><td>'.get_label('female').'</td></tr>';
-        }
-		
-		$query = new DbQuery('SELECT DISTINCT nickname FROM event_regs WHERE user_id = ? ORDER BY nickname', $this->id);
-		if ($row = $query->next())
-		{
-			echo '<tr><td class="dark">'.get_label('Nicks').':</td><td>' . cut_long_name($row[0], 88);
-			while ($row = $query->next())
-			{
-				echo ', ' . cut_long_name($row[0], 88);
-			}
-			echo '</td></tr>';
-		}
-		
 		if ($this->games_moderated > 0)
 		{
-			echo '<tr><td class="dark">'.get_label('Games refereed').':</td><td>' . $this->games_moderated . '</td></tr>';
+			$figures[] = array(number_format($this->games_moderated), get_label('Games refereed'));
 		}
-		
+		echo '<dl class="figs user-figs">';
+		foreach ($figures as $figure)
+		{
+			echo '<div><dt>' . $figure[1] . '</dt><dd>' . $figure[0] . '</dd></div>';
+		}
+		echo '</dl>';
+	}
+
+	// The places of the player in tournaments, the most important first: each a medal with the place
+	// on it, the tournament small under it - it is the places that are looked at here.
+	private function show_achievements()
+	{
+		global $_lang;
+
+		$query = new DbQuery(
+			'SELECT t.id, nt.name, t.flags, t.start_time, t.duration, ct.timezone, c.id, nc.name, c.flags, tp.place,' .
+			' (SELECT MAX(stars) FROM series_tournaments WHERE tournament_id = t.id) as stars' .
+			' FROM tournament_places tp' .
+			' JOIN tournaments t ON t.id = tp.tournament_id' .
+			' JOIN names nt ON nt.id = t.name_id AND (nt.langs & '.$_lang.') <> 0' .
+			' JOIN clubs c ON c.id = t.club_id' .
+			' JOIN names nc ON nc.id = c.name_id AND (nc.langs & '.$_lang.') <> 0' .
+			' JOIN addresses a ON a.id = t.address_id' .
+			' JOIN cities ct ON ct.id = a.city_id' .
+			' WHERE tp.user_id = ? ORDER BY tp.importance DESC, tp.place LIMIT ' . USER_ACHIEVEMENTS_COUNT, $this->id);
+		$row = $query->next();
+		if (!$row)
+		{
+			return;
+		}
+		$tournament_pic = new Picture(TOURNAMENT_PICTURE);
+		echo '<section aria-labelledby="h-achievements"><div class="sec-hd"><h2 id="h-achievements">' . get_label('Achievements') . '</h2>';
+		echo '<a class="more" href="user_tournaments.php?bck=1&id=' . $this->id . '">' . get_label('All tournaments') . '</a></div><div class="achs">';
+		do
+		{
+			list($id, $name, $flags, $start_time, $duration, $timezone, $club_id, $club_name, $club_flags, $place, $stars) = $row;
+			$tournament_pic->set($id, $name, $flags);
+			// The place first and big, as a medal; the tournament small under it.
+			echo '<a class="ach' . ($place <= 3 ? ' p' . $place : '') . '" href="tournament.php?bck=1&id=' . $id . '" title="' . htmlspecialchars(strip_tags($name), ENT_QUOTES, 'UTF-8') . '">';
+			echo '<span class="ach-medal">' . $place . '</span>';
+			echo '<span class="ach-place">' . ($place == 1 ? get_label('Winner') : get_label('[0] place', $place)) . '</span>';
+			echo '<span class="ach-t">' . card_logo($tournament_pic, $name) . '<span>' . $name . '</span></span>';
+			echo '<span class="ach-sub">';
+			if ($stars > 0)
+			{
+				echo '<span class="stars">' . tournament_stars_str($stars, false) . '</span>';
+			}
+			echo format_month($start_time + $duration, $timezone) . '</span></a>';
+		} while ($row = $query->next());
+		echo '</div></section>';
+	}
+
+	// What there is to know about the player, and for a manager of their club how to reach them.
+	private function show_info()
+	{
+		echo '<section class="rail-box" aria-labelledby="h-info"><div class="sec-hd"><h2 id="h-info">' . get_label('Information') . '</h2></div><dl class="kv">';
+		echo '<dt>' . get_label('Languages') . '</dt><dd>' . get_langs_str($this->langs, ', ') . '</dd>';
+		echo '<dt>' . get_label('Gender') . '</dt><dd>' . (($this->flags & USER_FLAG_MALE) != 0 ? get_label('male') : get_label('female')) . '</dd>';
+
+		$nicks = array();
+		$query = new DbQuery('SELECT DISTINCT nickname FROM event_regs WHERE user_id = ? ORDER BY nickname', $this->id);
+		while ($row = $query->next())
+		{
+			if (!empty($row[0]))
+			{
+				$nicks[] = cut_long_name($row[0], 88);
+			}
+		}
+		if (count($nicks) > 0)
+		{
+			echo '<dt>' . get_label('Nicks') . '</dt><dd>' . implode(', ', $nicks) . '</dd>';
+		}
+
 		if (is_permitted(PERMISSION_CLUB_MANAGER, $this->club_id))
 		{
-			echo '<tr><td class="dark">'.get_label('Email').':</td><td>' . $this->email . '</td></tr>';
-			if ($this->flags & USER_FLAG_NO_PASSWORD)
-			{
-				$status = get_label('not activated');
-			}
-			else
-			{
-				$status = get_label('activated');
-			}
+			echo '<dt>' . get_label('Email') . '</dt><dd><a href="mailto:' . $this->email . '">' . $this->email . '</a></dd>';
+			$status = ($this->flags & USER_FLAG_NO_PASSWORD) ? get_label('not activated') : get_label('activated');
 			$query = new DbQuery('SELECT flags FROM club_regs WHERE user_id = ? AND club_id = ?', $this->id, $this->club_id);
 			if ($row = $query->next())
 			{
 				list($club_flags) = $row;
-				$status .= '; ';
-				if ($club_flags & USER_CLUB_FLAG_SUBSCRIBED)
-				{
-					$status .= get_label('subscribed');
-				}
-				else
-				{
-					$status .= get_label('not subscribed');
-				}
+				$status .= '; ' . (($club_flags & USER_CLUB_FLAG_SUBSCRIBED) ? get_label('subscribed') : get_label('not subscribed'));
 			}
-			echo '<tr><td class="dark">'.get_label('Account status').':</td><td>' . $status . '</td></tr>';
+			echo '<dt>' . get_label('Account status') . '</dt><dd>' . $status . '</dd>';
 		}
-		echo '</table>';
-		
-/*		$prev_club_id = 0;
-		$role_titles = array(
-			get_label('Total'),
-			get_label('As a red'),
-			get_label('As a black'),
-			get_label('As a civilian'),
-			get_label('As a sheriff'),
-			get_label('As a mafiosi'),
-			get_label('As a don'));
-		$role_titles1 = array(
-			get_label('As a civilian'),
-			get_label('As a sheriff'),
-			get_label('As a mafiosi'),
-			get_label('As a don'));
-			
-		$total_rating = 0;
-		$total_games = 0;
-		$total_won = 0;
-		echo '<br><table class="bordered light" width="100%"><tr class="darker"><td>';
-		echo '</td><td>' . get_label('Games played') . ':</td>';
-		echo '<td>' . get_label('Wins') . ':</td>';
-		echo '<td>' . get_label('Rating earned') . ':</td></tr>';
+		echo '</dl></section>';
+	}
+
+	// The players around this one in the rating, as the best players of the main page; this one
+	// marked.
+	private function show_rating_position($rating_pos)
+	{
+		global $_lang;
+
+		$first = max(0, $rating_pos - RATINGS_BEFORE);
 		$query = new DbQuery(
-			'SELECT p.role, SUM(p.rating_earned) as rating, COUNT(p.game_id) as games, SUM(p.won) as won FROM players p' . 
-				' JOIN games g ON g.id = p.game_id' .
-				' WHERE p.user_id = ? AND (g.flags & '.GAME_FLAG_CANCELED.') = 0 GROUP BY p.role ORDER BY p.role',
-			$this->id);
+			'SELECT u.id, nu.name, u.rating, u.flags, ni.name' .
+			' FROM users u' .
+			' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0' .
+			' JOIN cities i ON i.id = u.city_id' .
+			' JOIN names ni ON ni.id = i.name_id AND (ni.langs & '.$_lang.') <> 0' .
+			' WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $first . ',' . (RATINGS_BEFORE + RATINGS_AFTER + 1));
+		echo '<section class="rail-box" aria-labelledby="h-position"><div class="sec-hd"><h2 id="h-position">' . get_label('Rating position') . '</h2>';
+		echo '<a class="more" href="ratings.php?bck=1&page=-' . $this->id . '">' . get_label('All ratings') . '</a></div><ol class="rank-list">';
+		$number = $first;
 		while ($row = $query->next())
 		{
-			list ($role, $rating, $games, $games_won) = $row;
-			$total_rating += $rating;
-			$total_games += $games;
-			$total_won += $games_won;
-			echo '<tr><td class="dark">' . $role_titles1[$role] . ':</td><td>' . $games . '</td><td>' . $games_won . '(' . number_format($games_won * 100 / $games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($rating), format_rating($rating/$games, 1)) . '</td></tr>';
+			list ($id, $name, $rating, $flags, $city) = $row;
+			++$number;
+			echo '<li' . ($id == $this->id ? ' class="me"' : '') . '><span class="n">' . $number . '</span><a class="who" href="user_info.php?bck=1&id=' . $id . '">' . card_avatar($this->user_pic, $id, $name, $flags);
+			echo '<span class="who-txt"><span class="who-name">' . $name . '</span><span class="who-sub">' . $city . '</span></span></a>';
+			echo '<span class="v">' . number_format(USER_INITIAL_RATING + $rating) . '</span></li>';
 		}
-		if ($total_games > 0)
+		echo '</ol></section>';
+	}
+
+	protected function show_body()
+	{
+		$rating_pos = -1;
+		$rating = $games = $won = 0;
+		$query = new DbQuery('SELECT rating, games, games_won FROM users WHERE id = ?', $this->id);
+		if ($row = $query->next())
 		{
-			echo '<tr class="darker"><td>' . get_label('Total') . ':</td><td>' . $total_games . '</td><td>' . $total_won . '(' . number_format($total_won * 100 / $total_games) . '%)</td><td>' . get_label('[0] ([1] per game)', format_rating($total_rating), format_rating($total_rating/$total_games, 1)) . '</td></tr>';
+			list ($rating, $games, $won) = $row;
+			if ($games > 0)
+			{
+				list ($rating_pos) = Db::record(get_label('rating'),
+					'SELECT count(*) FROM users WHERE games > 0 AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?))))))',
+					$rating, $rating, $games, $games, $won, $won, $this->id);
+			}
 		}
-		echo '</table>';*/
-		
-		// Position in rating
+
+		echo '<div class="cols wide-rail user-home"><div class="stack">';
+		// The figures, and the chart of the rating under them, in one box.
+		if ($games > 0 || $this->games_moderated > 0)
+		{
+			echo '<section class="rail-box chart-box">';
+			$this->show_figures($games, $won, $rating);
+			if ($games > 0)
+			{
+				show_chart(640, 396); // fibonacci golden ratio 1.618:1
+			}
+			echo '</section>';
+		}
+		$this->show_achievements();
+		$this->show_info();
+		echo '</div><aside class="rail">';
 		if ($rating_pos >= 0)
 		{
-			echo '</td><td width="280" valign="top">';
-			$rating_page = $rating_pos - RATINGS_BEFORE;
-			if ($rating_page < 0)
-			{
-				$rating_page = 0;
-			}
-			$query = new DbQuery(
-				'SELECT u.id, nu.name, u.rating, u.games, u.games_won, u.flags ' . 
-				'FROM users u'.
-				' JOIN names nu ON nu.id = u.name_id AND (nu.langs & '.$_lang.') <> 0'.
-				' WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $rating_page . ',' . (RATINGS_BEFORE + RATINGS_AFTER + 1));
-			echo '<table class="bordered light" width="100%">';
-			echo '<tr class="darker"><td colspan="4"><b>' . get_label('Rating position') . '</a></td></tr>';
-			$number = $rating_page;
-			while ($row = $query->next())
-			{
-				++$number;
-				list ($id, $name, $rating, $games_played, $games_won, $flags) = $row;
-				if ($id == $this->id)
-				{
-					echo '<tr class="lighter">';
-				}
-				else
-				{
-					echo '<tr>';
-				}
-				
-				echo '<td width="20" align="center">' . $number . '</td>';
-				echo '<td width="52">';
-				$this->user_pic->set($id, $name, $flags);
-				$this->user_pic->show(ICONS_DIR, true, 48);
-				echo '</td><td><a href="user_info.php?id=' . $id . '">' . cut_long_name($name, 45) . '</a></td>';
-				echo '<td width="60" align="center">' . number_format(USER_INITIAL_RATING + $rating) . '</td>';
-				echo '</tr>';
-			}
-			echo '</table>';
-			
-			echo '</td></tr></table>';
+			$this->show_rating_position($rating_pos);
 		}
+		echo '</aside></div>';
 	}
-	
+
 	protected function js_on_load()
 	{
 		parent::js();
+		list ($games) = Db::record(get_label('user'), 'SELECT games FROM users WHERE id = ?', $this->id);
+		if ($games <= 0)
+		{
+			return; // no games, no chart
+		}
 ?>
 		chartParams.type = "rating";
 		chartParams.name = "<?php echo get_label('[0] rating chart', $this->name); ?>";

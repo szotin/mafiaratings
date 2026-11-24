@@ -260,7 +260,8 @@ class UserPageBase extends PageBase
 			list ($pos) = Db::record(get_label('rating'),
 				'SELECT count(*) FROM users WHERE games > 0 AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?))))))',
 				$rating, $rating, $games, $games, $won, $won, $this->id);
-			$h->side = '<a class="bignum" href="ratings.php?bck=1"><b>#' . ($pos + 1) . '</b><span>' . get_label('Rating') . ' <strong>' . format_rating($rating) . '</strong></span></a>';
+			// The rating is kept less the 1000 everybody starts with, as everywhere: shown with it.
+			$h->side = '<a class="bignum" href="ratings.php?bck=1&page=-' . $this->id . '"><b>#' . ($pos + 1) . '</b><span>' . get_label('Rating') . ' <strong>' . number_format(USER_INITIAL_RATING + $rating) . '</strong></span></a>';
 		}
 
 		$this->show_entity_header($h, $menu);

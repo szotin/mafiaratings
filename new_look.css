@@ -1973,3 +1973,29 @@ a.pick:hover .pick-title, a.pick:hover .pick-num { color: var(--red); }
    placed against instead of the window: the menu flew off somewhere the moment it opened. A card
    with an open menu stays where it is. */
 .pcard:has(.card-menu details[open]), .tile:has(> .card-menu details[open]) { transform: none !important; transition: none !important; }
+/* the main page of a player: the figures in a row, the chart as wide as its box */
+.user-figs { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin: 0 0 18px; }
+.chart-box .user-figs:last-child { margin-bottom: 0; }
+.chart-box canvas { display: block; max-width: 100%; height: auto !important; }
+/* the player whose page it is, among the others around them in the rating */
+.rank-list li.me { margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 10px; background: var(--frost); border-top-color: transparent; }
+.rank-list li.me + li { border-top-color: transparent; }
+/* the achievements of a player: the places as medals, many in a row, the tournaments small */
+.achs { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.nl a.ach, .nl a.ach:link, .nl a.ach:visited, a.ach { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 16px 10px 12px; text-align: center;
+  border-radius: var(--r-sheet); background: var(--paper); border: 1px solid rgba(11,20,34,.06); box-shadow: var(--shadow-card); color: var(--ink); transition: transform .15s, box-shadow .15s; }
+a.ach:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+.ach-medal { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; font: 700 26px/1 var(--font-display); color: #fff;
+  background: var(--slate); box-shadow: inset 0 -3px 0 rgba(0,0,0,.15), 0 6px 14px -8px rgba(11,20,34,.5); }
+.ach.p1 .ach-medal { background: linear-gradient(160deg, #F4C542, #C79100); }
+.ach.p2 .ach-medal { background: linear-gradient(160deg, #C9D1DB, #8C97A6); }
+.ach.p3 .ach-medal { background: linear-gradient(160deg, #D79A6B, #A86A3D); }
+.ach-place { font: 600 15px var(--font-display); text-transform: uppercase; letter-spacing: .03em; }
+.ach.p1 .ach-place { color: #B07F00; }
+.ach-t { display: flex; align-items: center; gap: 6px; max-width: 100%; font-size: 12.5px; line-height: 1.25; color: var(--ink-soft); }
+.ach-t > span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-align: left; }
+.ach-t .logo { flex: none; width: 22px; height: 22px; border-radius: 6px; object-fit: contain; background: #fff; box-shadow: inset 0 0 0 1px rgba(11,20,34,.08); }
+.ach-t .logo.is-empty { display: grid; place-items: center; background: var(--night); color: #fff; font: 600 9px var(--font-display); }
+.ach-sub { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px 6px; font-size: 12px; color: var(--slate); }
+.ach-sub .stars { color: #C79100; font-size: 11px; letter-spacing: 1px; }
+@media (prefers-reduced-motion: reduce) { a.ach { transition: none; } a.ach:hover { transform: none; } }

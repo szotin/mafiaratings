@@ -560,7 +560,8 @@
 	// tables a row stands in clip what sticks out of them (their corners are rounded), so a menu
 	// of the first column, or of the last row, was cut off and could not be seen. It goes under
 	// its button, its right edge at the button's, unless that leaves the window: then from the
-	// button's left edge, and above the button where there is no room below.
+	// button's left edge. Above the button where it fits there and not below; where it fits
+	// neither, on the side with more room, as tall as that room and scrolled inside.
 	function place(menu)
 	{
 		var list = menu.querySelector('.rm-list');
@@ -573,15 +574,32 @@
 		list.style.right = 'auto';
 		list.style.left = '0px';
 		list.style.top = '0px';
+		list.style.maxHeight = '';
+		list.style.overflowY = 'auto';
 		var w = list.offsetWidth, h = list.offsetHeight;
 		var left = r.right - w;
 		if (left < 8)
 		{
 			left = Math.min(r.left, window.innerWidth - w - 8);
 		}
-		var top = r.bottom + 6;
-		if (top + h > window.innerHeight - 8 && r.top - 6 - h > 8)
+		var below = window.innerHeight - r.bottom - 6 - 8;
+		var above = r.top - 6 - 8;
+		var top;
+		if (h <= below || below >= above)
 		{
+			top = r.bottom + 6;
+			if (h > below)
+			{
+				list.style.maxHeight = Math.max(below, 120) + 'px';
+			}
+		}
+		else
+		{
+			if (h > above)
+			{
+				list.style.maxHeight = above + 'px';
+				h = above;
+			}
 			top = r.top - 6 - h;
 		}
 		list.style.left = Math.max(8, left) + 'px';
@@ -595,16 +613,30 @@
 			place(menu);
 		}
 	}, true);
-	// Fixed to the window, an open menu would stay where it is while the page moves under it.
-	// The menu "≡" of the band is not moved, and keeps its own place.
-	function closePlaced()
+	// Fixed to the window, an open menu would stay where it is while the page moves under it: it
+	// goes with its button, and closes only once the button has left the window. Scrolling the
+	// menu itself - a long one scrolls inside - does nothing to it. The menu "≡" of the band is not
+	// moved, and keeps its own place.
+	function followPlaced(e)
 	{
+		if (e && e.target && e.target.closest && e.target.closest('.rm-list'))
+		{
+			return;
+		}
 		var open = document.querySelectorAll('details.row-menu[open]:not(.eh-menu)');
 		for (var i = 0; i < open.length; ++i)
 		{
-			open[i].open = false;
+			var r = open[i].querySelector('summary').getBoundingClientRect();
+			if (r.bottom < 0 || r.top > window.innerHeight)
+			{
+				open[i].open = false;
+			}
+			else
+			{
+				place(open[i]);
+			}
 		}
 	}
-	window.addEventListener('scroll', closePlaced, true);
-	window.addEventListener('resize', closePlaced);
+	window.addEventListener('scroll', followPlaced, true);
+	window.addEventListener('resize', followPlaced);
 })();
