@@ -197,10 +197,9 @@ class Page extends GeneralPageBase
 		wizard_end(
 			wizard_back_button('createBack()', 'details-back'),
 			wizard_next_button(count($ahead) > 0 ? get_label('Next') : get_label('Create'), 'create()', 'details-btn'),
-			// A tournament, an event, a club or a league shows the logo chosen for it - see logoChosen() in
-			// form/tournament_create.php, form/event_create.php, form/club_create.php and
-			// form/league_create.php.
-			wizard_summary_live($name, ($this->type == 'tournament' || $this->type == 'event' || $this->type == 'club' || $this->type == 'league') ? '<img id="wz-sum-logo-img" src="images/' . ICONS_DIR . $this->type . '.png">' : ''));
+			// Everything but a series shows the logo chosen for it - see logoChosen() in the form/*_create.php
+			// of each.
+			wizard_summary_live($name, $this->type != 'series' ? '<img id="wz-sum-logo-img" src="images/' . ICONS_DIR . $this->type . '.png">' : ''));
 	}
 
 	private function show_types()

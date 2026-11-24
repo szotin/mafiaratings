@@ -35,18 +35,16 @@ try
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="120" valign="top">' . get_label('Address name') . ':</td><td>';
 	Names::show_control(new Names($name_id, get_label('Address name')));
-	echo '</td>';
-	
-	echo '<td align="center" valign="top" rowspan="5">';
+	echo '</td></tr>';
+
+	// The logo is a row like the rest: the picture is the button that changes it.
+	echo '<tr><td>' . get_label('Logo') . ':</td><td>';
 	start_upload_logo_button($id);
-	echo get_label('Change logo') . '<br>';
 	$address_pic = new Picture(ADDRESS_PICTURE);
 	$address_pic->set($id, $name, $flags);
 	$address_pic->show(ICONS_DIR, false);
 	end_upload_logo_button(ADDRESS_PIC_CODE, $id);
-	echo '</td>';
-	
-	echo '</tr>';
+	echo '</td></tr>';
 	
 	echo '<tr><td>' . get_label('Country') . ':</td><td>';
 	show_country_input('form-country', $country, 'form-city');

@@ -70,7 +70,8 @@ class Page extends ClubPageBase
 			wizard_back_button('goTo({tab:' . CLUB_TAB_RULES . '})'),
 			'<span class="wz-btns"><button type="button" class="wz-back" onclick="toClub()"><span>' . get_label('Later') . '</span></button>' .
 				wizard_next_button(get_label('Create address'), 'createAddress()', 'details-btn') . '</span>',
-			wizard_summary_live(get_label('Address')));
+			// With the logo chosen for it - see logoChosen() in form/address_create.php.
+			wizard_summary_live(get_label('Address'), '<img id="wz-sum-logo-img" src="images/' . ICONS_DIR . 'address.png">'));
 	}
 
 	// Beside the rules: which club they are of.
