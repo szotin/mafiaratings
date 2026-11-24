@@ -495,8 +495,14 @@ function login($user_id, $remember = 1)
 	remember_user($remember);
 	
 	session_unset();
-	// Assign variables to session
-	session_regenerate_id(true);
+	// A new session id for the one who logged in, the old one thrown away. Throwing it away can
+	// fail - on Windows the file of a session cannot be deleted while another request of the same
+	// browser holds it open - and then PHP leaves the id as it was. The id changes all the same;
+	// the old file is left to the garbage collector of sessions.
+	if (!@session_regenerate_id(true))
+	{
+		session_regenerate_id(false);
+	}
 	
 	$_SESSION['profile'] = $_profile;
 	$_SESSION['lang_code'] = get_lang_code($_lang);
