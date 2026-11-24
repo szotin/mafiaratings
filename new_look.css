@@ -1801,3 +1801,35 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .ui-dialog .sheet:has(#form-pairs-table tbody:empty) { display: none; }
 button.pair-del { display: inline-grid; place-items: center; width: 32px; height: 32px; min-width: 0; padding: 0; border: 0; border-radius: 50%; background: var(--frost); color: var(--ink-soft); box-shadow: none; cursor: pointer; }
 button.pair-del:hover { background: var(--ink-soft); color: #fff; }
+
+/* =================================================================== the main page of a club */
+
+/* the headings of its sections are those of the main page of the site, not the big ones of .nl */
+.nl .sec-hd h2 { margin: 0; font-size: 19px; }
+.nl a.more, .nl a.more:link, .nl a.more:visited { color: var(--red); }
+.nl a.more:hover { color: var(--red-hi); }
+.nl .sec-hd .btn { height: 36px; padding: 0 14px; border-radius: 999px; }
+.nl .sec-hd .btn .ic { width: 16px; height: 16px; }
+.nl .ads li > .dim { font-size: 13px; }
+/* the column beside the rail is narrower than a page: two tiles in a row there all the same */
+.club-home .tiles.wide { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+/* what there is to know: a word and its value on a line, a line under the other */
+.kv { display: grid; grid-template-columns: minmax(110px, 200px) minmax(0, 1fr); margin: 0; }
+.kv dt, .kv dd { margin: 0; padding: 10px 0; border-top: 1px solid var(--rule-soft); }
+.kv dt:first-of-type, .kv dt:first-of-type + dd { border-top: 0; }
+.kv dt { display: flex; align-items: flex-start; gap: 8px; padding-right: 14px; color: var(--slate); }
+.kv dt .ui-menu, .kv dt .row-menu { flex: none; }
+.kv dd { overflow-wrap: anywhere; }
+@media (max-width: 459px) {
+  .kv { grid-template-columns: minmax(0, 1fr); }
+  .kv dt { padding-bottom: 0; }
+  .kv dd { border-top: 0; padding-top: 2px; }
+}
+/* the figures: the number big, what it counts under it */
+.figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 12px; margin: 4px 0 0; }
+.figs > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 4px; min-width: 0; }
+.figs dd { margin: 0; font: 600 24px/1 var(--font-display); color: var(--ink); white-space: nowrap; }
+.figs dt { font-size: 12.5px; line-height: 1.3; color: var(--slate); }
+.figs.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* a canceled tournament among the others: there, but grey */
+.pcard.is-off .pc-cover { filter: grayscale(1); opacity: .6; }
