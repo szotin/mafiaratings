@@ -252,14 +252,8 @@ class Page extends EventPageBase
 	{
 		global $_profile;
 
-		// Whether one comes, while one still can.
-		if ($_profile != NULL && ($this->flags & EVENT_FLAG_CANCELED) == 0 && time() < $this->start_time + $this->duration)
-		{
-			echo '<div class="attend-bar">';
-			echo '<button type="button" class="btn" onclick="attend()">' . get_label('Attend') . '</button>';
-			echo '<button type="button" class="btn ghost" onclick="decline()">' . get_label('Pass') . '</button></div>';
-		}
-
+		// Whether one comes is the button on the band - see EventPageBase::registration_html(). The
+		// links of the invitations (?attend, ?decline) still open it: see js_on_load().
 		echo '<div class="cols wide-rail event-home"><div class="stack">';
 		if ($this->notes != '')
 		{

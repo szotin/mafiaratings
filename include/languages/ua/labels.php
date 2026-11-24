@@ -2340,6 +2340,7 @@ $labelMenu = array (
 'New game' => 'Нова гра', // game.php
 'No unfinished games.' => 'Незакінчених ігор немає.', // game.php
 'Finish' => 'Завершити', // include/preparation.php
+'Sign up' => 'Зареєструватися', // include/event.php
 );
 
 return $labelMenu;

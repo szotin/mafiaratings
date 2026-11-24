@@ -67,9 +67,6 @@ try
 	show_option(-1, $late, get_label('More than 3 hours late'));
 	echo '</select></td></tr>';
 	
-	echo '<tr id="nick_tr"><td>'.get_label('My nickname for this event is').':</td><td>';
-	nick_name_chooser($_profile->user_id, $_profile->user_name, $nickname);
-	echo '</td></tr>';
 	echo '</table>';
 ?>	
 	<script>
@@ -80,13 +77,11 @@ try
 		{
 			$('#friends_tr').show();
 			$('#late_tr').show();
-			$('#nick_tr').show();
 		}
 		else
 		{
 			$('#friends_tr').hide();
 			$('#late_tr').hide();
-			$('#nick_tr').hide();
 		}
 	}
 	
@@ -115,7 +110,7 @@ try
 				, event_id: <?php echo $id; ?>
 				, odds: $("#odds").val()
 				, friends: $("#friends").val()
-				, nickname: $("#nick").val()
+				, nickname: <?php echo json_encode(is_null($nickname) ? '' : $nickname); ?>
 				, late: $("#late").val()
 			},
 			onSuccess);

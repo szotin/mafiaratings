@@ -79,19 +79,8 @@ function show_event_buttons($id, $tournament_id, $start_time, $duration, $flags,
 	{
 		$can_manage = false;
 		
-		if (($flags & EVENT_FLAG_CANCELED) == 0 && $start_time + $duration > $now)
-		{
-			if ($attending)
-			{
-				echo '<button class="icon" onclick="mr.attendEvent(' . $id . ')" title="' . get_label('Attend/decline the event') . '"><img src="images/accept.png" border="0"></button>';
-			}
-			else
-			{
-				echo '<button class="icon" onclick="mr.attendEvent(' . $id . ')" title="' . get_label('Attend/decline the event') . '"><img src="images/empty.png" border="0"></button>';
-			}
-			$no_buttons = false;
-		}
-		
+		// Whether one comes is not one of these: it is the button on the band of the game day - see
+		// EventPageBase::registration_html().
 		if ($is_manager)
 		{
 			if ($event_page)
@@ -517,6 +506,25 @@ class EventPageBase extends PageBase
 	protected $event;
 	protected $is_manager;
 	
+	// The button to sign up for the game day, as a tournament has its button to apply: while it is
+	// not over and not canceled. Whoever has signed up changes it - or says they are not coming -
+	// in the same dialog.
+	protected function registration_html()
+	{
+		global $_profile;
+
+		if ($_profile == NULL || ($this->flags & EVENT_FLAG_CANCELED) != 0 || ($this->club_flags & CLUB_FLAG_CLOSED) != 0 || $this->start_time + $this->duration <= time())
+		{
+			return '';
+		}
+		$url = json_encode('event_info.php?id=' . $this->id);
+		if (!is_null($this->coming_odds) && $this->coming_odds > 0)
+		{
+			return '<button class="eh-cta ghost" onclick="mr.attendEvent(' . $this->id . ', ' . htmlspecialchars($url, ENT_QUOTES) . ')">' . get_label('Change registration') . '</button>';
+		}
+		return '<button class="eh-cta" onclick="mr.attendEvent(' . $this->id . ', ' . htmlspecialchars($url, ENT_QUOTES) . ')">' . get_label('Sign up') . '</button>';
+	}
+
 	protected function get_full_name()
 	{
 		if (!is_null($this->tournament_id))
@@ -679,6 +687,7 @@ class EventPageBase extends PageBase
 				$this->is_manager, $this->is_referee, true);
 		});
 
+		$h->side = $this->registration_html();
 		$h->fact('cal', format_date($this->start_time, $this->timezone, true));
 		$h->fact('pin', '<span><a href="address_info.php?bck=1&id=' . $this->address_id . '">' . trim($this->address) . '</a>' . (trim($this->address) == $this->city ? '' : ', ' . $this->city) . '</span>');
 		$this->club_pic->set($this->club_id, $this->club_name, $this->club_flags);
