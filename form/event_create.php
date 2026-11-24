@@ -97,6 +97,8 @@ try
 		
 	echo '<tr><td>'.get_label('Duration').':</td><td><input value="6h" placeholder="' . get_label('eg. 3w 4d 12h') . '" id="form-duration" onkeyup="checkDuration()"></td></tr>';
 		
+	// Made from the list of the game days of an address it is played there.
+	$addr_id = isset($_REQUEST['address_id']) ? (int)$_REQUEST['address_id'] : 0;
 	$query = new DbQuery('SELECT a.id, n.name FROM addresses a JOIN names n ON n.id = a.name_id AND (n.langs & '.$_lang.') <> 0 WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY n.name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
@@ -104,7 +106,7 @@ try
 	$selected_address = '';
 	while ($row = $query->next())
 	{
-		if (show_option((int)$row[0], 0, $row[1]))
+		if (show_option((int)$row[0], $addr_id, $row[1]))
 		{
 			$selected_address = $row[1];
 		}

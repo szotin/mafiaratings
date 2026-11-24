@@ -43,7 +43,9 @@ try
 	// The league whose defaults - rules and systems - the club starts from. Without one a sub-club
 	// starts from its parent, any other club from the defaults of the site.
 	echo '<tr><td>' . get_label('System') . ':</td><td>';
-	show_system_league_select('form-system');
+	// Made from the list of the clubs of a league, the club starts from that league and joins it.
+	$league_id = isset($_REQUEST['league_id']) ? (int)$_REQUEST['league_id'] : 0;
+	show_system_league_select('form-system', $league_id);
 	echo '</td></tr>';
 
 	echo '<tr><td>' . get_label('Parent club') . ':</td><td>';
@@ -98,24 +100,43 @@ try
 		nameControl.fillRequest(request);
 		json.post("api/ops/club.php", request, function(obj)
 		{
-			// The club is made whatever happens to its logo: a logo that fails to upload is said, and
-			// can be changed on the first tab of its management.
-			var logo = document.getElementById('form-logo').files[0];
-			if (!logo)
-			{
-				onSuccess(obj);
-				return;
-			}
-			json.upload('api/ops/club.php',
-			{
-				op: "change"
-				, club_id: obj.club_id
-				, logo: logo
-			},
-			<?php echo UPLOAD_LOGO_MAX_SIZE; ?>,
-			function() { onSuccess(obj); },
-			function(message) { dlg.error(message, null, null, function() { onSuccess(obj); }); return true; });
+			addToLeague(obj, function() { uploadLogo(obj, onSuccess); });
 		});
+	}
+
+	// The league whose list of clubs this was made from takes it in: at once where whoever made it
+	// manages the league, as a request to the league otherwise. The club is made whatever happens.
+	function addToLeague(obj, next)
+	{
+		var leagueId = <?php echo $league_id; ?>;
+		if (leagueId <= 0)
+		{
+			next();
+			return;
+		}
+		json.post('api/ops/league.php', { op: 'add_club', league_id: leagueId, club_id: obj.club_id }, next,
+			function(message) { dlg.error(message, null, null, next); return true; });
+	}
+
+	// The club is made whatever happens to its logo: a logo that fails to upload is said, and can be
+	// changed on the first tab of its management.
+	function uploadLogo(obj, onSuccess)
+	{
+		var logo = document.getElementById('form-logo').files[0];
+		if (!logo)
+		{
+			onSuccess(obj);
+			return;
+		}
+		json.upload('api/ops/club.php',
+		{
+			op: "change"
+			, club_id: obj.club_id
+			, logo: logo
+		},
+		<?php echo UPLOAD_LOGO_MAX_SIZE; ?>,
+		function() { onSuccess(obj); },
+		function(message) { dlg.error(message, null, null, function() { onSuccess(obj); }); return true; });
 	}
 
 	function logoChosen()

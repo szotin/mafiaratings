@@ -13,6 +13,12 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends ClubPageBase
 {
+	// Making one of the club, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('tournament', 'c' . $this->id);
+	}
+
 	protected function show_body()
 	{
 		global $_page, $_lang, $_profile;
@@ -23,13 +29,6 @@ class Page extends ClubPageBase
 		$condition = new SQL('t.club_id = ? AND UNIX_TIMESTAMP() <= t.start_time + t.duration', $this->id);
 		list ($count) = Db::record(get_label('tournament'), 'SELECT count(*) FROM tournaments t WHERE ', $condition);
 		
-		// The toolbar of tournaments.php: here only the button that makes a new tournament.
-		if ($is_manager)
-		{
-			echo '<div class="toolbar"><div class="tb-line tb-start">';
-			echo '<a class="btn tb-create" href="create.php?bck=1&type=tournament&owner=c' . $this->id . '">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('tournament')) . '</span></a>';
-			echo '</div></div>';
-		}
 		show_pages_navigation($page_size, $count);
 		
 		$query = new DbQuery('SELECT t.id, nt.name, t.start_time, t.duration, t.flags, t.num_players, nct.name, ct.timezone, a.address, na.name FROM tournaments t');

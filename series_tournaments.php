@@ -24,6 +24,12 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends SeriesPageBase
 {
+	// Making a tournament that goes into the series, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('tournament', NULL, array('series_id' => $this->id));
+	}
+
 	protected function prepare()
 	{
 		parent::prepare();

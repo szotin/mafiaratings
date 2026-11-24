@@ -19,6 +19,12 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends LeaguePageBase
 {
+	// Making a series of the league, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('series', 'l' . $this->id);
+	}
+
 	protected function show_body()
 	{
 		global $_profile, $_page, $_lang;

@@ -12,6 +12,12 @@ define('PAGE_SIZE', EVENTS_PAGE_SIZE);
 
 class Page extends ClubPageBase
 {
+	// Making one of the club, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('event', 'c' . $this->id);
+	}
+
 	protected function show_body()
 	{
 		global $_page, $_lang, $_profile;
@@ -26,12 +32,7 @@ class Page extends ClubPageBase
 		$search = event_search_condition($condition);
 		
 		// The toolbar of a list (see new_look.css): the name, and the button that creates one.
-		echo '<div class="toolbar">' . card_search_field($search, get_label('Game day, tournament or club'));
-		if ($can_create)
-		{
-			echo '<a class="btn" href="create.php?bck=1&type=event&owner=c' . $this->id . '">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('event')) . '</span></a>';
-		}
-		echo '</div>';
+		echo '<div class="toolbar">' . card_search_field($search, get_label('Game day, tournament or club')) . '</div>';
 		
 		$from = 
 			' FROM events e' .

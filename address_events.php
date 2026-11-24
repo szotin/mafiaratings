@@ -26,6 +26,12 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends AddressPageBase
 {
+	// Making a game day played at the address, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('event', 'c' . $this->club_id, array('address_id' => $this->id));
+	}
+
 	protected function show_body()
 	{
 		global $_profile, $_page, $_lang;

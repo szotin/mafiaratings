@@ -914,6 +914,113 @@ class PageBase
 		return $rest . '<details class="row-menu eh-menu' . ($current ? ' is-active' : '') . '"><summary title="' . $label . '" aria-label="' . $label . '">' . PageBase::icon('menu') . '</summary><div class="rm-list" role="menu">' . $list . '</div></details>';
 	}
 
+	// Whose a thing of each kind can be for the user looking: for an event, a tournament, a series and
+	// an address the clubs - and for a series the leagues - where they may make one, as array('c12' =>
+	// name, 'l3' => name); NULL for a club and a league, which are nobody's. A kind with an empty list
+	// cannot be made. create.php offers what this says, and the buttons that lead to it are shown
+	// by it - see create_button().
+	private static $create_owners = NULL;
+	static function create_owners($type)
+	{
+		global $_profile, $_lang;
+
+		if ($_profile == NULL)
+		{
+			return array();
+		}
+		if (is_null(PageBase::$create_owners))
+		{
+			$referee_clubs = array();
+			$manager_clubs = array();
+			foreach ($_profile->clubs as $club)
+			{
+				if (($club->club_flags & CLUB_FLAG_CLOSED) != 0)
+				{
+					continue;
+				}
+				if (($club->flags & (USER_PERM_REFEREE | USER_PERM_MANAGER)) != 0)
+				{
+					$referee_clubs['c' . $club->id] = $club->name;
+				}
+				if (($club->flags & USER_PERM_MANAGER) != 0)
+				{
+					$manager_clubs['c' . $club->id] = $club->name;
+				}
+			}
+			$leagues = array();
+			if ($_profile->is_admin())
+			{
+				$query = new DbQuery('SELECT l.id, n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & ' . $_lang . ') <> 0 WHERE (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0 ORDER BY n.name');
+			}
+			else
+			{
+				$query = new DbQuery('SELECT l.id, n.name FROM league_managers m JOIN leagues l ON l.id = m.league_id JOIN names n ON n.id = l.name_id AND (n.langs & ' . $_lang . ') <> 0 WHERE m.user_id = ? AND (m.flags & ' . USER_PERM_MANAGER . ') <> 0 AND (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0 ORDER BY n.name', $_profile->user_id);
+			}
+			while ($row = $query->next())
+			{
+				list($league_id, $league_name) = $row;
+				$leagues['l' . $league_id] = $league_name;
+			}
+			PageBase::$create_owners = array(
+				'event' => $referee_clubs,
+				'tournament' => $manager_clubs,
+				'series' => $leagues + $manager_clubs,
+				'club' => NULL,
+				'league' => NULL,
+				'address' => $referee_clubs);
+		}
+		return array_key_exists($type, PageBase::$create_owners) ? PageBase::$create_owners[$type] : array();
+	}
+
+	// "Create a tournament" - a button on the band, left of its menu "≡", leading to create.php. Shown
+	// only where create.php would make it: $owner ('c12', 'l3') is whose it is to be, and where the
+	// user may not make one for that owner there is no button. $params fill the form in from where the
+	// button is - the series a tournament goes into, the address of a game day, the league a club
+	// joins; see create.php.
+	static function create_button($type, $owner = NULL, $params = array())
+	{
+		global $_profile;
+
+		if ($_profile == NULL)
+		{
+			return '';
+		}
+		$owners = PageBase::create_owners($type);
+		if (!is_null($owners) && (count($owners) == 0 || (!is_null($owner) && !isset($owners[$owner]))))
+		{
+			return '';
+		}
+		$url = 'create.php?bck=1&type=' . $type;
+		if (!is_null($owner))
+		{
+			$url .= '&owner=' . $owner;
+		}
+		foreach ($params as $name => $value)
+		{
+			$url .= '&' . $name . '=' . (int)$value;
+		}
+		switch ($type)
+		{
+			case 'league':
+				$text = get_label('Create league');
+				break;
+			case 'series':
+				$text = get_label('Create [0]', get_label('sеriеs'));
+				break;
+			default:
+				$text = get_label('Create [0]', get_label($type));
+				break;
+		}
+		return '<a class="btn eh-create" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . PageBase::icon('plus') . '<span>' . $text . '</span></a>';
+	}
+
+	// What a page of an entity offers to create, on its band left of the menu "≡" - "Create a
+	// tournament" on the tournaments of a club. See create_button().
+	protected function create_action()
+	{
+		return '';
+	}
+
 	// The pages of the whole site only an administrator manages: the menu "≡" of the band of every
 	// page that is not one of an entity (see show_title()).
 	static function get_admin_menu()
@@ -1002,7 +1109,7 @@ class PageBase
 			}
 		}
 		$menu = $tabs;
-		$actions = PageBase::manage_menu($h->actions, $manage, $h->prep);
+		$actions = $this->create_action() . PageBase::manage_menu($h->actions, $manage, $h->prep);
 		if (!empty($h->side) || !empty($actions))
 		{
 			echo '<div class="eh-side">' . $h->side;

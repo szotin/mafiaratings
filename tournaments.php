@@ -24,6 +24,12 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends GeneralPageBase
 {
+	// The button that makes a tournament, beside the menu "≡" of the band. See PageBase::create_button().
+	protected function title_actions()
+	{
+		return PageBase::create_button('tournament');
+	}
+
 	protected function prepare()
 	{
 		parent::prepare();

@@ -24,6 +24,12 @@ define('FLAG_FILTER_DEFAULT', FLAG_FILTER_NOT_CANCELED | FLAG_FILTER_NOT_EMPTY);
 
 class Page extends ClubPageBase
 {
+	// Making one of the club, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('tournament', 'c' . $this->id);
+	}
+
 	protected function show_body()
 	{
 		global $_profile, $_page, $_lang;

@@ -3,11 +3,23 @@
 require_once 'include/general_page_base.php';
 require_once 'include/seating.php';
 require_once 'include/pages.php';
+require_once 'include/cards.php';
 
 define('PAGE_SIZE', TOURNAMENTS_PAGE_SIZE);
 
 class Page extends GeneralPageBase
 {
+	// The button that makes a seating, beside the menu "≡" of the band, as every list has it - see
+	// PageBase::create_button(). A seating is made in a dialog rather than on create.php.
+	protected function title_actions()
+	{
+		if (!is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID))
+		{
+			return '';
+		}
+		return '<a class="btn eh-create" href="#" onclick="createSeating(); return false;">' . PageBase::icon('plus') . '<span>' . get_label('Create seating') . '</span></a>';
+	}
+
 	protected function prepare()
 	{
 		parent::prepare();
@@ -101,16 +113,9 @@ class Page extends GeneralPageBase
 		echo '<p>';
 		echo '<table class="bordered light" width="100%">';
 
-		// Header row: "+" create button + column headers.
+		// Header row: the column of the menus "≡" of the rows, then the columns.
 		echo '<tr class="darker">';
-		echo '<td width="80" align="center">';
-		if (is_permitted(PERMISSION_CLUB_MANAGER | PERMISSION_TOURNAMENT_MANAGER | PERMISSION_TOURNAMENT_REFEREE, ANY_ID, ANY_ID))
-		{
-			echo '<button class="icon" onclick="createSeating()" title="' . get_label('Create new seating') . '">';
-			echo '<img src="images/create.png" border="0">';
-			echo '</button>';
-		}
-		echo '</td>';
+		echo '<td width="48"></td>';
 		echo '<td width="70" align="center"><b>' . get_label('Players') . '</b></td>';
 		echo '<td width="70" align="center"><b>' . get_label('Tables') . '</b></td>';
 		echo '<td width="70" align="center"><b>' . get_label('Games per player') . '</b></td>';
@@ -126,17 +131,13 @@ class Page extends GeneralPageBase
 		foreach ($seatings as $seating)
 		{
 			echo '<tr>';
-			echo '<td class="dark" align="center" style="white-space:nowrap">';
-			echo '<a class="icon" href="seating.php?bck=1&hash=' . urlencode($seating->hash) . '" title="' . get_label('View') . '">';
-			echo '<img src="images/details.png" border="0">';
-			echo '</a>';
+			// What can be done with the seating, under "≡" - see card_row_menu().
+			$items = array(array('goTo(' . json_encode('seating.php?bck=1&hash=' . urlencode($seating->hash)) . ')', 'details.png', get_label('View')));
 			if ($is_admin)
 			{
-				echo '<button class="icon" onclick="deleteSeating(\'' . addslashes($seating->hash) . '\')" title="' . get_label('Delete') . '">';
-				echo '<img src="images/delete.png" border="0">';
-				echo '</button>';
+				$items[] = array('deleteSeating(' . json_encode($seating->hash) . ')', 'delete.png', get_label('Delete'));
 			}
-			echo '</td>';
+			echo '<td class="tb-btns" align="center">' . card_row_menu($items) . '</td>';
 			echo '<td align="center">' . $seating->players . '</td>';
 			echo '<td align="center">' . $seating->tables . '</td>';
 			echo '<td align="center">' . $seating->games . '</td>';

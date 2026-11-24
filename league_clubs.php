@@ -14,6 +14,12 @@ define('FLAG_FILTER_NOT_CLOSED', 0x0002);
 
 class Page extends LeaguePageBase
 {
+	// Making a club that joins the league, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('club', NULL, array('league_id' => $this->id));
+	}
+
 	private $filter;
 	
 	protected function prepare()

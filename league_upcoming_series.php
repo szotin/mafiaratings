@@ -12,6 +12,12 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends LeaguePageBase
 {
+	// Making a series of the league, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('series', 'l' . $this->id);
+	}
+
 	protected function show_body()
 	{
 		global $_page, $_profile, $_lang;
@@ -23,12 +29,6 @@ class Page extends LeaguePageBase
 		$page_size = ROW_COUNT * COLUMN_COUNT;
 		
 		$condition = new SQL('s.league_id = ? AND UNIX_TIMESTAMP() <= s.start_time + s.duration', $this->id);
-		
-		// The button that makes a new series stands in the toolbar, as in the other lists of the look.
-		if ($is_manager)
-		{
-			echo '<div class="toolbar"><a class="btn tb-create" href="create.php?bck=1&type=series&owner=l' . $this->id . '">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('sеriеs')) . '</span></a></div>';
-		}
 		
 		list ($count) = Db::record(get_label('series'), 'SELECT count(*) FROM series s WHERE ', $condition);
 		show_pages_navigation($page_size, $count);

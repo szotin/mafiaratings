@@ -104,7 +104,7 @@ a:hover { color: var(--red); }
 
 .hd {
   position: sticky; top: 0; z-index: 40;
-  background: rgba(255, 255, 255, .97);
+  background: #fff;
   box-shadow: 0 1px 0 rgba(11,20,34,.06), 0 8px 24px -18px rgba(11,20,34,.35);
 }
 .hd .wrap { height: var(--hd-h); display: flex; align-items: center; gap: 18px; }
@@ -163,7 +163,8 @@ a:hover { color: var(--red); }
   box-shadow: 0 8px 18px -8px var(--red-glow); white-space: nowrap; }
 .btn-create:hover { background: var(--red-hi); color: #fff; }
 .btn-create .ic { width: 16px; height: 16px; fill: currentColor; stroke: none; }
-@media (max-width: 359px) { .hd .btn-create { display: none; } }
+/* on a phone the game is in the menu of the site: the header keeps the room */
+@media (max-width: 639px) { .hd .btn-create { display: none; } }
 
 .lang { display: inline-flex; padding: 3px; gap: 2px; background: var(--night); border: 1px solid var(--night); border-radius: 999px; }
 .hd .lang { display: none; }
@@ -269,6 +270,14 @@ a:hover { color: var(--red); }
 .hd .hd-tools { flex: none; }
 /* and whatever is still too wide, the page itself never scrolls sideways */
 html, body { overflow-x: clip; }
+/* a phone that zooms its pages (Android: a large font, or Chrome's own zoom) leaves them a screen of
+   220-350 pixels however wide it is: the logo goes to two lines rather than being cut, and the edges narrow */
+@media (max-width: 359px) {
+  :root { --gutter: 12px; }
+  .hd .brand { flex-direction: column; align-items: flex-start; gap: 1px; font-size: 14px; }
+  .hd .wrap, .hd-tools { gap: 4px; }
+  .search-btn, .btn-login, .hd-avatar { width: 32px; height: 32px; }
+}
 
 .search-dlg { position: fixed; inset: 0; z-index: 70; display: flex; justify-content: center; align-items: flex-start; padding: 10vh 16px 16px; }
 .search-dlg[hidden] { display: none; }
@@ -642,6 +651,7 @@ input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min
 .home-filter .eh-menu { flex: none; }
 .toolbar > .eh-menu { margin-left: auto; }
 .home-filter input.dropdown { width: 270px; height: 36px; padding: 0 36px 0 14px; border-radius: 999px; border: 1px solid var(--night-line); background: rgba(255,255,255,.08); color: #fff; font: 400 14px var(--font); }
+.home-filter input.dropdown { text-overflow: ellipsis; }
 .home-filter input.dropdown::placeholder { color: var(--night-dim); }
 .home-filter input.dropdown:focus { outline: none; border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.12); }
 .home-filter button.dropdown-btn { color: var(--night-dim); }
@@ -743,6 +753,10 @@ input[type=submit].norm, input[type=button].norm, button.norm { width: auto; min
   .home-results .pcard:hover { transform: none; }
   .home-filter, .home-filter input.dropdown { width: 100%; }
   .feat-cover { min-height: 0; aspect-ratio: 16 / 7; }
+}
+/* a narrow cover has no room for both the date at its top and the logo at its bottom */
+@media (max-width: 359px) {
+  .feat-cover { aspect-ratio: auto; min-height: 120px; }
   .feat-body { padding: 14px 16px 16px; gap: 6px; }
   .mast .feat-body h2 { font-size: 21px; }
   .mast a.ql { height: 36px; padding: 0 12px; font-size: 14px; }
@@ -1763,3 +1777,27 @@ table.transp:has(img[src="images/sync.png"]) td:first-child { min-width: 36px; f
 .wz-btns { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
 /* the street of an address: room for a long one */
 .details-form #form-address { width: 320px; max-width: 100%; box-sizing: border-box; }
+/* "Create a tournament" on the band of a club, a league... (PageBase::create_button()): on the row of
+   the tabs, at the left of the menu "≡", the tabs keeping clear of both. Without the menu it takes
+   its corner. Narrow, only its plus. */
+.mast .eh-actions .eh-create { position: absolute; right: calc(var(--gutter) + 50px); bottom: 6px; height: 40px; padding: 0 16px; border-radius: 999px; white-space: nowrap; }
+.mast .eh-actions:not(:has(.eh-menu)) .eh-create { right: var(--gutter); }
+.mast:has(.eh-create) .tabs { padding-right: 300px; }
+@media (max-width: 760px) {
+  .mast .eh-actions .eh-create { width: 40px; padding: 0; }
+  .mast .eh-actions .eh-create span { display: none; }
+  .mast:has(.eh-create) .tabs { padding-right: 106px; }
+}
+/* The pairs of a seating that are kept apart, in its dialog (form/seating_create.php): what they are
+   and the button that adds one on a line, the pairs as a list of the look. */
+.pairs-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 10px; }
+.pairs-bar button { display: inline-flex; align-items: center; gap: 6px; }
+.pairs-bar button .ic, .pair-del .ic { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+/* a table in a dialog: its head light, so as not to be one more dark bar under the dark title */
+.ui-dialog .tbl th { position: static; background: var(--frost); color: var(--ink-soft); }
+.ui-dialog #form-pairs-table input { width: 90px !important; }
+.ui-dialog #form-pairs-table td { padding: 8px 10px; }
+/* no pairs yet - no table, only the button that adds one */
+.ui-dialog .sheet:has(#form-pairs-table tbody:empty) { display: none; }
+button.pair-del { display: inline-grid; place-items: center; width: 32px; height: 32px; min-width: 0; padding: 0; border: 0; border-radius: 50%; background: var(--frost); color: var(--ink-soft); box-shadow: none; cursor: pointer; }
+button.pair-del:hover { background: var(--ink-soft); color: #fff; }

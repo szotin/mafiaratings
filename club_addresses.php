@@ -12,6 +12,12 @@ define('COLUMN_WIDTH', (100 / COLUMN_COUNT));
 
 class Page extends ClubPageBase
 {
+	// Making one of the club, beside its menu "≡". See PageBase::create_button().
+	protected function create_action()
+	{
+		return PageBase::create_button('address', 'c' . $this->id);
+	}
+
 	protected function show_body()
 	{
 		global $_profile, $_lang;
@@ -21,18 +27,6 @@ class Page extends ClubPageBase
 		echo '<p><table class="bordered light" width="100%"><tr class="darker"><td colspan="5"><b>' . get_label('Addresses') . '</b></td></tr>';
 		$column_count = 0;
 		$addr_count = 0;
-		if ($can_edit)
-		{
-			++$column_count;
-			++$addr_count;
-			echo '<tr><td width="' . COLUMN_WIDTH . '%" align="center" valign="center" class="light">';	
-			echo '<table class="transp" width="100%">';
-			echo '<tr><td align="center"><a href="create.php?bck=1&type=address&owner=c' . $this->id . '">' . get_label('Create [0]', get_label('address'));
-			echo '<br><img src="images/create_big.png" border="0" width="' . ICON_WIDTH . '" height="' . ICON_HEIGHT . '">';
-			echo '</td></tr></table>';
-			echo '</td>';
-		}
-		
 		$address_pics = new Picture(ADDRESS_PICTURE);
 		$query = new DbQuery(
 			'SELECT a.id, na.name, a.address, a.map_url, a.flags, nct.name, ncr.name' .

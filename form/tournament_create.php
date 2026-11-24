@@ -52,7 +52,20 @@ try
 	$normalizer_version = 0;
 	list($scoring_version) = Db::record(get_label('scoring system'), 'SELECT version FROM scorings WHERE id = ?', $scoring_id);
 	
-	$datetime = get_datetime(time(), $club->timezone);
+	// Made from the list of the tournaments of a series it goes into that series. The series offered
+	// are those running on the dates of the tournament, so a series that has not begun yet moves the
+	// dates to its first day.
+	$series_id = isset($_REQUEST['series_id']) ? (int)$_REQUEST['series_id'] : 0;
+	$start = time();
+	if ($series_id > 0)
+	{
+		$query = new DbQuery('SELECT start_time FROM series WHERE id = ?', $series_id);
+		if (($row = $query->next()) && (int)$row[0] > $start)
+		{
+			$start = (int)$row[0];
+		}
+	}
+	$datetime = get_datetime($start, $club->timezone);
 	$date = datetime_to_string($datetime, false);
 	
 	echo '<tr><td>'.get_label('Dates').':</td><td>';
@@ -80,6 +93,11 @@ try
 		}
 	}
 	
+	// Made from the list of the tournaments of an address it is played there.
+	if (isset($_REQUEST['address_id']) && (int)$_REQUEST['address_id'] > 0)
+	{
+		$addr_id = (int)$_REQUEST['address_id'];
+	}
 	$query = new DbQuery('SELECT a.id, n.name FROM addresses a JOIN names n ON n.id = a.name_id AND (n.langs & '.$_lang.') <> 0 WHERE a.club_id = ? AND (a.flags & ' . ADDRESS_FLAG_NOT_USED . ') = 0 ORDER BY n.name', $club_id);
 	echo '<tr><td>'.get_label('Address').':</td><td>';
 	echo '<select id="form-addr_id" onChange="addressClick()">';
@@ -173,7 +191,7 @@ try
 					sl[s.id] =
 					{
 						id: s.id,
-						selected: false,
+						selected: (s.id == <?php echo $series_id; ?>),
 						stars: 0,
 						stage: <?php echo SERIES_STAGE_BASE; ?>
 					};

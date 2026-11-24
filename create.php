@@ -27,38 +27,11 @@ class Page extends GeneralPageBase
 		parent::prepare();
 		check_permissions(PERMISSION_USER);
 
-		// Whose a thing can be: the clubs where this user may make it, and for a series the leagues.
-		$referee_clubs = array();
-		$manager_clubs = array();
-		foreach ($_profile->clubs as $club)
-		{
-			if (($club->club_flags & CLUB_FLAG_CLOSED) != 0)
-			{
-				continue;
-			}
-			if (($club->flags & (USER_PERM_REFEREE | USER_PERM_MANAGER)) != 0)
-			{
-				$referee_clubs['c' . $club->id] = $club->name;
-			}
-			if (($club->flags & USER_PERM_MANAGER) != 0)
-			{
-				$manager_clubs['c' . $club->id] = $club->name;
-			}
-		}
-		$leagues = array();
-		if ($_profile->is_admin())
-		{
-			$query = new DbQuery('SELECT l.id, n.name FROM leagues l JOIN names n ON n.id = l.name_id AND (n.langs & ' . $_lang . ') <> 0 WHERE (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0 ORDER BY n.name');
-		}
-		else
-		{
-			$query = new DbQuery('SELECT l.id, n.name FROM league_managers m JOIN leagues l ON l.id = m.league_id JOIN names n ON n.id = l.name_id AND (n.langs & ' . $_lang . ') <> 0 WHERE m.user_id = ? AND (m.flags & ' . USER_PERM_MANAGER . ') <> 0 AND (l.flags & ' . LEAGUE_FLAG_CLOSED . ') = 0 ORDER BY n.name', $_profile->user_id);
-		}
-		while ($row = $query->next())
-		{
-			list($league_id, $league_name) = $row;
-			$leagues['l' . $league_id] = $league_name;
-		}
+		// Whose a thing can be: the clubs where this user may make it, and for a series the leagues -
+		// the same lists the buttons that lead here are shown by (PageBase::create_button()).
+		$referee_clubs = PageBase::create_owners('event');
+		$manager_clubs = PageBase::create_owners('tournament');
+		$series_owners = PageBase::create_owners('series');
 
 		// Each kind: its name, what it is, its icon, whose it can be (NULL - nobody's), and the tabs
 		// it has after this one.
@@ -76,7 +49,7 @@ class Page extends GeneralPageBase
 			'series' => array(
 				get_label('Series~singular'),
 				get_label('A season or a cup adding up the results of several tournaments.'),
-				'layers', $leagues + $manager_clubs,
+				'layers', $series_owners,
 				array()),
 			'club' => array(
 				get_label('Club'),
@@ -192,6 +165,19 @@ class Page extends GeneralPageBase
 			case 'address':
 				$form = 'form/address_create.php?club=' . $owner_id;
 				break;
+		}
+		// Filled in from where the button that led here was: the series of the list of its tournaments,
+		// the address of the list of its game days, the league of the list of its clubs.
+		$prefill = array('tournament' => array('series_id', 'address_id'), 'event' => array('address_id'), 'club' => array('league_id'));
+		if (isset($prefill[$this->type]))
+		{
+			foreach ($prefill[$this->type] as $param)
+			{
+				if (isset($_REQUEST[$param]) && (int)$_REQUEST[$param] > 0)
+				{
+					$form .= (strpos($form, '?') === false ? '?' : '&') . $param . '=' . (int)$_REQUEST[$param];
+				}
+			}
 		}
 		show_details_form($form, NULL, $this->type == 'tournament' ? '#form-series' : NULL);
 		wizard_end(

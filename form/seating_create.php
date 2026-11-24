@@ -26,16 +26,15 @@ try
 
 	echo '</table>';
 
-	echo '<p><b>' . get_label('Players who cannot play together') . '</b></p>';
-	echo '<table class="bordered light" width="100%" id="form-pairs-table">';
-	echo '<tr class="darker">';
-	echo '<td width="48" align="center">';
-	echo '<button class="icon" onclick="addPair()" title="' . get_label('Add pair') . '"><img src="images/create.png" border="0"></button>';
-	echo '</td>';
-	echo '<td align="center">' . get_label('Player 1') . '</td>';
-	echo '<td align="center">' . get_label('Player 2') . '</td>';
-	echo '</tr>';
-	echo '</table>';
+	// The pairs as a list of the new look: what it is and the button that adds one on a line above
+	// it, the table in a sheet, a row's cross at its end. See .pairs-bar in new_look.css.
+	echo '<div class="pairs-bar"><b>' . get_label('Players who cannot play together') . '</b>';
+	echo '<button type="button" onclick="addPair()"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>' . get_label('Add pair') . '</span></button></div>';
+	echo '<div class="sheet"><table class="tbl" id="form-pairs-table"><thead><tr>';
+	echo '<th scope="col">' . get_label('Player 1') . '</th>';
+	echo '<th scope="col">' . get_label('Player 2') . '</th>';
+	echo '<th scope="col"></th>';
+	echo '</tr></thead><tbody></tbody></table></div>';
 
 ?>
 	<script>
@@ -61,13 +60,13 @@ try
 	{
 		var idx = pairCount++;
 		var row = '<tr id="form-pair-row-' + idx + '">' +
-			'<td class="dark" align="center">' +
-			'<button class="icon" onclick="removePair(' + idx + ')" title="<?php echo get_label('Remove'); ?>"><img src="images/delete.png" border="0"></button>' +
-			'</td>' +
-			'<td align="center"><input type="number" id="form-pair-a-' + idx + '" min="0" style="width:70px" placeholder="#"></td>' +
-			'<td align="center"><input type="number" id="form-pair-b-' + idx + '" min="0" style="width:70px" placeholder="#"></td>' +
+			'<td><input type="number" id="form-pair-a-' + idx + '" min="0" placeholder="#"></td>' +
+			'<td><input type="number" id="form-pair-b-' + idx + '" min="0" placeholder="#"></td>' +
+			'<td class="tb-btns"><button type="button" class="pair-del" onclick="removePair(' + idx + ')" title="<?php echo get_label('Remove'); ?>" aria-label="<?php echo get_label('Remove'); ?>">' +
+			'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td>' +
 			'</tr>';
-		$('#form-pairs-table').append(row);
+		$('#form-pairs-table tbody').append(row);
+		$('#form-pair-a-' + idx).focus();
 	}
 
 	function removePair(idx)

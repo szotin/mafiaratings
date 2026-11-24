@@ -22,12 +22,7 @@ class Page extends GeneralPageBase
 {
 	protected function title_actions()
 	{
-		global $_profile;
-		if ($_profile == NULL)
-		{
-			return '';
-		}
-		return '<a class="btn" href="create.php?bck=1&type=club">' . PageBase::icon('plus') . '<span>' . get_label('Create [0]', get_label('club')) . '</span></a>';
+		return PageBase::create_button('club');
 	}
 	
 	protected function show_body()

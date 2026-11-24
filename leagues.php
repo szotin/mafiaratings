@@ -63,12 +63,7 @@ class Page extends GeneralPageBase
 	
 	protected function title_actions()
 	{
-		global $_profile;
-		if ($_profile == NULL)
-		{
-			return '';
-		}
-		return '<a class="btn" href="create.php?bck=1&type=league">' . PageBase::icon('plus') . '<span>' . get_label('Create league') . '</span></a>';
+		return PageBase::create_button('league');
 	}
 
 	protected function show_body()
