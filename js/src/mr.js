@@ -469,13 +469,8 @@ var mr = new function()
 			if (now)
 				url += '&now=1';
 			
-			dlg.form(url, function(obj)
-			{
-				if (!now && isSet(obj.mailing))
-					dlg.form("form/event_mailing_create.php?events=" + obj.events + '&type=' + obj.mailing, refr, 640, refr);
-				else
-					refr();
-			});
+			// The invitation is not offered by itself: it is made on the tab of the mailings.
+			dlg.form(url, refr);
 		}
 		else
 			dlg.infoForm("form/event_create_select_club.php?now=" + (now ? 1 : 0));
@@ -501,17 +496,9 @@ var mr = new function()
 
 	this.editEvent = function(id)
 	{
-		dlg.form("form/event_edit.php?event_id=" + id, function(obj)
-		{
-			if (isSet(obj.mailing))
-			{
-				dlg.form("form/event_mailing_create.php?events=" + id + '&type=' + obj.mailing, refr, 640, refr);
-			}
-			else
-			{
-				refr();
-			}
-		});
+		// A change of the time or the address is not told to the players by itself: a mailing is
+		// made on the tab of the mailings, when it is wanted.
+		dlg.form("form/event_edit.php?event_id=" + id, refr);
 	}
 
 	this.createEventMailing = function(events, mailingType)

@@ -2338,6 +2338,7 @@ $labelMenu = array (
 'Choose a game' => 'Выберите игру', // game.php
 'New game' => 'Новая игра', // game.php
 'No unfinished games.' => 'Незаконченных игр нет.', // game.php
+'Finish' => 'Завершить', // include/preparation.php
 );
 
 return $labelMenu;

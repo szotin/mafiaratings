@@ -174,6 +174,19 @@ trait PreparationTabs
 		return false;
 	}
 
+	// Whether the tab after this one cannot be opened - the seating before there is a scheme. There
+	// is nowhere further to go then, as on the last tab, and Next becomes Finish.
+	protected function nextUnavailable()
+	{
+		return false;
+	}
+
+	// Where Finish leads: the page of the thing being prepared.
+	protected function finishUrl()
+	{
+		return 'index.php';
+	}
+
 	// Back, to the tab before. It is never held back: what was done there is done.
 	private function backButton()
 	{
@@ -293,13 +306,15 @@ trait PreparationTabs
 		$this->wz_nav = true;
 	}
 
+	// Next, or Finish where there is nowhere further to go. The thing exists from its first tab on, so
+	// whatever is left can always be left for later: Finish is never held back.
 	private function nextButtonHtml()
 	{
-		if ($this->tab < $this->tab_count - 1)
+		if ($this->tab < $this->tab_count - 1 && !$this->nextUnavailable())
 		{
 			return wizard_next_button(get_label('Next'), 'nextStep()', 'prep-next-btn', $this->nextDisabled());
 		}
-		return '';
+		return wizard_next_button(get_label('Finish'), 'goTo(' . htmlspecialchars(json_encode($this->finishUrl()), ENT_QUOTES) . ')', 'prep-finish-btn');
 	}
 
 	private function showSeatingTab($round_index)

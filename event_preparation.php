@@ -419,9 +419,15 @@ class Page extends EventPageBase
 
 	// The last step leads to the seating, and that tab is barred until the scheme is in. See
 	// show_body().
-	protected function nextDisabled()
+	// The seating needs a scheme: without one the broadcasts are as far as the game day goes.
+	protected function nextUnavailable()
 	{
 		return !$this->scheme_valid && $this->tab == EPREP_TAB_STREAMS;
+	}
+
+	protected function finishUrl()
+	{
+		return 'event.php?id=' . $this->id;
 	}
 
 	protected function show_body()
@@ -538,19 +544,11 @@ class Page extends EventPageBase
 		function nextStep()
 		{
 <?php if ($this->tab == PREP_TAB_DETAILS): ?>
-			// Saved the way the dialog saved it, and asked the way it asked whether to tell the
-			// players what has changed.
+			// Saved the way the dialog saved it. Telling the players what has changed is not offered
+			// by itself: a mailing is made on the tab of the mailings, when it is wanted.
 			detailsCommit(function(obj)
 			{
-				var next = function() { goToTab(<?php echo $this->firstTab(); ?>); };
-				if (isSet(obj.mailing))
-				{
-					dlg.form('form/event_mailing_create.php?events=<?php echo $this->id; ?>&type=' + obj.mailing, next, 640, next);
-				}
-				else
-				{
-					next();
-				}
+				goToTab(<?php echo $this->firstTab(); ?>);
 			});
 <?php elseif ($this->tab == EPREP_TAB_SCHEME): ?>
 			// Nothing filled in, or nothing changed: there is nothing to save.

@@ -233,18 +233,9 @@ class Page extends GeneralPageBase
 		{
 			case 'event':
 ?>
-				// A weekly game day is several of them: the page of the first is opened, and the
-				// invitation is offered for all of them, as the dialog offered it.
-				var url = 'event_preparation.php?id=' + obj.events[0] + '&tab=0';
-				var next = function() { goTo(url); };
-				if (isSet(obj.mailing))
-				{
-					dlg.form('form/event_mailing_create.php?events=' + obj.events + '&type=' + obj.mailing, next, 640, next);
-				}
-				else
-				{
-					next();
-				}
+				// A weekly game day is several of them: the page of the first is opened. The invitation
+				// is not offered by itself - it is made on the tab of the mailings, when it is wanted.
+				goTo('event_preparation.php?id=' + obj.events[0] + '&tab=0');
 <?php
 				break;
 			case 'tournament':

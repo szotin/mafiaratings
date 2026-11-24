@@ -55,7 +55,19 @@ class Page extends TournamentPageBase
 		{
 			return true;
 		}
+		return false;
+	}
+
+	// The seating needs a scheme and the registrations: without them the broadcasts are as far as the
+	// tournament goes for now.
+	protected function nextUnavailable()
+	{
 		return (!$this->scheme_valid || !$this->regs_complete) && $this->tab == PREP_TAB_STREAMS;
+	}
+
+	protected function finishUrl()
+	{
+		return 'tournament.php?id=' . $this->id;
 	}
 
 	protected function prepare()
