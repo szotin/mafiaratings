@@ -605,6 +605,57 @@ function getRuleHelp(policyNum)
 	return '';
 }
 
+//--------------------------------------------------------------------------------------
+// maxGames - how many of a player's best games count in a tournament; absent means all of them
+//--------------------------------------------------------------------------------------
+var _lastMaxGames = 20;
+
+function maxGamesToggle()
+{
+	if ($("#normalizer-limit-games").attr('checked'))
+	{
+		_data.normalizer.maxGames = _lastMaxGames;
+	}
+	else
+	{
+		// Absent, not zero: absent is what counts every game.
+		delete _data.normalizer.maxGames;
+	}
+	refreshNormalizerEditor(true);
+}
+
+function maxGamesChange()
+{
+	var value = parseInt($("#normalizer-max-games").val());
+	if (isNaN(value) || value < 1)
+	{
+		value = 1;
+	}
+	_data.normalizer.maxGames = _lastMaxGames = value;
+	dirty(true);
+}
+
+// One line either way, saying what actually happens: with the box clear every game counts and no
+// number is shown at all.
+function maxGamesHtml()
+{
+	var str = _data.strings;
+	var limited = typeof _data.normalizer.maxGames != "undefined";
+	var html = '<tr class="darker"><td colspan="3"><b>' + str.maxGames + '</b></td></tr>';
+	html += '<tr><td colspan="3"><input type="checkbox" class="toggle" id="normalizer-limit-games" onclick="maxGamesToggle()"' + (limited ? ' checked' : '') + '> ';
+	if (limited)
+	{
+		html += str.countBestGames +
+			' <input type="number" min="1" step="1" style="width: 60px; vertical-align: middle;" id="normalizer-max-games"' +
+			' value="' + _data.normalizer.maxGames + '" oninput="maxGamesChange()"> ' + str.countBestGamesPost;
+	}
+	else
+	{
+		html += str.allGames;
+	}
+	return html + '</td></tr>';
+}
+
 // The version picker next to the name. Any version of the system can be opened; switching is a
 // page load, which the page does in selectVersion() - that is where there are labels to ask
 // about unsaved edits with. Newest first, because that is the one usually wanted.
@@ -640,7 +691,8 @@ function refreshNormalizerEditor(isDirty)
 		}
 		html += versionSelectHtml() + '</td></tr>';
 	}
-	
+
+	html += maxGamesHtml();
 	html += '<tr class="darker"><td width="32" align="center"><button class="icon" title="' + str.policyAdd + '" onclick="createPolicy()"><img src="images/create.png"></button></td>';
 	html += '<td colspan="2">' + str.policies + '</td></tr>';
 	if (norm.policies)
@@ -702,5 +754,9 @@ function initNormalizerEditor(data, onChangeData)
 {
     _data = data;
 	_onChangeData = onChangeData;
+	if (typeof _data.normalizer.maxGames != "undefined")
+	{
+		_lastMaxGames = _data.normalizer.maxGames;
+	}
     refreshNormalizerEditor();
 }

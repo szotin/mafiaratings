@@ -1950,7 +1950,7 @@ $labelMenu = array (
 'What one tournament of the series brings a player who took a given place in it.' => 'Скільки один турнір серії приносить гравцю, який зайняв у ньому певне місце.', // gaining.php, gaining.php
 'use a different formula when what is scored is a subseries rather than a tournament' => 'використовувати іншу формулу, коли рахується підсерія, а не турнір', // gaining.php, gaining.php
 'Tournaments counted' => 'Скільки турнірів враховується', // gaining.php, gaining.php
-'count only the best' => 'враховувати лише найкращі', // gaining.php, scoring.php, gaining.php, scoring.php
+'count only the best' => 'враховувати лише найкращі', // gaining.php, normalizer.php, gaining.php, normalizer.php
 'tournaments of each player' => 'турнірів кожного гравця', // gaining.php, gaining.php
 'Values calculated once' => 'Значення, що обчислюються один раз', // gaining.php, gaining.php
 'Calculated once for the whole competition. Order matters - each one may use those above it.' => 'Обчислюються один раз на все змагання. Порядок важливий: кожне значення може використовувати ті, що вище.', // gaining.php, gaining.php
@@ -2209,7 +2209,9 @@ $labelMenu = array (
 'A gaining system has to be meant for at least one type of series.' => 'Серійна система підрахунку балів має бути призначена хоча б для одного типу серій.', // api/ops/gaining.php, api/ops/gaining.php
 'Try the new look of the site' => 'Спробуйте новий вигляд сайту', // index.php, index.php
 'It is still being tested. Please tell us what is wrong with it.' => 'Він ще перевіряється. Розкажіть нам, що в ньому не так.', // index.php, index.php
-'games of each player. The bonus points of the rounds count all the same.' => 'ігор кожного гравця. Додаткові бали ігрових днів зараховуються в будь-якому разі.', // scoring.php, scoring.php
+'Not counted: only the best games of a player count here.' => 'Не зарахована: тут зараховуються лише найкращі ігри гравця.', // tournament_player.php, tournament_player.php
+'Games counted' => 'Ігри, що зараховуються', // normalizer.php, normalizer.php
+'every game counts' => 'зараховуються всі ігри', // normalizer.php, normalizer.php
 'A player who is not in this round\'s seating can only take somebody\'s place in every game of the round. To change one game only, change the player in the game itself.' => 'Гравця, якого немає в розсадці раунду, можна поставити на чиєсь місце лише в усіх турах одразу. Щоб поміняти в одному турі, поміняйте гравця просто в грі.', // api/ops/event.php, form/seating_edit.php, api/ops/event.php, form/seating_edit.php
 'town\'s vicory' => 'перемога міста', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'перемога мафії', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php, address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
@@ -2232,9 +2234,7 @@ $labelMenu = array (
 'Sheriff\'s check' => 'Перевірка шерифа', // plugins/obs/obs.php, plugins/obs/obs.php
 'Don\'s checks' => 'Перевірки дона', // streams.php, streams.php
 'Sheriff\'s checks' => 'Перевірки шерифа', // streams.php, streams.php
-'Not counted: only the best games of a player count here.' => 'Не зарахована: тут зараховуються лише найкращі ігри гравця.', // event_player.php, tournament_player.php
-'Games counted' => 'Ігри, що зараховуються', // scoring.php
-'every game counts' => 'зараховуються всі ігри', // scoring.php
+'games of each player in a tournament. The bonus points of the rounds count all the same.' => 'ігор кожного гравця в турнірі. Додаткові бали ігрових днів зараховуються в будь-якому разі.', // normalizer.php
 );
 
 return $labelMenu;

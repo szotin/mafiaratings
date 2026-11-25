@@ -1364,10 +1364,10 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
             $player->$g += $$g;
         }
     }
-
-	// A scoring that counts only the best games of a player keeps what each game brought, so that
-	// the ones left out can be taken back once all of them are in - see apply_max_games(). The
-	// list is started by whatever is being scored, a tournament or an event, only when it is needed.
+	
+	// A tournament whose normalizer counts only the best games of a player keeps what each game
+	// brought, so that the ones left out can be taken back once all of them are in - see
+	// apply_max_games(). The list is started by the tournament, only when it is needed.
 	if (isset($player->__game_parts))
 	{
 		$part = new stdClass();
@@ -1499,18 +1499,18 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 	}
 }
 
-// A scoring with maxGames counts only that many of a player's best games in what it scores - a
-// tournament, or an event, which may be a long one of its own - the ones that brought
-// the most points, an earlier game before a later one when two brought the same. Once every game
-// is scored, this takes back what the others brought: from the points, the mvp points, the groups,
-// the policies and the roles. The games left out stay in the list of games, marked ->counted =
+// A normalizer with maxGames counts only that many of a player's best games in a tournament - the
+// ones that brought the most points, an earlier game before a later one when two brought the same.
+// It is done before the policies of the normalizer, so an average per game is over these games.
+// Once every game is scored, this takes back what the others brought: from the points, the mvp
+// points, the groups, the policies and the roles. The games left out stay in the list of games, marked ->counted =
 // false, and they still count as played - for the number of games, the wins and the ties. The
 // running totals of the history are not taken back: they say how the tournament went game after
 // game, and which games are the best is only known at the end of it.
 //
 // $player->counted_games_count is the number of games that count. It is there only when the
-// scoring has maxGames; without it every game counts and nothing is added to the player.
-function apply_max_games($player, $scoring)
+// normalizer has maxGames; without it every game counts and nothing is added to the player.
+function apply_max_games($player, $normalizer)
 {
 	global $_scoring_groups;
 
@@ -1521,7 +1521,7 @@ function apply_max_games($player, $scoring)
 	$parts = $player->__game_parts;
 	unset($player->__game_parts);
 
-	$max_games = isset($scoring->maxGames) ? (int)$scoring->maxGames : 0;
+	$max_games = isset($normalizer->maxGames) ? (int)$normalizer->maxGames : 0;
 	if ($max_games < 1 || count($parts) <= $max_games)
 	{
 		$player->counted_games_count = min($player->games_count, count($parts));
@@ -1843,10 +1843,6 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 		$player->club_reg_flags = (int)$row[14];
 
         init_player_score($player, $scoring, $lod_flags);
-		if (isset($scoring->maxGames))
-		{
-			$player->__game_parts = array(); // see apply_max_games()
-		}
         $players[$player->id] = $player;
 	}
 	
@@ -1904,14 +1900,7 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 		add_player_counters($p->counters[1], $scoring, $flags, $role);
 		add_player_score($p, $p->counters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options, $mr_points, NULL, $table_num, $game_num);
 	}
-
-	// Only the best games of each player, if the scoring says so - the extra points below are not
-	// a game, so they are added whatever was left out here.
-	foreach ($players as $player)
-	{
-		apply_max_games($player, $scoring);
-	}
-
+	
 	// Add event extra points
 	$query = new DbQuery('SELECT user_id, points, mvp FROM event_extra_points WHERE event_id = ?', $event_id);
 	if (!$show_extra_points)
@@ -2184,9 +2173,9 @@ function set_player_normalization($player, $max_games_played, $max_rounds_played
 					$min = isset($policy->gameAv->min) ? $policy->gameAv->min : 0;
 					$minPercOfMax = isset($policy->gameAv->minPercOfMax) ? round($policy->gameAv->minPercOfMax * $max_games_played / 100) : 0;
 					// An average over the games that count: with only the best of them counted, the
-				// points are those of the best games, and so is what they are divided by.
-				$counted = isset($player->counted_games_count) ? $player->counted_games_count : $player->games_count;
-				$games_count = max(max($counted + $add, $min), $minPercOfMax);
+					// points are those of the best games, and so is what they are divided by.
+					$counted = isset($player->counted_games_count) ? $player->counted_games_count : $player->games_count;
+					$games_count = max(max($counted + $add, $min), $minPercOfMax);
 					if ($games_count > 0)
 					{
 						$multiplier = 1 / $games_count;
@@ -2443,16 +2432,16 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		$max_rounds_played = max($max_rounds_played, $player->events_count);
 		
 		init_player_score($player, $scoring, $lod_flags);
-		if (isset($scoring->maxGames))
+		if (isset($normalizer->maxGames))
 		{
 			$player->__game_parts = array(); // see apply_max_games()
 		}
 		$players[$player->id] = $player;
 	}
-
+	
 	// Create evaluators
 	create_scoring_evaluators($scoring);
-
+	
     if ($tournament_flags & TOURNAMENT_FLAG_LONG_TERM)
     {
         // echo '<pre>';
@@ -2685,11 +2674,11 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		}
     }
 	
-	// Only the best games of each player, if the scoring says so. The extra points of the rounds
+	// Only the best games of each player, if the normalizer says so. The extra points of the rounds
 	// below are not a game, so they are added whatever was left out here.
 	foreach ($players as $player)
 	{
-		apply_max_games($player, $scoring);
+		apply_max_games($player, $normalizer);
 	}
 
 	// Add event extra points

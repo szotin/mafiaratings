@@ -1950,7 +1950,7 @@ $labelMenu = array (
 'What one tournament of the series brings a player who took a given place in it.' => 'Сколько один турнир серии приносит игроку, занявшему в нём определённое место.', // gaining.php
 'use a different formula when what is scored is a subseries rather than a tournament' => 'использовать другую формулу, когда считается подсерия, а не турнир', // gaining.php
 'Tournaments counted' => 'Сколько турниров учитывается', // gaining.php
-'count only the best' => 'учитывать только лучшие', // gaining.php, scoring.php
+'count only the best' => 'учитывать только лучшие', // gaining.php, normalizer.php
 'tournaments of each player' => 'турниров каждого игрока', // gaining.php
 'Values calculated once' => 'Значения, считаемые один раз', // gaining.php
 'Calculated once for the whole competition. Order matters - each one may use those above it.' => 'Считаются один раз на все соревнование. Порядок важен: каждое значение может использовать те, что выше.', // gaining.php
@@ -2209,7 +2209,9 @@ $labelMenu = array (
 'A gaining system has to be meant for at least one type of series.' => 'Серийная система подсчёта баллов должна быть предназначена хотя бы для одного типа серий.', // api/ops/gaining.php
 'Try the new look of the site' => 'Попробуйте новый вид сайта', // index.php
 'It is still being tested. Please tell us what is wrong with it.' => 'Он ещё проверяется. Расскажите нам, что в нём не так.', // index.php
-'games of each player. The bonus points of the rounds count all the same.' => 'игр каждого игрока. Дополнительные баллы игровых дней засчитываются в любом случае.', // scoring.php
+'Not counted: only the best games of a player count here.' => 'Не засчитана: здесь засчитываются только лучшие игры игрока.', // tournament_player.php
+'Games counted' => 'Засчитываемые игры', // normalizer.php
+'every game counts' => 'засчитываются все игры', // normalizer.php
 'A player who is not in this round\'s seating can only take somebody\'s place in every game of the round. To change one game only, change the player in the game itself.' => 'Игрока, которого нет в рассадке раунда, можно поставить на чьё-то место только во всех турах сразу. Чтобы поменять в одном туре, поменяйте игрока прямо в игре.', // api/ops/event.php, form/seating_edit.php
 'town\'s vicory' => 'победа города', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
 'mafia\'s vicory' => 'победа мафии', // address_games.php, club_games.php, event_games.php, games.php, league_games.php, series_games.php, tournament_games.php, user_games.php
@@ -2232,9 +2234,7 @@ $labelMenu = array (
 'Sheriff\'s check' => 'Проверка шерифа', // plugins/obs/obs.php
 'Don\'s checks' => 'Проверки дона', // streams.php
 'Sheriff\'s checks' => 'Проверки шерифа', // streams.php
-'Not counted: only the best games of a player count here.' => 'Не засчитана: здесь засчитываются только лучшие игры игрока.', // event_player.php, tournament_player.php
-'Games counted' => 'Засчитываемые игры', // scoring.php
-'every game counts' => 'засчитываются все игры', // scoring.php
+'games of each player in a tournament. The bonus points of the rounds count all the same.' => 'игр каждого игрока в турнире. Дополнительные баллы игровых дней засчитываются в любом случае.', // normalizer.php
 );
 
 return $labelMenu;
