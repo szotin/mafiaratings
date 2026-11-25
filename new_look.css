@@ -2065,3 +2065,49 @@ a.ach:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .reg-p b { max-width: 100%; font-size: 12.5px; font-weight: 650; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reg-p span:not(.av) { max-width: 100%; font-size: 11px; color: var(--slate); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 639px) { .reg-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .reg-users { min-height: 0; } }
+
+/* The race of a competition (include/race.php, race.js): the top twenty after every game, the rows
+   sliding to their new places as the scores cross, a bar under each name as long as its score. */
+.race { --race-row: 46px; --race-track-off: 120px; background: var(--paper); border-radius: 20px; box-shadow: var(--shadow-card); padding: 18px 18px 14px; }
+@media (min-width: 640px) { .race { padding: 22px 24px 18px; } }
+.race-hd { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; }
+.race-when { display: grid; gap: 2px; min-width: 0; }
+.race-when b { font: 600 clamp(20px, 3vw, 28px)/1.1 var(--font-display); text-transform: uppercase; letter-spacing: .02em; color: var(--ink); }
+.race-when span { font-size: 13px; color: var(--slate); }
+.race-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; flex: 1 1 260px; max-width: 600px; }
+.race-play { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: 50%; background: var(--red); color: #fff; cursor: pointer; box-shadow: 0 8px 20px -10px var(--red-glow); }
+.race-play:hover { background: var(--red-hi); }
+.race-play .ic { width: 20px; height: 20px; }
+.race-reset { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--frost); color: var(--ink); cursor: pointer; }
+.race-reset:hover { background: var(--night); color: #fff; }
+.race-reset .ic { width: 16px; height: 16px; }
+.race-speed { flex: none; display: inline-flex; padding: 3px; border-radius: 999px; background: var(--frost); }
+.race-speed button { height: 28px; min-width: 34px; padding: 0 8px !important; border: 0 !important; border-radius: 999px; background: none !important; box-shadow: none !important; font: 600 13px var(--font); color: var(--slate); cursor: pointer; }
+.race-speed button:hover { color: var(--ink); }
+.race-speed button[aria-pressed="true"] { background: var(--night) !important; color: #fff; }
+.race-ctl input[type=range] { flex: 1 1 120px; min-width: 0; accent-color: var(--red); }
+.race-progress { height: 4px; margin: 14px 0 10px; border-radius: 2px; background: var(--frost); overflow: hidden; }
+.race-progress span { display: block; height: 100%; width: 0; background: var(--red); }
+.race-list { position: relative; list-style: none; margin: 0; padding: 0; overflow: hidden; }
+.race-row { position: absolute; left: 0; right: 0; top: 0; height: var(--race-row); display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  opacity: 0; pointer-events: none; transition: opacity .35s; will-change: transform; }
+.race-row.on { opacity: 1; pointer-events: auto; }
+.race-row .rb { position: absolute; left: 44px; top: 7px; bottom: 7px; border-radius: 8px; background: #DCE8F6; z-index: 0; }
+.race-row.c2 .rb { background: #E4E1F3; } .race-row.c3 .rb { background: #DDEFEA; } .race-row.c4 .rb { background: #F3E6DC; }
+.race-row.c5 .rb { background: #E6EAF0; } .race-row.c6 .rb { background: #F4E1E4; }
+.race-row.me .rb { background: #F7D5D5; box-shadow: inset 0 0 0 2px var(--red); }
+.race-row .rn { position: relative; z-index: 1; font: 600 16px var(--font-display); color: var(--slate); text-align: center; }
+.race-row .who { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; min-width: 0; padding-left: 8px; text-decoration: none; }
+.race-row .who .av { width: 30px; height: 30px; font-size: 12px; }
+.race-row .who-name { font-weight: 650; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.race-row .who:hover .who-name { color: var(--red); }
+.race-row .rc { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--rule); background: #fff; object-fit: contain; }
+.race-row span.rc { display: inline-grid; place-items: center; font-size: 9px; }
+.race-row .rv { position: relative; z-index: 1; min-width: 64px; text-align: right; font: 600 16px var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.race-none { margin: 12px 0; padding: 14px 16px; border-radius: 12px; background: var(--frost); color: var(--slate); }
+.toolbar + .race { margin-top: 14px; }
+@media (max-width: 639px) {
+  .race { --race-row: 42px; --race-track-off: 104px; }
+  .race-row .rv { min-width: 52px; font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .race-row { transition: none; } } /* and race.js does not play it */

@@ -1,146 +1,116 @@
-<?php 
+<?php
 
 require_once 'include/tournament.php';
 require_once 'include/general_page_base.php';
 require_once 'include/scoring.php';
-require_once 'include/chart.php';
+require_once 'include/picture.php';
+require_once 'include/race.php';
+require_once 'include/rounds.php';
 
-define('NUM_PLAYERS', 4);
-
+// The race of a tournament: its top twenty after every game, played back. The chart of a few
+// players it used to be is tournament_competition_chart.php.
 class Page extends TournamentPageBase
 {
-	private $players_list;
-	private $first;
-	
+	private $race;
+
 	protected function prepare()
 	{
-		global $_profile;
 		parent::prepare();
-		
-		$this->first = 0;
-		if (isset($_REQUEST['first']))
-		{
-			$this->first = (int)$_REQUEST['first'];
-		}
-		
-		list($this->scoring) =  Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
+
+		list($scoring) = Db::record(get_label('scoring'), 'SELECT scoring FROM scoring_versions WHERE scoring_id = ? AND version = ?', $this->scoring_id, $this->scoring_version);
 		if ($this->normalizer_id != NULL && $this->normalizer_id > 0)
 		{
-			list($this->normalizer) =  Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
+			list($normalizer) = Db::record(get_label('scoring normalizer'), 'SELECT normalizer FROM normalizer_versions WHERE normalizer_id = ? AND version = ?', $this->normalizer_id, $this->normalizer_version);
 		}
 		else
 		{
-			$this->normalizer = '{}';
+			$normalizer = '{}';
 		}
-		$this->scoring_options = json_decode($this->scoring_options);
-		$this->scoring = json_decode($this->scoring);
-		$this->scoring->id = (int)$this->scoring_id; // it is needed for caching
-		$this->scoring->version = (int)$this->scoring_version; // it is needed for caching
-		$this->normalizer = json_decode($this->normalizer);
-		$this->normalizer->id = (int)$this->normalizer_id; // it is needed for caching
-		$this->normalizer->version = (int)$this->normalizer_version; // it is needed for caching
-        $players = tournament_scores($this->id, $this->flags, NULL, 0, $this->scoring, $this->normalizer, $this->scoring_options);
-		$players_count = count($players);
-		
-		$separator = '';
-		$num = $this->first;
-		for ($i = 0; $i < NUM_PLAYERS; ++$i)
-		{
-			if ($num >= $players_count)
+		$scoring = json_decode($scoring);
+		$scoring->id = (int)$this->scoring_id; // it is needed for caching
+		$scoring->version = (int)$this->scoring_version;
+		$normalizer = json_decode($normalizer);
+		$normalizer->id = (int)$this->normalizer_id;
+		$normalizer->version = (int)$this->normalizer_version;
+		$players = tournament_scores($this->id, $this->flags, NULL, SCORING_LOD_HISTORY, $scoring, $normalizer, json_decode($this->scoring_options));
+
+		$pic =
+			new Picture(USER_TOURNAMENT_PICTURE,
+			new Picture(USER_CLUB_PICTURE,
+			$this->user_pic));
+		$id = $this->id;
+		$club_id = $this->club_id;
+		$params = '&id=' . $this->id . $this->show_all;
+		$this->race = race_scoring_players($players,
+			function($p) use ($pic, $id, $club_id)
 			{
-				break;
-			}
-			
-			$player = $players[$num];
-			$this->players_list .= $separator . $player->id;
-			$separator = ',';
-			++$num;
-		}
-		
-		while ($num < NUM_PLAYERS)
-		{
-			$this->players_list .= $separator;
-			++$num;
-		}
+				$pic->
+					set($p->id, $p->name, $p->tournament_reg_flags, 't' . $id)->
+					set($p->id, $p->name, $p->club_reg_flags, 'c' . $club_id)->
+					set($p->id, $p->name, $p->flags);
+				return card_avatar_of($pic, $p->id, $p->name, '');
+			},
+			function($p) use ($params)
+			{
+				return 'tournament_player.php?bck=1&user_id=' . $p->id . $params;
+			});
 	}
-	
-	protected function add_headers()
-	{
-		parent::add_headers();
-		add_chart_headers();
-	}
-	
+
 	protected function show_body()
 	{
 		if (!$this->show_hidden_table_message())
 		{
 			return;
 		}
-		
-		if (($this->flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
+		echo '<div class="toolbar">' . race_switch('tournament_competition.php?id=' . $this->id . $this->show_all, 'tournament_competition_chart.php?id=' . $this->id . $this->show_all, true) . '</div>';
+		if ($this->flags & TOURNAMENT_FLAG_LONG_TERM)
 		{
-			$scoring_select_flags = SCORING_SELECT_FLAG_NO_OPTIONS | SCORING_SELECT_FLAG_NO_NORMALIZER;
+			// A season is played over months: the day says where it is, the hour says nothing.
+			show_race($this->race, $this->timezone, array('days' => true, 'step' => get_label('Game [0] of [1]')));
 		}
 		else
 		{
-			$scoring_select_flags = SCORING_SELECT_FLAG_NO_WEIGHT_OPTION | SCORING_SELECT_FLAG_NO_GROUP_OPTION | SCORING_SELECT_FLAG_NO_NORMALIZER;
+			show_race($this->race, $this->timezone, array('moments' => $this->moments(), 'step' => get_label('Game [0] of [1]')));
 		}
-		
-		echo '<p><form method="get" name="viewForm" action="tournament_competition.php">';
-		echo '<input type="hidden" name="id" value="' . $this->id . '">';
-		show_scoring_select($this->club_id, $this->scoring_id, $this->scoring_version, $this->normalizer_id, $this->normalizer_version, $this->scoring_options, ' ', 'doUpdateChart', $scoring_select_flags);
-		echo '</form></p>';
-		
-		echo '<table width="100%"><tr><td width="36">';
-		if ($this->first > 0)
-		{
-			echo '<button class="navigate-btn" onclick="goPrev()"><img src="images/prev.png" class="text"></button>';
-		}
-		echo '</td><td>';
-		show_chart_legend();
-		echo '</td><td><td align="right" width="34"><button class="navigate-btn" onclick="goNext()"><img src="images/next.png" class="text"></button></td></tr></table>';
-		show_chart(CONTENT_WIDTH, floor(CONTENT_WIDTH/1.618)); // fibonacci golden ratio 1.618:1
 	}
-	
-	protected function js()
+
+	// The stage and the tour of each game of the tournament, by the moment it ended. The stage only
+	// where there is more than the main round - otherwise it is the tournament itself.
+	private function moments()
 	{
-		parent::js();
-?>		
-		function doUpdateChart(s)
+		$games = array();
+		$stages = false;
+		$query = new DbQuery(
+			'SELECT g.end_time, e.round, g.game_num FROM games g JOIN events e ON e.id = g.event_id' .
+			' WHERE g.tournament_id = ? AND (g.flags & ' . GAME_FLAG_CANCELED . ') = 0', $this->id);
+		while ($row = $query->next())
 		{
-			chartParams.scoring_id = s.sId;
-			chartParams.scoring_version = s.sVer;
-			chartParams.normalizer_id = s.nId;
-			chartParams.normalizer_version = s.nVer;
-			chartParams.scoring_options = s.opt;
-			updateChart();
+			$games[] = $row;
+			if ((int)$row[1] > 0)
+			{
+				$stages = true;
+			}
 		}
-	
-		function goNext()
+		$moments = array();
+		foreach ($games as $game)
 		{
-			goTo({first: <?php echo $this->first + 1; ?>});
+			list($end_time, $round, $game_num) = $game;
+			$what = array();
+			if ($stages)
+			{
+				$name = get_round_name((int)$round);
+				$what[] = mb_strtoupper(mb_substr($name, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($name, 1, NULL, 'UTF-8');
+			}
+			if (!is_null($game_num) && $game_num > 0)
+			{
+				$what[] = get_label('Game~seating') . ' ' . (int)$game_num;
+			}
+			if (count($what) > 0)
+			{
+				$moments[(int)$end_time] = implode(' · ', $what);
+			}
 		}
-		
-		function goPrev()
-		{
-			goTo({first: <?php echo $this->first - 1; ?>});
-		}
-<?php 
-	}
-	
-	protected function js_on_load()
-	{
-		parent::js_on_load();
-?>		
-		chartParams.type = "tournament";
-		chartParams.id = <?php echo $this->id; ?>;
-		chartParams.name = "<?php echo get_label('Competition chart'); ?>"; 
-		chartParams.players = "<?php echo $this->players_list; ?>";
-		chartParams.charts = <?php echo NUM_PLAYERS; ?>;
-		chartParams.tournament_id = <?php echo $this->id; ?>;
-		chartParams.show_all = <?php echo $this->show_all ? 'null' : 'undefined'; ?>;
-		initChart("<?php echo get_label('Points'); ?>");
-<?php 
+		return $moments;
 	}
 }
 

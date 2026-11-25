@@ -2359,6 +2359,15 @@ $labelMenu = array (
 'in [0] h' => 'за [0] год', // index.php
 'in [0] min' => 'за [0] хв', // index.php
 'ended' => 'завершився', // index.php
+'Race' => 'Перегони', // include/race.php
+'Chart' => 'Графік', // include/race.php
+'[0] of [1]' => '[0] з [1]', // include/race.php
+'Play~race' => 'Запустити', // include/race.php
+'Pause' => 'Пауза', // include/race.php
+'Where the race is' => 'Де зараз перегони', // include/race.php
+'No games have been played yet.' => 'Ще не зіграно жодної гри.', // include/race.php
+'To the start' => 'На початок', // include/race.php
+'Speed' => 'Швидкість', // include/race.php
 );
 
 return $labelMenu;

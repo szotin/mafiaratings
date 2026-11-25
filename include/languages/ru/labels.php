@@ -2358,6 +2358,15 @@ $labelMenu = array (
 'in [0] h' => 'через [0] ч', // index.php
 'in [0] min' => 'через [0] мин', // index.php
 'ended' => 'закончился', // index.php
+'Race' => 'Гонка', // include/race.php
+'Chart' => 'График', // include/race.php
+'[0] of [1]' => '[0] из [1]', // include/race.php
+'Play~race' => 'Запустить', // include/race.php
+'Pause' => 'Пауза', // include/race.php
+'Where the race is' => 'Где сейчас гонка', // include/race.php
+'No games have been played yet.' => 'Ещё не сыграно ни одной игры.', // include/race.php
+'To the start' => 'В начало', // include/race.php
+'Speed' => 'Скорость', // include/race.php
 );
 
 return $labelMenu;

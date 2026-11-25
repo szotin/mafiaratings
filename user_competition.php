@@ -1,68 +1,43 @@
-<?php 
+<?php
 
 require_once 'include/user.php';
-require_once 'include/chart.php';
+require_once 'include/picture.php';
+require_once 'include/race.php';
 
-define('NUM_PLAYERS', 5);
+define('USER_RACE_ABOVE', 10); // the players above this one in the rating the race is of
 
+// The race of a player against their neighbours in the rating: the twenty around them now, played
+// back from the first rating game of any of them. The chart it used to be is
+// user_competition_chart.php.
 class Page extends UserPageBase
 {
-	private $players_list;
-	
+	private $race;
+
 	protected function prepare()
 	{
 		parent::prepare();
-		
-		$rating_pos = -1;
+
+		$ids = array();
 		$query = new DbQuery('SELECT rating, games, games_won FROM users WHERE id = ?', $this->id);
 		if ($row = $query->next())
 		{
 			list ($rating, $games, $won) = $row;
-			list ($rating_pos) = Db::record(get_label('rating'), 
-				'SELECT count(*) FROM users WHERE games > 0 AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?))))))', 
+			list ($pos) = Db::record(get_label('rating'),
+				'SELECT count(*) FROM users WHERE games > 0 AND (rating > ? OR (rating = ? AND (games < ? OR (games = ? AND (games_won > ? OR (games_won = ? AND id < ?))))))',
 				$rating, $rating, $games, $games, $won, $won, $this->id);
+			$query = new DbQuery('SELECT u.id FROM users u WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . max(0, $pos - USER_RACE_ABOVE) . ',' . RACE_TOP);
+			while ($row = $query->next())
+			{
+				$ids[] = (int)$row[0];
+			}
 		}
-		
-		$rating_page = $rating_pos - 2;
-		if ($rating_page < 0)
-		{
-			$rating_page = 0;
-		}
-		
-		$separator = '';
-		$this->players_list = '';
-		$query = new DbQuery('SELECT u.id FROM users u WHERE u.games > 0 ORDER BY u.rating DESC, u.games, u.games_won DESC, u.id LIMIT ' . $rating_page . ',5');
-		while ($row = $query->next())
-		{
-			list ($user_id) = $row;
-			$this->players_list .= $separator . $user_id;
-			$separator = ',';
-		}
+		$this->race = race_rating_players(new SQL('TRUE'), $ids);
 	}
-	
-	protected function add_headers()
-	{
-		parent::add_headers();
-		add_chart_headers();
-	}
-	
+
 	protected function show_body()
 	{
-		show_chart_legend();
-		show_chart(CONTENT_WIDTH, floor(CONTENT_WIDTH/1.618)); // fibonacci golden ratio 1.618:1
-	}
-	
-	protected function js_on_load()
-	{
-		parent::js();
-?>
-		chartParams.type = "rating";
-		chartParams.name = "<?php echo get_label('Competition chart'); ?>";
-		chartParams.players = "<?php echo $this->players_list; ?>";
-		chartParams.charts = "<?php echo NUM_PLAYERS; ?>";
-		chartParams.main = <?php echo $this->id; ?>;
-		initChart("<?php echo get_label('Rating'); ?>");
-<?php
+		echo '<div class="toolbar">' . race_switch('user_competition.php?id=' . $this->id, 'user_competition_chart.php?id=' . $this->id, true) . '</div>';
+		show_race($this->race, get_timezone(), array('rating' => true, 'me' => $this->id));
 	}
 }
 
