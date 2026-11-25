@@ -1364,7 +1364,30 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
             $player->$g += $$g;
         }
     }
-	
+
+	// A scoring that counts only the best games of a player keeps what each game brought, so that
+	// the ones left out can be taken back once all of them are in - see apply_max_games(). The
+	// list is started by whatever is being scored, a tournament or an event, only when it is needed.
+	if (isset($player->__game_parts))
+	{
+		$part = new stdClass();
+		$part->points = $total_points;
+		$part->mvp_points = $total_mvp_points;
+		$part->role = (int)$game_role;
+		$part->groups = array();
+		if ($lod_flags & SCORING_LOD_PER_GROUP)
+		{
+			foreach ($_scoring_groups as $group)
+			{
+				$g = $group . '_points';
+				$part->groups[$g] = $$g;
+			}
+		}
+		$part->policies = ($lod_flags & SCORING_LOD_PER_POLICY) ? $per_policy : NULL;
+		$part->game = ($lod_flags & SCORING_LOD_PER_GAME) ? count($player->games) : -1; // the index it is about to get
+		$player->__game_parts[] = $part;
+	}
+
     if ($lod_flags & SCORING_LOD_PER_POLICY)
     {
         foreach ($_scoring_groups as $group)
@@ -1474,6 +1497,94 @@ function add_player_score($player, &$counters, $scoring, $game_id, $game_end_tim
 			}
         }
 	}
+}
+
+// A scoring with maxGames counts only that many of a player's best games in what it scores - a
+// tournament, or an event, which may be a long one of its own - the ones that brought
+// the most points, an earlier game before a later one when two brought the same. Once every game
+// is scored, this takes back what the others brought: from the points, the mvp points, the groups,
+// the policies and the roles. The games left out stay in the list of games, marked ->counted =
+// false, and they still count as played - for the number of games, the wins and the ties. The
+// running totals of the history are not taken back: they say how the tournament went game after
+// game, and which games are the best is only known at the end of it.
+//
+// $player->counted_games_count is the number of games that count. It is there only when the
+// scoring has maxGames; without it every game counts and nothing is added to the player.
+function apply_max_games($player, $scoring)
+{
+	global $_scoring_groups;
+
+	if (!isset($player->__game_parts))
+	{
+		return;
+	}
+	$parts = $player->__game_parts;
+	unset($player->__game_parts);
+
+	$max_games = isset($scoring->maxGames) ? (int)$scoring->maxGames : 0;
+	if ($max_games < 1 || count($parts) <= $max_games)
+	{
+		$player->counted_games_count = min($player->games_count, count($parts));
+		return;
+	}
+
+	$order = array_keys($parts);
+	usort($order, function($a, $b) use ($parts)
+	{
+		if ($parts[$a]->points > $parts[$b]->points + 0.00001)
+		{
+			return -1;
+		}
+		if ($parts[$b]->points > $parts[$a]->points + 0.00001)
+		{
+			return 1;
+		}
+		return $a - $b;
+	});
+
+	for ($n = $max_games; $n < count($order); ++$n)
+	{
+		$part = $parts[$order[$n]];
+		$targets = array($player);
+		if (isset($player->roles[$part->role]))
+		{
+			$targets[] = $player->roles[$part->role];
+		}
+		foreach ($targets as $t)
+		{
+			$t->points -= $part->points;
+			$t->mvp_points -= $part->mvp_points;
+			foreach ($part->groups as $g => $value)
+			{
+				if (isset($t->$g))
+				{
+					$t->$g -= $value;
+				}
+			}
+			if (!is_null($part->policies))
+			{
+				foreach ($_scoring_groups as $group)
+				{
+					if (!isset($t->$group) || !isset($part->policies->$group))
+					{
+						continue;
+					}
+					$values = $part->policies->$group;
+					$target = &$t->$group;
+					for ($i = 0; $i < count($values) && $i < count($target); ++$i)
+					{
+						$target[$i] -= $values[$i];
+					}
+					unset($target);
+				}
+			}
+		}
+		if ($part->game >= 0 && isset($player->games[$part->game]))
+		{
+			$player->games[$part->game]->counted = false;
+		}
+	}
+	$player->counted_games_count = $max_games;
 }
 
 function compare_scores($player1, $player2, $scoring)
@@ -1732,6 +1843,10 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 		$player->club_reg_flags = (int)$row[14];
 
         init_player_score($player, $scoring, $lod_flags);
+		if (isset($scoring->maxGames))
+		{
+			$player->__game_parts = array(); // see apply_max_games()
+		}
         $players[$player->id] = $player;
 	}
 	
@@ -1789,7 +1904,14 @@ function _event_scores($event_id, $players_list, $lod_flags, $scoring, $options,
 		add_player_counters($p->counters[1], $scoring, $flags, $role);
 		add_player_score($p, $p->counters, $scoring, $game_id, $game_end_time, $flags, $role, $extra_points, $red_win_rate, $lod_flags, $options, $mr_points, NULL, $table_num, $game_num);
 	}
-	
+
+	// Only the best games of each player, if the scoring says so - the extra points below are not
+	// a game, so they are added whatever was left out here.
+	foreach ($players as $player)
+	{
+		apply_max_games($player, $scoring);
+	}
+
 	// Add event extra points
 	$query = new DbQuery('SELECT user_id, points, mvp FROM event_extra_points WHERE event_id = ?', $event_id);
 	if (!$show_extra_points)
@@ -2061,7 +2183,10 @@ function set_player_normalization($player, $max_games_played, $max_rounds_played
 					$add = isset($policy->gameAv->add) ? $policy->gameAv->add : 0;
 					$min = isset($policy->gameAv->min) ? $policy->gameAv->min : 0;
 					$minPercOfMax = isset($policy->gameAv->minPercOfMax) ? round($policy->gameAv->minPercOfMax * $max_games_played / 100) : 0;
-					$games_count = max(max($player->games_count + $add, $min), $minPercOfMax);
+					// An average over the games that count: with only the best of them counted, the
+				// points are those of the best games, and so is what they are divided by.
+				$counted = isset($player->counted_games_count) ? $player->counted_games_count : $player->games_count;
+				$games_count = max(max($counted + $add, $min), $minPercOfMax);
 					if ($games_count > 0)
 					{
 						$multiplier = 1 / $games_count;
@@ -2318,12 +2443,16 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		$max_rounds_played = max($max_rounds_played, $player->events_count);
 		
 		init_player_score($player, $scoring, $lod_flags);
+		if (isset($scoring->maxGames))
+		{
+			$player->__game_parts = array(); // see apply_max_games()
+		}
 		$players[$player->id] = $player;
 	}
-	
+
 	// Create evaluators
 	create_scoring_evaluators($scoring);
-	
+
     if ($tournament_flags & TOURNAMENT_FLAG_LONG_TERM)
     {
         // echo '<pre>';
@@ -2556,6 +2685,13 @@ function _tournament_scores($tournament_id, $tournament_flags, $players_list, $l
 		}
     }
 	
+	// Only the best games of each player, if the scoring says so. The extra points of the rounds
+	// below are not a game, so they are added whatever was left out here.
+	foreach ($players as $player)
+	{
+		apply_max_games($player, $scoring);
+	}
+
 	// Add event extra points
 	$query = new DbQuery('SELECT p.event_id, p.user_id, p.points, p.mvp FROM event_extra_points p JOIN events e ON e.id = p.event_id WHERE e.tournament_id = ?', $tournament_id, hiding_events_condition($table_hiding, true));
 	while ($row = $query->next())

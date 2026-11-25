@@ -261,7 +261,17 @@ class Page extends TournamentPageBase
 		
 		foreach ($this->player->games as $game)
 		{
-			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&tournament_id=' . $this->id . '&id=' . $game->game_id . '&bck=1' . $this->show_all . '">';
+			// A game that is not among the best ones the scoring counts - see apply_max_games(). It is
+			// shown with what it brought, which is not in the total.
+			if (isset($game->counted) && !$game->counted)
+			{
+				echo '<tr align="center" style="opacity: 0.45;" title="' . get_label('Not counted: only the best games of a player count here.') . '">';
+			}
+			else
+			{
+				echo '<tr align="center">';
+			}
+			echo '<td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&tournament_id=' . $this->id . '&id=' . $game->game_id . '&bck=1' . $this->show_all . '">';
 			if (!isset($game->game_num))
 			{
 				echo get_label('Game #[0]', $game->game_id);

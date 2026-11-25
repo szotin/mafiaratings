@@ -1,6 +1,7 @@
 var _data = null;
 var _isDirty = false;
 var _onChangeData = null;
+var _lastMaxGames = 20;
 
 function isScoringDataCorrect()
 {
@@ -577,6 +578,56 @@ function versionSelectHtml()
 	return html + '</select>';
 }
 
+//--------------------------------------------------------------------------------------
+// maxGames - how many of a player's best games count in a tournament; absent means all of them
+//--------------------------------------------------------------------------------------
+function maxGamesToggle()
+{
+	if ($("#scoring-limit-games").attr('checked'))
+	{
+		_data.scoring.maxGames = _lastMaxGames;
+	}
+	else
+	{
+		// Absent, not zero: absent is what counts every game.
+		delete _data.scoring.maxGames;
+	}
+	refreshScoringEditor(true);
+}
+
+function maxGamesChange()
+{
+	var value = parseInt($("#scoring-max-games").val());
+	if (isNaN(value) || value < 1)
+	{
+		value = 1;
+	}
+	_data.scoring.maxGames = _lastMaxGames = value;
+	dirty(true);
+}
+
+// One line either way, saying what actually happens: with the box clear every game counts and no
+// number is shown at all.
+function maxGamesHtml()
+{
+	var limited = typeof _data.scoring.maxGames != "undefined";
+	var html = '<tr class="darker"><td colspan="5"><b>' + _data.strings.maxGames + '</b></td></tr>';
+	html += '<tr><td colspan="5"><input type="checkbox" class="toggle" id="scoring-limit-games" onclick="maxGamesToggle()"' + (limited ? ' checked' : '') + '> ';
+	if (limited)
+	{
+		html += _data.strings.countBestGames +
+			' <input type="number" min="1" step="1" style="width: 60px; vertical-align: middle;" id="scoring-max-games"' +
+			' value="' + _data.scoring.maxGames + '" oninput="maxGamesChange()"> ' + _data.strings.countBestGamesPost;
+	}
+	else
+	{
+		html += _data.strings.allGames;
+	}
+	html += '</td></tr>';
+	html += '<tr class="light"><td colspan="5"></td></tr>';
+	return html;
+}
+
 function refreshScoringEditor(isDirty)
 {
     var html = '<table width="100%" class="bordered dark">';
@@ -600,6 +651,7 @@ function refreshScoringEditor(isDirty)
         html += sectionHtml(sectionName);
 	}
 	html += countersHtml();
+	html += maxGamesHtml();
 	html += sortingHtml();
 	html += '</table>';
     
@@ -632,5 +684,9 @@ function initScoringEditor(data, onChangeData)
 {
     _data = data;
 	_onChangeData = onChangeData;
+	if (typeof _data.scoring.maxGames != "undefined")
+	{
+		_lastMaxGames = _data.scoring.maxGames;
+	}
     refreshScoringEditor();
 }

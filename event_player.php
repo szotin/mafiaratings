@@ -228,7 +228,17 @@ class Page extends EventPageBase
 		
 		foreach ($this->player->games as $game)
 		{
-			echo '<tr align="center"><td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->id . '&id=' . $game->game_id . $this->show_all . '&bck=1">';
+			// A game that is not among the best ones the scoring counts - see apply_max_games(). It is
+			// shown with what it brought, which is not in the total.
+			if (isset($game->counted) && !$game->counted)
+			{
+				echo '<tr align="center" style="opacity: 0.45;" title="' . get_label('Not counted: only the best games of a player count here.') . '">';
+			}
+			else
+			{
+				echo '<tr align="center">';
+			}
+			echo '<td><table width="100%" class="transp"><tr><td><a href="view_game.php?user_id=' . $this->player->id . '&event_id=' . $this->id . '&id=' . $game->game_id . $this->show_all . '&bck=1">';
 			if (!isset($game->game_num))
 			{
 				echo get_label('Game #[0]', $game->game_id);
