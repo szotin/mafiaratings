@@ -184,7 +184,16 @@ try
 	{
 		var _langs = mr.getLangs('form-');
 		var _addr = $("#form-addr_id").val();
-		
+
+		// A round is one sitting, the same as an event of its own. A tournament played over more
+		// days than that has a round for each of them - that is what rounds are for.
+		var _duration = strToTimespan($("#form-duration").val());
+		if (_duration > <?php echo EVENT_MAX_DURATION; ?>)
+		{
+			dlg.error(<?php echo json_encode(event_too_long_message(true)); ?>);
+			return;
+		}
+
 		var _flags = 0;
 		if ($("#form-all_mod").attr('checked')) _flags |= <?php echo EVENT_FLAG_ALL_CAN_REFEREE; ?>;
 		if (!$("#form-show-roles").attr('checked')) _flags |= <?php echo EVENT_FLAG_HIDE_ROLES; ?>;
@@ -198,7 +207,7 @@ try
 			, club_id: <?php echo $club_id; ?>
 			, tournament_id: <?php echo $tournament_id; ?>
 			, round_num: $("#form-round").val()
-			, duration: strToTimespan($("#form-duration").val())
+			, duration: _duration
 			, address_id: _addr
 			, notes: $("#form-notes").val()
 			, flags: _flags

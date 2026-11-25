@@ -558,24 +558,15 @@ var mr = new function()
 		dlg.form("form/event_extend.php?id=" + id, refr, 400);
 	}
 	
-    this.convertEventToTournament = function(id, confirmMessage)
+	// The dialog asks what kind of tournament, which is what decides whether the event stays whole
+	// as the only round of it or is dealt out into the sittings of a season - see the to_tournament
+	// op in api/ops/event.php. Its Ok is the confirmation this used to ask for on its own.
+	this.convertEventToTournament = function(id)
 	{
-		function _convert()
+		dlg.form("form/event_to_tournament.php?id=" + id, function(data)
 		{
-			json.post("api/ops/event.php", { op: "to_tournament", event_id: id }, function(data)
-			{
-				goTo("tournament_info.php?id=" + data.tournament_id);
-			});
-		}
-		
-		if (isString(confirmMessage))
-		{
-			dlg.yesNo(confirmMessage, null, null, _convert);
-		}
-		else
-		{
-			_cancel();
-		}
+			goTo("tournament_info.php?id=" + data.tournament_id);
+		}, 400);
 	}
 	
 	this.addEventReg = function(id, onSuccess)

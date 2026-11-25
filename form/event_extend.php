@@ -20,11 +20,16 @@ try
 
 	$time = time();
 	$def_extend = 3 * 3600;
-	
+
+	// An event is one sitting, so it can not be played on past the limit. An event that is already
+	// longer - a few old ones are, and a round of a tournament played over a week is - keeps what
+	// it has: it can be ended now or played to where it already reaches, just not past that.
+	$max_duration = max(EVENT_MAX_DURATION, (int)$duration);
+
 	echo '<table class="dialog_form" width="100%">';
 	echo '<tr><td width="100">' . get_label('We would like to').':</td><td>';
 	echo '<select id="duration">';
-	
+
 	if ($time < $start_time + $duration)
 	{
 		show_option(0, $def_extend, get_label('End event now'));
@@ -32,7 +37,7 @@ try
 	for ($i = 1; $i <= 12; ++$i)
 	{
 		$value = $i * 3600;
-		if ($time + $value > $start_time + $duration)
+		if ($time + $value > $start_time + $duration && $time - $start_time + $value <= $max_duration)
 		{
 			show_option($value, $def_extend, get_label('Play [0] more hours', $i));
 		}
@@ -40,7 +45,7 @@ try
 	for ($i = 1; $i <= 5; ++$i)
 	{
 		$value = $i * 86400;
-		if ($time + $value > $start_time + $duration)
+		if ($time + $value > $start_time + $duration && $time - $start_time + $value <= $max_duration)
 		{
 			show_option($value, $def_extend, get_label('Play [0] more days', $i));
 		}

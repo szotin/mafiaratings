@@ -294,7 +294,17 @@ try
 	{
 		var _langs = mr.getLangs('form-');
 		var _addr = $("#form-addr_id").val();
-		
+
+		// An event is one sitting. An event that is already longer - a few old ones are, and a
+		// round of a tournament played over a week is - can be kept as it is or shortened, just
+		// never made longer still.
+		var _duration = strToTimespan($("#form-duration").val());
+		if (_duration > <?php echo EVENT_MAX_DURATION; ?> && _duration > <?php echo (int)$duration; ?>)
+		{
+			dlg.error(<?php echo json_encode(event_too_long_message($tour_id > 0 && ($tour_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)); ?>);
+			return;
+		}
+
 		// Only the flags this form still has a box for. The awards are set on the Rules tab of
 		// the preparation page and the streaming on the streams page, and flags_mask keeps this
 		// form from clearing what either of them has set.
@@ -311,7 +321,7 @@ try
 			, tournament_id: $("#form-tournament").val()
 			, round_num: $("#form-round").val()
 			, start: $('#form-date').val() + 'T' + timeStr($('#form-time').val())
-			, duration: strToTimespan($("#form-duration").val())
+			, duration: _duration
 			, fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val())
 			, currency_id: $('#form-currency').val()
 			, address_id: _addr

@@ -49,7 +49,7 @@ try
 	echo '<tr><td>'.get_label('Dates').':</td><td>';
 	echo '<input type="date" id="form-start" value="' . $date . '" onchange="onMinDateChange()">';
 	echo '  ' . get_label('to') . '  ';
-	echo '<input type="date" id="form-end" value="' . $date . '" onchange="setSeries()">';
+	echo '<input type="date" id="form-end" value="' . $date . '" onchange="datesChanged()">';
 	echo '</td></tr>';
 	
 	$addr_id = -1;
@@ -124,6 +124,11 @@ try
 	echo '<tr><td>'.get_label('Notes').':</td><td><textarea id="form-notes" cols="80" rows="4"></textarea></td></tr>';
 	
 	echo '<tr><td colspan="2">';
+	// A tournament that runs for longer than one sitting is a season: it is played on the ordinary
+	// days of the club, not in rounds. Which is why this is ticked by itself for a tournament of
+	// more than EVENT_MAX_DURATION - see defaultLongTerm() below - and why it is the first thing
+	// here: everything else about the tournament follows from it.
+	echo '<input type="checkbox" id="form-long_term" onclick="longTermClick()"> ' . get_label('long term tournament. Like a seasonal club championship.') . '<br>';
 	echo '<input type="checkbox" id="form-manual_scoring"> ' . get_label('scoring is entered manually instead of calculating it from games results.') . '<br>';
 	if (is_permitted(PERMISSION_ADMIN))
 	{
@@ -242,8 +247,33 @@ try
 			}
 		});
 	}
-	setSeries();
-	
+	// Long-term is offered by the dates: a tournament longer than one sitting is a season. Once
+	// somebody has said so themselves, the dates stop having an opinion about it.
+	var longTermSet = false;
+	function longTermClick()
+	{
+		longTermSet = true;
+	}
+
+	function defaultLongTerm()
+	{
+		if (longTermSet)
+		{
+			return;
+		}
+		var _start = strToDate($('#form-start').val());
+		var _end = strToDate($('#form-end').val());
+		_end.setDate(_end.getDate() + 1); // inclusive
+		$('#form-long_term').prop('checked', _end.getTime() - _start.getTime() > <?php echo EVENT_MAX_DURATION; ?> * 1000);
+	}
+
+	function datesChanged()
+	{
+		defaultLongTerm();
+		setSeries();
+	}
+	datesChanged();
+
 	function starsChanged(control, stars)
 	{
 		var seriesId = control.id.substr(control.id.lastIndexOf('-')+1);
@@ -280,7 +310,7 @@ try
 		{
 			$('#form-end').val($('#form-start').val());
 		}
-		setSeries();
+		datesChanged();
 	}
 	
 	var oldAddressValue = "<?php echo $selected_address; ?>";
@@ -336,6 +366,7 @@ try
 		// What a new tournament starts with of what is set elsewhere now: MVP, best red and best
 		// black, its games streamed, the roles shown in the stream, and anybody may register.
 		var _flags = <?php echo TOURNAMENT_FLAG_AWARD_MVP | TOURNAMENT_FLAG_AWARD_RED | TOURNAMENT_FLAG_AWARD_BLACK | TOURNAMENT_FLAG_STREAMING; ?>;
+		if ($("#form-long_term").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_LONG_TERM; ?>;
 		if ($("#form-manual_scoring").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_MANUAL_SCORE; ?>;
 		if ($("#form-pin").length > 0 && $("#form-pin").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_PINNED; ?>;
 		if ($("#form-hide").attr('checked')) _flags |= <?php echo TOURNAMENT_FLAG_HIDE_FROM_MAIN_PAGE; ?>;

@@ -27,6 +27,39 @@ define('WEEK_FLAG_ALL', 127);
 
 define('BRIEF_ATTENDANCE', true);
 
+// What to tell somebody who asked for an event longer than EVENT_MAX_DURATION. An event of its own
+// that long is not a sitting but a season, and a season is a long-term tournament. A round has
+// nowhere else to go, so it is only told the limit.
+function event_too_long_message($is_round)
+{
+	if ($is_round)
+	{
+		return get_label('A round can not last longer than [0] days.', EVENT_MAX_DURATION_DAYS);
+	}
+	return get_label('An event can not last longer than [0] days. Create a long-term tournament for a longer one.', EVENT_MAX_DURATION_DAYS);
+}
+
+// Whether an event belonging to this tournament is a round of it. A long-term tournament has no
+// rounds: what hangs on it are the events of the club's ordinary days, which are events and are
+// spoken of as events. $tournament_id is NULL or 0 for an event of its own.
+function is_round_of_tournament($tournament_id)
+{
+	if (is_null($tournament_id) || (int)$tournament_id <= 0)
+	{
+		return false;
+	}
+	list ($tournament_flags) = Db::record(get_label('tournament'), 'SELECT flags FROM tournaments WHERE id = ?', $tournament_id);
+	return ($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0;
+}
+
+// Whether a duration somebody asked for is allowed. The limit holds for what is being set now, but
+// an event that is already longer is not broken by it: it can be kept as it is or shortened, just
+// never grown. $old_duration is 0 for an event that does not exist yet.
+function is_event_duration_allowed($duration, $old_duration = 0)
+{
+	return $duration <= EVENT_MAX_DURATION || $duration <= $old_duration;
+}
+
 function show_event_buttons($id, $tournament_id, $start_time, $duration, $flags, $club_id, $club_flags, $attending, $is_manager = NULL, $is_referee = NULL, $event_page = false)
 {
 	global $_profile;
@@ -596,7 +629,7 @@ class EventPageBase extends PageBase
 				// Turning an event into a tournament is not one of the things above it: those
 				// set this event up, and this one makes it something else. A line says so.
 				$manager_menu[] = new MenuItem(null, null, null);
-				$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->id . ', \'' . get_label('Are you sure you want to convert [0] to a tournament?', $this->name) . '\')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->name));				
+				$manager_menu[] = new MenuItem('javascript:mr.convertEventToTournament(' . $this->id . ')', get_label('Convert to tournament'), get_label('Convert [0] to a tournament.', $this->name));
 			}
 			$menu[] = new MenuItem('#management', get_label('Management'), NULL, $manager_menu);
 		}

@@ -793,7 +793,11 @@ class ApiPage extends OpsApiPageBase
 		// to its end runs to the new end - which is what makes stretching a tournament stretch the
 		// rounds nobody has given dates of their own. The rest keep theirs and are only kept
 		// inside the tournament, the way finish_op keeps them inside a tournament cut short.
-		if ($start != $old_start || $duration != $old_duration)
+		//
+		// A long-term tournament has no rounds: what hangs on it are the events of the club's
+		// ordinary days, each played on its own day. Those are nobody's to move, so the dates of
+		// a long-term tournament are its own and stop there.
+		if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0 && ($start != $old_start || $duration != $old_duration))
 		{
 			$old_end = $old_start + $old_duration;
 			$end = $start + $duration;
@@ -1337,19 +1341,25 @@ class ApiPage extends OpsApiPageBase
 				$duration = $now - $start_time;
 			}
 			Db::exec(get_label('tournament'), 'UPDATE tournaments SET start_time = ?, duration = ? WHERE id = ?', $start_time, $duration, $tournament_id);
-			$query = new DbQuery('SELECT id, start_time, duration FROM events WHERE tournament_id = ?', $tournament_id);
-			while ($row = $query->next())
+			// The rounds end with the tournament. A long-term tournament has no rounds - what
+			// hangs on it are the events of the club's ordinary days, which keep their own dates
+			// the same way they do when its dates are changed by hand in change_op.
+			if (($flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 			{
-				list($round_id, $round_start, $round_duration) = $row;
-				if ($now < $round_start)
+				$query = new DbQuery('SELECT id, start_time, duration FROM events WHERE tournament_id = ?', $tournament_id);
+				while ($row = $query->next())
 				{
-					$round_start = $now;
+					list($round_id, $round_start, $round_duration) = $row;
+					if ($now < $round_start)
+					{
+						$round_start = $now;
+					}
+					if ($round_start + $round_duration > $now)
+					{
+						$round_duration = $now - $round_start;
+					}
+					Db::exec(get_label('round'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?', $round_start, $round_duration, $round_id);
 				}
-				if ($round_start + $round_duration > $now)
-				{
-					$round_duration = $now - $round_start;
-				}
-				Db::exec(get_label('round'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?', $round_start, $round_duration, $round_id);
 			}
 			db_log(LOG_OBJECT_TOURNAMENT, 'finished', null, $tournament_id, $club_id);
 		}

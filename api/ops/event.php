@@ -153,6 +153,7 @@ class ApiPage extends OpsApiPageBase
 			$tournament_id = NULL;
 			$round_num = 0;
 			$tournament_start_time = $tournament_duration = 0;
+			$is_round = false;
 			// An event of its own is played where the players have their phones on them, so the
 			// roles stay off the overlays unless somebody says otherwise. A tournament is the
 			// other way round, which is why a round of one takes this from the tournament below.
@@ -161,6 +162,9 @@ class ApiPage extends OpsApiPageBase
 		else
 		{
 			list($club_id, $tournament_flags, $tournament_start_time, $tournament_duration) = db::record(get_label('tournament'), 'SELECT club_id, flags, start_time, duration FROM tournaments WHERE id = ?', $tournament_id);
+			// A long-term tournament has no rounds: what is being created for one is an event of
+			// the club's ordinary day, which is an event and is spoken of as one.
+			$is_round = ($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0;
 			if (($tournament_flags & TOURNAMENT_FLAG_LONG_TERM) == 0)
 			{
 				$default_flags |= EVENT_MASK_HIDDEN;
@@ -200,6 +204,10 @@ class ApiPage extends OpsApiPageBase
 		
 		$start = get_optional_param('start', time());
 		$duration = (int)get_required_param('duration');
+		if (!is_event_duration_allowed($duration))
+		{
+			throw new Exc(event_too_long_message($is_round));
+		}
 		$fee = (int)get_optional_param('fee', $club->fee);
 		if (!is_null($fee) && $fee < 0)
 		{
@@ -484,6 +492,10 @@ class ApiPage extends OpsApiPageBase
 		
 		$start = get_optional_param('start', $old_start_timestamp);
 		$duration = (int)get_optional_param('duration', $old_duration);
+		if (!is_event_duration_allowed($duration, (int)$old_duration))
+		{
+			throw new Exc(event_too_long_message(is_round_of_tournament($tournament_id)));
+		}
 		$fee = get_optional_param('fee', $old_fee);
 		if (!is_null($fee) && $fee < 0)
 		{
@@ -1033,7 +1045,11 @@ class ApiPage extends OpsApiPageBase
 		{
 			throw new Exc(get_label('The event is too old. It can not be extended.'));
 		}
-		
+		if (!is_event_duration_allowed($duration, (int)$old_duration))
+		{
+			throw new Exc(event_too_long_message(is_round_of_tournament($tournament_id)));
+		}
+
 		Db::exec(get_label('event'), 'UPDATE events SET duration = ? WHERE id = ?', $duration, $event_id);
 		if (Db::affected_rows() > 0)
 		{
@@ -1697,28 +1713,175 @@ class ApiPage extends OpsApiPageBase
 	//-------------------------------------------------------------------------------------------------------
 	// to_tournament
 	//-------------------------------------------------------------------------------------------------------
+	// The names of a piece of a split event: the name of the event it came out of with the date of
+	// its first game added, in every language the site speaks - which is what makes the pieces of
+	// one long event tell each other apart wherever they are listed.
+	private function dated_event_name_id($name_id, $timestamp, $timezone)
+	{
+		$names = new Names($name_id, get_label('event name'));
+		$by_lang = array();
+		$lang = LANG_NO;
+		while (($lang = get_next_lang($lang)) != LANG_NO)
+		{
+			$by_lang[$lang] = trim($names->get_name($lang) . ' ' . format_date($timestamp, $timezone, false, $lang));
+		}
+		$dated = Names::from_languages($by_lang, get_label('event name'));
+		return $dated->get_id();
+	}
+
+	// An event that ran longer than an event may, dealt out into events that fit. It happens when a
+	// long event is made a season: a season runs over a stretch of days, but each of its events is
+	// one sitting, so the games have to be dealt out into sittings.
+	//
+	// A piece is bounded by where its games start, not where they end: a game nobody ever closed
+	// carries an end days after everybody went home, and such a game must not drag a piece of its
+	// own out of nothing. The end of a piece is the end of its last game all the same, only never
+	// further from its start than the limit - which is what keeps every piece inside it.
+	//
+	// The first piece is the event itself, with its name and everything else it had; each of the
+	// rest is a copy of it holding the games that did not fit. Registrations stay with the event
+	// they were made for - they are in the tournament as well by now, which is where a season
+	// reads them from.
+	//
+	// Returns how many events were created.
+	private function split_long_event($event_id, $club_id, $name_id, $timezone)
+	{
+		$games = array();
+		$query = new DbQuery('SELECT id, start_time, end_time, json FROM games WHERE event_id = ? ORDER BY start_time, id', $event_id);
+		while ($row = $query->next())
+		{
+			$game = new stdClass();
+			list($game->id, $game->start, $game->end, $game->json) = $row;
+			$game->start = (int)$game->start;
+			$game->end = (int)$game->end;
+			$games[] = $game;
+		}
+
+		if (count($games) == 0)
+		{
+			// There is nothing to go by and nothing that needs a day of its own either, so the
+			// event keeps the start it has and is cut to what an event may last.
+			Db::exec(get_label('event'), 'UPDATE events SET duration = ' . EVENT_MAX_DURATION . ' WHERE id = ? AND duration > ' . EVENT_MAX_DURATION, $event_id);
+			if (Db::affected_rows() > 0)
+			{
+				$log_details = new stdClass();
+				$log_details->duration = EVENT_MAX_DURATION;
+				db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
+			}
+			return 0;
+		}
+
+		$pieces = array();
+		$count = count($games);
+		for ($i = 0; $i < $count; )
+		{
+			$start = $games[$i]->start;
+			// The first game of a piece always goes in, even one that alone ran past the limit: a
+			// game can not be cut in half, and without this there would be no way forward at all.
+			$piece = array($games[$i]);
+			++$i;
+			// Strictly inside the limit, so that the duration below, which is capped at it, still
+			// reaches every game the piece holds.
+			while ($i < $count && $games[$i]->start - $start < EVENT_MAX_DURATION)
+			{
+				$piece[] = $games[$i];
+				++$i;
+			}
+			$pieces[] = $piece;
+		}
+
+		$created = 0;
+		$is_first = true;
+		foreach ($pieces as $piece)
+		{
+			$start = $piece[0]->start;
+			$end = $start;
+			foreach ($piece as $game)
+			{
+				// A game whose end was never written stands for its start, and so does the one
+				// game in the base whose end is before it.
+				$end = max($end, $game->start, $game->end);
+			}
+			$end = min($end, $start + EVENT_MAX_DURATION);
+
+			if ($is_first)
+			{
+				$is_first = false;
+				Db::exec(get_label('event'), 'UPDATE events SET start_time = ?, duration = ? WHERE id = ?', $start, $end - $start, $event_id);
+				$log_details = new stdClass();
+				$log_details->start = $start;
+				$log_details->duration = $end - $start;
+				db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
+				continue;
+			}
+
+			$piece_name_id = $this->dated_event_name_id($name_id, $start, $timezone);
+			// Everything but the dates and the name is what the event it came out of has: that one
+			// is in the tournament already and flagged the way an event of a season is. Only misc
+			// is left out - it holds the seating of that event, which is not this one's.
+			Db::exec(get_label('event'),
+				'INSERT INTO events (name_id, start_time, duration, address_id, club_id, notes, flags, languages, scoring_id, scoring_version, scoring_options, standings_settings, tournament_id, rules, fee, currency_id, round, players, tables, games)' .
+					' SELECT ?, ?, ?, address_id, club_id, notes, flags, languages, scoring_id, scoring_version, scoring_options, standings_settings, tournament_id, rules, fee, currency_id, round, players, tables, games' .
+					' FROM events WHERE id = ?',
+				$piece_name_id, $start, $end - $start, $event_id);
+			list ($piece_id) = Db::record(get_label('event'), 'SELECT LAST_INSERT_ID()');
+
+			$log_details = new stdClass();
+			$log_details->name_id = $piece_name_id;
+			$log_details->club_id = $club_id;
+			$log_details->start = $start;
+			$log_details->duration = $end - $start;
+			$log_details->split_from = (int)$event_id;
+			db_log(LOG_OBJECT_EVENT, 'created', $log_details, $piece_id, $club_id);
+
+			foreach ($piece as $game)
+			{
+				if (is_null($game->json))
+				{
+					Db::exec(get_label('game'), 'UPDATE games SET event_id = ? WHERE id = ?', $piece_id, $game->id);
+					continue;
+				}
+				$json = json_decode($game->json);
+				$json->eventId = (int)$piece_id;
+				Db::exec(get_label('game'), 'UPDATE games SET event_id = ?, json = ? WHERE id = ?', $piece_id, json_encode($json), $game->id);
+			}
+			++$created;
+		}
+		return $created;
+	}
+
 	function to_tournament_op()
 	{
 		global $_lang;
-		
+
 		$event_id = (int)get_required_param('event_id');
-		
+
 		Db::begin();
-		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $lat, $lon, $name_id) = 
-			Db::record(get_label('event'), 
-				'SELECT e.club_id, ne.name, e.address_id, e.start_time, e.duration, e.languages, e.notes, e.fee, e.currency_id, e.scoring_id, e.scoring_version, e.scoring_options, e.rules, e.flags, a.lat, a.lon, e.name_id'.
+		list($club_id, $name, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $flags, $lat, $lon, $name_id, $timezone) =
+			Db::record(get_label('event'),
+				'SELECT e.club_id, ne.name, e.address_id, e.start_time, e.duration, e.languages, e.notes, e.fee, e.currency_id, e.scoring_id, e.scoring_version, e.scoring_options, e.rules, e.flags, a.lat, a.lon, e.name_id, ct.timezone'.
 				' FROM events e'.
 				' JOIN names ne ON ne.id = e.name_id AND (ne.langs & '.$_lang.') <> 0'.
 				' JOIN addresses a ON a.id = e.address_id'.
+				' JOIN cities ct ON ct.id = a.city_id'.
 				' WHERE e.id = ?', $event_id);
 		check_permissions(PERMISSION_CLUB_MANAGER, $club_id);
-		
+
+		// What kind of tournament the event becomes. An ordinary one is played in one go, so the
+		// event stays whole and becomes its only round. A long-term one is a season, played on the
+		// club's ordinary days, so the event stays an event of its own and is dealt out into the
+		// sittings it was really played in - which is the only way a long event ever gets short.
+		//
+		// Left unsaid, the length of the event decides, the same way the dialog offers it.
+		$long_term = (int)get_optional_param('long_term', $duration > EVENT_MAX_DURATION ? 1 : 0) != 0;
+		$tournament_flags = $long_term ? TOURNAMENT_FLAG_LONG_TERM : 0;
+
 		Db::exec(
-			get_label('tournament'), 
+			get_label('tournament'),
 			// Nobody has said how many players a tournament grown out of a single event is laid
 			// out for. The column is NOT NULL with no default and a strict MySQL wants it named.
 			'INSERT INTO tournaments (name_id, club_id, address_id, start_time, duration, langs, notes, fee, currency_id, scoring_id, scoring_version, scoring_options, rules, flags, num_players) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)',
-			$name_id, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, 0);
+			$name_id, $club_id, $address_id, $start_time, $duration, $langs, $notes, $fee, $currency_id, $scoring_id, $scoring_version, $scoring_options, $rules, $tournament_flags);
 		list ($tournament_id) = Db::record(get_label('tournament'), 'SELECT LAST_INSERT_ID()');
 		
 		$log_details = new stdClass();
@@ -1736,7 +1899,7 @@ class ApiPage extends OpsApiPageBase
 		$log_details->scoring_version = $scoring_version;
 		$log_details->scoring_options = $scoring_options;
 		$log_details->rules_code = $rules;
-		$log_details->flags = 0;
+		$log_details->flags = $tournament_flags;
 		db_log(LOG_OBJECT_TOURNAMENT, 'created', $log_details, $tournament_id, $club_id);
 		
 		$query = new DbQuery('SELECT e.user_id, e.flags, u.city_id, u.rating FROM event_regs e JOIN users u ON u.id = e.user_id WHERE e.event_id = ?', $event_id);
@@ -1747,21 +1910,11 @@ class ApiPage extends OpsApiPageBase
 			// Note that we are loosing user custom picture here if exists. We can fix it in the future if it is a problem.
 			Db::exec(get_label('registration'), 'INSERT IGNORE INTO tournament_regs (tournament_id, user_id, flags, city_id, rating) values (?, ?, ?, ?, ?)', $tournament_id, $user_id, $user_flags, $user_city_id, $user_rating);
 		}
-		update_tournament_stats($tournament_id, $lat, $lon, 0);
-			
-		$name = get_label('main round');
-		$name_id = get_round_name_id(0);
-		$flags |= EVENT_MASK_HIDDEN;
-		Db::exec(
-			get_label('event'), 
-			'UPDATE events SET tournament_id = ?, flags = ?, name_id = ? WHERE id = ?', $tournament_id, $flags, $name_id, $event_id);
-		$log_details = new stdClass();
-		$log_details->tournament_id = $tournament_id;
-		$log_details->name = $name;
-		$log_details->name_id = $name_id;
-		$log_details->flags = $flags;
-		db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
-		
+		update_tournament_stats($tournament_id, $lat, $lon, $tournament_flags);
+
+		// The games go into the tournament while they are all still in the one event. The split
+		// below deals them out between events afterwards, and whichever event a game lands in, the
+		// tournament it belongs to is the same.
 		$query = new DbQuery('SELECT id, json FROM games WHERE event_id = ?', $event_id);
 		while ($row = $query->next())
 		{
@@ -1771,21 +1924,60 @@ class ApiPage extends OpsApiPageBase
 				continue;
 			}
 			$game = json_decode($game);
-			
+
 			$game->tournamentId = (int)$tournament_id;
 			Db::exec(get_label('game'), 'UPDATE games SET tournament_id = ?, json = ? WHERE id = ?', $tournament_id, json_encode($game), $game_id);
 		}
-		
+
+		if ($long_term)
+		{
+			// An event of a season is seen on its own and keeps the name it was played under - the
+			// change op does the same to an event moved into a long-term tournament by hand.
+			$flags &= ~EVENT_MASK_HIDDEN;
+			Db::exec(
+				get_label('event'),
+				'UPDATE events SET tournament_id = ?, flags = ? WHERE id = ?', $tournament_id, $flags, $event_id);
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
+
+			$this->response['events_created'] = $this->split_long_event($event_id, $club_id, $name_id, $timezone);
+
+			// The games are in other events now, so what each event scored and who placed where in
+			// it has to be counted again. Clearing the finished flag is what asks
+			// complete_competitions.php for that - see rebuild_places below.
+			Db::exec(get_label('event'), 'UPDATE events SET flags = flags & ' . (~EVENT_FLAG_FINISHED) . ' WHERE tournament_id = ?', $tournament_id);
+			Db::exec(get_label('score'), 'DELETE FROM event_scores_cache WHERE event_id IN (SELECT id FROM events WHERE tournament_id = ?)', $tournament_id);
+		}
+		else
+		{
+			$name = get_label('main round');
+			$name_id = get_round_name_id(0);
+			$flags |= EVENT_MASK_HIDDEN;
+			Db::exec(
+				get_label('event'),
+				'UPDATE events SET tournament_id = ?, flags = ?, name_id = ? WHERE id = ?', $tournament_id, $flags, $name_id, $event_id);
+			$log_details = new stdClass();
+			$log_details->tournament_id = $tournament_id;
+			$log_details->name = $name;
+			$log_details->name_id = $name_id;
+			$log_details->flags = $flags;
+			db_log(LOG_OBJECT_EVENT, 'changed', $log_details, $event_id, $club_id);
+		}
+
 		Db::commit();
-		
+
 		$this->response['tournament_id'] = $tournament_id;
 	}
-	
+
 	function to_tournament_op_help()
 	{
-		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Creates a tournament with one round. Where the event is the round.');
+		$help = new ApiHelp(PERMISSION_CLUB_MANAGER, 'Creates a tournament out of an event. An ordinary tournament is played in one go, so the event becomes its only round. A long-term tournament is a season played on the club\'s ordinary days, so the event stays an event of its own and, when it is longer than an event may last, it is dealt out into the sittings its games were really played in - each of them an event named after it with the date of its first game.');
 		$help->request_param('event_id', 'Event id to convert to a tournament.');
+		$help->request_param('long_term', 'Whether the tournament is a long-term one: 1 - yes, 0 - no.', 'yes for an event longer than ' . EVENT_MAX_DURATION_DAYS . ' days, no for a shorter one.');
 		$help->response_param('tournament_id', 'Id of the tournament.');
+		$help->response_param('events_created', 'How many events the event was dealt out into beyond itself. Only for a long-term tournament.');
 		return $help;
 	}
 	

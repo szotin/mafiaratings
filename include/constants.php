@@ -332,6 +332,17 @@ define('EVENT_ICON_MAX_VERSION', 7);
 define('EVENT_ALIVE_TIME', 28800); // event can be extended during this time after being finished (8 hours)
 define('EVENT_NOT_DONE_TIME', 1209600); // event is considered "recent" during this time after being finished (2 weeks)
 
+// The longest an event may last when somebody sets its length by hand. Anything longer is not a
+// single sitting but a season, and a season is a long-term tournament, which takes the events of
+// the club's ordinary days instead of rounds.
+//
+// Two exceptions, both deliberate. An event that is already longer stays as it is and may be
+// shortened but never grown - see the create, change and extend ops in api/ops/event.php. And a
+// round of a tournament that is not long-term follows its tournament, which may run for a week,
+// so create_tournament_round() in include/tournament.php is not held to this.
+define('EVENT_MAX_DURATION_DAYS', 3);
+define('EVENT_MAX_DURATION', EVENT_MAX_DURATION_DAYS * 86400);
+
 // tournament flags
 //  1 - 0x00000001 -         1 - icon mask
 //  2 - 0x00000002 -         2 - icon mask

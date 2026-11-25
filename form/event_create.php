@@ -358,7 +358,16 @@ try
 	{
 		var _langs = mr.getLangs('form-');
 		var _addr = $("#form-addr_id").val();
-		
+
+		// An event is one sitting. Anything longer is a season, and a season is a long-term
+		// tournament, which takes the events of the club's ordinary days instead of rounds.
+		var _duration = strToTimespan($("#form-duration").val());
+		if (_duration > <?php echo EVENT_MAX_DURATION; ?>)
+		{
+			dlg.error(<?php echo json_encode(event_too_long_message(false)); ?>);
+			return;
+		}
+
 		// The awards a new event starts with - the three this form used to offer ticked. They
 		// are changed on the Rules tab of its preparation from here on.
 		var _flags = <?php echo EVENT_FLAG_AWARD_MVP | EVENT_FLAG_AWARD_RED | EVENT_FLAG_AWARD_BLACK; ?>;
@@ -373,7 +382,7 @@ try
 			club_id: <?php echo $club_id; ?>,
 			tournament_id: $("#form-tournament").val(),
 			round_num: $("#form-round").val(),
-			duration: strToTimespan($("#form-duration").val()),
+			duration: _duration,
 			fee: ($("#form-fee-unknown").attr('checked')?-1:$("#form-fee").val()),
 			currency_id: $('#form-currency').val(),
 			address_id: _addr,
