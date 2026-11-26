@@ -1385,6 +1385,17 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 /* what kind of message it is: an error, a warning, a question (see dlg in js/src/common.js) */
 .ui-dialog.dlg-error .ui-dialog-titlebar { background: var(--down); }
 .ui-dialog.dlg-warning .ui-dialog-titlebar { background: #8A5A00; }
+/* A phone, held either way: a dialog takes the whole screen - its title (with the cross) at the top,
+   its buttons at the bottom, and what is between them scrolls. jQuery UI places and sizes it with
+   inline styles, so these win with !important; and it shows and hides it with an inline display, so
+   the column is only made of a dialog that is not hidden. */
+@media (max-width: 640px), (max-height: 500px) {
+  .ui-dialog { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; height: 100dvh !important; max-width: none;
+    border-radius: 0; box-shadow: none; }
+  .ui-dialog:not([style*="display: none"]) { display: flex !important; flex-direction: column; }
+  .ui-dialog .ui-dialog-titlebar, .ui-dialog .ui-dialog-buttonpane { flex: none; }
+  .ui-dialog .ui-dialog-content { flex: 1 1 auto; width: auto !important; height: auto !important; min-height: 0 !important; max-height: none; overflow-y: auto; overscroll-behavior: contain; }
+}
 .ui-dialog.dlg-error .ui-dialog-content, .ui-dialog.dlg-warning .ui-dialog-content, .ui-dialog.dlg-info .ui-dialog-content, .ui-dialog.dlg-confirm .ui-dialog-content { padding: 22px 22px 20px; font-size: 15px; }
 .ui-dialog.dlg-error .ui-dialog-buttonpane button:first-child { background: var(--ink); border-color: var(--ink); box-shadow: none; }
 
@@ -1421,9 +1432,8 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 .ui-dialog h3, .ui-dialog h4 { padding-left: 0; font-family: var(--font-display); text-transform: uppercase; letter-spacing: .03em; color: var(--ink); }
 .ui-dialog hr { border: 0; border-top: 1px solid var(--rule); margin: 12px 0; }
 
-/* phones: the dialog takes the width of the screen and a form's labels go above their fields */
+/* phones: a form's labels go above their fields (the dialog itself takes the whole screen - see above) */
 @media (max-width: 639px) {
-  .ui-dialog { left: 8px !important; width: calc(100vw - 16px) !important; }
   .ui-dialog .ui-dialog-content { padding: 14px 16px; }
   .ui-dialog table.dialog_form, .ui-dialog table.dialog_form > tbody, .ui-dialog table.dialog_form > tbody > tr, .ui-dialog table.dialog_form > tbody > tr > td { display: block; width: auto !important; }
   .ui-dialog table.dialog_form > tbody > tr > td { padding: 2px 0 6px; text-align: left !important; }
