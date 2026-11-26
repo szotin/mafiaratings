@@ -162,7 +162,11 @@ body.game-full button.best:hover, body.game-full button.extra-pts:hover, body.ga
 body.game-full button.day-vote[checked], body.game-full button.day-half-vote[checked], body.game-full button.night-vote[checked], body.game-full button.best[checked], body.game-full button.warn3[checked] { background: var(--red); color: #fff; }
 body.game-full button.day-vote[disabled], body.game-full button.day-half-vote[disabled], body.game-full button.night-vote[disabled],
 body.game-full button.best[disabled], body.game-full button.extra-pts[disabled], body.game-full button.warn3[disabled] { opacity: .35; cursor: default; box-shadow: none; }
-body.game-full button.leave { height: var(--g-ctl); background: var(--ink); color: #fff; }
+/* the actions of a player (uiPlayerActions()): one width, the picture then the words, and as tall as
+   the words - a long one takes two lines rather than spilling out of its button */
+body.game-full button.leave { width: 100%; height: auto; min-height: var(--g-ctl); padding: 6px 16px !important; border-radius: calc(var(--g-ctl) / 2); background: var(--ink); color: #fff; line-height: 1.25; text-align: left; }
+body.game-full button.leave td { color: #fff; vertical-align: middle; }
+body.game-full button.leave img { width: 22px; height: 22px; }
 body.game-full img.role-icon { opacity: .7; }
 
 /* ------------------------------------------------------------------ Back, the scenes, Next */

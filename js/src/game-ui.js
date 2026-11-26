@@ -1866,7 +1866,7 @@ function uiPlayerActions(num)
 	
 	html += '</center>';
 	
-	dlg.custom(html, l('PlayerActions', num + 1), 360, {});
+	dlg.custom(html, l('PlayerActions', num + 1), 460, {});
 }
 
 function uiCancelGame(backPage)
