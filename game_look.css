@@ -46,8 +46,9 @@ body.game-full .page.game-page { max-width: none; height: 100%; margin: 0; paddi
 
 /* The box scrolls when the ten rows do not fit in it - a low window, a page zoomed in - and only it:
    the head (the hint, the referee, the timer) and the foot stay at its edges while the players move
-   between them, and Back and Next under the box stay where they are. */
-body.game-full .game-table { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; border-radius: 16px; box-shadow: var(--shadow-card); }
+   between them, and Back and Next under the box stay where they are. A window narrower than the table
+   - a phone - scrolls it sideways in the same box. */
+body.game-full .game-table { flex: 1 1 auto; min-height: 0; overflow-x: auto; overflow-y: auto; overscroll-behavior: contain; border-radius: 16px; box-shadow: var(--shadow-card); }
 body.game-full #players { height: 100%; width: 100%; border-collapse: separate; border-spacing: 0; border: 0 !important;
   padding: 0 !important; border-radius: 16px; background: var(--g-day); }
 body.game-full #players #head { position: sticky; top: 0; z-index: 3; }
@@ -171,7 +172,9 @@ body.game-full button.scene-btn.current { background: var(--ink); color: #fff; }
 body.game-full .scene-mode { color: var(--slate); font-size: 12.5px; }
 
 /* the word over the demo */
-body.game-full #demo { top: 30%; font: 700 14em var(--font-display); color: var(--ink); opacity: .08; }
+/* the word "Demo" over the table, never wider than the window: a phone browser widens the whole page
+   to fit anything that sticks out, and then the page is larger than the screen and cannot be scrolled */
+body.game-full #demo { top: 30%; overflow: hidden; white-space: nowrap; font: 700 min(14em, 24vw) var(--font-display); color: var(--ink); opacity: .08; }
 
 /* the votes a nominee has, in the cell beside the choices: a number to be read across the room */
 body.game-full #players td[id^="panel"] center { font: 700 24px var(--font-display); }
