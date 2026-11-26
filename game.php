@@ -518,6 +518,10 @@ class Page extends PageBase
 		
 		$back_page = get_back_page();
 		echo '<ul id="ops-menu" style="position:absolute;" hidden>';
+		// The whole screen for the game: on a phone the address bar and the system bars take a good part of
+		// it, so it is the first thing offered. Hidden where the browser cannot do it (an iPhone) - see gameFullScreen().
+		echo '<li id="fullscreen" class="ops-item"><a href="#" onclick="gameFullScreen()"><span class="ops-ic">⛶</span> '.get_label('Full screen').'</a></li>';
+		echo '<li type="separator"></li>';
 		if (empty($back_page))
 		{
 			echo '<li id="back" class="ops-item"><a href="#" onclick="goTo({game_num:undefined, demo:undefined})"><img src="images/prev.png" class="text"> '.get_label('Back').'</li>';
@@ -548,9 +552,6 @@ class Page extends PageBase
 				echo '})"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
 			}
 		}
-		// The whole screen for the game: on a phone the address bar and the system bars take a good part of
-		// it. Hidden where the browser cannot do it (an iPhone) - see gameFullScreen().
-		echo '<li id="fullscreen" class="ops-item"><a href="#" onclick="gameFullScreen()"><span class="ops-ic">⛶</span> '.get_label('Full screen').'</a></li>';
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSetRules()"><img src="images/rules.png" class="text"> '.get_label('Rules').'</a></li>';
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
 		echo '</ul>';
@@ -850,7 +851,7 @@ class Page extends PageBase
 		echo 'window.addEventListener("resize", gameFitHeight);';
 		echo 'if (window.visualViewport) { window.visualViewport.addEventListener("resize", gameFitHeight); }';
 		echo 'document.addEventListener("fullscreenchange", gameFitHeight);';
-		echo 'if (!document.documentElement.requestFullscreen) { $("#fullscreen").remove(); }';
+		echo 'if (!document.documentElement.requestFullscreen) { $("#fullscreen").next("li[type=separator]").remove(); $("#fullscreen").remove(); }';
 		if ($this->event_id > 0 && $this->table_num > 0 && $this->game_num > 0)
 		{
 			echo 'uiStart(' . $this->event_id . ', ' . $this->table_num . ', ' . $this->game_num . ');';
