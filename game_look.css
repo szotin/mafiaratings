@@ -44,7 +44,7 @@ html.g-fit body.game-full, html.g-fit body.game-full main, html.g-fit body.game-
 /* the menu of the referee over the table: the head and the foot of the table stick to its edges on a
    layer of their own (z-index 3), and without one of its own the menu was drawn under them */
 body.game-full #ops-menu { z-index: 1000; background: var(--paper); }
-body.game-full #ops-menu .ops-ic { display: inline-block; width: 16px; text-align: center; }
+body.game-full #ops-menu .ops-ic { display: inline-block; width: 22px; font-size: 20px; line-height: 22px; text-align: center; vertical-align: middle; }
 body.game-full .page.game-page { max-width: none; height: 100%; margin: 0; padding: var(--g-gap) !important;
   display: flex; flex-direction: column; gap: var(--g-gap); box-sizing: border-box; font: 500 15px var(--font); color: var(--ink); }
 

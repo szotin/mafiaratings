@@ -1466,6 +1466,8 @@ body.scr input[type=submit] { height: 40px; padding: 0 22px; border: 0; border-r
 .ui-menu.ui-widget-content { background: var(--paper); background-image: none; color: var(--ink); font: 500 14px var(--font); }
 .ui-menu.ui-widget-content a, .ui-menu.ui-widget-content a:link, .ui-menu.ui-widget-content a:visited { color: var(--ink); text-decoration: none; }
 .ui-menu .ui-menu-item { border-radius: 8px; }
+/* a line between groups of items: the theme draws it in the colour of the menu itself */
+.ui-menu .ui-menu-divider { height: 0; margin: 6px 4px !important; border: 0; border-top: 1px solid var(--rule-strong) !important; background: none; }
 /* the names of something in several languages (NameControl, js/src/mr.js): a row for each, with
    room between them, the language beside its field */
 table.transp:has(img[src="images/sync.png"]) { border-spacing: 0 8px; border-collapse: separate; margin: -8px 0; }
