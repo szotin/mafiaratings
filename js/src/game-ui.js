@@ -126,6 +126,25 @@ function _uiShowMarked()
 	}
 }
 
+// Where the table is wider than its box - a phone - the list of each player and the button that
+// creates one give way, and only the button with the man stays: whoever sits there is chosen with it.
+// Never on the first screen, where the players are entered and the lists are what the referee works
+// with. The table is measured whole first, so it gets the lists back once there is room for them.
+function _uiFitWidth()
+{
+	let box = $('.game-table').get(0);
+	let table = $('#players');
+	if (!box)
+	{
+		return;
+	}
+	table.removeClass('g-narrow');
+	if (isSet(game.time) && box.scrollWidth > box.clientWidth + 1)
+	{
+		table.addClass('g-narrow');
+	}
+}
+
 function _uiRender(resetTimer)
 {
 	let timerTime = 60;
@@ -829,6 +848,7 @@ function _uiRender(resetTimer)
 		}
 		_uiShowMarked();
 	}
+	_uiFitWidth();
 	
 	if (_renderCallback != null)
 	{
@@ -1604,6 +1624,7 @@ function uiStart(eventId, tableNum, roundNum)
 	_openedEventId = eventId;
 	_openedTableNum = tableNum;
 	_openedGameNum = roundNum;
+	$(window).on('resize', _uiFitWidth);
 	$('#ops').click(function()
 	{
 		let menu = $('#ops-menu').menu();

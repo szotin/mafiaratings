@@ -71,8 +71,9 @@ body.game-full #players tr[id^="r"]:not(#r-1) > td:first-child { width: 44px; pa
    in one row - a row that grew would push the table out of the window */
 body.game-full #players td[id^="control"]:not(#control-1) { width: 360px !important; white-space: nowrap; }
 body.game-full #players .night-alive select option, body.game-full #players .night-mark select option { color: var(--ink); }
-/* the player chosen from the list: wide enough for a name */
-body.game-full #players td[id^="pselect"] select { width: 100%; min-width: 260px; }
+/* the player chosen from the list: wide enough for a name, and as wide in every phase of the game -
+   only the window decides it, not how much the other columns of the row hold at the moment */
+body.game-full #players td[id^="pselect"] select { width: clamp(110px, 26vw, 260px); min-width: 0; }
 
 /* the day */
 body.game-full .day-alive { background: var(--g-day); color: var(--ink); }
@@ -241,7 +242,32 @@ body.game-full #players td[id^="panel"] > center { display: block; }
    two lines; the box scrolls when the rows no longer fit. */
 @media (max-width: 1100px) {
   body.game-full #players td[id^="control"]:not(#control-1):not([id^="controlx"]) { width: auto !important; white-space: normal; }
-  body.game-full #players td[id^="pselect"] select { min-width: 110px; }
   body.game-full #players td[id^="warn"] { width: 5em !important; min-width: 5em; }
   body.game-full #players td[id^="panel"] select { min-width: 90px; }
 }
+
+/* A table wider than its box after the first screen - see _uiFitWidth() in game-ui.js: the lists of
+   the players and the buttons that create them give way, the button with the man stays; so does the
+   hint under the day or the night, which the referee knows by then anyway. */
+body.game-full #players.g-narrow td[id^="pselect"], body.game-full #players.g-narrow td:has(> button[id^="reg-new-"]), body.game-full #players.g-narrow #status { display: none; }
+/* and the cell of the name, left with the man alone, keeps no room of its own: the buttons of the row
+   come up to the players */
+body.game-full #players.g-narrow td[id^="name"] { width: 1% !important; }
+body.game-full #players.g-narrow td[id^="name"] > table.invis { width: auto; }
+/* and the rest gives up what it can spare, so that the table fits and nothing is left over to push the
+   buttons away: the numbers, the referee, the timer and the warnings */
+body.game-full #players.g-narrow tr[id^="r"]:not(#r-1) > td:first-child { width: 28px; }
+body.game-full #players.g-narrow button.ops, body.game-full #players.g-narrow button.ops img { width: 40px !important; height: 40px !important; }
+body.game-full #players.g-narrow #head > table > tbody > tr > td:first-child { width: 44px !important; }
+body.game-full #players.g-narrow table.timer td { padding: 0 1px; }
+body.game-full #players.g-narrow button.timer, body.game-full #players.g-narrow img.timer { width: 28px !important; height: 28px !important; }
+body.game-full #players.g-narrow div.timer { font-size: 26px; }
+body.game-full #players.g-narrow td[id^="warn"] { width: 3.5em !important; min-width: 3.5em; }
+/* the foot spans the number, the name and the next column, so it is what widened the numbers: the
+   version goes (the globe beside it still says whether the game is saved), and the name of the game
+   takes the lines it needs */
+body.game-full #players.g-narrow #r-1 table.invis > tbody > tr > td:nth-child(2) { display: none; }
+body.game-full #players.g-narrow button.config-btn { min-width: 0; padding: 4px 10px; }
+body.game-full #players.g-narrow #r-1 table.invis > tbody > tr > td:first-child { width: 26px !important; }
+body.game-full #players.g-narrow #saving-img { width: 22px; height: 22px; }
+body.game-full #players.g-narrow td[id^="control"] button { width: auto; padding: 0 8px !important; font-size: 12.5px; } /* game.css gives them 160px */
