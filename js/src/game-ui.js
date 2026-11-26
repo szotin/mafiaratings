@@ -92,6 +92,40 @@ function _uiShoot(shooter)
 	gameShoot($('#shot' + shooter).val(), shooter);
 }
 
+// Where the table of the players does not fit in the window and scrolls (see game_look.css), the row
+// the game is at - the one speaking, the one voted on, the ones of the night - is brought into view
+// when the game moves on. Only then: a referee who has scrolled away to give somebody a warning is
+// not pulled back by every click. The head and the foot of the table stay at its edges, so the row
+// has to be clear of them.
+function _uiShowMarked()
+{
+	let row = $('#players tr.day-mark, #players tr.night-mark').get(0);
+	let box = row ? row.closest('.game-table') : null;
+	if (!box || box.scrollHeight <= box.clientHeight)
+	{
+		return;
+	}
+	let r = row.getBoundingClientRect();
+	let b = box.getBoundingClientRect();
+	let head = $('#head').get(0);
+	let foot = $('#r-1').get(0);
+	let top = b.top + (head ? head.getBoundingClientRect().height : 0);
+	let bottom = b.bottom - (foot ? foot.getBoundingClientRect().height : 0);
+	let by = 0;
+	if (r.top < top)
+	{
+		by = r.top - top;
+	}
+	else if (r.bottom > bottom)
+	{
+		by = r.bottom - bottom;
+	}
+	if (by != 0)
+	{
+		box.scrollBy({ top: by, behavior: 'smooth' });
+	}
+}
+
 function _uiRender(resetTimer)
 {
 	let timerTime = 60;
@@ -793,6 +827,7 @@ function _uiRender(resetTimer)
 		{
 			timer.start();
 		}
+		_uiShowMarked();
 	}
 	
 	if (_renderCallback != null)
