@@ -33,6 +33,12 @@ html:has(body.game-full), body.game-full { height: 100%; overflow: hidden; }
 body.game-full { background: var(--sky, #E9EFF7); }
 body.game-full > .skip, body.game-full .hd, body.game-full .ft, body.game-full .mast, body.game-full .drawer { display: none !important; }
 body.game-full main { height: 100%; }
+/* A phone's browser counts 100% as the screen with its address bar hidden, so while the bar is shown
+   the bottom of the page - Back and Next - is under the edge with nothing to scroll it into view.
+   What is seen of the window right now is 100dvh. */
+@supports (height: 100dvh) {
+  body.game-full, body.game-full main, body.game-full .page.game-page { height: 100dvh; }
+}
 body.game-full .page.game-page { max-width: none; height: 100%; margin: 0; padding: var(--g-gap) !important;
   display: flex; flex-direction: column; gap: var(--g-gap); box-sizing: border-box; font: 500 15px var(--font); color: var(--ink); }
 
@@ -220,3 +226,13 @@ body.game-full #players td[id^="panel"] > center { display: block; }
 .ui-dialog button.best img { width: 30px !important; height: 30px; }
 .ui-dialog #dlg-comment { width: 100%; box-sizing: border-box; min-height: 150px; padding: 12px 14px; border: 1px solid #C9D5E3; border-radius: 12px; font: 500 15px/1.45 var(--font); resize: vertical; }
 .ui-dialog #dlg-points:focus, .ui-dialog #dlg-comment:focus { outline: none; border-color: var(--red); box-shadow: 0 0 0 3px rgba(200,35,44,.14); }
+
+/* A narrow window - a phone on its side: the columns give up their fixed widths rather than push the
+   table past the edge of the window, where nothing scrolls to them. The choices of a row may then take
+   two lines; the box scrolls when the rows no longer fit. */
+@media (max-width: 1100px) {
+  body.game-full #players td[id^="control"]:not(#control-1):not([id^="controlx"]) { width: auto !important; white-space: normal; }
+  body.game-full #players td[id^="pselect"] select { min-width: 110px; }
+  body.game-full #players td[id^="warn"] { width: 5em !important; min-width: 5em; }
+  body.game-full #players td[id^="panel"] select { min-width: 90px; }
+}
