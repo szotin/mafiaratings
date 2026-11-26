@@ -65,7 +65,7 @@ function raceStart(params)
 	{
 		var p = players[i];
 		var li = document.createElement('li');
-		li.className = 'race-row c' + ((p.id % 6) + 1) + (p.id == params.me ? ' me' : '');
+		li.className = 'race-row c' + ((p.id % 6) + 1);
 		li.innerHTML = '<span class="rb"></span><span class="rn"></span><a class="who" href="' + p.url + '">' + p.av +
 			'<span class="who-name"></span>' + (p.club || '') + '</a><span class="rv"></span>';
 		li.querySelector('.who-name').innerHTML = p.name;
@@ -129,6 +129,7 @@ function raceStart(params)
 			k = n - 1;
 		}
 		var f = pos - k;
+		var at = Math.min(n - 1, Math.round(pos));
 		for (var i = 0; i < count; ++i)
 		{
 			if (first[i] > k + (f > 0 ? 1 : 0))
@@ -210,7 +211,6 @@ function raceStart(params)
 			}
 		}
 
-		var at = Math.min(n - 1, Math.round(pos));
 		dateEl.textContent = fmtDate.format(new Date(times[at] * 1000));
 		var what = params.moments[times[at]];
 		stepEl.textContent = (what ? what + ' · ' : '') + params.labels.step.replace('[0]', at + 1).replace('[1]', n);

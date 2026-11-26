@@ -2095,7 +2095,6 @@ a.ach:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .race-row .rb { position: absolute; left: 44px; top: 7px; bottom: 7px; border-radius: 8px; background: #DCE8F6; z-index: 0; }
 .race-row.c2 .rb { background: #E4E1F3; } .race-row.c3 .rb { background: #DDEFEA; } .race-row.c4 .rb { background: #F3E6DC; }
 .race-row.c5 .rb { background: #E6EAF0; } .race-row.c6 .rb { background: #F4E1E4; }
-.race-row.me .rb { background: #F7D5D5; box-shadow: inset 0 0 0 2px var(--red); }
 .race-row .rn { position: relative; z-index: 1; font: 600 16px var(--font-display); color: var(--slate); text-align: center; }
 .race-row .who { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; min-width: 0; padding-left: 8px; text-decoration: none; }
 .race-row .who .av { width: 30px; height: 30px; font-size: 12px; }

@@ -87,21 +87,12 @@ function race_scoring_players($players, $avatar, $url)
 
 // The race of the rating: everybody's rating moment by moment, the moments being RACE_RATING_FRAMES
 // equal stretches of the time it covers. $condition narrows the players, as a condition on the users
-// table under the alias u. Without $ids the race is of whoever was ever among the top RACE_TOP;
-// with them it is of these players only - the ones around somebody on their own page.
-function race_rating_players($condition, $ids = NULL)
+// table under the alias u. The race is of whoever was ever among the top RACE_TOP.
+function race_rating_players($condition)
 {
 	global $_lang;
 
 	$where = ' WHERE (g.flags & ' . (GAME_FLAG_CANCELED | GAME_FLAG_RATING) . ') = ' . GAME_FLAG_RATING;
-	if (!is_null($ids))
-	{
-		if (count($ids) == 0)
-		{
-			return array();
-		}
-		$where .= ' AND p.user_id IN (' . implode(',', array_map('intval', $ids)) . ')';
-	}
 	// The stretches are of the whole history of rating games rather than of these players' own:
 	// asking the games table how long it is costs nothing, asking it of the games of some players
 	// costs a pass over all of them. A club that started late just has its first stretches empty.
@@ -127,11 +118,10 @@ function race_rating_players($condition, $ids = NULL)
 		$frames[(int)$f][(int)$user_id] = (float)$earned;
 	}
 
-	// The ratings as they stood after each stretch, and - without the list of players - who was
-	// among the top at any of them.
+	// The ratings as they stood after each stretch, and who was among the top at any of them.
 	$rating = array();
 	$history = array();
-	$in_race = is_null($ids) ? array() : array_flip(array_map('intval', $ids));
+	$in_race = array();
 	foreach ($frames as $f => $earned)
 	{
 		// The last day of the stretch, or the last day anything was played if that is sooner.
@@ -141,19 +131,16 @@ function race_rating_players($condition, $ids = NULL)
 			$rating[$user_id] = (isset($rating[$user_id]) ? $rating[$user_id] : 0) + $points;
 			$history[$user_id][] = array($time, round(USER_INITIAL_RATING + $rating[$user_id]));
 		}
-		if (is_null($ids))
+		$top = $rating;
+		arsort($top);
+		$n = 0;
+		foreach ($top as $user_id => $points)
 		{
-			$top = $rating;
-			arsort($top);
-			$n = 0;
-			foreach ($top as $user_id => $points)
+			if (++$n > RACE_TOP)
 			{
-				if (++$n > RACE_TOP)
-				{
-					break;
-				}
-				$in_race[$user_id] = true;
+				break;
 			}
+			$in_race[$user_id] = true;
 		}
 	}
 	if (count($in_race) == 0)
@@ -185,7 +172,7 @@ function race_rating_players($condition, $ids = NULL)
 // The race on the page. $options: 'rating' - the values are ratings, whole numbers that all start
 // at a thousand, so a bar is measured from somewhat below the lowest of the top rather than from
 // nothing; 'days' - the moments are named by their day alone; 'moments' - time => what that moment
-// is, shown under its date; 'step' - what the count of the moments says, "[0] of [1]" by default; 'me' - the id of a player whose row stands out.
+// is, shown under its date; 'step' - what the count of the moments says, "[0] of [1]" by default.
 function show_race($race, $timezone, $options = array())
 {
 	global $_lang;
@@ -213,7 +200,6 @@ function show_race($race, $timezone, $options = array())
 	$params->timezone = $timezone;
 	$params->lang = get_lang_code($_lang);
 	$params->rating = isset($options['rating']) && $options['rating'];
-	$params->me = isset($options['me']) ? (int)$options['me'] : 0;
 	// Whether the moment on top is a day rather than the hour of a game: a rating moves in stretches
 	// of days, and a series from one competition to the next.
 	$params->days = $params->rating || (isset($options['days']) && $options['days']);
