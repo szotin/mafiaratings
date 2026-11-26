@@ -39,6 +39,9 @@ body.game-full main { height: 100%; }
 @supports (height: 100dvh) {
   body.game-full, body.game-full main, body.game-full .page.game-page { height: 100dvh; }
 }
+/* and where the page has measured it (gameFitHeight() in game.php), what it measured */
+html.g-fit body.game-full, html.g-fit body.game-full main, html.g-fit body.game-full .page.game-page { height: var(--g-app-h); }
+body.game-full #ops-menu .ops-ic { display: inline-block; width: 16px; text-align: center; }
 body.game-full .page.game-page { max-width: none; height: 100%; margin: 0; padding: var(--g-gap) !important;
   display: flex; flex-direction: column; gap: var(--g-gap); box-sizing: border-box; font: 500 15px var(--font); color: var(--ink); }
 

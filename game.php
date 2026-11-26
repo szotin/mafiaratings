@@ -548,6 +548,9 @@ class Page extends PageBase
 				echo '})"><img src="images/obs.png" class="text"> '.get_label('OBS').'</a></li>';
 			}
 		}
+		// The whole screen for the game: on a phone the address bar and the system bars take a good part of
+		// it. Hidden where the browser cannot do it (an iPhone) - see gameFullScreen().
+		echo '<li id="fullscreen" class="ops-item"><a href="#" onclick="gameFullScreen()"><span class="ops-ic">⛶</span> '.get_label('Full screen').'</a></li>';
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSetRules()"><img src="images/rules.png" class="text"> '.get_label('Rules').'</a></li>';
 		echo '<li id="settings" class="ops-item"><a href="#" onclick="uiSettings()"><img src="images/settings.png" class="text"> '.get_label('Settings').'</a></li>';
 		echo '</ul>';
@@ -720,6 +723,30 @@ class Page extends PageBase
 	{
 		parent::js();
 ?>
+		// The height of the game is what is seen of the window right now. A phone's browser counts
+		// 100% - and does not always count 100dvh - with its address bar hidden, which left Back and
+		// Next under the edge of the screen. The visual viewport says what is really there, and says
+		// it again whenever the bar comes or goes. See --g-app-h in game_look.css.
+		function gameFitHeight()
+		{
+			var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+			document.documentElement.style.setProperty('--g-app-h', Math.round(h) + 'px');
+			document.documentElement.classList.add('g-fit');
+			window.scrollTo(0, 0);
+		}
+
+		function gameFullScreen()
+		{
+			if (document.fullscreenElement)
+			{
+				document.exitFullscreen();
+			}
+			else if (document.documentElement.requestFullscreen)
+			{
+				document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(function() {});
+			}
+		}
+
 		// The scenes of the OBS standing beside this table, offered as buttons between Back and
 		// Next while the game is not switching them by itself. Both the list and whether the
 		// switching is on are settled elsewhere - the list by that OBS, the switching on the
@@ -819,6 +846,11 @@ class Page extends PageBase
 
 	protected function js_on_load()
 	{
+		echo 'gameFitHeight();';
+		echo 'window.addEventListener("resize", gameFitHeight);';
+		echo 'if (window.visualViewport) { window.visualViewport.addEventListener("resize", gameFitHeight); }';
+		echo 'document.addEventListener("fullscreenchange", gameFitHeight);';
+		echo 'if (!document.documentElement.requestFullscreen) { $("#fullscreen").remove(); }';
 		if ($this->event_id > 0 && $this->table_num > 0 && $this->game_num > 0)
 		{
 			echo 'uiStart(' . $this->event_id . ', ' . $this->table_num . ', ' . $this->game_num . ');';
