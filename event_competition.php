@@ -6,8 +6,7 @@ require_once 'include/scoring.php';
 require_once 'include/picture.php';
 require_once 'include/race.php';
 
-// The race of a game day: its top twenty after every game, played back. The chart of a few players
-// it used to be is event_competition_chart.php.
+// The race of a game day: its top twenty after every game, played back.
 class Page extends EventPageBase
 {
 	private $race;
@@ -53,7 +52,6 @@ class Page extends EventPageBase
 		{
 			return;
 		}
-		echo '<div class="toolbar">' . race_switch('event_competition.php?id=' . $this->id . $this->show_all, 'event_competition_chart.php?id=' . $this->id . $this->show_all, true) . '</div>';
 		show_race($this->race, $this->timezone, array('step' => get_label('Game [0] of [1]')));
 	}
 }

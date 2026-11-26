@@ -7,8 +7,7 @@ require_once 'include/race.php';
 define('USER_RACE_ABOVE', 10); // the players above this one in the rating the race is of
 
 // The race of a player against their neighbours in the rating: the twenty around them now, played
-// back from the first rating game of any of them. The chart it used to be is
-// user_competition_chart.php.
+// back from the first rating game of any of them.
 class Page extends UserPageBase
 {
 	private $race;
@@ -36,7 +35,6 @@ class Page extends UserPageBase
 
 	protected function show_body()
 	{
-		echo '<div class="toolbar">' . race_switch('user_competition.php?id=' . $this->id, 'user_competition_chart.php?id=' . $this->id, true) . '</div>';
 		show_race($this->race, get_timezone(), array('rating' => true, 'me' => $this->id));
 	}
 }

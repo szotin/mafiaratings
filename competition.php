@@ -5,7 +5,7 @@ require_once 'include/picture.php';
 require_once 'include/race.php';
 
 // The race of the rating: whoever was ever among the top twenty, played back from the first rating
-// game to now. The chart of a few players it used to be is competition_chart.php.
+// game to now.
 class Page extends GeneralPageBase
 {
 	private $race;
@@ -44,13 +44,8 @@ class Page extends GeneralPageBase
 	{
 		echo '<div class="toolbar"><div class="tb-field">';
 		$this->ccc_filter->show(get_label('Filter [0] by club/city/country.', get_label('players')));
-		echo '</div>' . race_switch('competition.php?' . $this->ccc_param(), 'competition_chart.php?' . $this->ccc_param(), true) . '</div>';
+		echo '</div></div>';
 		show_race($this->race, get_timezone(), array('rating' => true));
-	}
-
-	private function ccc_param()
-	{
-		return 'ccc=' . urlencode($this->ccc_filter->get_code());
 	}
 }
 

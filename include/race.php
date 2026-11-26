@@ -15,15 +15,6 @@ require_once __DIR__ . '/cards.php';
 define('RACE_TOP', 20);
 define('RACE_RATING_FRAMES', 150); // the moments the race of a rating is played back in
 
-// The two views of a competition, as a switch at the top of both: the race, and the chart of a few
-// players it used to be.
-function race_switch($race_url, $chart_url, $is_race)
-{
-	return card_seg(array(
-		array($race_url, get_label('Race'), $is_race),
-		array($chart_url, get_label('Chart'), !$is_race)), get_label('Competition chart'));
-}
-
 // The logo of a player's club beside their name in a race, or nothing for a player of no club.
 function race_club($pic, $id, $name, $flags)
 {

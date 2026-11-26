@@ -7,8 +7,7 @@ require_once 'include/picture.php';
 require_once 'include/race.php';
 require_once 'include/rounds.php';
 
-// The race of a tournament: its top twenty after every game, played back. The chart of a few
-// players it used to be is tournament_competition_chart.php.
+// The race of a tournament: its top twenty after every game, played back.
 class Page extends TournamentPageBase
 {
 	private $race;
@@ -62,7 +61,6 @@ class Page extends TournamentPageBase
 		{
 			return;
 		}
-		echo '<div class="toolbar">' . race_switch('tournament_competition.php?id=' . $this->id . $this->show_all, 'tournament_competition_chart.php?id=' . $this->id . $this->show_all, true) . '</div>';
 		if ($this->flags & TOURNAMENT_FLAG_LONG_TERM)
 		{
 			// A season is played over months: the day says where it is, the hour says nothing.
