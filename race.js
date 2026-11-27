@@ -216,6 +216,7 @@ function raceStart(params)
 		stepEl.textContent = (what ? what + ' · ' : '') + params.labels.step.replace('[0]', at + 1).replace('[1]', n);
 		bar.style.width = (n > 1 ? pos / (n - 1) * 100 : 100) + '%';
 		range.value = pos;
+		range.style.setProperty('--race-p', (n > 1 ? pos / (n - 1) * 100 : 100) + '%');
 		slide();
 	}
 

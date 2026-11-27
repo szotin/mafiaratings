@@ -2097,7 +2097,20 @@ a.ach:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
 .race-speed button { height: 28px; min-width: 34px; padding: 0 8px !important; border: 0 !important; border-radius: 999px; background: none !important; box-shadow: none !important; font: 600 13px var(--font); color: var(--slate); cursor: pointer; }
 .race-speed button:hover { color: var(--ink); }
 .race-speed button[aria-pressed="true"] { background: var(--night) !important; color: #fff; }
-.race-ctl input[type=range] { flex: 1 1 120px; min-width: 0; accent-color: var(--red); }
+/* The slider of the race, drawn here whole: the inputs of the site have sides and a frame of their own,
+   and inside them the thumb stopped short of the end of its track. The part played so far is red up to
+   the thumb - race.js keeps --race-p, the share played. */
+.race-ctl input[type=range] { flex: 1 1 120px; min-width: 0; height: 24px; margin: 0; padding: 0 !important; border: 0 !important; border-radius: 0;
+  background: transparent !important; box-shadow: none !important; -webkit-appearance: none; appearance: none; cursor: pointer; }
+.race-ctl input[type=range]:focus { outline: none; }
+.race-ctl input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px;
+  background: linear-gradient(var(--red), var(--red)) 0 0 / var(--race-p, 0%) 100% no-repeat, var(--rule); }
+.race-ctl input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--rule); }
+.race-ctl input[type=range]::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--red); }
+.race-ctl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -6px; border: 2px solid #fff; border-radius: 50%;
+  background: var(--red); box-shadow: 0 1px 4px rgba(11,20,34,.3); }
+.race-ctl input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%; background: var(--red); box-shadow: 0 1px 4px rgba(11,20,34,.3); }
+.race-ctl input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(200,35,44,.3); }
 .race-progress { height: 4px; margin: 14px 0 10px; border-radius: 2px; background: var(--frost); overflow: hidden; }
 .race-progress span { display: block; height: 100%; width: 0; background: var(--red); }
 .race-list { position: relative; list-style: none; margin: 0; padding: 0; overflow: hidden; }
