@@ -578,6 +578,26 @@ function get_session_state()
     return SESSION_NO_USER;
 }
 
+// The end of a request that started a session - see initiate_session(). The session is thrown away
+// unless something was put in it that the next request will ask for: whoever logged in, a token a
+// login or a partner site is waiting on, the demo game. What the page keeps for its own convenience
+// (the language of the browser, the trail of the back button) is worked out again next time.
+function drop_empty_session()
+{
+	if (session_status() != PHP_SESSION_ACTIVE)
+	{
+		return;
+	}
+	foreach ($_SESSION as $key => $value)
+	{
+		if ($key != 'lang_code' && $key != 'back_tabs' && $key != 'back_list' && $key != 'last_page' && $key != 'current_function')
+		{
+			return;
+		}
+	}
+	session_destroy();
+}
+
 function initiate_session($lang_code = NULL)
 {
 	global $_session_state, $_profile, $_agent, $_lang;
@@ -622,7 +642,20 @@ function initiate_session($lang_code = NULL)
 	}
 	session_save_path($session_path);
 
+	// Whether the visitor came with a session, asked before session_start() gives them one.
+	$session_is_new = !isset($_COOKIE[session_name()]);
     session_start();
+	if ($session_is_new)
+	{
+		// A request that brought no session cookie is, nearly always, something that will never bring
+		// one: a crawler, a monitor, a script asking the API. Each of them was left a session file for
+		// ninety days - millions of files in the end, a folder too full to take another one
+		// ("No space left on device") and too long for the collector to get through in the sixty
+		// seconds a request has. So a session that was started by this request and has nothing in it
+		// worth coming back for is not kept: a browser sends the cookie it was given with its next
+		// request, and gets its session then.
+		register_shutdown_function('drop_empty_session');
+	}
 	// localization
 	if (is_valid_lang_code($lang_code))
 	{
