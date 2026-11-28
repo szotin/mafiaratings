@@ -17,6 +17,12 @@
   --g-gap: clamp(6px, 1.1vh, 10px);
   --g-ctl: clamp(24px, 4vh, 34px);       /* a list, a button, a number in a row */
   --g-pic: clamp(40px, 7.5vh, 64px);     /* the picture of the referee */
+  /* a tenth of what the window leaves the players, and the pictures of a row as large as that lets
+     them - never less than a button of a row, so a low window is no worse off than before */
+  --g-row: calc((var(--g-app-h, 100vh) - var(--g-head) - var(--g-foot) - var(--g-panel) - 4 * var(--g-gap)) / 10);
+  --g-icon: clamp(var(--g-ctl), calc(var(--g-row) - 18px), 46px);  /* the roles */
+  --g-btn: var(--g-icon);  /* the round buttons of a row */
+  --g-timer: calc(var(--g-pic) * .82);                              /* the buttons of the timer */
   --g-day: #FFFFFF;
   --g-day-dead: #E4E9F0;
   --g-day-mark: #FDECEC;
@@ -95,6 +101,9 @@ body.game-full #players td.night-mark { background: var(--g-night-mark); }
 body.game-full #players tr.night-mark > td:first-child, body.game-full #players td.night-mark:first-child { box-shadow: inset 4px 0 0 var(--red); color: var(--red) !important; }
 body.game-full .night-grey { color: var(--slate); }
 body.game-full .night-empty { background: #C9D4E3; color: var(--ink); }
+/* the head and the foot a shade darker than the rows between them, by day and by night */
+body.game-full #players #head.day-empty, body.game-full #players tr#r-1.day-empty, body.game-full #players tr#r-1 > td.day-empty { background: #D2DBE8; }
+body.game-full #players #head.night-empty, body.game-full #players tr#r-1.night-empty, body.game-full #players tr#r-1 > td.night-empty { background: #ABBACF; }
 body.game-full #players:has(tr.night-alive, tr.night-dead, tr.night-mark) { background: var(--g-night); }
 body.game-full #players:has(.night-alive, .night-dead, .night-mark) > tbody > tr > td { border-top-color: var(--g-night-line); }
 body.game-full #players:has(.night-alive, .night-dead, .night-mark) tr[id^="r"]:not(#r-1) > td:first-child { color: var(--slate); }
@@ -121,8 +130,9 @@ body.game-full div.timer { min-width: 2.6em; }
 body.game-full div.timer { font: 700 clamp(26px, 5vh, 44px)/1 var(--font-display); color: var(--ink); letter-spacing: .02em; }
 body.game-full table.timer-1 div.timer { color: #fff; }
 body.game-full .night-empty table.timer-0 { background: rgba(255,255,255,.55); }
-body.game-full button.timer { width: clamp(28px, 5vh, 40px); height: clamp(28px, 5vh, 40px); padding: 0 !important; border-radius: 50%; }
-body.game-full img.timer { width: clamp(28px, 5vh, 40px); height: clamp(28px, 5vh, 40px); filter: saturate(0) brightness(1.05); opacity: .8; }
+/* the buttons of the timer as large as the picture of the referee beside them */
+body.game-full button.timer { width: var(--g-timer); height: var(--g-timer); padding: 0 !important; border-radius: 50%; }
+body.game-full img.timer { width: var(--g-timer); height: var(--g-timer); filter: saturate(0) brightness(1.05); opacity: .8; }
 body.game-full button.timer:hover img.timer { opacity: 1; }
 body.game-full table.timer-1 img.timer { filter: saturate(0) brightness(1.6); }
 
@@ -173,7 +183,8 @@ body.game-full img.role-icon { opacity: .7; }
 
 body.game-full .btn-panel { flex: none; height: var(--g-panel); margin: 0; }
 body.game-full .btn-panel > table { height: 100%; }
-body.game-full button.game-btn { width: clamp(96px, 16vh, 130px); height: calc(var(--g-panel) - 6px); padding: 0 !important; border: 0 !important; border-radius: 999px; background: var(--ink); color: #fff; cursor: pointer; box-shadow: 0 10px 24px -12px rgba(11,20,34,.6); }
+/* thicker than the buttons of a row, thinner than the panel they are on */
+body.game-full button.game-btn { width: clamp(96px, 16vh, 130px); height: calc((var(--g-panel) - 6px + var(--g-ctl)) / 2); padding: 0 !important; border: 0 !important; border-radius: 999px; background: var(--ink); color: #fff; cursor: pointer; box-shadow: 0 10px 24px -12px rgba(11,20,34,.6); }
 body.game-full button.game-btn#game-next { background: var(--red); box-shadow: 0 10px 24px -12px var(--red-glow, rgba(200,35,44,.6)); }
 body.game-full button.game-btn:hover { filter: brightness(1.12); }
 body.game-full button.game-btn img { filter: brightness(0) invert(1); width: clamp(18px, 3vh, 24px); height: clamp(18px, 3vh, 24px); }
@@ -215,7 +226,16 @@ body.game-full button.day-char img, body.game-full button.night-char img { displ
 /* the list of the roles is given 100 pixels in game-ui.js: as wide as "sheriff" and its arrow need */
 body.game-full #players td[id^="panel"] select { width: auto !important; min-width: 120px; padding-right: 32px; }
 /* the warning, the technical foul and "..." read at a glance */
-body.game-full #players td[id^="btns-"] button.icon img { width: calc(var(--g-ctl) * .72); height: calc(var(--g-ctl) * .72); }
+/* the round buttons of a row - the man and the plus by the name, the warning, the technical foul and
+   "..." at the end - all of one size */
+body.game-full #players tr[id^="r"]:not(#r-1) button.icon { width: var(--g-btn); height: var(--g-btn); }
+body.game-full #players tr[id^="r"]:not(#r-1) button.icon img { width: calc(var(--g-btn) * .64); height: calc(var(--g-btn) * .64); }
+/* the warnings and the technical fouls given (game.css: font size 4) as large as the row lets them;
+   the cell keeps its width, which is set in the letters of the row, not of the marks */
+body.game-full #players td[id^="warn"] font { font-size: calc(var(--g-btn) * .55); line-height: 1; }
+/* the roles given out at night 0, and shown at the end, as large as the row lets them */
+body.game-full button.night-char:has(img.role-icon) { width: var(--g-icon); height: var(--g-icon); }
+body.game-full img.role-icon { width: calc(var(--g-icon) * .8); height: calc(var(--g-icon) * .8); }
 
 /* Nothing in a row of a player wraps to a second line - a row that grew pushed the last rows out of
    the window: the numbers of the arrangement, the votes, the roles, the buttons. The cells of the
@@ -269,6 +289,7 @@ body.game-full #players.g-tight table.timer td { padding: 0 1px; }
 body.game-full #players.g-tight button.timer, body.game-full #players.g-tight img.timer { width: 28px !important; height: 28px !important; }
 body.game-full #players.g-tight div.timer { font-size: 26px; }
 body.game-full #players.g-tight td[id^="warn"] { width: 3.5em !important; min-width: 3.5em; }
+body.game-full #players.g-tight td[id^="warn"] font { font-size: 18px; }
 /* the foot spans the number, the name and the next column, so it is what widened the numbers: the
    version goes (the globe beside it still says whether the game is saved), and the name of the game
    takes the lines it needs */
